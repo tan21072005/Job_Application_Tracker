@@ -1,0 +1,22 @@
+FROM node:24-bookworm-slim AS base
+WORKDIR /app
+
+# Install compilation essentials for argon2 native bindings if required
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY apps/api/package.json /app/apps/api/package.json
+WORKDIR /app/apps/api
+RUN npm install --omit=dev
+
+COPY packages/jobtrack-contract /app/packages/jobtrack-contract
+COPY apps/api/src /app/apps/api/src
+COPY apps/api/migrations /app/apps/api/migrations
+
+ENV NODE_ENV=production
+EXPOSE 64366
+
+CMD ["node", "src/server.ts"]

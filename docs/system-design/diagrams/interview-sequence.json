@@ -1,0 +1,71 @@
+{
+  "title": "07 · Interview và status cùng transaction",
+  "participants": [
+    {
+      "id": "client",
+      "label": "Frontend adapter"
+    },
+    {
+      "id": "http",
+      "label": "API middleware"
+    },
+    {
+      "id": "service",
+      "label": "Owned service"
+    },
+    {
+      "id": "db",
+      "label": "PostgreSQL"
+    }
+  ],
+  "messages": [
+    {
+      "from": "client",
+      "to": "http",
+      "label": "POST round + parent If-Match + Idempotency-Key"
+    },
+    {
+      "from": "http",
+      "to": "service",
+      "label": "Validated owner / at / IANA"
+    },
+    {
+      "from": "service",
+      "to": "db",
+      "label": "BEGIN; session lock then owner lock"
+    },
+    {
+      "from": "service",
+      "to": "db",
+      "label": "Replay check; owned parent + version check"
+    },
+    {
+      "from": "service",
+      "to": "db",
+      "label": "INSERT round; sync status except terminal/Offer"
+    },
+    {
+      "from": "service",
+      "to": "db",
+      "label": "Increment parent version + idempotency result; COMMIT"
+    },
+    {
+      "from": "db",
+      "to": "service",
+      "label": "COMMIT acknowledged",
+      "return": true
+    },
+    {
+      "from": "service",
+      "to": "http",
+      "label": "Committed round + applicationVersion",
+      "return": true
+    },
+    {
+      "from": "http",
+      "to": "client",
+      "label": "201; invalidate parent/list/dashboard",
+      "return": true
+    }
+  ]
+}

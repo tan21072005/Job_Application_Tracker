@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+dist
+**/dist
+build
+**/build
+.git
+.github
+backups
+references
+deliverables
+planning
+design
+Tài liệu
+*.log
+*.zip
+*.docx

@@ -1,0 +1,71 @@
+{
+  "title": "06 · Create, duplicate và retry",
+  "participants": [
+    {
+      "id": "client",
+      "label": "Frontend adapter"
+    },
+    {
+      "id": "http",
+      "label": "API middleware"
+    },
+    {
+      "id": "service",
+      "label": "Owned service"
+    },
+    {
+      "id": "db",
+      "label": "PostgreSQL"
+    }
+  ],
+  "messages": [
+    {
+      "from": "client",
+      "to": "http",
+      "label": "POST /applications + same Idempotency-Key"
+    },
+    {
+      "from": "http",
+      "to": "service",
+      "label": "Validated session / Origin / DTO"
+    },
+    {
+      "from": "service",
+      "to": "db",
+      "label": "BEGIN; session FOR SHARE; owner FOR UPDATE"
+    },
+    {
+      "from": "service",
+      "to": "db",
+      "label": "Lookup scoped key/hash; replay before writing"
+    },
+    {
+      "from": "service",
+      "to": "db",
+      "label": "Check active OR identity; terminal needs confirmation"
+    },
+    {
+      "from": "service",
+      "to": "db",
+      "label": "INSERT application + saved 201 response; COMMIT"
+    },
+    {
+      "from": "db",
+      "to": "service",
+      "label": "COMMIT acknowledged",
+      "return": true
+    },
+    {
+      "from": "service",
+      "to": "http",
+      "label": "Committed result",
+      "return": true
+    },
+    {
+      "from": "http",
+      "to": "client",
+      "label": "201 application; retry returns original response",
+      "return": true
+    }
+  ]
+}

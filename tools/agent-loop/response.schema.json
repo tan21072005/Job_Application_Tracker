@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "prompt", "evidence", "verdict"],
+  "properties": {
+    "summary": { "type": "string" },
+    "prompt": { "type": "string" },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "verdict": { "type": "string", "enum": ["task", "repair", "pass", "missing"] }
+  }
+}

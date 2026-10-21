@@ -1,0 +1,22 @@
+{
+  "name": "jobtrack-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) server for JobTrack - Full AI Control",
+  "type": "module",
+  "bin": {
+    "jobtrack-mcp": "./bin/jobtrack-mcp.mjs"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "node --test --env-file-if-exists=../../apps/api/.env.test src/*.test.ts",
+    "start": "node bin/jobtrack-mcp.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.0",
+    "typescript": "^5.9.0"
+  }
+}

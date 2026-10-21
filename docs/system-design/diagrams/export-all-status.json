@@ -1,0 +1,58 @@
+[
+  {
+    "page": 1,
+    "name": "01 · Hiện trạng đã kiểm tra",
+    "success": true,
+    "returncode": 0,
+    "stdout": "\nD:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\preview-sources\\page-01.drawio -> D:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\page-01.png\n",
+    "stderr": "e cache\n[29360:1015/140348.979:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[29360:1015/140348.999:ERROR:net\\disk_cache\\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[29360:1015/140348.999:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[29360:1015/140348.999:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n"
+  },
+  {
+    "page": 2,
+    "name": "02 · Kiến trúc đích cho cả năm giao diện",
+    "success": true,
+    "returncode": 0,
+    "stdout": "\nD:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\preview-sources\\page-02.drawio -> D:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\page-02.png\n",
+    "stderr": "e cache\n[48676:1015/140352.736:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[48676:1015/140352.765:ERROR:net\\disk_cache\\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[48676:1015/140352.765:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[48676:1015/140352.765:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n"
+  },
+  {
+    "page": 3,
+    "name": "03 · Ranh giới backend được đề xuất",
+    "success": true,
+    "returncode": 0,
+    "stdout": "\nD:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\preview-sources\\page-03.drawio -> D:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\page-03.png\n",
+    "stderr": "e cache\n[41688:1015/140356.557:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[41688:1015/140356.576:ERROR:net\\disk_cache\\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[41688:1015/140356.576:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[41688:1015/140356.576:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n"
+  },
+  {
+    "page": 4,
+    "name": "04 · Mô hình dữ liệu đích",
+    "success": true,
+    "returncode": 0,
+    "stdout": "\nD:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\preview-sources\\page-04.drawio -> D:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\page-04.png\n",
+    "stderr": "e cache\n[37344:1015/140400.385:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[37344:1015/140400.406:ERROR:net\\disk_cache\\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[37344:1015/140400.406:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[37344:1015/140400.406:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n"
+  },
+  {
+    "page": 5,
+    "name": "05 · Deployment và độ bền đề xuất",
+    "success": true,
+    "returncode": 0,
+    "stdout": "\nD:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\preview-sources\\page-05.drawio -> D:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\page-05.png\n",
+    "stderr": "e cache\n[31136:1015/140404.264:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[31136:1015/140404.291:ERROR:net\\disk_cache\\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[31136:1015/140404.291:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[31136:1015/140404.291:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n"
+  },
+  {
+    "page": 6,
+    "name": "06 · Create, duplicate và retry",
+    "success": true,
+    "returncode": 0,
+    "stdout": "\nD:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\preview-sources\\page-06.drawio -> D:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\page-06.png\n",
+    "stderr": "e cache\n[17884:1015/140408.095:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[17884:1015/140408.126:ERROR:net\\disk_cache\\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[17884:1015/140408.126:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[17884:1015/140408.126:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n"
+  },
+  {
+    "page": 7,
+    "name": "07 · Interview và status cùng transaction",
+    "success": true,
+    "returncode": 0,
+    "stdout": "\nD:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\preview-sources\\page-07.drawio -> D:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\page-07.png\n",
+    "stderr": "e cache\n[12408:1015/140411.850:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[12408:1015/140411.874:ERROR:net\\disk_cache\\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[12408:1015/140411.874:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[12408:1015/140411.874:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n"
+  }
+]

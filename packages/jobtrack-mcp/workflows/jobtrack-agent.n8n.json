@@ -1,0 +1,135 @@
+{
+  "name": "JT-ASSISTANT-v1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "jobtrack-agent",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "webhook-trigger-jobtrack",
+      "name": "JobTrack Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "Bạn là trợ lý AI thông minh quản lý ứng tuyển JobTrack với quyền Full control.\nBạn có các công cụ để tra cứu, tạo mới, cập nhật, chuyển trạng thái, xóa vào thùng rác, khôi phục hồ sơ và lên lịch phỏng vấn.\nKhi người dùng yêu cầu thao tác thông thường, bạn thực hiện ngay qua công cụ và trả về kết quả rõ ràng, thân thiện bằng tiếng Việt.\nNếu người dùng gửi link tin tuyển dụng, hãy sử dụng công cụ import để trích xuất thông tin."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [240, 0],
+      "id": "ai-agent-jobtrack",
+      "name": "JobTrack AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-chat",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [240, 200],
+      "id": "model-openai-compatible",
+      "name": "9router / OpenAI Compatible Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "9router-binding",
+          "name": "9router local/remote key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('JobTrack Webhook').item.json.sessionId || $('JobTrack Webhook').item.json.userId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [380, 200],
+      "id": "memory-window-jobtrack",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "name": "jobtrack_mcp_gateway",
+        "description": "Gọi cổng công cụ JobTrack MCP để thực hiện mọi tác vụ: list_applications, get_application, create_application, update_application, delete_application, restore_application, schedule_interview, update_interview, delete_interview, get_dashboard_summary",
+        "url": "http://127.0.0.1:64366/api/mcp",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": $fromAI('tool_name'),\n    \"arguments\": $fromAI('tool_arguments')\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [520, 200],
+      "id": "tool-jobtrack-mcp",
+      "name": "JobTrack MCP Gateway Tool"
+    }
+  ],
+  "connections": {
+    "JobTrack Webhook": {
+      "main": [
+        [
+          {
+            "node": "JobTrack AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9router / OpenAI Compatible Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "JobTrack AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "JobTrack AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JobTrack MCP Gateway Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "JobTrack AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

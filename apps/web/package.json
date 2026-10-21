@@ -1,0 +1,9 @@
+{
+  "name": "jobtrack-design-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"dev":"vite --host 127.0.0.1", "build":"tsc -b && vite build", "build:themes":"node scripts/build-themes.mjs", "preview":"vite preview --host 127.0.0.1", "test":"vitest run"},
+  "dependencies": {"react":"19.3.0", "react-dom":"19.3.0", "lucide-react":"latest", "@fontsource/manrope":"latest", "@fontsource/lora":"latest", "@fontsource/outfit":"latest", "@fontsource/dm-sans":"latest", "@fontsource/ibm-plex-sans":"latest"},
+  "devDependencies": {"typescript":"latest", "vite":"8.3.4", "vitest":"latest", "@types/react":"latest", "@types/react-dom":"latest"}
+}

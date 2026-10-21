@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>PageWeave — Web Data Assistant & JobTrack Pro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { min-width: 380px; max-width: 100%; padding: 12px; background: #f8fafc; color: #1e293b; font-size: 13px; }
+
+    /* Header */
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+    .brand { display: flex; align-items: center; gap: 7px; font-weight: 700; color: #315bef; font-size: 14px; }
+    .brand-mark { width: 22px; height: 22px; background: linear-gradient(135deg, #315bef, #6366f1); color: white; border-radius: 6px; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+    .status-badge { font-size: 10px; padding: 2px 6px; background: #e0f2fe; color: #0284c7; border-radius: 4px; font-weight: 600; }
+    .tier-badge { font-size: 10px; padding: 2px 6px; background: #fef08a; color: #854d0e; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; }
+
+    /* Nav Tabs */
+    .nav-tabs { display: flex; gap: 3px; margin-bottom: 12px; background: #e2e8f0; padding: 2px; border-radius: 7px; }
+    .tab-btn { flex: 1; padding: 6px 2px; font-size: 11px; font-weight: 600; text-align: center; border: 0; background: transparent; color: #475569; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+    .tab-btn.active { background: white; color: #315bef; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Form Fields */
+    .field { margin-bottom: 8px; }
+    .field label { display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 12px; background: white; outline: none; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: #315bef; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .actions { display: flex; gap: 6px; margin-top: 10px; }
+    .btn { flex: 1; padding: 8px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; border: 0; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn-primary { background: #315bef; color: white; }
+    .btn-primary:hover { background: #2547c9; }
+    .btn-secondary { background: white; border: 1px solid #cbd5e1; color: #334155; }
+    .btn-secondary:hover { background: #f1f5f9; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-pro { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: 0; }
+    .btn-pro:hover { filter: brightness(1.08); }
+
+    /* Alerts */
+    .alert { padding: 7px 9px; border-radius: 5px; font-size: 11px; margin-bottom: 8px; display: none; line-height: 1.4; }
+    .alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+
+    /* Data Preview Table */
+    .preview-box { background: white; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; margin-bottom: 8px; max-height: 220px; overflow-y: auto; }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .preview-table th { background: #f1f5f9; color: #475569; font-weight: 600; padding: 6px 8px; text-align: left; border-bottom: 1px solid #cbd5e1; position: sticky; top: 0; }
+    .preview-table td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Source Selector Cards */
+    .source-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+    .source-btn { background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 6px; text-align: center; cursor: pointer; transition: all 0.15s; }
+    .source-btn.active { border-color: #315bef; background: #eff6ff; color: #1e40af; font-weight: 600; }
+    .source-btn .icon { font-size: 16px; margin-bottom: 2px; }
+    .source-btn .name { font-size: 11px; }
+    .source-btn .count { font-size: 9px; color: #64748b; }
+
+    /* ATS & Cover Letter styles */
+    .score-circle { width: 56px; height: 56px; border-radius: 50%; background: #eff6ff; border: 4px solid #315bef; display: grid; place-items: center; margin: 0 auto 6px; font-size: 16px; font-weight: 800; color: #1e40af; }
+    .chip { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; margin: 2px; }
+    .chip-matched { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .chip-missing { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .recommendation-list { margin: 6px 0 0 16px; font-size: 11px; color: #475569; }
+    .recommendation-list li { margin-bottom: 3px; }
+
+    /* QR Box */
+    .qr-box { text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; margin-top: 8px; }
+    .qr-img { width: 130px; height: 130px; border-radius: 6px; object-fit: contain; }
+
+    /* Dataset List */
+    .dataset-item { background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; margin-bottom: 6px; cursor: pointer; }
+    .dataset-item:hover { border-color: #315bef; }
+    .dataset-item-header { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 12px; }
+    .dataset-item-meta { font-size: 10px; color: #64748b; margin-top: 3px; }
+
+    .footer-link { display: block; text-align: center; margin-top: 10px; font-size: 11px; color: #64748b; text-decoration: none; }
+    .footer-link:hover { color: #315bef; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <span>PageWeave</span>
+      <span class="tier-badge" id="userTierBadge">FREE</span>
+    </div>
+    <div style="display: flex; gap: 5px; align-items: center;">
+      <button type="button" id="rescanBtn" style="background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer; color: #334155;" title="Quét lại trang">🔄 Quét lại</button>
+      <span class="status-badge" id="connStatus">Đang kết nối…</span>
+    </div>
+  </div>
+
+  <div id="alertSuccess" class="alert alert-success"></div>
+  <div id="alertError" class="alert alert-error"></div>
+  <div id="alertInfo" class="alert alert-info"></div>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button type="button" class="tab-btn active" data-tab="tab-capture">🌐 Thu thập</button>
+    <button type="button" class="tab-btn" data-tab="tab-datasets">📊 Bộ dữ liệu</button>
+    <button type="button" class="tab-btn" data-tab="tab-jobtrack">💼 JobTrack</button>
+    <button type="button" class="tab-btn" data-tab="tab-account">⭐ Gói Pro</button>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 1: THU THẬP DỮ LIỆU ĐA NGÀNH (CAPTURE)                             -->
+  <!-- ===================================================================== -->
+  <div id="tab-capture" class="tab-pane active">
+    <!-- Nguồn bóc tách -->
+    <div class="field">
+      <label>Chọn dạng dữ liệu phát hiện được trên trang:</label>
+      <div class="source-selector">
+        <div class="source-btn" id="srcBtnTable" data-source="table">
+          <div class="icon">📊</div>
+          <div class="name">Bảng HTML</div>
+          <div class="count" id="countTables">0 bảng</div>
+        </div>
+        <div class="source-btn" id="srcBtnList" data-source="list">
+          <div class="icon">🗂️</div>
+          <div class="name">Danh sách lặp</div>
+          <div class="count" id="countLists">0 danh sách</div>
+        </div>
+        <div class="source-btn" id="srcBtnSelection" data-source="selection">
+          <div class="icon">📝</div>
+          <div class="name">Đoạn bôi chọn</div>
+          <div class="count" id="countSelection">Trống</div>
+        </div>
+        <div class="source-btn" id="srcBtnMeta" data-source="meta">
+          <div class="icon">🌐</div>
+          <div class="name">Metadata & Tin</div>
+          <div class="count" id="countMeta">Toàn trang</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Xem trước bảng dữ liệu -->
+    <div class="field">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+        <label id="previewLabel">Xem trước dữ liệu (0 dòng):</label>
+        <span id="previewMeta" style="font-size: 10px; color: #64748b;"></span>
+      </div>
+      <div class="preview-box" id="previewContainer">
+        <div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 11px;">
+          Đang kết nối và quét dữ liệu trang web…
+        </div>
+      </div>
+    </div>
+
+    <!-- Lưu vào Dataset -->
+    <div class="field">
+      <label for="targetDatasetSelect">Lưu vào bộ dữ liệu:</label>
+      <div style="display: flex; gap: 5px;">
+        <select id="targetDatasetSelect">
+          <option value="new">+ Tạo bộ dữ liệu mới…</option>
+        </select>
+        <input type="text" id="newDatasetName" placeholder="Tên bộ dữ liệu" style="flex: 1; display: none;">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="saveDatasetBtn">💾 Lưu dữ liệu</button>
+      <button type="button" class="btn btn-secondary" id="exportQuickCsvBtn">⚡ Tải CSV</button>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 2: QUẢN LÝ BỘ DỮ LIỆU (DATASETS)                                  -->
+  <!-- ===================================================================== -->
+  <div id="tab-datasets" class="tab-pane">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <span style="font-weight: 600; font-size: 12px;">Các bảng dữ liệu của bạn</span>
+      <button type="button" id="refreshDatasetsBtn" style="background: none; border: 0; color: #315bef; font-size: 11px; cursor: pointer;">Làm mới</button>
+    </div>
+
+    <div id="datasetsListContainer" style="max-height: 280px; overflow-y: auto;">
+      <div style="padding: 16px; text-align: center; color: #64748b; font-size: 11px;">
+        Đang tải danh sách bộ dữ liệu…
+      </div>
+    </div>
+
+    <div id="datasetDetailsBox" style="display: none; margin-top: 10px; padding: 10px; background: white; border: 1px solid #cbd5e1; border-radius: 6px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span id="detailDatasetName" style="font-weight: 700; color: #1e293b;"></span>
+        <button type="button" id="closeDetailBtn" style="border: 0; background: none; color: #94a3b8; cursor: pointer;">✕</button>
+      </div>
+      <div id="detailDatasetMeta" style="font-size: 11px; color: #64748b; margin-bottom: 8px;"></div>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" id="exportDatasetCsvBtn">📥 Xuất file CSV</button>
+        <button type="button" class="btn btn-secondary" id="openWebWorkspaceBtn">🌐 Xem trên Web</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 3: CHUYÊN BIỆT TUYỂN DỤNG JOBTRACK (CORE)                          -->
+  <!-- ===================================================================== -->
+  <div id="tab-jobtrack" class="tab-pane">
+    <form id="clipForm">
+      <div class="field">
+        <label for="company">Công ty *</label>
+        <input type="text" id="company" required placeholder="Tên công ty tuyển dụng">
+      </div>
+
+      <div class="field">
+        <label for="position">Vị trí tuyển dụng *</label>
+        <input type="text" id="position" required placeholder="Tên vị trí / chức danh">
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="salary">Mức lương</label>
+          <input type="text" id="salary" placeholder="VD: 30 - 45 triệu">
+        </div>
+        <div class="field">
+          <label for="workMode">Hình thức</label>
+          <select id="workMode">
+            <option value="On-site">On-site (Tại văn phòng)</option>
+            <option value="Hybrid">Hybrid (Linh hoạt)</option>
+            <option value="Remote">Remote (Từ xa 100%)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="location">Địa điểm</label>
+          <input type="text" id="location" placeholder="VD: Hà Nội, TP.HCM">
+        </div>
+        <div class="field">
+          <label for="status">Trạng thái lưu</label>
+          <select id="status">
+            <option value="Saved">Đã lưu (Saved)</option>
+            <option value="Applied">Đã nộp (Applied)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="notes">Tóm tắt JD / Kỹ năng yêu cầu</label>
+        <textarea id="notes" rows="2" placeholder="Tóm tắt yêu cầu công việc..."></textarea>
+      </div>
+
+      <input type="hidden" id="url">
+
+      <div class="actions">
+        <button type="button" id="saveJobTrackBtn" class="btn btn-primary">💾 Lưu vào JobTrack</button>
+        <button type="button" id="autofillBtn" class="btn btn-secondary" title="Điền thông tin từ hồ sơ ứng viên">⚡ Auto-Apply</button>
+      </div>
+    </form>
+
+    <!-- Sub-feature: ATS Match & Cover Letter -->
+    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
+      <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+        <button type="button" id="runAtsBtn" class="btn btn-secondary" style="font-size: 11px; padding: 5px;">🎯 Chấm điểm ATS</button>
+        <button type="button" id="genCoverLetterBtn" class="btn btn-secondary" style="font-size: 11px; padding: 5px;">✍️ Tạo Thư & InMail</button>
+      </div>
+
+      <!-- ATS Result -->
+      <div id="atsResultBox" style="display: none; background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; margin-top: 6px;">
+        <div class="score-circle" id="atsScoreValue">--%</div>
+        <div style="text-align: center; font-weight: 700; font-size: 11px;" id="atsFitLabel"></div>
+        <div style="margin-top: 6px;">
+          <div style="font-size: 10px; font-weight: 600; color: #166534;">✓ Kỹ năng đã khớp:</div>
+          <div id="atsMatchedChips" style="margin-bottom: 4px;"></div>
+          <div style="font-size: 10px; font-weight: 600; color: #991b1b;">⚠ Cần bổ sung trong CV:</div>
+          <div id="atsMissingChips"></div>
+        </div>
+      </div>
+
+      <!-- Cover Letter Result -->
+      <div id="coverLetterBox" style="display: none; background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; margin-top: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span style="font-weight: 600; font-size: 11px;">Thư xin việc (Cover Letter)</span>
+          <button type="button" id="copyCoverLetterBtn" style="font-size: 10px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; cursor: pointer;">📋 Sao chép</button>
+        </div>
+        <textarea id="coverLetterText" rows="4" style="width: 100%; font-size: 11px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;" readonly></textarea>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 6px 0 4px;">
+          <span style="font-weight: 600; font-size: 11px;">Tin nhắn HR (Recruiter Pitch)</span>
+          <button type="button" id="copyPitchBtn" style="font-size: 10px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; cursor: pointer;">📋 Sao chép</button>
+        </div>
+        <textarea id="shortPitchText" rows="2" style="width: 100%; font-size: 11px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 4: TÀI KHOẢN, QUOTA & GÓI PRO                                    -->
+  <!-- ===================================================================== -->
+  <div id="tab-account" class="tab-pane">
+    <!-- Quota info -->
+    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-weight: 700;">Hạn mức tài khoản</span>
+        <span id="accountTierLabel" style="font-weight: 700; color: #315bef;">Gói Miễn phí</span>
+      </div>
+      <div style="font-size: 11px; color: #475569; margin-bottom: 4px;" id="quotaCapture">Dữ liệu web: 0 / 500 dòng/tháng</div>
+      <div style="font-size: 11px; color: #475569; margin-bottom: 4px;" id="quotaAi">Lượt AI: 0 / 10 lượt/tháng</div>
+      <div style="font-size: 11px; color: #475569;" id="quotaDatasets">Bộ dữ liệu: 0 / 3 bảng</div>
+    </div>
+
+    <!-- Ghép nối tài khoản (Extension Pairing) -->
+    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+      <div style="font-weight: 600; font-size: 12px; margin-bottom: 4px;">Ghép nối Extension an toàn</div>
+      <p style="font-size: 11px; color: #64748b; margin-bottom: 6px;">
+        Kết nối tiện ích với phiên đăng nhập Web để cấp quyền đồng bộ mà không cần dán token thủ công.
+      </p>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" id="pairAccountBtn">🔗 Kết nối với Web App</button>
+        <button type="button" class="btn btn-secondary" id="openSettingsBtn">⚙️ Cài đặt</button>
+      </div>
+    </div>
+
+    <!-- Nâng cấp Pro VietQR -->
+    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px;">
+      <div style="font-weight: 700; font-size: 12px; color: #b45309; margin-bottom: 4px;">⭐ Nâng cấp PageWeave & JobTrack Pro</div>
+      <div class="field">
+        <label for="proPlanSelect">Chọn gói cước:</label>
+        <select id="proPlanSelect">
+          <option value="monthly">Gói 1 Tháng — 99.000đ</option>
+          <option value="quarterly" selected>Gói 3 Tháng — 249.000đ (Tiết kiệm 16%)</option>
+          <option value="yearly">Gói 1 Năm — 799.000đ (Tiết kiệm 33%)</option>
+        </select>
+      </div>
+
+      <div class="qr-box">
+        <img id="vietQrImg" class="qr-img" src="" alt="Mã VietQR Pro">
+        <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-top: 4px;" id="qrAmount">249.000 đ</div>
+        <div style="font-size: 11px; color: #475569; margin: 3px 0;">Cú pháp CK: <b id="qrTransferCode" style="color: #315bef;">JTPRO...</b></div>
+        <div style="font-size: 10px; color: #64748b;">Hệ thống tự động kích hoạt ngay sau khi nhận tiền.</div>
+      </div>
+
+      <div class="actions" style="margin-top: 8px;">
+        <button type="button" class="btn btn-secondary" id="checkPaymentStatusBtn">🔄 Kiểm tra thanh toán</button>
+      </div>
+    </div>
+  </div>
+
+  <a href="http://127.0.0.1:64364" target="_blank" class="footer-link">Mở bảng điều khiển JobTrack Web →</a>
+
+  <script src="popup.js"></script>
+</body>
+</html>

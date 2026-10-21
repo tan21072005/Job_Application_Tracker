@@ -1,0 +1,11 @@
+{
+  "id": "sd-01-core-contract",
+  "objective": "Triển khai SD-01: tách DTO/runtime schema, normalizer và time helpers thuần theo docs/system-design/IMPLEMENTATION-PLAN.md.",
+  "acceptance": [
+    "Core cũ không hồi quy",
+    "Có kiểm thử source+jobCode+URL, Unicode và giới hạn byte",
+    "Backend có thể import module thuần mà không kéo browser API"
+  ],
+  "checks": ["test:web", "build:web", "test:experiences", "build:experiences", "check:architecture"],
+  "references": ["docs/system-design/IMPLEMENTATION-PLAN.md", "docs/system-design/openapi.json", "packages/jobtrack-core/src/domain.ts"]
+}

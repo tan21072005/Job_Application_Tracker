@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/ByteByteGoHq/system-design-101.git",
+  "commit": "b28380a4710c5ec9638ec037d4168e288f334cba",
+  "shallow": "true",
+  "license": "CC BY-NC-ND 4.0; original files retained, no upstream figures adapted",
+  "guideFiles": 400,
+  "projectDocuments": [
+    "02-system-survey.docx",
+    "03-system-analysis (1).docx",
+    "PROJECT PROPOSAL (2).docx"
+  ]
+}

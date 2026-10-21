@@ -1,0 +1,8 @@
+{
+  "attempted": true,
+  "success": true,
+  "file": "D:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\target-preview.png",
+  "returncode": 0,
+  "stdout": "\nD:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\target-preview.drawio -> D:\\Project\\Job_Application_Tracker\\docs\\system-design\\diagrams\\target-preview.png\n",
+  "stderr": "l_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[23832:1015/135513.460:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[23832:1015/135513.460:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[23832:1015/135513.460:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[23832:1015/135513.460:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[23832:1015/135513.460:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[23832:1015/135513.460:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[23832:1015/135513.460:ERROR:net\\disk_cache\\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[23832:1015/135513.460:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[23832:1015/135513.460:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n[23832:1015/135513.489:ERROR:net\\disk_cache\\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)\n[23832:1015/135513.489:ERROR:net\\disk_cache\\disk_cache.cc:290] Unable to create cache\n[23832:1015/135513.489:ERROR:gpu\\ipc\\host\\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2\n"
+}

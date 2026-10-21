@@ -1,0 +1,20 @@
+import {describe,it,expect} from 'vitest';
+import {emptyDraft, metrics, duplicate, filtered, validateDraft, resolveLocalTime, actionable, type Application} from './domain';
+const record=(id:string,status:Application['status'],extra:Partial<Application>={}):Application=>({...emptyDraft,id,status,company:'FPT',position:'Frontend',createdAt:`2026-10-${id.padStart(2,'0')}T10:00:00Z`,interviews:[],...extra});
+describe('Dashboard reflects current status',()=>{
+ it('excludes saved and withdrawn from submitted denominator',()=>{const apps=['Saved','Applied','Screening','Interview','Offer','Rejected','Withdrawn'].map((s,i)=>record(String(i+1),s as Application['status']));expect(metrics(apps,0)).toMatchObject({total:7,offers:1,response:80,upcoming:0});});
+ it('counts only scheduled interviews at or after now and handles zero denominator',()=>{const app=record('1','Saved',{interviews:[{id:'1',title:'Round',at:'2026-10-14T13:00:00Z',timezone:'UTC',format:'Online',location:'',preparation:'',notes:'',status:'Scheduled'},{id:'2',title:'Round',at:'2026-10-14T13:00:00Z',timezone:'UTC',format:'Online',location:'',preparation:'',notes:'',status:'Cancelled'}]});expect(metrics([app],Date.parse('2026-10-14T13:00:00Z'))).toMatchObject({upcoming:1,response:0});expect(metrics([app],Date.parse('2026-10-14T13:00:01Z')).upcoming).toBe(0);});
+});
+describe('Duplicate identity',()=>{
+ it('prioritizes an active record over earlier terminal matches',()=>{const ended=record('1','Rejected',{url:'https://example.com/job'});const active=record('2','Applied',{url:ended.url});expect(duplicate([ended,active],{...emptyDraft,url:ended.url})).toBe(active);});
+ it('removes tracking while preserving meaningful query identity',()=>{const app=record('1','Applied',{url:'https://jobs.example/job?id=42&utm_source=mail#top'});expect(duplicate([app],{...emptyDraft,url:'https://jobs.example/job?id=42'})).toBe(app);expect(duplicate([app],{...emptyDraft,url:'https://jobs.example/job?id=43'})).toBeUndefined();});
+ it('requires source and job code, ignores edited record, and permits same title alone',()=>{const app=record('1','Applied',{source:'FPT Careers',jobCode:'FE-01'});expect(duplicate([app],{...emptyDraft,source:'fpt careers',jobCode:'fe-01'})).toBe(app);expect(duplicate([app],{...emptyDraft,source:'fpt careers',jobCode:'fe-01'},'1')).toBeUndefined();expect(duplicate([app],{...emptyDraft,company:'FPT',position:'Frontend'})).toBeUndefined();});
+});
+describe('Filtering and field validation',()=>{
+ it('uses one priority order for the spotlight and remaining actions',()=>{const later=record('1','Applied',{nextAction:'Later',deadline:'2026-10-16T10:00'});const sooner=record('2','Applied',{nextAction:'Sooner',deadline:'2026-10-14T10:00'});expect(actionable([later,sooner]).map(a=>a.id)).toEqual(['2','1']);});
+ it('combines query and status without changing input order, placing missing dates last',()=>{const apps=[record('1','Saved',{appliedAt:''}),record('2','Applied',{appliedAt:'2026-10-14'}),record('3','Applied',{company:'Other',appliedAt:'2026-10-13'})];expect(filtered(apps,'FPT','Applied','applied-asc').map(a=>a.id)).toEqual(['2']);expect(filtered(apps,'','all','applied-asc').map(a=>a.id)).toEqual(['3','2','1']);expect(apps.map(a=>a.id)).toEqual(['1','2','3']);});
+ it('rejects blank required names, unsafe URLs and deadlines without actions',()=>{expect(validateDraft({...emptyDraft,url:'javascript:alert(1)',deadline:'2026-10-14T10:00'})).toMatchObject({company:expect.any(String),position:expect.any(String),url:expect.any(String),nextAction:expect.any(String)});});
+});
+describe('Timezone disambiguation',()=>{
+ it('converts invitation time, identifies DST gaps and requires a choice for repeated times',()=>{expect(resolveLocalTime('2026-10-14T09:00','America/New_York')).toEqual(['2026-10-14T13:00:00.000Z']);expect(resolveLocalTime('2026-03-08T02:30','America/New_York')).toEqual([]);expect(resolveLocalTime('2026-11-01T01:30','America/New_York')).toHaveLength(2);expect(resolveLocalTime('2026-10-14T09:00','Invalid/Zone')).toEqual([]);});
+});

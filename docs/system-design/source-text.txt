@@ -1,0 +1,1068 @@
+# 02-system-survey.docx
+BÁO CÁO KHẢO SÁT HỆ THỐNG
+JOBTRACK — JOB APPLICATION TRACKER
+1. Mục tiêu khảo sát
+1.  xác định vấn đề thực tế khi thông tin tuyển dụng nằm ở nhiều nơi;
+2.  nhận diện các chức năng cốt lõi của một Job Application Tracker;
+Khảo sát tập trung vào công cụ dành cho người tìm việc cá nhân. 
+2. Phương pháp khảo sát
+2.1. Khảo sát hiện trạng
+thông tin tuyển dụng thường nằm rải rác ở nhiều nơi email và các trang tuyển dụng và trí nhớ,….
+Tình huống khảo sát là một người cần theo dõi nhiều vị trí , đơn xin việc cùng lúc, biết hồ sơ đang ở giai đoạn nào, việc tiếp theo làm gì và khi nào có lịch phỏng vấn.
+2.2. Khảo sát hệ thống tương tự
+2.2.1. Huntr
+Huntr có Job Board dạng Kanban, thêm việc thủ công hoặc bằng extension, di chuyển Job Card qua các giai đoạn, lưu URL, deadline, ghi chú, activity, phỏng vấn, contact, tài liệu và metrics. Activity hoạt động như danh sách việc làm và có thể gắn với một job.
+Bài học: pipeline và dữ liệu theo từng cơ hội tạo một nguồn thông tin thống nhất. Activity, contact, document và AI suite đầy đủ rộng hơn MVP JobTrack.
+2.2.2. Teal Job Tracker
+Teal cho phép lưu việc thủ công hoặc qua extension, theo dõi giai đoạn, ngày nộp/follow-up, note, contact, resume và checklist. Teal coi tracker là nguồn thông tin duy nhất để tránh quên follow-up hoặc ứng tuyển trùng.
+Bài học: mỗi hồ sơ cần trạng thái, ghi chú và hành động tiếp theo rõ ràng. Checklist nhiều task và công cụ tạo nội dung chưa cần trong MVP.
+2.2.3. Simplify Job Tracker
+Simplify cho phép lưu từ Job Board/Copilot, thêm thủ công hoặc import CSV. Người dùng có thể lọc theo công ty, vai trò, ngày và trạng thái; chuyển giữa Columns/List; lưu note, contact, lịch sử và xem funnel/insights.
+Bài học: bộ lọc và pipeline phải dùng cùng nguồn dữ liệu. Import, autofill và email integration được hoãn.
+2.2.4. Careerflow Job Tracker
+Careerflow cung cấp Kanban, extension lưu việc, custom label/status, deadline reminder, note/task, contact, interview note và analytics. Sản phẩm còn kết hợp resume, networking và AI.
+Bài học: deadline và dashboard tạo giá trị hành động; networking CRM và AI không cần để chứng minh luồng full-stack.
+2.2.5. Jobscan Job Tracker
+Jobscan hỗ trợ thêm job thủ công hoặc bằng extension, di chuyển qua Saved, Applied, Interview, Offer, Rejected; lưu lịch phỏng vấn, meeting link, contact, note, task và lương. Sản phẩm còn có resume matching/optimization.
+Bài học: lương và phỏng vấn có thể nằm trong ngữ cảnh application; resume matching nằm ngoài MVP.
+3. Tiêu chí so sánh
+Mã
+Tiêu chí
+Câu hỏi kiểm tra
+Liên hệ JobTrack
+TC-01
+Lưu tập trung
+Có gom thông tin mỗi cơ hội vào một nơi không?
+Giải quyết dữ liệu phân tán.
+TC-02
+Nhập dữ liệu
+Có nhập thủ công, extension hoặc import không?
+MVP cần nhập thủ công đáng tin cậy.
+TC-03
+Pipeline
+Có theo dõi và đổi giai đoạn ứng tuyển không?
+Nghiệp vụ cốt lõi.
+TC-04
+Tìm kiếm/lọc
+Có tìm theo thuộc tính hoặc giai đoạn không?
+Giảm thời gian tìm hồ sơ.
+TC-05
+Ghi chú/việc tiếp theo
+Có note, task, deadline hoặc follow-up không?
+Giảm bỏ sót hành động.
+TC-06
+Phỏng vấn
+Có lưu lịch, hình thức hoặc ghi chú không?
+Hỗ trợ nhiều vòng phỏng vấn.
+TC-07
+Contact/tài liệu
+Có lưu recruiter, CV hoặc tài liệu không?
+Hữu ích nhưng không phải lõi.
+TC-08
+Dashboard
+Có tiến độ hoặc số liệu tổng quan không?
+Hỗ trợ tự đánh giá.
+TC-09
+Tự động hóa
+Có autofill, email hoặc AI không?
+Ranh giới chống phình phạm vi.
+TC-10
+Phù hợp MVP
+Giá trị nào khả thi trong tám tuần?
+Ưu tiên luồng kiểm thử được.
+4. Bảng so sánh
+Ký hiệu: ✓  nguồn chính thức xác nhận; CXD = chưa xác định 
+Tiêu chí
+Huntr
+Teal
+Simplify
+Careerflow
+Jobscan
+JobTrack MVP
+TC-01 Lưu tập trung
+✓
+✓
+✓
+✓
+✓
+Bắt buộc
+TC-02a Nhập thủ công
+✓
+✓
+✓
+CXD
+✓
+Bắt buộc
+TC-02b Extension/tự động nhập
+✓
+✓
+✓
+✓
+✓
+Ngoài MVP
+TC-03 Pipeline
+✓
+✓
+✓
+✓
+✓
+Bảy trạng thái đã khóa
+TC-04 Tìm kiếm/lọc
+✓
+✓
+✓
+Nhãn/trạng thái
+✓
+Công ty, vị trí, trạng thái, ngày
+TC-05a Ghi chú
+✓
+✓
+✓
+✓
+✓
+Bắt buộc
+TC-05b Nhiều task/checklist
+✓
+✓
+Follow-up
+✓
+✓
+Ngoài MVP; một next action
+TC-06 Phỏng vấn
+✓
+✓
+✓
+✓
+✓
+Nhiều vòng, có múi giờ
+TC-07 Contact/tài liệu
+✓
+✓
+✓
+✓
+✓
+Ngoài MVP
+TC-08 Dashboard/analytics
+✓
+CXD
+✓
+✓
+Trực quan tiến độ
+Bốn chỉ số cơ bản
+TC-09 Autofill/email/AI
+✓
+✓
+✓
+✓
+✓
+Ngoài MVP
+TC-10 Phù hợp phạm vi 8 tuần
+Cần lược bớt
+Cần lược bớt
+Cần lược bớt
+Cần lược bớt
+Cần lược bớt
+Chỉ giữ luồng cốt lõi, kiểm thử được
+Lương tham khảo
+✓
+✓
+CXD
+CXD
+✓
+Văn bản tùy chọn
+.
+5. Cơ hội của JobTrack
+Các sản phẩm khảo sát thường kết hợp tracker với resume, extension, CRM, email hoặc AI. JobTrack chọn một luồng nhỏ
+Đăng nhập → tạo application thủ công → phát hiện trùng→ xem/tìm/lọc → cập nhật trạng thái và next action→ quản lý nhiều vòng phỏng vấn → xem dashboard
+6. Yêu cầu rút ra
+Mã
+Yêu cầu
+Căn cứ
+Ưu tiên
+Kiểm tra tóm tắt
+KS-FR-01
+Đăng ký, đăng nhập, kiểm tra phiên và đăng xuất.
+Tách dữ liệu cá nhân
+Must
+Email duy nhất; phiên được tạo/xóa đúng.
+KS-FR-02
+CRUD application của chính người dùng.
+TC-01
+Must
+CRUD đúng; người khác bị từ chối.
+KS-FR-03
+Pipeline bảy trạng thái.
+TC-03
+Must
+Chuyển tự do và lưu đúng.
+KS-FR-04
+Tìm công ty/vị trí, lọc trạng thái, sắp xếp ngày.
+TC-04
+Must
+Kết quả đúng dữ liệu mẫu.
+KS-FR-05
+Một nextAction và nextActionDueAt mỗi application.
+TC-05
+Must
+Cập nhật và tải lại đúng.
+KS-FR-06
+Nhiều interview với ba trạng thái và múi giờ.
+TC-06
+Must
+Tạo nhiều vòng, đổi giờ đúng.
+KS-FR-07
+Lương tham khảo dạng văn bản tùy chọn.
+Nhu cầu người dùng
+Could
+Lưu/đọc, không tính toán.
+KS-FR-08
+Phát hiện trùng theo mã nguồn hoặc URL chuẩn hóa.
+Rủi ro ứng tuyển trùng
+Must
+Chặn bản ghi hoạt động; cho ứng tuyển lại bản ghi kết thúc.
+KS-FR-09
+Dashboard có tổng hồ sơ, interview sắp tới, offer, tỷ lệ phản hồi.
+TC-08
+Should
+Tính đúng từ bộ dữ liệu biết trước.
+KS-NFR-01
+Mọi truy vấn kiểm tra quyền sở hữu.
+Dữ liệu cá nhân
+Must
+User A không truy cập dữ liệu B.
+KS-NFR-02
+Frontend/backend cùng validate, lỗi dễ hiểu.
+Khả dụng/tính đúng
+Must
+Dữ liệu sai bị từ chối hai lớp.
+KS-NFR-03
+Demo online; Docker Compose/README là dự phòng.
+Mục tiêu bàn giao
+Must
+Mở demo hoặc dựng local thành công.
+7. Kết luận
+Năm hệ thống đều tập trung dữ liệu ứng tuyển và dùng pipeline để biến các cơ hội rời rạc thành quy trình có thể quan sát. Sản phẩm trưởng thành thường mở rộng sang task, contact, resume, extension, email và AI. JobTrack học cấu trúc cốt lõi nhưng giới hạn vào xác thực, application, trạng thái, tìm kiếm/lọc, một hành động tiếp theo, nhiều vòng phỏng vấn và dashboard. Phạm vi này trực tiếp giải quyết hiện trạng thông tin phân tán, đồng thời đủ nhỏ để xây dựng, kiểm thử, giải thích và demo trong tám tuần.
+8. Nguồn tham khảo
+Huntr, “The Job Board”, https://help.huntr.co/en/articles/13413245-the-job-board 
+Huntr, “Activities”, https://help.huntr.co/en/articles/10042702-activities
+Huntr, “Understanding the Job Card”, https://help.huntr.co/en/articles/12640406-understanding-the-job-card
+Teal, “How to Track Your Job Applications”, https://help.tealhq.com/en/articles/14435727-how-to-track-your-job-applications
+Teal, “Leveraging Your Job Tracker Tools”, https://help.tealhq.com/en/articles/9525013-leveraging-your-job-tracker-tools
+Simplify, “Using the Job Tracker”, https://help.simplify.jobs/en/articles/2140179-using-the-job-tracker
+Simplify, “Job Application Tracker”, https://simplify.jobs/job-application-tracker
+Careerflow, “Free Job Application Tracker”, https://www.careerflow.ai/job-tracker
+Jobscan, “Free Job Application Tracker”, https://www.jobscan.co/job-tracker,
+
+# 03-system-analysis (1).docx
+BÁO CÁO PHÂN TÍCH HỆ THỐNG
+JOBTRACK — JOB APPLICATION TRACKER
+1. Actor và quyền hạn
+Actor
+Mô tả
+Quyền chính
+Khách
+Người chưa có phiên đăng nhập hợp lệ
+Đăng ký, đăng nhập
+Người dùng
+Người tìm việc có phiên đăng nhập hợp lệ
+Quản lý application, interview, pipeline, next action và dashboard của chính mình
+Không có actor Admin hoặc Nhà tuyển dụng trong MVP. “Người dùng” xuất hiện nhiều lần trong sơ đồ Use Case chỉ để đường nối dễ đọc; tất cả đều là cùng một vai trò.
+2. Mô hình miền và thuật ngữ
+2.1. Quan hệ cốt lõi
+User 1 ───── N Application 1 ───── N Interview
+•  Một User sở hữu nhiều Application.
+•  Một Application chỉ thuộc một User.
+•  Một Application có thể chưa có interview hoặc có nhiều vòng interview.
+•  Mọi truy vấn application và interview phải giới hạn theo userId của phiên hiện tại.
+2.2. Dữ liệu Application
+Nhóm
+Trường
+Quy tắc
+Bắt buộc
+companyName, positionTitle
+Không được để trống sau khi chuẩn hóa
+Trạng thái
+status
+Mặc định Saved; thuộc đúng bảy giá trị đã khóa
+Nhận diện tin
+source, jobPostingCode, jobUrl
+Tùy chọn; dùng cho phát hiện trùng
+Thông tin việc
+location, workMode, appliedAt
+Tùy chọn
+Tham khảo
+salaryExpectation
+Chuỗi văn bản tùy chọn; MVP không lọc hoặc thống kê theo lương
+Theo dõi
+note, nextAction, nextActionDueAt
+Mỗi application chỉ có một hành động tiếp theo hiện tại
+Hệ thống
+id, userId, createdAt, updatedAt
+Do backend/database quản lý
+2.3. Dữ liệu Interview
+Nhóm
+Trường
+Quy tắc
+Liên kết
+applicationId
+Bắt buộc; application phải thuộc người dùng hiện tại
+Thời gian
+scheduledAtUtc, originalTimeZone
+Bắt buộc; timezone dùng mã IANA, ví dụ America/New_York
+Trạng thái
+status
+Scheduled, Completed hoặc Cancelled; mặc định Scheduled
+Hình thức
+format
+Online, Phone, On-site hoặc Other
+Chi tiết
+locationOrLink, notes, preparation
+Tùy chọn
+2.4. Mental model về trạng thái
+Application status trả lời câu hỏi “Hồ sơ này đang ở đâu trong quá trình tuyển dụng?”. Interview status trả lời câu hỏi “Một lịch phỏng vấn cụ thể đang ở tình trạng nào?”. Đây là hai khái niệm khác nhau:
+•  Application có thể ở Interview và có một interview Completed cùng một interview khác Scheduled.
+•  Dời lịch không tạo thêm trạng thái Rescheduled; hệ thống cập nhật thời gian và giữ interview ở Scheduled.
+•  MVP cho phép người dùng chuyển application tự do giữa bảy trạng thái và không lưu lịch sử chuyển đổi.
+3. Yêu cầu chức năng
+Mã
+Yêu cầu
+Tiêu chí chấp nhận tóm tắt
+FR-01
+Đăng ký
+Email hợp lệ, mật khẩu hợp lệ, tài khoản được tạo và phiên được thiết lập
+FR-02
+Đăng nhập
+Thông tin đúng tạo phiên; thông tin sai trả thông báo chung
+FR-03
+Kiểm tra phiên
+Frontend nhận được trạng thái đăng nhập mà không đọc JWT trực tiếp
+FR-04
+Đăng xuất
+Cookie phiên bị vô hiệu hóa/xóa
+FR-05
+Tạo application
+Bắt buộc company và position; mặc định Saved
+FR-06
+Phát hiện trùng
+Chặn bản ghi trùng đang hoạt động; cảnh báo khi bản cũ đã kết thúc
+FR-07
+Xem application
+Chỉ trả dữ liệu thuộc người dùng hiện tại
+FR-08
+Cập nhật application
+Validate dữ liệu và kiểm tra ownership trước khi lưu
+FR-09
+Xóa application
+Hỏi xác nhận; xóa vĩnh viễn application và interview liên quan
+FR-10
+Quản lý pipeline
+Hiển thị và cập nhật đúng bảy trạng thái
+FR-11
+Tìm kiếm
+Tìm theo công ty hoặc vị trí
+FR-12
+Lọc và sắp xếp
+Lọc theo trạng thái; sắp xếp theo ngày
+FR-13
+Ghi chú và next action
+Lưu một hành động hiện tại và deadline tùy chọn
+FR-14
+Tạo interview
+Cho phép nhiều vòng; mặc định Scheduled
+FR-15
+Cập nhật interview
+Có thể đổi nội dung, trạng thái hoặc dời lịch
+FR-16
+Xóa interview
+Chỉ xóa interview thuộc application của người dùng
+FR-17
+Xử lý múi giờ
+Lưu UTC và timezone gốc; hiển thị cả giờ địa phương và giờ gốc
+FR-18
+Đồng bộ application/interview
+Tạo interview đổi application sang Interview khi quy tắc cho phép
+FR-19
+Dashboard
+Hiển thị tổng hồ sơ, interview sắp tới, offer và tỷ lệ phản hồi
+FR-20
+Trạng thái giao diện
+Có loading, empty state, thành công và lỗi dễ hiểu
+4. Yêu cầu phi chức năng
+Mã
+Nhóm
+Yêu cầu kiểm tra được
+NFR-01
+Bảo mật mật khẩu
+Mật khẩu dài 15–64 ký tự, không bị cắt ngầm, băm bằng Argon2id
+NFR-02
+Bảo mật phiên
+JWT nằm trong cookie HttpOnly; production dùng Secure; SameSite=Lax
+NFR-03
+Chống request giả mạo
+Request thay đổi dữ liệu phải vượt kiểm tra Origin; frontend và API cùng site
+NFR-04
+Cô lập dữ liệu
+Người dùng A không thể đọc, sửa hoặc xóa dữ liệu của người dùng B
+NFR-05
+Validation
+Backend là lớp quyết định cuối cùng; frontend hỗ trợ phản hồi sớm
+NFR-06
+Tính toàn vẹn
+Tạo interview và cập nhật application liên quan nằm trong một transaction
+NFR-07
+Khả dụng
+Giao diện hoạt động trên trình duyệt desktop và mobile hiện đại
+NFR-08
+Dễ dùng
+Lỗi gắn với trường nhập; có empty state và xác nhận trước thao tác phá hủy
+NFR-09
+Hiệu năng MVP
+Danh sách và dashboard phản hồi hợp lý với bộ dữ liệu demo; truy vấn theo userId có index phù hợp
+NFR-10
+Bảo trì
+Backend tách Controller, Service, Repository; quy tắc nghiệp vụ tập trung ở Service
+NFR-11
+Kiểm thử
+API quan trọng có test; công thức dashboard có bộ dữ liệu kỳ vọng xác định trước
+NFR-12
+Triển khai
+Có demo online cơ bản; Docker Compose và README là phương án chạy local dự phòng
+5. Use Case Diagram
+5.1. Sơ đồ tổng thể
+Use Case tổng thể của JobTrack
+5.2. Đặc tả Use Case
+UC-01 — Đăng ký
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Đăng ký tài khoản
+Mã Use Case (Use case ID)
+UC-01
+Mô tả (Use case description)
+Khách tạo tài khoản JobTrack bằng email và mật khẩu để quản lý dữ liệu ứng tuyển của riêng mình.
+Actor
+Khách
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Khách mở trang đăng ký, nhập thông tin và chọn Tạo tài khoản.
+Tiền điều kiện (Pre-condition)
+Khách chưa có phiên đăng nhập hợp lệ. Dịch vụ web, API và PostgreSQL sẵn sàng.
+Hậu điều kiện (Post-condition)
+Thành công: User được lưu với mật khẩu đã băm và cookie phiên được thiết lập. Thất bại: không tạo tài khoản hoặc phiên dở dang.
+Luồng cơ bản (Basic Flow)
+B1. Khách nhập email và mật khẩu.B2. React UI kiểm tra định dạng email và độ dài mật khẩu 15–64 ký tự.B3. UI gửi POST /api/auth/register.B4. Backend kiểm tra Origin, validate input và chuẩn hóa email.B5. User Repository kiểm tra email chưa được sử dụng.B6. Auth Service băm toàn bộ mật khẩu bằng Argon2id.B7. Repository tạo User trong PostgreSQL.B8. Backend tạo JWT và đặt cookie HttpOnly, SameSite=Lax, thêm Secure ở production.B9. UI nhận 201 Created và mở dashboard.
+Luồng thay thế (Alternative Flow)
+A1. Nếu frontend phát hiện dữ liệu chưa hợp lệ, UI hiển thị lỗi tại trường nhập và chưa gửi request.A2. Khoảng trắng và ký tự thông thường trong mật khẩu được tính như ký tự bình thường, không bị tự động cắt bỏ.
+Luồng ngoại lệ (Exception Flow)
+E1. Email đã tồn tại: backend trả lỗi đăng ký chung và không tạo User mới.E2. Backend validation thất bại: trả 400 Bad Request với lỗi an toàn.E3. Argon2id, JWT hoặc database lỗi: trả lỗi hệ thống; không đặt cookie hợp lệ và không để dữ liệu dở dang.
+UC-02 — Đăng nhập
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Đăng nhập
+Mã Use Case (Use case ID)
+UC-02
+Mô tả (Use case description)
+Khách xác thực bằng email và mật khẩu để truy cập dữ liệu JobTrack của mình.
+Actor
+Khách
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Khách nhập thông tin và chọn Đăng nhập.
+Tiền điều kiện (Pre-condition)
+Tài khoản đã tồn tại, đang hoạt động và khách chưa có phiên hợp lệ.
+Hậu điều kiện (Post-condition)
+Thành công: trình duyệt có cookie phiên hợp lệ. Thất bại: không tạo phiên mới và dữ liệu đăng nhập không bị tiết lộ.
+Luồng cơ bản (Basic Flow)
+B1. Khách nhập email và mật khẩu.B2. UI gửi POST /api/auth/login.B3. Backend kiểm tra Origin và giới hạn số lần thử.B4. Auth Service chuẩn hóa email và yêu cầu User Repository tìm tài khoản.B5. Auth Service dùng Argon2id để xác minh mật khẩu.B6. Backend tạo JWT và đặt cookie an toàn.B7. UI nhận 200 OK, tải thông tin phiên và mở dashboard.
+Luồng thay thế (Alternative Flow)
+A1. Nếu trình duyệt đã có phiên hợp lệ, hệ thống chuyển thẳng người dùng đến dashboard.A2. Sau khi lỗi nhập liệu ở frontend được sửa, khách có thể gửi lại form.
+Luồng ngoại lệ (Exception Flow)
+E1. Email hoặc mật khẩu sai: trả cùng một thông báo chung, không tiết lộ email có tồn tại.E2. Vượt giới hạn thử: trả 429 Too Many Requests và yêu cầu thử lại sau.E3. Database hoặc dịch vụ băm lỗi: trả lỗi hệ thống và không tạo cookie phiên.
+UC-03 — Đăng xuất
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Đăng xuất
+Mã Use Case (Use case ID)
+UC-03
+Mô tả (Use case description)
+Người dùng kết thúc phiên JobTrack trên trình duyệt hiện tại.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Người dùng chọn Đăng xuất trong giao diện.
+Tiền điều kiện (Pre-condition)
+Người dùng đang có hoặc từng có cookie phiên trên trình duyệt.
+Hậu điều kiện (Post-condition)
+Cookie xác thực không còn sử dụng được; giao diện trở về trạng thái khách.
+Luồng cơ bản (Basic Flow)
+B1. Người dùng chọn đăng xuất.B2. UI gửi POST /api/auth/logout.B3. Backend kiểm tra Origin.B4. Backend trả Set-Cookie với giá trị hết hạn để xóa cookie phiên.B5. UI xóa dữ liệu cache của phiên và chuyển về trang đăng nhập.
+Luồng thay thế (Alternative Flow)
+A1. Cookie đã hết hạn hoặc không tồn tại: backend vẫn trả thành công để thao tác đăng xuất có tính lặp an toàn.
+Luồng ngoại lệ (Exception Flow)
+E1. Request mạng thất bại: UI báo chưa thể hoàn tất và không được giả định server đã xóa cookie.E2. Backend lỗi: trả lỗi chung, không ghi token hoặc thông tin nhạy cảm vào log phía client.
+UC-04 — Xem danh sách và chi tiết application
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Xem danh sách và chi tiết hồ sơ ứng tuyển
+Mã Use Case (Use case ID)
+UC-04
+Mô tả (Use case description)
+Người dùng xem các application của mình, mở một hồ sơ và xem thông tin cùng các vòng interview liên quan.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Người dùng mở trang Hồ sơ ứng tuyển hoặc chọn một hồ sơ trong danh sách.
+Tiền điều kiện (Pre-condition)
+Người dùng có phiên hợp lệ.
+Hậu điều kiện (Post-condition)
+Dữ liệu thuộc người dùng được hiển thị; database không thay đổi.
+Luồng cơ bản (Basic Flow)
+B1. Người dùng mở danh sách application.B2. UI gửi GET /api/applications kèm cookie.B3. Auth Middleware xác thực JWT và cung cấp userId cho request.B4. Repository truy vấn application với điều kiện bắt buộc theo userId.B5. API trả danh sách; UI hiển thị dữ liệu.B6. Người dùng chọn một application.B7. UI gửi GET /api/applications/:id.B8. Backend kiểm tra id và userId, rồi trả chi tiết cùng interview liên quan.
+Luồng thay thế (Alternative Flow)
+A1. Người dùng chưa có application: UI hiển thị empty state và nút tạo hồ sơ đầu tiên.A2. Người dùng quay lại danh sách mà không sửa dữ liệu: cache có thể được dùng và đồng bộ lại nền.
+Luồng ngoại lệ (Exception Flow)
+E1. Phiên thiếu hoặc hết hạn: trả 401 Unauthorized và đưa về đăng nhập.E2. Application không tồn tại hoặc không thuộc người dùng: trả 404 Not Found, không tiết lộ chủ sở hữu.E3. Database lỗi: UI hiển thị trạng thái lỗi và lựa chọn thử lại.
+UC-05 — Tạo application
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Tạo hồ sơ ứng tuyển
+Mã Use Case (Use case ID)
+UC-05
+Mô tả (Use case description)
+Người dùng lưu một cơ hội việc làm và hệ thống kiểm tra để hạn chế tạo trùng cùng một tin tuyển dụng.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Người dùng chọn Thêm hồ sơ và gửi form.
+Tiền điều kiện (Pre-condition)
+Người dùng có phiên hợp lệ. Tên công ty và vị trí tuyển dụng đã được nhập.
+Hậu điều kiện (Post-condition)
+Thành công: application mới thuộc người dùng và có status mặc định Saved. Bị chặn hoặc hủy: database không có bản ghi mới.
+Luồng cơ bản (Basic Flow)
+B1. Người dùng nhập company, position và các trường tùy chọn.B2. UI validate form rồi gửi POST /api/applications.B3. Middleware xác thực phiên, kiểm tra Origin và validate input.B4. Application Service chuẩn hóa source, jobPostingCode và jobUrl.B5. Repository tìm bản ghi trùng trong cùng userId.B6. Không có bản ghi trùng: Service gán status Saved.B7. Repository chèn application vào PostgreSQL.B8. API trả 201 Created; UI mở trang chi tiết.
+Luồng thay thế (Alternative Flow)
+A1. Trùng application cũ ở Rejected hoặc Withdrawn: UI cảnh báo đây là lần ứng tuyển lại.A2. Người dùng xác nhận tiếp tục: hệ thống tạo bản ghi mới.A3. Các trường URL, source, job code, lương, địa điểm, ngày nộp, note và next action có thể để trống.
+Luồng ngoại lệ (Exception Flow)
+E1. Thiếu company hoặc position: trả 400 Bad Request và nêu trường cần sửa.E2. Trùng bản ghi ở Saved, Applied, Screening, Interview hoặc Offer: chặn tạo và trả thông tin để mở bản ghi cũ.E3. Lỗi database: không tạo application dở dang; UI giữ dữ liệu form để thử lại.
+UC-06 — Cập nhật application
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Cập nhật hồ sơ ứng tuyển
+Mã Use Case (Use case ID)
+UC-06
+Mô tả (Use case description)
+Người dùng sửa thông tin của một application do mình sở hữu.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Người dùng mở hồ sơ, thay đổi dữ liệu và chọn Lưu.
+Tiền điều kiện (Pre-condition)
+Người dùng có phiên hợp lệ; application tồn tại và thuộc người dùng.
+Hậu điều kiện (Post-condition)
+Application chứa dữ liệu mới, updatedAt thay đổi và dữ liệu khác giữ nguyên.
+Luồng cơ bản (Basic Flow)
+B1. Người dùng mở application cần sửa.B2. UI hiển thị dữ liệu hiện tại trong form.B3. Người dùng thay đổi các trường mong muốn.B4. UI validate rồi gửi PATCH /api/applications/:id.B5. Backend xác thực phiên, kiểm tra Origin, ownership và danh sách trường được phép sửa.B6. Application Service áp dụng quy tắc nghiệp vụ.B7. Repository cập nhật theo cả id và userId.B8. API trả dữ liệu mới; UI cập nhật cache và hiển thị thành công.
+Luồng thay thế (Alternative Flow)
+A1. Người dùng chỉ đổi status; các trường khác giữ nguyên.A2. Người dùng chỉ đổi note hoặc hành động tiếp theo.A3. Người dùng xóa giá trị tùy chọn; backend lưu null theo schema thay vì chuỗi giả.
+Luồng ngoại lệ (Exception Flow)
+E1. Dữ liệu không hợp lệ: trả 400 Bad Request, không ghi một phần.E2. Không tìm thấy hoặc không có ownership: trả 404 Not Found.E3. Database lỗi: dữ liệu cũ được giữ nguyên và UI cho phép thử lại.
+UC-07 — Xóa application
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Xóa hồ sơ ứng tuyển
+Mã Use Case (Use case ID)
+UC-07
+Mô tả (Use case description)
+Người dùng xóa vĩnh viễn application và toàn bộ interview liên quan sau một bước xác nhận rõ ràng.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Người dùng chọn Xóa hồ sơ.
+Tiền điều kiện (Pre-condition)
+Người dùng có phiên hợp lệ; application tồn tại và thuộc người dùng.
+Hậu điều kiện (Post-condition)
+Thành công: application và interview liên quan không còn tồn tại. Hủy hoặc lỗi: dữ liệu được giữ nguyên.
+Luồng cơ bản (Basic Flow)
+B1. Người dùng chọn xóa.B2. UI hiển thị cảnh báo đây là thao tác vĩnh viễn.B3. Người dùng xác nhận.B4. UI gửi DELETE /api/applications/:id.B5. Backend xác thực phiên, kiểm tra Origin và ownership.B6. Repository bắt đầu transaction.B7. Repository xóa các interview liên quan, rồi xóa application.B8. Repository commit transaction.B9. API trả thành công; UI loại bản ghi khỏi danh sách.
+Luồng thay thế (Alternative Flow)
+A1. Người dùng chọn Hủy tại hộp xác nhận: UI đóng hộp thoại và không gửi request.
+Luồng ngoại lệ (Exception Flow)
+E1. Application không tồn tại hoặc không thuộc người dùng: trả 404 Not Found.E2. Một thao tác xóa trong transaction thất bại: rollback toàn bộ, không để dữ liệu mồ côi.E3. Mất kết nối: UI tải lại trạng thái từ server trước khi cho phép xóa lại.
+UC-08 — Quản lý pipeline
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Quản lý giai đoạn ứng tuyển
+Mã Use Case (Use case ID)
+UC-08
+Mô tả (Use case description)
+Người dùng quan sát pipeline và thay đổi trạng thái hiện tại của application.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Người dùng mở pipeline và chọn trạng thái mới cho một application.
+Tiền điều kiện (Pre-condition)
+Người dùng có phiên hợp lệ; application tồn tại và thuộc người dùng.
+Hậu điều kiện (Post-condition)
+Application mang trạng thái mới; MVP không tạo bản ghi lịch sử chuyển trạng thái.
+Luồng cơ bản (Basic Flow)
+B1. Người dùng mở pipeline.B2. UI tải application và nhóm theo status.B3. Người dùng chọn status mới.B4. UI gửi PATCH /api/applications/:id với trường status.B5. Backend kiểm tra phiên, Origin, ownership và giá trị enum.B6. Repository lưu status mới.B7. API trả application đã cập nhật; UI chuyển thẻ sang nhóm tương ứng.
+Luồng thay thế (Alternative Flow)
+A1. Người dùng có thể chuyển tự do giữa Saved, Applied, Screening, Interview, Offer, Rejected, Withdrawn.A2. Giao diện có thể dùng danh sách chọn hoặc kéo-thả, nhưng đều gọi cùng quy tắc backend.
+Luồng ngoại lệ (Exception Flow)
+E1. Status không thuộc bảy giá trị cho phép: trả 400 Bad Request.E2. Không có ownership: trả 404 Not Found.E3. Cập nhật thất bại: UI khôi phục vị trí cũ của thẻ và hiển thị lỗi.
+UC-09 — Tìm kiếm, lọc và sắp xếp
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Tìm kiếm, lọc và sắp xếp hồ sơ
+Mã Use Case (Use case ID)
+UC-09
+Mô tả (Use case description)
+Người dùng thu hẹp danh sách theo công ty, vị trí, trạng thái và sắp xếp theo ngày.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Người dùng nhập từ khóa, chọn bộ lọc hoặc thay đổi thứ tự sắp xếp.
+Tiền điều kiện (Pre-condition)
+Người dùng có phiên hợp lệ.
+Hậu điều kiện (Post-condition)
+Danh sách phù hợp được hiển thị; database không thay đổi.
+Luồng cơ bản (Basic Flow)
+B1. Người dùng nhập từ khóa hoặc chọn status/thứ tự.B2. UI tạo query cho GET /api/applications.B3. Backend xác thực phiên và validate query params.B4. Service chuẩn hóa từ khóa và chỉ cho phép trường sắp xếp hợp lệ.B5. Repository dùng truy vấn tham số hóa, luôn kèm điều kiện userId.B6. API trả kết quả; UI cập nhật danh sách hoặc pipeline.
+Luồng thay thế (Alternative Flow)
+A1. Không có query param: trả toàn bộ application của người dùng.A2. Có thể kết hợp từ khóa, status và thứ tự trong cùng request.A3. Không có kết quả: UI hiển thị empty state và nút xóa bộ lọc.
+Luồng ngoại lệ (Exception Flow)
+E1. Status hoặc trường sắp xếp không hợp lệ: trả 400 Bad Request.E2. Phiên hết hạn: trả 401 Unauthorized.E3. Database lỗi: UI giữ điều kiện tìm kiếm và cho phép thử lại.
+UC-10 — Cập nhật note và next action
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Cập nhật ghi chú và hành động tiếp theo
+Mã Use Case (Use case ID)
+UC-10
+Mô tả (Use case description)
+Người dùng lưu note và một hành động tiếp theo hiện tại cùng deadline cho mỗi application.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Người dùng sửa note, nextAction hoặc nextActionDueAt rồi chọn Lưu.
+Tiền điều kiện (Pre-condition)
+Người dùng có phiên hợp lệ; application tồn tại và thuộc người dùng.
+Hậu điều kiện (Post-condition)
+Application chứa note và hành động tiếp theo mới nhất; không tạo danh sách hoặc lịch sử task.
+Luồng cơ bản (Basic Flow)
+B1. Người dùng mở application.B2. UI hiển thị note và next action hiện tại.B3. Người dùng nhập nội dung và deadline.B4. UI validate định dạng ngày giờ.B5. UI gửi PATCH /api/applications/:id.B6. Backend kiểm tra phiên, Origin, ownership và input.B7. Repository thay thế giá trị hiện tại.B8. API trả dữ liệu mới; UI hiển thị hành động vừa lưu.
+Luồng thay thế (Alternative Flow)
+A1. Người dùng chỉ cập nhật note.A2. Người dùng thay hành động cũ bằng hành động mới.A3. Người dùng xóa nextAction và deadline khi không còn việc tiếp theo.
+Luồng ngoại lệ (Exception Flow)
+E1. Deadline sai định dạng: trả 400 Bad Request.E2. Application không thuộc người dùng: trả 404 Not Found.E3. Lưu thất bại: dữ liệu cũ vẫn là nguồn chuẩn và UI cho phép thử lại.
+UC-11 — Quản lý interview
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Quản lý lịch phỏng vấn
+Mã Use Case (Use case ID)
+UC-11
+Mô tả (Use case description)
+Người dùng tạo và quản lý nhiều vòng interview, giữ đúng thời điểm giữa múi giờ thư mời và múi giờ địa phương.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Phải có (Must)
+Kích hoạt (Trigger)
+Người dùng mở application và chọn thêm hoặc chỉnh sửa interview.
+Tiền điều kiện (Pre-condition)
+Người dùng có phiên hợp lệ; application tồn tại và thuộc người dùng.
+Hậu điều kiện (Post-condition)
+Interview được lưu nhất quán. Khi quy tắc cho phép, application chuyển sang Interview trong cùng transaction.
+Luồng cơ bản (Basic Flow)
+B1. Người dùng chọn application và nhập ngày giờ theo thư mời.B2. Người dùng chọn timezone IANA gốc, hình thức và thông tin tùy chọn.B3. UI hiển thị trước giờ gốc và giờ địa phương.B4. UI gửi POST /api/applications/:id/interviews.B5. Backend xác thực phiên, Origin, ownership và input.B6. Interview Service chuyển thời điểm sang UTC nhưng giữ timezone gốc.B7. Repository bắt đầu transaction và tạo interview với status Scheduled.B8. Nếu application không ở Offer, Rejected, Withdrawn, Repository đổi status sang Interview.B9. Repository commit; API trả interview mới.B10. UI hiển thị cả giờ địa phương và giờ gốc.
+Luồng thay thế (Alternative Flow)
+A1. Application đã ở Offer, Rejected hoặc Withdrawn: vẫn tạo interview nhưng giữ nguyên application status.A2. Dời lịch: cập nhật thời gian/timezone và giữ Scheduled.A3. Interview đã diễn ra hoặc bị hủy: đổi sang Completed hoặc Cancelled.A4. Người dùng có thể cập nhật hoặc xóa một interview thuộc application của mình.
+Luồng ngoại lệ (Exception Flow)
+E1. Ngày giờ hoặc timezone IANA không hợp lệ: trả 400 Bad Request.E2. Application/interview không thuộc người dùng: trả 404 Not Found.E3. Tạo interview hoặc đổi application status thất bại: rollback cả transaction.E4. Trình duyệt không xác định được múi giờ địa phương: vẫn hiển thị giờ gốc và yêu cầu người dùng kiểm tra cài đặt.
+UC-12 — Xem dashboard
+Thuộc tính
+Nội dung
+Tên Use Case (Use case name)
+Xem bảng tổng quan
+Mã Use Case (Use case ID)
+UC-12
+Mô tả (Use case description)
+Người dùng xem bốn chỉ số tổng quan về tiến trình ứng tuyển của riêng mình.
+Actor
+Người dùng
+Mức ưu tiên (Priority)
+Nên có (Should)
+Kích hoạt (Trigger)
+Người dùng đăng nhập thành công hoặc mở trang dashboard.
+Tiền điều kiện (Pre-condition)
+Người dùng có phiên hợp lệ.
+Hậu điều kiện (Post-condition)
+Bốn chỉ số được hiển thị; database không thay đổi.
+Luồng cơ bản (Basic Flow)
+B1. UI gửi GET /api/dashboard.B2. Auth Middleware xác thực JWT và lấy userId.B3. Dashboard Service yêu cầu Repository tổng hợp dữ liệu theo userId và thời điểm hiện tại.B4. Repository đếm tổng application, interview Scheduled trong tương lai, application Offer, tử số và mẫu số phản hồi.B5. Service tính tỷ lệ phản hồi theo công thức đã khóa.B6. API trả JSON; UI hiển thị bốn chỉ số.
+Luồng thay thế (Alternative Flow)
+A1. Không có application: các số đếm bằng 0.A2. Mẫu số tỷ lệ phản hồi bằng 0: Service trả responseRate = 0%, không thực hiện phép chia cho 0.
+Luồng ngoại lệ (Exception Flow)
+E1. Phiên hết hạn: trả 401 Unauthorized và đưa về đăng nhập.E2. Truy vấn tổng hợp lỗi: API trả lỗi hệ thống; UI hiển thị trạng thái lỗi thay vì số liệu cũ không rõ nguồn.E3. Một trường trong response thiếu hoặc sai kiểu: UI không tự suy đoán giá trị và ghi nhận lỗi để kiểm tra.
+6. Activity Diagrams
+A01 — Đăng ký
+Activity đăng ký
+A02 — Đăng nhập
+Activity đăng nhập
+A03 — Tạo application và phát hiện trùng
+Activity tạo application
+A04 — Xem, tìm kiếm, lọc và sắp xếp
+Activity tìm kiếm và lọc
+A05 — Cập nhật application
+Activity cập nhật application
+A06 — Xóa application
+Activity xóa application
+A07 — Tạo interview có múi giờ
+Activity tạo interview
+A08 — Xem dashboard
+Activity dashboard
+7. Sequence Diagrams
+7.1. Đăng ký
+Sequence đăng ký
+7.2. Đăng nhập
+Sequence đăng nhập
+7.3. Tạo application và kiểm tra trùng
+Sequence tạo application
+7.4. Cập nhật application
+Sequence cập nhật application
+7.5. Xóa application
+Sequence xóa application
+7.6. Tạo interview và đồng bộ trạng thái
+Sequence tạo interview
+7.7. Tổng hợp dashboard
+Sequence dashboard
+8. Quy tắc nghiệp vụ chi tiết
+BR-01 — Chính sách mật khẩu
+•  Dài từ 15 đến 64 ký tự.
+•  Cho phép khoảng trắng và ký tự thông thường.
+•  Không bắt buộc công thức chữ hoa + chữ thường + số + ký hiệu.
+•  Không tự động cắt ngắn mật khẩu trước khi băm.
+•  Dùng Argon2id để băm; không lưu mật khẩu thô.
+•  Đăng nhập thất bại trả cùng một thông báo chung.
+BR-02 — Cô lập dữ liệu theo người dùng
+Backend lấy userId từ phiên đã xác thực, không tin userId do client gửi. Với tài nguyên không thuộc người dùng, API trả phản hồi không làm lộ chủ sở hữu thực tế.
+BR-03 — Phát hiện tin tuyển dụng trùng
+Trong cùng một tài khoản, một application được coi là cùng tin tuyển dụng khi thỏa một trong hai điều kiện:
+1.  normalizedSource + normalizedJobPostingCode giống nhau; hoặc
+2.  normalizedJobUrl giống nhau.
+Nếu application cũ ở Saved, Applied, Screening, Interview hoặc Offer, hệ thống chặn tạo và mở bản ghi đã có. Nếu bản ghi cũ ở Rejected hoặc Withdrawn, hệ thống cảnh báo nhưng cho phép tạo lại khi người dùng xác nhận. Chỉ giống công ty và chức danh thì không đủ để kết luận trùng.
+BR-04 — Chuyển trạng thái application
+Người dùng được chuyển tự do giữa bảy trạng thái trong MVP. Không tự suy ra lịch sử và không tạo bảng status history.
+BR-05 — Next action
+Mỗi application có tối đa một nextAction và một nextActionDueAt. Khi hành động hoàn thành, người dùng thay nội dung bằng hành động tiếp theo hoặc xóa hai trường này.
+BR-06 — Tạo interview
+•  Một application có thể có nhiều interview.
+•  Interview mới mặc định Scheduled.
+•  Tạo interview và cập nhật application phải nằm trong cùng transaction.
+•  Nếu application chưa ở Offer, Rejected, Withdrawn, hệ thống đổi nó sang Interview.
+•  Nếu application đã ở một trong ba trạng thái trên, giữ nguyên application status.
+BR-07 — Múi giờ
+Khi người dùng nhập giờ theo thư mời, hệ thống nhận thêm timezone IANA, chuyển thời điểm đó thành UTC để lưu và giữ lại timezone gốc. Khi hiển thị, frontend trình bày:
+•  giờ theo múi giờ thiết bị/người dùng;
+•  giờ gốc và tên timezone của thư mời.
+Nhờ vậy, một lịch 09:00 America/New_York không bị hiểu nhầm thành 09:00 Asia/Ho_Chi_Minh.
+BR-08 — Dashboard
+•  Tổng hồ sơ: đếm tất cả application của người dùng, gồm cả Saved.
+•  Phỏng vấn sắp tới: interview có status = Scheduled và scheduledAtUtc >= now.
+•  Offer: application có trạng thái hiện tại là Offer.
+•  Tỷ lệ phản hồi:
+responseRate =  count(Screening, Interview, Offer, Rejected)  ------------------------------------------------ × 100%  count(Applied, Screening, Interview, Offer, Rejected)
+Nếu mẫu số bằng 0, responseRate = 0%.
+BR-09 — Xóa dữ liệu
+Xóa application là thao tác không thể hoàn tác trong MVP. Frontend phải hỏi xác nhận; backend kiểm tra ownership và xóa interview liên quan cùng application trong một transaction.
+12. Giao tiếp API dự kiến
+Method
+Endpoint
+Mục đích
+POST
+/api/auth/register
+Đăng ký
+POST
+/api/auth/login
+Đăng nhập
+GET
+/api/auth/session
+Kiểm tra phiên
+POST
+/api/auth/logout
+Đăng xuất
+GET
+/api/applications
+Danh sách, tìm kiếm, lọc, sắp xếp
+POST
+/api/applications
+Tạo application và kiểm tra trùng
+GET
+/api/applications/:id
+Xem chi tiết
+PATCH
+/api/applications/:id
+Cập nhật application/status/next action
+DELETE
+/api/applications/:id
+Xóa application và dữ liệu liên quan
+GET
+/api/applications/:id/interviews
+Danh sách interview
+POST
+/api/applications/:id/interviews
+Tạo interview
+PATCH
+/api/interviews/:id
+Cập nhật/dời lịch/đổi trạng thái interview
+DELETE
+/api/interviews/:id
+Xóa interview
+GET
+/api/dashboard
+Lấy bốn chỉ số dashboard
+Request thay đổi dữ liệu phải có phiên hợp lệ và vượt kiểm tra Origin. Controller chỉ nhận/trả HTTP; Service xử lý các BR; Repository thực hiện truy vấn có userId.
+14. Các ca kiểm thử  quan trọng
+Mã
+Given
+When
+Then
+AC-01
+Khách nhập dữ liệu đăng ký hợp lệ
+Gửi form
+User được tạo, mật khẩu chỉ tồn tại dưới dạng hash, phiên được thiết lập
+AC-02
+Email hoặc mật khẩu đăng nhập sai
+Gửi form
+Nhận thông báo chung, không biết email có tồn tại hay không
+AC-03
+Người dùng A có application
+Người dùng B gọi endpoint bằng ID đó
+Không nhận được nội dung và không thay đổi dữ liệu
+AC-04
+Chưa có bản ghi cùng tin
+Tạo application hợp lệ
+Tạo bản ghi Saved
+AC-05
+Có bản ghi cùng tin ở Applied
+Tạo lại
+Bị chặn và nhận liên kết mở bản ghi cũ
+AC-06
+Có bản ghi cùng tin ở Rejected
+Tạo lại và xác nhận
+Bản ghi mới được tạo
+AC-07
+Hai việc cùng company/title nhưng khác job code
+Tạo cả hai
+Không bị coi là trùng chỉ vì company/title giống nhau
+AC-08
+Application ở Screening
+Tạo interview hợp lệ
+Interview Scheduled; application thành Interview trong cùng transaction
+AC-09
+Application ở Offer
+Tạo interview hợp lệ
+Interview được tạo; application vẫn Offer
+AC-10
+Thư mời dùng America/New_York
+Người dùng ở Việt Nam mở lịch
+Thấy đúng giờ Việt Nam và đúng giờ gốc New York
+AC-11
+Dashboard không có application đã nộp
+Mở dashboard
+Tỷ lệ phản hồi là 0%, không chia cho 0
+AC-12
+Application có nhiều interview
+Xóa application sau xác nhận
+Application và toàn bộ interview liên quan bị xóa
+17. Nguồn tham khảo
+1.  Object Management Group, Unified Modeling Language Specification.
+2.  NIST, SP 800-63B — Authentication and Authenticator Management.
+3.  OWASP, Password Storage Cheat Sheet.
+4.  OWASP, Cross-Site Request Forgery Prevention Cheat Sheet.
+
+# PROJECT PROPOSAL (2).docx
+PROJECT PROPOSAL 
+1 . Thông tin chung
+Tên đề tài: Xây dựng ứng dụng web JobTrack hỗ trợ quản lý quá trình ứng tuyển việc làm
+Sinh viên thực hiện: Trần Nhật Tân - MSSV 0024468 - Lớp 68PM1
+Giảng viên hướng dẫn: Phạm Hữu Tùng
+ 2. Phát biểu bài toán (Problem Statement)
+Hiện trạng :
+Trong quá trình tìm việc, một người có thể lưu và nộp hồ sơ cho nhiều vị trí trên các nền tảng khác nhau. Thông tin thường nằm rải rác trong tab trình duyệt, email, lịch cá nhân, ghi chú hoặc bảng tính. Cách quản lý này tạo ra các vấn đề sau:
+Khó nhớ đã ứng tuyển công ty và vị trí nào.
+Không nhìn thấy rõ mỗi hồ sơ đang ở giai đoạn nào của quy trình tuyển dụng.
+Dễ bỏ lỡ lịch phỏng vấn hoặc ngày cần liên hệ lại.
+Ghi chú, đường dẫn tin tuyển dụng và tài liệu chuẩn bị bị phân tán.
+Khó tổng hợp số lượng hồ sơ, phản hồi, phỏng vấn và đề nghị làm việc.
+Giải pháp đề xuất
+Xây dựng JobTrack là ứng dụng web cá nhân. Hệ thống tập trung dữ liệu ứng tuyển vô 1  app
+Cho phép người dùng quản lý hồ sơ ứng tuyển từ lúc lưu tin tuyển dụng đến khi nhận offer, bị từ chối hoặc chủ động dừng ứng tuyển.
+Giải pháp giúp 
+Giảm thao tác ghi nhớ thủ công, hạn chế bỏ sót công việc cần làm và tạo một quy trình ứng tuyển có thể quan sát, tìm kiếm và cập nhật.
+3. Các bên liên quan (Stakeholders)
+Actor
+Mô tả
+Mục tiêu
+Sinh viên, người mới tốt nghiệp hoặc người đang tìm việc
+Người sử dụng chính 
+Cần quản lý nhiều hồ sơ ứng tuyển tập cá nhân
+ 4. Mục tiêu hệ thống (Objectives)
+Xây dựng hệ thống giúp:
+Quản lý tập trung toàn bộ hồ sơ ứng tuyển của từng người dùng.
+Theo dõi hồ sơ qua các trạng thái Saved, Applied, Screening, Interview, Offer, Rejected và Withdrawn.
+Lưu ghi chú, lịch phỏng vấn và hành động tiếp theo để giảm nguy cơ bỏ sót.
+Tìm kiếm, lọc và sắp xếp application nhanh chóng.
+Cung cấp dashboard cơ bản để người dùng quan sát tiến độ ứng tuyển.
+Xây dựng một sản phẩm full-stack có API, database, kiểm thử, Docker và bản demo online.
+ 5. Phạm vi hệ thống (Scope)
+Trong phạm vi (In Scope)
+Đăng ký, đăng nhập và đăng xuất bằng JWT lưu trong HTTP-only cookie.
+Mỗi người dùng chỉ được xem và thay đổi dữ liệu của chính mình.
+CRUD application: tạo, xem, cập nhật và xóa hồ sơ ứng tuyển.
+Khi tạo application, tên công ty và tên vị trí là bắt buộc; trạng thái mặc định là `Saved`. Các trường còn lại có thể bổ sung sau.
+Lưu nguồn tuyển dụng, mã tin tuyển dụng và mức lương tham khảo dạng văn bản tùy chọn.
+Phát hiện tin trùng theo `source + jobPostingCode` hoặc URL đã chuẩn hóa. Chặn bản ghi trùng đang hoạt động; cảnh báo nhưng cho phép ứng tuyển lại nếu bản ghi cũ đã `Rejected` hoặc `Withdrawn`.
+Quản lý trạng thái Saved, Applied, Screening, Interview, Offer, Rejected và Withdrawn.
+Người dùng được chuyển tự do giữa các trạng thái; lịch sử chuyển trạng thái nằm ngoài MVP.
+Tìm kiếm theo công ty hoặc vị trí; lọc theo trạng thái; sắp xếp theo ngày.
+Mỗi application lưu một hành động tiếp theo hiện tại và một deadline; không có module danh sách task trong MVP.
+Một application có thể có nhiều lịch phỏng vấn. Mỗi interview có thời gian, múi giờ, hình thức, địa điểm/link, ghi chú và trạng thái `Scheduled`, `Completed` hoặc `Cancelled`.
+Dashboard hiển thị tổng số hồ sơ, phỏng vấn sắp tới, offer và tỷ lệ phản hồi theo công thức đã khóa.
+Validation ở frontend và backend; xử lý loading, empty state và lỗi.
+Kiểm thử các API quan trọng và một số luồng giao diện chính.
+Docker Compose cho môi trường local và một môi trường demo online cơ bản.
+Ngoài phạm vi (Out of Scope)
+Chức năng Admin; được đưa vào backlog mở rộng sau MVP.
+Tự động nộp CV hoặc tự động điền biểu mẫu trên website tuyển dụng.
+Thu thập tin tuyển dụng tự động từ LinkedIn hoặc hệ thống bên thứ ba.
+Đồng bộ Gmail, Outlook hoặc Google Calendar.
+AI phân tích CV, đánh giá độ phù hợp hoặc tạo cover letter.
+Cộng tác nhóm, tài khoản nhà tuyển dụng và nghiệp vụ ATS doanh nghiệp.
+Ứng dụng mobile native và analytics nâng cao.
+Danh sách nhiều task, lịch sử task và lịch sử chuyển trạng thái application.
+Xác minh email, quên/đặt lại mật khẩu và xác thực đa yếu tố.
+Archive, thùng rác và khôi phục application đã xóa.
+ 6. Mô tả hệ thống đề xuất (Solution Overview)
+Hệ thống được xây dựng dưới dạng web application gồm 
+Frontend React, REST API Express và database PostgreSQL. Người dùng truy cập bằng trình duyệt trên máy tính hoặc thiết bị di động. Khi triển khai, frontend và API được phục vụ trong cùng một site; frontend gọi backend qua đường dẫn `/api`.
+Hệ thống cho phép người dùng:
+- Tạo tài khoản, đăng nhập và đăng xuất.
+- Thêm application với công ty, vị trí, URL, nguồn, địa điểm, hình thức làm việc, trạng thái, ngày nộp, ghi chú và next action.
+- Xem danh sách hoặc pipeline, mở chi tiết và cập nhật hồ sơ.
+- Tìm kiếm, lọc, sắp xếp và theo dõi lịch phỏng vấn.
+- Xem dashboard tổng quan về quá trình ứng tuyển.
+7. Kiến trúc dự kiến (Proposed Architecture)
+Lựa chọn kiến trúc:  Web API.
+ Mô tả
+Hệ thống được xây dựng theo kiến trúc Web API. Frontend React đóng vai trò client và giao tiếp với backend Express thông qua RESTful API sử dụng HTTP/JSON.
+Backend được tổ chức theo kiến trúc 3-layer gồm Controller, Service và Repository. 
+Controller: tiếp nhận HTTP request hợp lệ, gọi Service và tạo HTTP response.
+Service:xử lý quy tắc nghiệp vụ của application, interview và dashboard.
+Repository:truy vấn và lưu dữ liệu trong PostgreSQL thông qua node-postgres.
+Các thành phần hỗ trợ:
+React UI: hiển thị giao diện, form, routing và trạng thái tương tác.
+Route và Middleware: định tuyến request, xác thực JWT cookie, phân quyền và validate dữ liệu.
+PostgreSQL: lưu trữ dữ liệu người dùng và hồ sơ ứng tuyển.
+Luồng xử lý chính:
+React UI → HTTP/JSON → RESTful Web API → Route/Middleware → Controller → Service → Repository → PostgreSQL.
+ 8. Công nghệ dự kiến (Tech Stack)
+Layer
+Technology
+Frontend
+React, Vite, TypeScript, React Router
+Dữ liệu và form
+fetch, TanStack Query, React Hook Form, Zod
+Giao diện
+Tailwind CSS, shadcn/ui
+Backend và API
+Node.js, Express.js, TypeScript, RESTful API
+Authentication
+JWT trong HTTP-only cookie, Argon2id
+Database
+PostgreSQL, SQL thuần, node-postgres, migration, seed
+Testing
+Postman, Supertest, Vitest, React Testing Library
+Tools và Deploy
+Git, GitHub, Jira, Docker, Docker Compose, môi trường cloud
+9. Danh sách chức năng chính (Core Features)
+F01 - Authentication: đăng ký, đăng nhập, đăng xuất và duy trì phiên bằng cookie an toàn; không có xác minh email hoặc đặt lại mật khẩu trong MVP.
+F02 - Application CRUD: tạo, xem danh sách, xem chi tiết, sửa và xóa vĩnh viễn hồ sơ ứng tuyển sau bước xác nhận.
+F03 - Application Pipeline:cập nhật và quan sát trạng thái tuyển dụng.
+F04 - Search and Filter:tìm theo công ty/vị trí, lọc trạng thái và sắp xếp theo ngày.
+F05 - Notes and Next Action:lưu một hành động tiếp theo hiện tại, deadline và ghi chú cho mỗi application.
+F06 - Interview Tracking:quản lý nhiều vòng phỏng vấn, múi giờ, hình thức, địa điểm/link, nội dung chuẩn bị và ba trạng thái interview.
+F07 - Dashboard: tổng hợp tất cả hồ sơ, phỏng vấn sắp tới, offer và tỷ lệ phản hồi có công thức xác định.
+F08 - Ownership and Validation: bảo vệ dữ liệu theo người dùng và kiểm tra input hai phía.
+F09 - Duplicate Detection: phát hiện cùng một tin tuyển dụng bằng mã nguồn hoặc URL chuẩn hóa.
+ 10. Kế hoạch phát triển 8 tuần
+Tuần
+Nội dung và kết quả
+1
+Hoàn thiện Proposal; khảo sát hiện trạng và hệ thống tương tự; chốt phạm vi MVP.
+2
+Phân tích yêu cầu; Use Case, Activity, Sequence; thiết kế database, API và wireframe.
+3
+Khởi tạo GitHub/Jira; cấu hình React, Express, PostgreSQL, migration, seed và Docker Compose.
+4
+Xây dựng authentication, authorization và Application CRUD backend; test bằng Postman/Supertest.
+5
+Xây dựng React Router, form, Zod, TanStack Query; kết nối CRUD frontend với API.
+6
+Hoàn thiện pipeline, search/filter, next action, interview và dashboard cơ bản.
+7
+Kiểm thử, sửa lỗi, rà soát bảo mật, responsive UI và hoàn thiện trải nghiệm người dùng.
+8
+Deploy online, kiểm tra Docker fallback, hoàn thiện README, tài liệu, slide và kịch bản demo.
+Phân công: Đây là đồ án cá nhân. Em chịu trách nhiệm toàn bộ hoạt động phân tích, thiết kế, lập trình, kiểm thử, quản lý mã nguồn, quản lý Jira, triển khai và báo cáo dưới sự hướng dẫn của giảng viên.
+ 11. Kết quả dự kiến
+Sau khi hoàn thành dự án, các kết quả dự kiến gồm:
+Hệ thống hoạt động hoàn chỉnh: người dùng có thể đăng ký, đăng nhập, quản lý application, cập nhật pipeline và theo dõi bước tiếp theo.
+REST API và PostgreSQL: API có validation, xử lý lỗi, kiểm tra quyền sở hữu và lưu dữ liệu nhất quán.
+Giao diện responsive: các màn hình chính hoạt động trên desktop và thiết bị có kích thước nhỏ.
+Tài liệu phân tích: có báo cáo khảo sát, Use Case, Activity Diagram, Sequence Diagram, kiến trúc và đặc tả API.
+Mã nguồn có quản lý: repository GitHub có README, lịch sử commit, branch, issue và pull request phù hợp.
+Kế hoạch dự án: Jira thể hiện Epic, User Story, Task, Sprint, acceptance criteria và tiến độ.
+Kiểm thử: các API quan trọng có test; những luồng giao diện chính được kiểm tra cơ bản.
+Demo: có môi trường online cơ bản; Docker Compose và hướng dẫn chạy local là phương án dự phòng.
+12. Quy tắc nghiệp vụ 
+1. Actor: `Khách` có thể đăng ký và đăng nhập; `Người dùng đã đăng nhập` quản lý dữ liệu của chính mình. Không có Admin hoặc Nhà tuyển dụng trong MVP.
+2. Mật khẩu: dài 15–64 ký tự, cho phép khoảng trắng và ký tự thông thường, không bắt buộc công thức chữ hoa/số/ký hiệu và không bị cắt ngầm trước khi băm. Đăng nhập thất bại dùng thông báo chung, không tiết lộ email có tồn tại hay không.
+3. Cookie và CSRF: JWT nằm trong cookie `HttpOnly`, dùng `Secure` ở production và `SameSite=Lax`. Backend kiểm tra `Origin` đối với request thay đổi dữ liệu. Frontend và API được triển khai cùng site.
+4. Application tối thiểu: tên công ty và vị trí bắt buộc; trạng thái mặc định là `Saved`.
+5. Chuyển trạng thái: người dùng được chuyển tự do giữa bảy trạng thái application; MVP không lưu lịch sử chuyển trạng thái.
+6. Tin trùng:trong cùng tài khoản, `source + jobPostingCode` hoặc URL chuẩn hóa giống một application đang hoạt động sẽ bị chặn. Nếu bản ghi cũ là `Rejected` hoặc `Withdrawn`, hệ thống cảnh báo nhưng cho phép tạo lại.
+7. Next action:mỗi application chỉ có một hành động tiếp theo hiện tại và một deadline.
+8. Interview:một application có thể có nhiều interview. Ba trạng thái interview là `Scheduled`, `Completed`, `Cancelled`; dời lịch là cập nhật thời gian và vẫn giữ `Scheduled`.
+9. Đồng bộ trạng thái: tạo interview đầu tiên tự chuyển application sang `Interview`, trừ khi application đang ở `Offer`, `Rejected` hoặc `Withdrawn`. Hai thay đổi phải thành công hoặc thất bại cùng nhau.
+10. Múi giờ: interview lưu thời điểm chuẩn UTC và mã múi giờ gốc. Giao diện hiển thị cả giờ theo thiết bị người dùng và giờ gốc trong thư mời.
+11. Xóa: xóa application là xóa vĩnh viễn sau xác nhận và xóa kèm interview liên quan. Archive/khôi phục nằm ngoài MVP.
+12. Dashboard: tổng hồ sơ tính mọi trạng thái; phỏng vấn sắp tới là interview `Scheduled` có thời gian từ hiện tại trở đi; offer là application đang ở `Offer`.
+13. Tỷ lệ phản hồi:`(Screening + Interview + Offer + Rejected) / (Applied + Screening + Interview + Offer + Rejected) × 100%`. Nếu mẫu số bằng 0 thì hiển thị `0%`.

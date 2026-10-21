@@ -1,0 +1,33 @@
+{
+  "name": "jobtrack-five-experiences",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run --root ../../packages/jobtrack-core",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "lucide-react": "latest",
+    "@fontsource/source-serif-4": "latest",
+    "@fontsource/source-sans-3": "latest",
+    "@fontsource/archivo": "latest",
+    "@fontsource/noto-sans": "latest",
+    "@fontsource/barlow-condensed": "latest",
+    "@fontsource/public-sans": "latest",
+    "@fontsource/ibm-plex-sans-condensed": "latest",
+    "@fontsource/bricolage-grotesque": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "vite": "8.3.4",
+    "vitest": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@types/node": "latest"
+  }
+}

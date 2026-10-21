@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "PageWeave — Web Data Assistant & JobTrack Pro",
+  "version": "1.2.0",
+  "description": "Trợ lý dữ liệu web đa ngành: Bóc tách bảng, danh sách, so sánh sản phẩm, tài liệu nghiên cứu & quản lý tuyển dụng JobTrack.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:64366/*",
+    "https://*/*",
+    "http://*/*"
+  ],
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "PageWeave — Web Data Assistant",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

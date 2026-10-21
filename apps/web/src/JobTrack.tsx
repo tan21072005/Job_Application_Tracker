@@ -1,0 +1,293 @@
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Check, CircleAlert, LayoutDashboard, LoaderCircle, LogOut, Plus, RotateCcw, Trash2, X, KeyRound, Sparkles, Database } from 'lucide-react';
+import { demoMode, repository } from './data';
+import { ApiError } from './transport';
+import { duplicate, type Application, type Interview, type Status } from './domain';
+import { Button, Dialog, Empty, Logo } from './components/ui';
+import { ApplicationForm, InterviewForm } from './components/forms';
+import Dashboard from './views/Dashboard';
+import Applications, { initialFilters } from './views/Applications';
+import Detail from './views/Detail';
+import Auth from './views/Auth';
+import DatasetsView from './views/Datasets';
+import QuickAction from './components/QuickAction';
+import ImportLinkModal from './components/ImportLinkModal';
+import ChatWidget from './components/ChatWidget';
+import AiGrantsModal from './components/AiGrantsModal';
+
+function readRoute() {
+  const [page, id, tab] = location.hash.slice(1).split('/');
+  return { page: page || (demoMode ? 'dashboard' : 'auth'), id: id || '', tab: tab === 'interviews' ? 'interviews' as const : 'info' as const };
+}
+
+export default function JobTrack() {
+  const [route, setRoute] = useState(readRoute);
+  const [apps, setApps] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [authState, setAuthState] = useState<'bootstrapping' | 'authenticated' | 'unauthenticated' | 'error' | 'expired'>('bootstrapping');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [filters, setFilters] = useState(initialFilters);
+  const [form, setForm] = useState<'new' | 'edit' | null>(null);
+  const [interview, setInterview] = useState<Interview | null | undefined>(undefined);
+  const [deletion, setDeletion] = useState<{ app: Application; round?: Interview } | null>(null);
+  const [account, setAccount] = useState(false);
+  const [accountEmail, setAccountEmail] = useState('');
+  const [actionApp, setActionApp] = useState<Application | null>(null);
+  const [reset, setReset] = useState(false);
+  const [importModal, setImportModal] = useState(false);
+  const [grantsModal, setGrantsModal] = useState(false);
+  const [toast, setToast] = useState<{ message: string; error: boolean } | null>(null);
+  const request = useRef(0);
+  const headingRef = useRef<HTMLElement>(null);
+  const selected = apps.find(app => app.id === route.id);
+  const isApplications = ['applications', 'application'].includes(route.page);
+  const notify = (message: string, isError = false) => setToast({ message, error: isError });
+  const navigate = (hash: string) => { location.hash = hash; };
+  const open = (app: Application, rounds = false) => navigate(`application/${app.id}${rounds ? '/interviews' : ''}`);
+
+  async function refresh() {
+    const id = ++request.current;
+    try { const result = await repository.list(); if (id === request.current) { setApps(result); setError(''); } }
+    catch (err) { if (id === request.current) { if (!demoMode && err instanceof ApiError && err.status === 401) { setApps([]); setAuthState('unauthenticated'); navigate('auth'); } else setError((err as Error).message); } }
+    finally { if (id === request.current) setLoading(false); }
+  }
+
+  async function bootstrap() {
+    setLoading(true);
+    setError('');
+    if (demoMode) {
+      setAuthState('authenticated');
+      void refresh();
+      return;
+    }
+    try {
+      const user = await repository.me();
+      setCurrentUserId(user.id);
+      setAccountEmail(user.email);
+      setAuthState('authenticated');
+      if (readRoute().page === 'auth') navigate('dashboard');
+      void refresh();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setAuthState('unauthenticated');
+        setCurrentUserId(null);
+        setApps([]);
+        navigate('auth');
+      } else {
+        setAuthState('error');
+        setError((err as Error).message || 'Không thể kết nối máy chủ.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void bootstrap();
+    const change = () => setRoute(readRoute());
+    const storage = (event: StorageEvent) => { if (demoMode && event.key === 'jobtrack.design.v1') void refresh(); };
+    const expired = () => {
+      if (form !== null || interview !== undefined || actionApp !== null) {
+        setAuthState('expired');
+        notify('Phiên làm việc đã hết hạn. Đăng nhập lại để tiếp tục lưu bản nháp.', true);
+      } else {
+        request.current++;
+        setApps([]);
+        setAccountEmail('');
+        setCurrentUserId(null);
+        setForm(null);
+        setInterview(undefined);
+        setDeletion(null);
+        setActionApp(null);
+        setAccount(false);
+        setError('');
+        setLoading(false);
+        setAuthState('unauthenticated');
+        navigate('auth');
+        notify('Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.', true);
+      }
+    };
+    window.addEventListener('hashchange', change); window.addEventListener('storage', storage); window.addEventListener('jobtrack:session-expired', expired);
+    return () => { request.current++; window.removeEventListener('hashchange', change); window.removeEventListener('storage', storage); window.removeEventListener('jobtrack:session-expired', expired); };
+  }, []);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    headingRef.current?.focus({ preventScroll: true });
+    document.title = `${route.page === 'dashboard' ? 'Tổng quan' : route.page === 'datasets' ? 'Dữ liệu Web · PageWeave' : route.page === 'auth' ? 'Đăng nhập' : selected?.position || 'Hồ sơ ứng tuyển'} · JobTrack`;
+  }, [route.page, route.id, selected?.position]);
+  useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 6000); return () => clearTimeout(timer); }, [toast]);
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === 'visible' && authState === 'authenticated' && !busy) {
+        void refresh();
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [authState, busy]);
+
+  useEffect(() => {
+    if (demoMode || authState !== 'authenticated') return;
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource('/api/events', { withCredentials: true });
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data && data.type === 'MUTATION') {
+            void refresh();
+            const actionStr = data.action === 'CREATE' ? 'thêm mới' : data.action === 'UPDATE' ? 'cập nhật' : data.action === 'RESTORE' ? 'khôi phục' : 'xóa';
+            notify(`Đã đồng bộ thao tác ${actionStr} từ AI / MCP.`);
+          }
+        } catch { /* ignore keepalive */ }
+      };
+    } catch { /* EventSource fallback */ }
+    return () => {
+      es?.close();
+    };
+  }, [authState]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __JOBTRACK_VIEW_STATE__?: unknown }).__JOBTRACK_VIEW_STATE__ = {
+        page: route.page,
+        selectedId: route.id || null,
+        activeTab: route.tab,
+        totalApplications: apps.length,
+        activeFilters: filters,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }, [route, apps.length, filters]);
+
+  async function saved(id: string) { setForm(null); await refresh(); navigate(`application/${id}`); notify('Đã lưu hồ sơ.'); }
+  async function changeStatus(status: Status) {
+    if (!selected || busy) return;
+    const conflict = duplicate(apps, selected, selected.id);
+    if (!['Rejected', 'Withdrawn'].includes(status) && conflict && !['Rejected', 'Withdrawn'].includes(conflict.status)) { notify('Tin tuyển dụng này đã có một hồ sơ đang hoạt động.', true); return; }
+    setBusy(true);
+    try { await repository.save({ ...selected, status }, selected.id, { version: selected.version }); await refresh(); notify('Đã cập nhật trạng thái.'); }
+    catch (error) {
+      if (error instanceof ApiError && error.status === 401) window.dispatchEvent(new Event('jobtrack:session-expired'));
+      else if (error instanceof ApiError && error.status === 412) {
+        await refresh();
+        notify('Hồ sơ đã được cập nhật ở nơi khác. Đã tải bản mới nhất, vui lòng chọn lại trạng thái.', true);
+      } else if (error instanceof ApiError && error.status === 404) {
+        notify('Hồ sơ đã bị xóa trên hệ thống.', true);
+        navigate('applications');
+      } else notify((error as Error).message, true);
+    }
+    finally { setBusy(false); }
+  }
+  async function remove() {
+    if (!deletion) return;
+    setBusy(true);
+    try {
+      if (deletion.round) await repository.removeInterview(deletion.app.id, deletion.round.id, deletion.app.version); else await repository.remove(deletion.app.id, deletion.app.version);
+      if (!deletion.round) navigate('applications');
+      setDeletion(null); await refresh(); notify('Đã xóa dữ liệu.');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        window.dispatchEvent(new Event('jobtrack:session-expired'));
+      } else if (error instanceof ApiError && error.status === 412) {
+        try {
+          const latestApps = await repository.list();
+          const latestApp = latestApps.find(a => a.id === deletion.app.id);
+          if (!latestApp) {
+            setDeletion(null);
+            notify('Hồ sơ đã bị xóa ở nơi khác.');
+            navigate('applications');
+          } else {
+            setDeletion({ app: latestApp, round: deletion.round });
+            notify('Hồ sơ đã thay đổi ở nơi khác. Kiểm tra lại nội dung trước khi xác nhận xóa.', true);
+          }
+        } catch {
+          notify((error as Error).message, true);
+        }
+      } else if (error instanceof ApiError && error.status === 404) {
+        setDeletion(null);
+        notify('Hồ sơ không còn tồn tại trên hệ thống.');
+        navigate('applications');
+      } else {
+        notify((error as Error).message, true);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function logout() {
+    try { await repository.logout(); request.current++; setApps([]); setAccountEmail(''); setCurrentUserId(null); setAuthState('unauthenticated'); setAccount(false); navigate('auth'); }
+    catch (error) { notify((error as Error).message, true); }
+  }
+
+  function handleLoginSuccess(user?: { id: string; email: string }) {
+    if (user) {
+      if (currentUserId && user.id !== currentUserId) {
+        setForm(null);
+        setInterview(undefined);
+        setActionApp(null);
+        notify('Đã chuyển tài khoản. Bản nháp của tài khoản trước đã bị hủy để bảo mật.');
+      }
+      setCurrentUserId(user.id);
+      setAccountEmail(user.email);
+    }
+    setAuthState('authenticated');
+    void refresh();
+    navigate('dashboard');
+  }
+
+  const navigation = <><a href="#dashboard" className={route.page === 'dashboard' ? 'active' : ''} aria-current={route.page === 'dashboard' ? 'page' : undefined}><LayoutDashboard size={19} /><span>Tổng quan</span></a><a href="#applications" className={isApplications ? 'active' : ''} aria-current={isApplications ? 'page' : undefined}><BriefcaseBusiness size={19} /><span>Hồ sơ ứng tuyển</span><small>{apps.length}</small></a><a href="#datasets" className={route.page === 'datasets' ? 'active' : ''} aria-current={route.page === 'datasets' ? 'page' : undefined}><Database size={19} /><span>Dữ liệu Web</span></a></>;
+  return <div className="jobtrack"><a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); headingRef.current?.focus(); }}>Đến nội dung chính</a>{route.page === 'auth' || authState === 'unauthenticated' ? <Auth onEnter={user => handleLoginSuccess(user)} /> : <div className="app-shell">
+    <aside className="sidebar"><Logo /><nav aria-label="Điều hướng chính">{navigation}</nav><div className="sidebar-message"><span className="sidebar-rule" /><strong>Từng bước một.</strong><p>Một nơi cho những cơ hội<br />và bước tiếp theo của bạn.</p><ArrowUpRight size={22} strokeWidth={1.5} /></div><button className="sidebar-account" onClick={() => setAccount(true)}><span className="avatar">{demoMode ? 'NT' : 'TK'}</span><span><strong>{demoMode ? 'Nhật Tân' : 'Tài khoản'}</strong><small>Không gian cá nhân</small></span><ArrowRight size={16} /></button></aside>
+    <div className="workspace"><header className="topbar"><div className="mobile-brand"><Logo /></div><div className="breadcrumb"><span>Không gian cá nhân</span><span>/</span><strong>{route.page === 'dashboard' ? 'Tổng quan' : route.page === 'datasets' ? 'Dữ liệu Web (PageWeave)' : 'Hồ sơ ứng tuyển'}</strong></div><div className="topbar-account">{demoMode && <span className="demo-label"><span />Dữ liệu mẫu</span>}<button className="avatar" aria-label="Mở tài khoản" onClick={() => setAccount(true)}>{demoMode ? 'NT' : 'TK'}</button></div></header>
+    <main id="main-content" ref={headingRef} tabIndex={-1} aria-busy={loading || busy}>{loading ? <div className="loading-state" role="status"><LoaderCircle className="spin" size={24} /><p>Đang tải hồ sơ…</p><div className="skeleton-grid"><span /><span /><span /></div></div> : authState === 'error' ? <Empty title="Chưa kết nối được máy chủ" action={<div className="empty-actions"><Button onClick={() => void bootstrap()}>Thử lại</Button></div>}>{error}</Empty> : error ? <Empty title="Chưa tải được hồ sơ" action={<div className="empty-actions"><Button onClick={() => { setLoading(true); void refresh(); }}>Thử lại</Button>{demoMode ? <Button kind="secondary" onClick={() => setReset(true)}>Khôi phục dữ liệu mẫu</Button> : <Button kind="secondary" onClick={() => navigate('auth')}>Đăng nhập lại</Button>}</div>}>{error}</Empty> : route.page === 'dashboard' ? <Dashboard apps={apps} onAction={setActionApp} onOpen={open} onAdd={() => setForm('new')} onList={() => navigate('applications')} onImport={() => setImportModal(true)} /> : route.page === 'datasets' ? <DatasetsView notify={notify} /> : route.page === 'applications' ? <Applications apps={apps} filters={filters} onFilters={setFilters} onOpen={open} onAdd={() => setForm('new')} onImport={() => setImportModal(true)} /> : route.page === 'application' && selected ? <Detail app={selected} tab={route.tab} busy={busy} onTab={tab => open(selected, tab === 'interviews')} onBack={() => navigate('applications')} onEdit={() => setForm('edit')} onAction={() => setActionApp(selected)} onInterview={round => setInterview(round || null)} onDelete={() => setDeletion({ app: selected })} onDeleteInterview={round => setDeletion({ app: selected, round })} onStatus={status => void changeStatus(status)} /> : <Empty title="Không tìm thấy hồ sơ" action={<Button onClick={() => navigate('applications')}>Về danh sách</Button>}>Hồ sơ có thể đã bị xóa hoặc đường dẫn chưa đúng.</Empty>}<footer className="workspace-footer"><span>JobTrack<span className="footer-dot" />Mỗi cơ hội, một bước tiến.</span>{demoMode && <span>Dữ liệu mẫu · lưu trên trình duyệt này</span>}</footer></main></div>
+    <nav className="bottom-nav" aria-label="Điều hướng mobile">{navigation}<button onClick={() => setForm('new')}><Plus size={21} /><span>Thêm mới</span></button></nav>
+  </div>}
+  {actionApp && <QuickAction app={actionApp} onClose={() => setActionApp(null)} onSaved={() => { setActionApp(null); void refresh(); notify('Đã cập nhật bước tiếp theo.'); }} />}
+  {form && <ApplicationForm app={form === 'edit' ? selected : undefined} apps={apps} onClose={() => setForm(null)} onSaved={id => void saved(id)} onOpenExisting={id => { setForm(null); navigate(`application/${id}`); }} onReload={() => { setForm(null); void refresh(); notify('Đã tải bản mới nhất.'); }} />}
+  {interview !== undefined && selected && <InterviewForm app={selected} interview={interview || undefined} onClose={() => setInterview(undefined)} onSaved={() => { setInterview(undefined); void refresh(); notify('Đã lưu lịch phỏng vấn.'); }} />}
+  {deletion && <Dialog title={deletion.round ? 'Xóa vòng phỏng vấn?' : 'Xóa vĩnh viễn hồ sơ?'} onClose={() => setDeletion(null)} busy={busy}><div className="dialog-body"><span className="delete-icon"><Trash2 size={27} /></span><h3>{deletion.round?.title || deletion.app.position}</h3><p className="delete-description">{deletion.round ? 'Chỉ xóa vòng phỏng vấn này. Hồ sơ ứng tuyển vẫn được giữ lại.' : `Xóa hồ sơ tại ${deletion.app.company} và ${deletion.app.interviews.length} vòng phỏng vấn liên quan.`}</p><p className="danger-text">Không thể khôi phục sau khi xóa.</p></div><footer className="dialog-actions"><Button kind="secondary" disabled={busy} onClick={() => setDeletion(null)}>Giữ lại</Button><Button kind="danger" disabled={busy} onClick={() => void remove()}>{busy ? 'Đang xóa…' : deletion.round ? 'Xóa phỏng vấn' : 'Xóa vĩnh viễn'}</Button></footer></Dialog>}
+  {account && <Dialog title="Không gian của bạn" onClose={() => setAccount(false)}><div className="dialog-body"><div className="account-summary"><span className="avatar">{demoMode ? 'NT' : 'TK'}</span><div><h3>{demoMode ? 'Nhật Tân' : 'Tài khoản'}</h3><p>{demoMode ? 'Đang khám phá với dữ liệu mẫu.' : accountEmail || 'Không gian ứng tuyển cá nhân.'}</p></div></div><Button kind="secondary" onClick={() => { setAccount(false); setGrantsModal(true); }}><KeyRound size={16} />Kết nối AI & MCP</Button>{demoMode && <Button kind="secondary" onClick={() => { setAccount(false); setReset(true); }}><RotateCcw size={16} />Khôi phục dữ liệu mẫu</Button>}<Button kind="ghost" onClick={() => void logout()}><LogOut size={17} />Đăng xuất</Button></div></Dialog>}
+  {importModal && <ImportLinkModal apps={apps} onClose={() => setImportModal(false)} onSaved={id => void saved(id)} onOpenExisting={id => { setImportModal(false); navigate(`application/${id}`); }} />}
+  {grantsModal && <AiGrantsModal onClose={() => setGrantsModal(false)} />}
+  {authState === 'authenticated' && <ChatWidget onRefreshApps={() => void refresh()} onNavigate={navigate} />}
+  {reset && <Dialog title="Khôi phục dữ liệu mẫu?" busy={busy} onClose={() => setReset(false)}><div className="dialog-body"><p>Các thay đổi trong bản dùng thử này sẽ được thay bằng dữ liệu mẫu ban đầu. Không thể hoàn tác.</p></div><footer className="dialog-actions"><Button kind="secondary" disabled={busy} onClick={() => setReset(false)}>Hủy</Button><Button disabled={busy} onClick={async () => { setBusy(true); try { await repository.reset(); setReset(false); await refresh(); navigate('dashboard'); notify('Đã khôi phục dữ liệu mẫu.'); } catch (error) { notify((error as Error).message, true); } finally { setBusy(false); } }}>Khôi phục</Button></footer></Dialog>}
+  {authState === 'expired' && (
+    <Dialog title="Xác thực lại phiên làm việc" onClose={() => {}} busy={busy}>
+      <div className="dialog-body">
+        <div className="notice notice-conflict" role="alert">
+          <div>
+            <h3>Phiên làm việc đã hết hạn</h3>
+            <p>Đăng nhập lại để tiếp tục lưu bản nháp mà không bị mất dữ liệu đang nhập.</p>
+          </div>
+        </div>
+        <Auth
+          onEnter={async user => {
+            if (!user) {
+              try { user = await repository.me(); } catch { return; }
+            }
+            if (currentUserId && user.id !== currentUserId) {
+              setCurrentUserId(user.id);
+              setAccountEmail(user.email);
+              setAuthState('authenticated');
+              setForm(null);
+              setInterview(undefined);
+              setActionApp(null);
+              void refresh();
+              notify('Đã đăng nhập tài khoản khác. Bản nháp trước đó đã bị hủy để bảo mật.', true);
+            } else {
+              setCurrentUserId(user.id);
+              setAccountEmail(user.email);
+              setAuthState('authenticated');
+              notify('Phiên đã được khôi phục. Bạn có thể tiếp tục lưu.');
+            }
+          }}
+        />
+      </div>
+    </Dialog>
+  )}
+  {toast && <div className={`toast ${toast.error ? 'toast-error' : ''}`} role={toast.error ? 'alert' : 'status'}>{toast.error ? <CircleAlert size={18} /> : <Check size={18} />}<span>{toast.message}</span><button aria-label="Đóng thông báo" className="icon-button" onClick={() => setToast(null)}><X size={16} /></button></div>}
+  </div>;
+}

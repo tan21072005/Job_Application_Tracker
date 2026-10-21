@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T00:00:00+07:00",
+  "title": "Design System: JobTrack Web",
+  "extensions": {
+    "sources": [
+      "src/jobtrack.css",
+      "src/JobTrack.tsx",
+      "src/components/ui.tsx",
+      "src/components/forms.tsx",
+      "src/views/",
+      "src/assets/fonts/fonts.css"
+    ],
+    "scope": "apps/web only; source-derived refinement, no new-world or Figma-parity claim.",
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Action Blue"
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Pale Canvas"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Deep Ink"
+      }
+    },
+    "shadows": [
+      {
+        "name": "selected-view",
+        "value": "0 2px 4px #17243b08",
+        "purpose": "Selected list/pipeline switch."
+      },
+      {
+        "name": "dialog",
+        "value": "0 20px 80px #12234530",
+        "purpose": "Modal elevation."
+      },
+      {
+        "name": "toast",
+        "value": "0 8px 32px #15253e20",
+        "purpose": "Transient feedback."
+      }
+    ],
+    "motion": [
+      {
+        "name": "button-transition",
+        "value": "background .16s ease-out,color .16s ease-out",
+        "purpose": "Button states."
+      },
+      {
+        "name": "loading-spin",
+        "value": "spin 1s linear infinite",
+        "purpose": "Loading icon rotation."
+      },
+      {
+        "name": "reduced-motion",
+        "value": ".01ms",
+        "purpose": "Animation and transition duration under prefers-reduced-motion:reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-min",
+        "value": "1650px"
+      },
+      {
+        "name": "compact-max",
+        "value": "1240px"
+      },
+      {
+        "name": "tablet-max",
+        "value": "1000px"
+      },
+      {
+        "name": "mobile-max",
+        "value": "700px"
+      }
+    ],
+    "focus": {
+      "value": "3px solid var(--primary)",
+      "offset": "4px"
+    },
+    "backdrop": {
+      "background": "#15253e66",
+      "filter": "blur(3px)"
+    },
+    "notes": [
+      "No synthetic tonal ramps: recorded palette is implemented source only.",
+      "No creative North Star was newly chosen; this records the confirmed incumbent light/blue identity.",
+      "Status and static panel examples have no invented interactive states."
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Implemented primary variant from components/ui.tsx and jobtrack.css.",
+      "html": "<button class=\"ds-button\">Lưu hồ sơ</button>",
+      "css": ".ds-button{font-family:'Noto Sans',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;line-height:20px;white-space:nowrap;cursor:pointer;background:var(--primary,#315bef);color:white;border:0;transition:background .16s ease-out,color .16s ease-out}.ds-button:hover:not(:disabled){background:var(--primary-hover,#2447c9)}.ds-button:focus-visible{outline:3px solid var(--primary,#315bef);outline-offset:4px}.ds-button:disabled{cursor:wait;opacity:.55}@media(prefers-reduced-motion:reduce){.ds-button{transition-duration:.01ms}}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Implemented secondary variant from components/ui.tsx and jobtrack.css.",
+      "html": "<button class=\"ds-button\">Hủy</button>",
+      "css": ".ds-button{font-family:'Noto Sans',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;line-height:20px;white-space:nowrap;cursor:pointer;background:white;color:var(--ink,#17243b);border:1px solid var(--line,#e0e6ef);transition:background .16s ease-out,color .16s ease-out}.ds-button:hover:not(:disabled){background:#f1f4f9;border-color:#c2cddd}.ds-button:focus-visible{outline:3px solid var(--primary,#315bef);outline-offset:4px}.ds-button:disabled{cursor:wait;opacity:.55}@media(prefers-reduced-motion:reduce){.ds-button{transition-duration:.01ms}}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Implemented ghost variant from components/ui.tsx and jobtrack.css.",
+      "html": "<button class=\"ds-button\">Xem tất cả</button>",
+      "css": ".ds-button{font-family:'Noto Sans',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;line-height:20px;white-space:nowrap;cursor:pointer;background:transparent;color:var(--primary,#315bef);border:0;transition:background .16s ease-out,color .16s ease-out}.ds-button:hover:not(:disabled){background:var(--soft,#edf2ff)}.ds-button:focus-visible{outline:3px solid var(--primary,#315bef);outline-offset:4px}.ds-button:disabled{cursor:wait;opacity:.55}@media(prefers-reduced-motion:reduce){.ds-button{transition-duration:.01ms}}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Implemented danger variant from components/ui.tsx and jobtrack.css.",
+      "html": "<button class=\"ds-button\">Xóa hồ sơ</button>",
+      "css": ".ds-button{font-family:'Noto Sans',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;line-height:20px;white-space:nowrap;cursor:pointer;background:var(--danger,#a92843);color:white;border:0;transition:background .16s ease-out,color .16s ease-out}.ds-button:hover:not(:disabled){background:#8c1b34}.ds-button:focus-visible{outline:3px solid var(--primary,#315bef);outline-offset:4px}.ds-button:disabled{cursor:wait;opacity:.55}@media(prefers-reduced-motion:reduce){.ds-button{transition-duration:.01ms}}"
+    },
+    {
+      "name": "Labeled Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Default field; focus and error states come from jobtrack.css.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-company\">Công ty</label><input id=\"ds-company\" placeholder=\"Tên công ty\" aria-describedby=\"ds-help\"><small id=\"ds-help\">Nhập tên công ty.</small></div>",
+      "css": ".ds-field{font-family:'Noto Sans',sans-serif;display:flex;flex-direction:column;gap:8px;color:var(--ink,#17243b)}.ds-field label{font-size:12px;font-weight:600}.ds-field input{font-family:'Noto Sans',sans-serif;min-height:46px;padding:11px 13px;border:1px solid #cdd6e3;border-radius:7px;background:white;color:var(--ink,#17243b);font-size:13px;line-height:22px}.ds-field input::placeholder{color:#69788d;opacity:1}.ds-field input:focus{border-color:var(--primary,#315bef)}.ds-field input:focus-visible{outline:3px solid var(--primary,#315bef);outline-offset:4px}.ds-field input[aria-invalid=true]{border-color:var(--danger,#a92843);background:#fffafb}.ds-field small{font-size:11px;line-height:1.7;color:var(--muted,#52637a)}@media(max-width:700px){.ds-field input{font-size:16px;min-height:48px}}"
+    },
+    {
+      "name": "Active Navigation",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Desktop active link; mobile shell layout is documented in DESIGN.md.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Điều hướng\"><a href=\"#dashboard\" aria-current=\"page\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><rect width=\"7\" height=\"9\" x=\"3\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"14\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"9\" x=\"14\" y=\"12\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"3\" y=\"16\" rx=\"1\"/></svg><span>Tổng quan</span></a></nav>",
+      "css": ".ds-nav a{font-family:'Noto Sans',sans-serif;display:flex;align-items:center;gap:12px;text-decoration:none;font-size:13px;padding:13px 14px;border-radius:8px;min-height:48px;color:var(--muted,#52637a)}.ds-nav a:hover{background:var(--canvas,#f7f9fc)}.ds-nav [aria-current=page]{background:var(--soft,#edf2ff);color:var(--primary,#315bef);font-weight:600}.ds-nav a:focus-visible{outline:3px solid var(--primary,#315bef);outline-offset:4px}"
+    },
+    {
+      "name": "Applied Status",
+      "kind": "chip",
+      "refersTo": "status-applied",
+      "description": "Informational application status; not an interactive chip.",
+      "html": "<span class=\"ds-status\"><span aria-hidden=\"true\"></span>Đã ứng tuyển</span>",
+      "css": ".ds-status{font-family:'Noto Sans',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:5px 8px;border-radius:5px;font-size:10px;font-weight:600;white-space:nowrap;color:var(--primary,#315bef);background:var(--soft,#edf2ff)}.ds-status>span{width:4px;height:4px;border-radius:50%;background:currentColor}"
+    },
+    {
+      "name": "Information Panel",
+      "kind": "card",
+      "refersTo": "information-panel",
+      "description": "Static bordered information surface; no invented hover interaction.",
+      "html": "<section class=\"ds-panel\"><h2>Thông tin ứng tuyển</h2></section>",
+      "css": ".ds-panel{font-family:'Noto Sans',sans-serif;padding:25px;background:white;color:var(--ink,#17243b);border:1px solid var(--line,#e0e6ef);border-radius:var(--radius,12px)}.ds-panel h2{margin:0;font-size:17px;line-height:1.5;letter-spacing:-.02em;font-weight:600}@media(max-width:700px){.ds-panel{padding:21px}.ds-panel h2{font-size:16px}}"
+    }
+  ],
+  "narrative": {
+    "overview": "The workspace uses a pale canvas, white panels, restrained borders, and clear blue actions. Compact supporting information leaves stronger type and color for the current task and upcoming interview. Vietnamese labels use one self-hosted type family throughout.",
+    "keyCharacteristics": [
+      "Light surfaces with blue selection and action states.",
+      "Bordered panels with limited elevation.",
+      "Responsive lists and full forms with visible validation.",
+      "Lucide SVG icons and company monograms."
+    ],
+    "rules": [
+      {
+        "name": "The Labeled Status Rule",
+        "body": "Preserve text labels with status colors; a colored dot alone does not communicate the state.",
+        "section": "colors"
+      },
+      {
+        "name": "The Visible Focus Rule",
+        "body": "Preserve the primary outline (3px, offset 4px) for keyboard controls. Search uses a wrapper focus ring instead of a second input outline.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do preserve the light canvas, blue action hierarchy, and Vietnamese labels.",
+      "Do keep status text, field labels, and contextual next actions visible as layouts wrap.",
+      "Do use the supplied Noto Sans assets and Lucide SVG icons.",
+      "Do retain focus, error, loading, empty, disabled, and reduced-motion behavior."
+    ],
+    "donts": [
+      "Don't apply the five independent experiences' visual systems to this app.",
+      "Don't replace state labels with color alone.",
+      "Don't treat browser demo fixtures as production data or backend completion."
+    ]
+  }
+}

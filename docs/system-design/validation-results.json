@@ -1,0 +1,20 @@
+{
+  "openapiOperations": 14,
+  "openapiRefs": "resolved",
+  "statusEnums": "match current core",
+  "sqlTables": [
+    "users",
+    "sessions",
+    "applications",
+    "interviews",
+    "idempotency_requests"
+  ],
+  "drawioPages": 7,
+  "nativeVertices": 67,
+  "edges": 49,
+  "limits": [
+    "No full OpenAPI meta-schema validation",
+    "SQL checks are structural; no PostgreSQL execution",
+    "No runtime API, ownership, concurrency, performance or deployment test"
+  ]
+}
