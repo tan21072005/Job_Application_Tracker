@@ -1,120 +1,40 @@
-# AG00 — Brief cho reviewer độc lập duyệt gap matrix
+# AG00 — brief review độc lập hiện hành
 
-Mục tiêu: AG00 được viết bởi một phiên khác (tác giả: orchestrator của lượt 2026-10-21). **Không tự duyệt.** Reviewer phải là một phiên/agent khác, chỉ đọc, và phải trả lời "pass hay không" cho từng claim có bằng chứng.
+Mốc2026-10-21. Base candidate:e60185a; xem diff tài liệu reconciliation trong worktree maintainer.9dc80e0/7284202/30db3fd là các mốc lịch sử, không yêu cầu HEAD hiện tại bằng mốc cũ. Review phải ghi SHA256 của bytes thực sự đọc; không tự review nội dung do mình viết.
 
-## 1. Đối tượng review
+## Scope
 
-| Mục | Đường dẫn |
+BASELINE-GAPS, CAPABILITY-INVENTORY, RUN-STATUS, SANDBOX-READINESS, AG02-RUNBOOK, CANARY-EVIDENCE, TASKS và plan/architecture/acceptance. Review hậu kiểm auth có báo cáo riêng; AG00 chỉ chấp nhận audit đầy đủ/trung thực, không chứng nhận G-A hoặc toàn bộ sản phẩm đã đạt.
+
+Mỗi claim dùng agree/disagree/unverifiable, phân biệt historical/observed-source/executed-current. Không mở dotenv/accounts/key hoặc chạy probe mở file credential thật. Không account-create, DB writes/testsuite DB, provider/n8n/payment/migrate/restore/load/push.
+
+## Checklist C1–C18
+
+| ID | Kiểm chứng |
 | --- | --- |
-| Gap matrix (đối tượng chính) | `planning/jobtrack-agent-autonomy/BASELINE-GAPS.md` |
-| Inventory quyền | `planning/jobtrack-agent-autonomy/CAPABILITY-INVENTORY.md` |
-| Trạng thái runtime | `planning/jobtrack-agent-autonomy/RUN-STATUS.md` |
-| Bằng chứng sandbox | `planning/jobtrack-agent-autonomy/CANARY-EVIDENCE.json`, `SANDBOX-READINESS.md`, `AG02-RUNBOOK.md` |
-| Registry task | `planning/jobtrack-agent-autonomy/TASKS.json` (entry `AG00`, status hiện tại `review`) |
-| Kế hoạch đối chiếu | `planning/jobtrack-agent-autonomy/PLAN.md`, `ACCEPTANCE.md`, `ARCHITECTURE.md` |
+| C1 | Historical baseline và current HEAD/worktrees/tracked/untracked/remote/stash phân biệt rõ; không reset |
+| C2 | Chạy agents:test nếu được phép, ghi count/exit/time hiện tại, không ép21 |
+| C3 | Registry current; phân biệt prepared/running/abandoned, cleanup qua controller không sửa state tay |
+| C4 | Doctor chỉ là sandbox launch probe; ghi execution token/context và code, không nhầm nested87 với host failure |
+| C5 | RTK comparison chỉ nhận historical nếu không tái lập host-direct; không giả fresh |
+| C6 | Identity/elevation theo token đo được; tài khoản tồn tại không chứng minh ACL isolation |
+| C7 | Canonical invalidBearer401/noBearer403 không cookie chỉ chứng minh routing; patch source/tests và old DB evidence có provenance |
+| C8 | MCP dependencies không SDK; không suy giao thức chắc chắn không tương thích |
+| C9 | ATS scoring/template heuristic theo source, không gọi là model output |
+| C10 | check:all thiếu agents:test theo root scripts |
+| C11 | Broker rules không tự chặn mọi read/shell; run chưa enforce G-A phải nêu |
+| C12 | Comment extension coverage thiếu; prose Markdown khác code comments, JSON chuẩn không comment; xóa comment cũ chưa enforce |
+| C13 | Không claims fixture→live; có planner role nhưng chưa module DAG đầy đủ |
+| C14 | HTTP ready/web/proxy khác browser-render/PID snapshot; không restart/kill app |
+| C15 | CLI PATH/app có versions/context; host probe khác nested-token |
+| C16 | Không có evidence cần uninstall; không uninstall/elevated để review. ACL repair quản trị trước đó là sự kiện riêng, không nói chưa từng elevated |
+| C17 | Recorded read isolation FAIL; chặn live theo quy trình, code gate chưa có; không mở secrets |
+| C18 | Egress inconclusive; probe predicates thiếu, cần missing-fields fail-closed/positive control |
 
-**Digest cần review:** commit `9dc80e0` trên `main` (các file audit ở commit `7284202`). Nếu bất kỳ file nào ở trên thay đổi sau khi reviewer đọc, verdict mất hiệu lực → phải review lại.
+## Output
 
-Xác nhận đúng digest trước khi kết luận:
+Reviewer trả Markdown để maintainer lưu AG00-REVIEW.md: reviewer/run, base/current hashes, commands+exit/results, verdict, allC1–C18, findings severity/location/trigger/impact, limitations. Không sửa source/docs/registry hoặc commit.
 
-```powershell
-cd D:\Project\Job_Application_Tracker
-git log --oneline -3
-git status --porcelain --untracked-files=no
-```
+Còn P1 làm audit sai/thiếu thì FAIL và delta review sau sửa. Audit trung thực có thể PASS_WITH_LIMITS trong khi G-A vẫn blocked và code findings là task mở. Chỉ sau verdict mới maintainer chuyển AG00.status accepted như cập nhật hành chính, ghi reviewed status hash/provenance; không giả hash registry còn giống sau sửa status.
 
-Kỳ vọng: `9dc80e0` ở đầu, `git status` không có dòng nào cho các file audit.
-
-## 2. Checklist kiểm chứng (mỗi claim phải có trả lời)
-
-| # | Claim trong tài liệu | Cách kiểm | Đạt khi |
-| --- | --- | --- | --- |
-| C1 | HEAD = `30db3fd` ở thời điểm audit, main sạch, 3 worktree, không remote | `git log --oneline -3`, `git worktree list`, `git branch -a`, `git status` | khớp `BASELINE-GAPS.md` §1 |
-| C2 | Fixture test 21/21 pass | `npm run agents:test` | đúng 21 pass, 0 fail; nếu chạy lại được thì ghi lại thời điểm |
-| C3 | `agents status` = `[]` | `npm run agents -- status` | mảng rỗng |
-| C4 | Sandbox fail, `liveWorkersVerified: false` | `npm run agents -- doctor` | `sandbox.code != 0` |
-| C5 | RTK không phải nguyên nhân sandbox | chạy 2 lệnh `codex sandbox ... -- node --version` và `-- rtk proxy node --version` | **cả hai lỗi giống hệt** |
-| C6 | Sandbox accounts tồn tại, session không elevated | `Get-LocalUser`, `whoami /groups` | `CodexSandboxOffline/Online` có; `S-1-5-32-544` là deny-only |
-| C7 | P0 Origin bypass + Bearer→cookie fallback | đọc `apps/api/src/server.ts` dòng 177-214 và 226-250; **tự chạy probe** (không dùng credential) | probe A trả 401, probe B trả 403 ⇒ cơ chế bypass đúng như tài liệu mô tả |
-| C8 | MCP không có SDK chính thức | đọc `packages/jobtrack-mcp/package.json` | dependencies chỉ có `pg` |
-| C9 | ATS dùng heuristic, không gọi model | đọc `apps/api/src/services/ai-pro-service.ts` khoảng 118-135 | có `matchRatio*55+25` |
-| C10 | `check:all` không gọi `agents:test` | đọc `package.json` dòng 40 | đúng |
-| C11 | Lane prefixes và protected paths trong `policy.mjs` | đọc `tools/agent-control/policy.mjs` | 5 lane, protectedNames/protectedParts khớp `CAPABILITY-INVENTORY.md` §2-§3 |
-| C12 | Comment policy bỏ sót `.sql/.py/.md/.yml` | đọc `policy.mjs` dòng 115-131 | regex `/\.(?:[cm]?[jt]sx?|css|html)$/` không phủ các ngôn ngữ đó |
-| C13 | Không claim sai về live/AGENTS | đọc lại toàn bộ 3 file audit | không có câu nào biến fixture thành live |
-| C14 | Runtime claim: API 64366 `/api/ready` = version 6, web 64364 render | `Invoke-WebRequest http://127.0.0.1:64366/api/ready`; mở `http://127.0.0.1:64364/` | đúng; nếu server đã dừng thì đánh dấu "cần khởi động lại", không coi là sai |
-| C15 | Nguyên nhân sandbox là **chọn nhầm CLI**, không phải thiếu elevated | chạy `codex sandbox --permission-profile :read-only -C . -- node --version` (PATH) và lặp lại với `codex.exe` của ứng dụng | PATH lỗi, app CLI exit 0; `doctor` với `CODEX_CLI_PATH` trả `sandbox.code = 0` |
-| C16 | Không có bằng chứng nào buộc phải `codex sandbox uninstall` | đọc `SANDBOX-READINESS.md` | uninstall **chưa chạy**; tài liệu nói rõ điều đó |
-| C17 | **Cách ly đọc KHÔNG có**: worker mở được `.git` common dir, `.env`, `accounts.txt`, sibling worktree, control state | đọc `CANARY-EVIDENCE.json` → `verdicts.V01_readIsolation = false` | đúng; và các tài liệu không được mô tả ngược lại |
-| C18 | Egress **chưa chứng minh** (trùng baseline host) | `verdicts.V08_egressDenied = false`, so sánh canary `host-direct` | đúng; không được tính là denial đã chứng minh |
-
-**C7 là mục quan trọng nhất.** Reviewer phải tự chạy lại probe, không tin lời tác giả. Probe an toàn, không cần credential:
-
-```powershell
-$r = Invoke-WebRequest -Uri "http://127.0.0.1:64366/api/applications" -Method POST `
-  -Headers @{ Origin = "http://evil.example"; Authorization = "Bearer invalid_token_zzz" } `
-  -Body "{}" -ContentType "application/json" -UseBasicParsing
-```
-
-Kỳ vọng A → `401` (Origin đã bị bypass vì có header Bearer). Bỏ header `Authorization` → kỳ vọng B → `403` (Origin có hiệu lực). Nếu A/B cho kết quả khác ⇒ claim sai, phải ghi finding.
-
-**Không được** tạo account, đọc `accounts.txt`, đọc `.env`, hay tạo dữ liệu trong DB để review.
-
-## 3. Hợp đồng đầu ra
-
-Ghi kết quả vào `planning/jobtrack-agent-autonomy/AG00-REVIEW.md` theo mẫu:
-
-```markdown
-# AG00 — Independent review
-
-- Reviewer: <tên phiên/agent, khác tác giả>
-- Reviewed digest: 9dc80e0
-- Reviewed at: <ISO timestamp>
-- Method: read-only + các lệnh đã chạy (ghi lệnh và exit code)
-
-## Verdict
-PASS_WITH_LIMITS | FAIL
-
-## Checklist
-| # | Claim | Kết quả | Bằng chứng (lệnh + output) |
-|---|---|---|---|
-| C1 | ... | agree / disagree / unverifiable | ... |
-
-## Findings
-| ID | Severity | Location | Trigger | Impact | Khuyến nghị |
-|---|---|---|---|---|---|
-| F1 | P0/P1/P2 | file:line | điều kiện kích hoạt | hậu quả | hành động |
-
-## Giới hạn của review
-- không kiểm chứng được: ...
-```
-
-Severity: `P0` lộ dữ liệu/vi phạm quyền/điểm chặn live · `P1` sai lệch quan trọng trong tài liệu hoặc bỏ sót rủi ro lớn · `P2` imprecision, thiếu chi tiết, wording.
-
-## 4. Prompt dán cho reviewer
-
-```text
-Review read-only AG00 của JobTrack tại D:\Project\Job_Application_Tracker trên digest 9dc80e0.
-
-Đọc AGENTS.md và docs/agents/OPERATING-RULES.md trước, mọi shell command bắt đầu bằng rtk.
-Đối chiếu planning/jobtrack-agent-autonomy/BASELINE-GAPS.md, CAPABILITY-INVENTORY.md,
-RUN-STATUS.md với source thật và tự chạy lại các lệnh trong checklist C1-C14.
-
-Không dựa vào lời tác giả rằng đã kiểm chứng. Mọi claim phải có lệnh đã chạy + output.
-Không sửa source, không sửa chính 3 file audit, không tạo account, không đọc .env/accounts.txt,
-không ghi DB, không commit, không chạy migrate/restore/load/payment/provider.
-
-Trả findings có vị trí/trigger/impact/severity, hoặc PASS có giới hạn.
-Ghi kết quả vào planning/jobtrack-agent-autonomy/AG00-REVIEW.md.
-Bất kỳ thay đổi nào sau khi review làm mất hiệu lực verdict này.
-```
-
-## 5. Sau khi review
-
-| Kết quả | Hành động |
-| --- | --- |
-| `PASS` hoặc `PASS_WITH_LIMITS` | Đổi `AG00.status` trong `TASKS.json` → `accepted`, ghi `AG00-REVIEW.md` vào commit riêng, cập nhật `docs/agents/IMPLEMENTATION-STATUS.md` |
-| `FAIL` với finding P0/P1 | Sửa tài liệu audit, **commit mới**, review lại trên digest mới (verdict cũ không tái dùng) |
-| `unverifiable` ở claim quan trọng | Đánh dấu claim đó NOT-RUN/BLOCKED trong tài liệu thay vì giữ như đã xác nhận |
-
-Mọi thay đổi phải là commit riêng với explicit paths. Không sửa `TASKS.json` status thành `accepted` khi chưa có `AG00-REVIEW.md` tương ứng — đó là tự duyệt.
+Không tạo machine receipt từ Markdown hoặc rewrite lịch sử thành review đã xảy ra trước integration. Sửa source phải check/review lại đúng digest.

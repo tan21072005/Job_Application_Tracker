@@ -2,7 +2,7 @@
 
 Ngày kiểm kê: 2026-10-21. Lượt này là **audit read-only** của controller/policy/source hiện tại, không sửa code sản phẩm, không dispatch worker, không đọc secret, không gọi provider hay DB ghi.
 
-Mọi mục dưới đây là kết quả đo **fresh trong phiên này**, không phải báo cáo lịch sử được trích lại.
+Tài liệu giữ snapshot audit đầu tại30db3fd và các cập nhật có commit riêng. Bảng §1–§2 là lịch sử tại thời điểm audit, không phải hiện trạng HEAD/testcounts/task registry sau e60185a. Review hiện hành phải ghi evidence mới riêng trong AG00-REVIEW.md.
 
 ## 1. Mốc môi trường
 
@@ -54,8 +54,8 @@ Các kiểm tra trước đó vẫn đúng và giữ nguyên giá trị: RTK kh�
 | Worktree/branch riêng theo task | có | có (21/21) | không | — |
 | Lane lease + chặn overlap | có | có | không | — |
 | Proposal broker (path/hash/secret/comment/size) | có | có | không | — |
-| Check executor gắn digest | có | có (injected check) | không | cần sandbox |
-| Reviewer độc lập + digest binding | có | có | không | cần sandbox |
+| Check executor gắn digest | có | có (injected check) | không | cần cách ly/check profile đạt gate |
+| Reviewer độc lập + digest binding | có | có | không | cần cách ly/check profile đạt gate |
 | Attempt limit / same-failure stop | có | có | không | — |
 | Feature commit explicit paths | có | có | không | — |
 | Crash recovery / atomic journal | một phần | một phần | không | chưa có evidence |
@@ -100,7 +100,7 @@ Phạm vi tại thời điểm phát hiện: chưa khai thác với session th�
 | POST chỉ cookie + Origin hợp lệ | `422` | `422` (không hồi quy) |
 | POST cross-origin + không Bearer | `403 invalid_origin` | `403 invalid_origin` (không đổi) |
 
-Bằng chứng đầy đủ: `AUTH-FIX-EVIDENCE.md`. Còn tồn đọng: Origin bypass vẫn dựa trên **hình thức header** chứ không phải grant đã xác thực — cần task riêng, không gộp vào bản sửa này. Chưa có review độc lập cho chính bản sửa (theo `AGENTS.md`, cần trước khi tích hợp chính thức).
+Bằng chứng đầy đủ: `AUTH-FIX-EVIDENCE.md`. Còn tồn đọng: Origin bypass vẫn dựa trên **hình thức header** chứ không phải grant đã xác thực — cần task riêng, không gộp vào bản sửa này. Bản sửa đã được tích hợp trước review; đây là sai lệch thứ tự quy trình. Review hậu kiểm riêng được yêu cầu trong lượt tiếp theo, xem AUTH-INDEPENDENT-REVIEW.md khi có; không tạo receipt hoặc giả vờ review đã xảy ra trước commit.
 
 ### 4.2 Các mục còn lại — xác nhận source, chưa sửa
 
@@ -129,10 +129,12 @@ Không chạy và không được coi là đã kiểm chứng: `db:migrate`, `db
 
 ## 7. Task ready kế tiếp theo thứ tự gate
 
+**Independent review phát hiện thêm:** G-A đang là quy trình, không phải code gate trong controller.run; run chỉ kiểm sandbox launch rồi có thể gọi model. Probe aggregate cũng chưa fail-closed đúng read/network predicates. Do đó operator phải giữ lệnh cấm live dispatch; ưu tiên implementation gate trước mọi pilot. Chi tiết AG00-REVIEW và NEXT-SESSION-RESULTS.
+
 1. **AG01 (maintainer)** — `PERMISSION-MATRIX.md` + `CONTROL-PLANE-ADR.md`, phải khớp với bằng chứng thật: sandbox chặn **ghi** nhưng **không chặn đọc** (worker mở được `.git` common dir, `.env`, `accounts.txt`, sibling worktree, control state). Không được mô tả worker là "không đọc được ngoài quyền" khi điều đó chưa được enforce ở tầng OS.
 2. **AG00 đóng** — reviewer độc lập duyệt gap matrix này (brief: `AG00-REVIEW-BRIEF.md`), rồi mới chuyển `TASKS.json` AG00 → `accepted`.
 3. **AG02 đóng (PARTIAL)** — probe đã pass nhờ `CODEX_CLI_PATH`; còn lại: cách ly đọc (AG01), egress có positive control (AG07), profile riêng cho check runner, bỏ `liveWorkersVerified: false` hardcode. Ghi rõ phần nào của G-A chưa đạt, không tính là đạt.
-4. **Sửa P0 auth (C03)** — xem §4.1; fix + regression test phải đi qua feature branch của lane `api` và review độc lập.
+4. **Hậu kiểm auth (C03)** — fix443b8ac đã tích hợp; cần review độc lập có phạm vi và giữ residual Origin task riêng, không gọi toàn C03 accepted.
 5. AG03–AG09 — chỉ mở sau khi G-A/G-B/G-C đạt.
 
 Không mở live worker, không tự sửa `tools/agent-control/policy.mjs`, không nới sandbox trong lúc chờ G-A đạt.

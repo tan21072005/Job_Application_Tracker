@@ -4,9 +4,9 @@
   "purpose": "Planning backlog for autonomous development orchestration, not runnable controller input or an instruction to execute immediately.",
   "workspace": "D:\\Project\\Job_Application_Tracker",
   "productPlan": "../jobtrack-full-completion/PLAN.md",
-  "baseline": "30db3fd (recheck current Git before work; never reset)",
+  "baseline": "e60185a: source base for independent review closure; historical30db3fd retained, never reset",
   "startingMode": "L0-plan-fixture",
-  "liveBlocker": "Windows sandbox setup refresh previously failed; not re-probed in this planning turn.",
+  "liveBlocker": "G-A fail: read isolation and check confinement missing, egress inconclusive; controller.run does not yet enforce readiness receipt. Operator must not run live dispatch.",
   "guardrails": {
     "maxWorkers": 3,
     "wipPerLane": 1,
@@ -25,7 +25,7 @@
     {
       "id": "AG00",
       "title": "Audit baseline, gaps và phạm vi tự động hóa",
-      "status": "review",
+      "status": "accepted",
       "dependencies": [],
       "executionOwner": "maintainer bootstrap/control-plane work item",
       "proposedPaths": [
@@ -57,7 +57,9 @@
       "acceptanceIds": [
         "V24"
       ],
-      "implementationPrompt": "Thực hiện AG00: Audit baseline, gaps và phạm vi tự động hóa. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+      "implementationPrompt": "Thực hiện AG00: Audit baseline, gaps và phạm vi tự động hóa. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS.",
+      "acceptanceScope": "audit-only; G-A/live automation remain blocked",
+      "independentReview": "AG00-REVIEW.md; /root/ag00_independent_review_current finaldelta2026-10-21T08:15:53Z"
     },
     {
       "id": "AG01",
@@ -98,7 +100,8 @@
         "V08",
         "V18"
       ],
-      "implementationPrompt": "Thực hiện AG01: Thiết kế quyền, capability và control plane. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+      "implementationPrompt": "Thực hiện AG01: Thiết kế quyền, capability và control plane. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS.",
+      "designDecision": "CONTROL-PLANE-ADR.md + PERMISSION-MATRIX.md; implementation planned"
     },
     {
       "id": "AG02",
@@ -140,7 +143,8 @@
         "V15",
         "V24"
       ],
-      "implementationPrompt": "Thực hiện AG02: Sửa sandbox và kiểm read/write/network/timeout canary. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+      "implementationPrompt": "Thực hiện AG02: Sửa sandbox và kiểm read/write/network/timeout canary. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS.",
+      "readinessNote": "No live dispatch: probe success is not isolation readiness; must implement receipt gate and fix canary fail-closed predicates."
     },
     {
       "id": "AG03",
@@ -340,7 +344,8 @@
         "V15",
         "V24"
       ],
-      "implementationPrompt": "Thực hiện AG07: Check runner sandbox và evidence digest. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+      "implementationPrompt": "Thực hiện AG07: Check runner sandbox và evidence digest. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS.",
+      "readinessNote": "No live dispatch: probe success is not isolation readiness; must implement receipt gate and fix canary fail-closed predicates."
     },
     {
       "id": "AG08",
@@ -523,7 +528,8 @@
         "V23",
         "V24"
       ],
-      "implementationPrompt": "Thực hiện AG11: Canary end-to-end và pilot feature có giám sát. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+      "implementationPrompt": "Thực hiện AG11: Canary end-to-end và pilot feature có giám sát. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS.",
+      "readinessNote": "No live dispatch: probe success is not isolation readiness; must implement receipt gate and fix canary fail-closed predicates."
     },
     {
       "id": "AG12",
@@ -609,5 +615,13 @@
       ],
       "implementationPrompt": "Thực hiện AG13: Quan sát, bàn giao và nghiệm thu L2. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
     }
-  ]
+  ],
+  "reviewClosure": {
+    "date": "2026-10-21",
+    "sourceCodeUnchanged": true,
+    "AG00": "accepted audit-only after independent PASS_WITH_LIMITS; implementation blockers remain open",
+    "AG01": "design selected: minimal projection inside restricted identity/container; not implemented",
+    "auth443b8ac": "independent narrow PASS, C03partial",
+    "duplicateWorktree": "removed nonforce, branch/audit retained"
+  }
 }

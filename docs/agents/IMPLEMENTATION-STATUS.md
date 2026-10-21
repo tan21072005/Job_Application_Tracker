@@ -8,22 +8,22 @@
 
 **Live automation vẫn bị chặn, nhưng nguyên nhân đã đổi:** probe sandbox **đã pass** khi controller dùng CLI Codex của ứng dụng (`CODEX_CLI_PATH` → `codex-cli 0.163.0-alpha.10.2`); bản npm `codex` trên PATH (`0.162.0`) mới là bản lỗi `helper_unknown_error: setup refresh had errors`. Không cần elevated, **không** cần `codex sandbox uninstall` (chưa chạy, không có bằng chứng cho nó), không chuyển sang danger-full-access.
 
-**Cách ly đọc vẫn chưa có.** Canary đo thật (profile `:read-only`, identity `CodexSandboxOffline`): ghi trong và ngoài checkout đều `DENIED`, child process được dọn sạch, `~/.ssh` bị chặn — nhưng worker **vẫn mở được** `.git` common dir, `.env`, `accounts.txt`, sibling worktree và control state; profile `:workspace` còn ghi được ra ngoài checkout. Egress chưa chứng minh (kết quả trùng baseline host). Vì vậy **gate G-A chưa đạt** và live dispatch vẫn phải dừng. Bằng chứng: `planning/jobtrack-agent-autonomy/CANARY-EVIDENCE.json` + `SANDBOX-READINESS.md`. Cách ly đọc phải do OS identity/container hoặc controller cấp snapshot projection đảm nhiệm, không phải bằng prompt hay bằng sandbox của Codex.
+**Cách ly đọc vẫn chưa có.** Canary đo thật (profile `:read-only`, identity `CodexSandboxOffline`): ghi trong và ngoài checkout đều `DENIED`, child process được dọn sạch, `~/.ssh` bị chặn — nhưng worker **vẫn mở được** `.git` common dir, `.env`, `accounts.txt`, sibling worktree và control state; profile `:workspace` còn ghi được ra ngoài checkout. Egress chưa chứng minh (kết quả trùng baseline host). Vì vậy **gate G-A chưa đạt** và live dispatch vẫn phải dừng. Bằng chứng: `planning/jobtrack-agent-autonomy/CANARY-EVIDENCE.json` + `SANDBOX-READINESS.md`. Quyết định đích: snapshot projection tối thiểu chạy trong identity/container có quyền đọc bị giới hạn. Projection đơn lẻ dưới identity đọc rộng không đủ. Xem CONTROL-PLANE-ADR; chưa triển khai.
 
 Đây là công cụ phối hợp cho development agents tin cậy. README/AGENTS/hook không phải phân quyền OS; read-only không tự chặn mọi quyền đọc file. Muốn chống agent thù địch hoàn toàn cần OS identity/container riêng và kiểm soát Git common-dir/control plane. Không có cam kết cách ly tuyệt đối cho mọi terminal/công cụ ngoài controller.
 
 Quy trình phần mềm và AI nằm trong DEVELOPMENT-MODEL.md: Kanban mặc định, Scrum nếu cần sprint, gate tuần tự cho migration/release, CRISP-DM và eval Code+Data+Model+Prompt. Chưa cài pipeline huấn luyện/retrain hoặc scheduler chạy mãi, chưa tự thực thi task mẫu hay sửa sản phẩm ngoài yêu cầu.
 
-## Cập nhật kiểm kê fresh — 21/10/2026 (AG00)
+## Mốc audit và independent review
 
-Đo lại tại source hiện tại, không suy ra từ báo cáo cũ:
+Audit đầu ở30db3fd báo21fixtures/status[]/sandboxFAIL; đó là historical snapshot, không phải hiện trạng sau2d926d9/443b8ac/e60185a. Giả thuyết elevated/uninstall đã được thay bằng differentialCLI và canary; ACL repair quản trị trước đó là sự kiện riêng, không nói mọi thao tác máy chưa từng elevated.
 
-- `npm run agents:test` → **21 pass / 0 fail / 0 skipped** (39.3s). Fixture vẫn xanh; không chứng nhận live.
-- `npm run agents -- status` → `[]`, không task/lease đang chạy.
-- `npm run agents -- doctor` → `sandbox.code = 1`, `liveWorkersVerified: false`. **Live dispatch vẫn BLOCKED.**
+Independent reviewer lượt hiện tại chạy agents:test23/23PASS, auth regression6/6PASS và build:apiPASS. HTTP readyversion6/web/proxy200; không browser UI hoặc DB E2E mới. Reports trong planning/jobtrack-agent-autonomy/AG00-REVIEW.md và AUTH-INDEPENDENT-REVIEW.md có digests/giới hạn.
 
-Cô lập nguyên nhân sandbox (mới): chạy hai lệnh giống hệt, chỉ khác tiền tố — `codex sandbox --permission-profile :read-only -- node --version` và `-- rtk proxy node --version` — **đều lỗi y hệt** `helper_unknown_error: setup refresh had errors`. Kết luận: RTK không phải nguyên nhân; lỗi nằm ở helper sandbox Windows của Codex CLI, bước thiết lập/refresh tài khoản machine-wide. Host có `CodexSandboxOffline`, `CodexSandboxOnline` và group `CodexSandboxUsers`; phiên kiểm kê chạy `PC\Admin` **không elevated**. Giả thuyết cần kiểm chứng ở AG02: bước setup refresh yêu cầu phiên Administrator.
+G-A **chưa enforce bằng code**: run chỉ kiểm launch rồi có thể gọi planner; operator vẫn phải cấm live. Probe aggregate còn sai lệch egress/read predicates; cần receiptgate và fake-only canaries trước bất kỳ pilot.
 
-Không nới sandbox, không `danger-full-access`, không sửa ACL hoặc global Git trust. Mọi kết luận chi tiết, gap matrix và inventory quyền nằm ở `planning/jobtrack-agent-autonomy/BASELINE-GAPS.md`, `CAPABILITY-INVENTORY.md` và `RUN-STATUS.md`.
+Worktree auth-header-origin-fix trùng đã được user yêu cầu dọn: controllerabandon rồi gitworktreeremove khôngforce sau0changes/0ignoredextras/0uniquecommits; giữ branch và audit. Không tác động worktree auth-origin-repair có commit443b8ac.
 
-Sản phẩm JobTrack chạy được tại local: API `127.0.0.1:64366` (`/api/health` 200, `/api/ready` 200 `version:6`) và web `127.0.0.1:64364` (200, trang đăng nhập render).
+Auth443b8ac được review hậu kiểm PASS phạm vi canonicalBearer; không fullC03accepted. Residual malformed/case credential fallback, verified-grant Origin và MCP auth/scopes là task tiếp theo.
+
+Lượt closure chỉ sửa tài liệu/registry status hành chính sau review, không code sản phẩm/controller, không mở liveworker/provider/n8n/DB writes, không gỡ sandbox/đổi ACL/push.

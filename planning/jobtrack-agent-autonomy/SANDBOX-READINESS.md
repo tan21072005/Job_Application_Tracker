@@ -2,6 +2,8 @@
 
 **Kết luận: PARTIAL.** Probe sandbox **PASS**, chặn ghi **đã chứng minh**, nhưng **cách ly đọc KHÔNG có** ⇒ gate **G-A chưa đạt** ⇒ live dispatch **vẫn bị chặn**.
 
+**Bổ sung sau review độc lập:** “bị chặn” hiện là yêu cầu vận hành; controller.run chưa enforce G-A, chỉ kiểm launch probe. Không chạy run/dispatch trước khi có isolation receipt gate. Script probe.ps1 hiện có sai lệch aggregate egress/read/missing-fields nên exit0 chưa đủ chứng nhận G-A. Không chạy lại script mở credential files thật; task canary mới phải dùng marker giả.
+
 | Hạng mục | Trạng thái |
 | --- | --- |
 | Probe sandbox (`doctor`) | **PASS** — `sandbox.code: 0`, output `v24.18.0` |
@@ -44,7 +46,7 @@ Profile `:workspace` (dùng cho check runner) ghi **được** cả trong lẫn 
 | Cách ly đọc: OS identity/container riêng cho worker **hoặc** controller cấp *snapshot projection* chỉ gồm file task cần | AG01 | hiện tại worker đọc được toàn bộ checkout |
 | Egress policy riêng + positive control | AG07 | không dùng lại kết quả TIMEOUT hiện tại làm bằng chứng |
 | Profile riêng cho check runner (`:workspace` ghi ra ngoài) | AG07 | |
-| Bỏ `liveWorkersVerified: false` hardcode trong `doctor` | AG07/AG13 | `tools/agent-control/cli.mjs:17` ghi cứng; phải suy ra từ probe + canary thật |
+| Tách `sandboxProbePass`, `isolationReady`, `liveWorkerRunVerified` trong doctor | AG07/AG13 | Không thay hardcodefalse bằng probecode0; live worker cần run evidence thật, isolation cần receipt riêng |
 | Ghi `CODEX_CLI_PATH` vào môi trường vận hành | maintainer | không sửa global Git config; đây là biến môi trường của controller |
 
 ## 4. Cách tái lập
@@ -54,6 +56,6 @@ cd D:\Project\Job_Application_Tracker
 .\tools\sandbox\probe.ps1
 ```
 
-Exit `0` = G-A đạt, `2` = chưa đạt (in ra `blockedBy`). Script tự tìm `codex.exe` của ứng dụng trong `%LOCALAPPDATA%\OpenAI\Codex\bin`, hoặc dùng `CODEX_CLI_PATH` nếu đã đặt.
+Script hiện dùng exit0/2 để báo aggregate, nhưng independent review phát hiện predicates chưa đủ: **không dùng exit0 làm G-A đạt trước task sửa**. Script tự tìm CLI hoặc dùng CODEX_CLI_PATH; lựa chọn binary cũng phải pin/hash trước run. Không chạy script này trong intake vì nó mở file credential thật.
 
 Bằng chứng trong `CANARY-EVIDENCE.json` phải được reviewer độc lập đọc lại trước khi AG02 chuyển `accepted`.

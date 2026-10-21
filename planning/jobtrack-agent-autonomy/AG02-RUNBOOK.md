@@ -13,7 +13,7 @@ Mục tiêu: probe sandbox **không cần elevated**, **không cần uninstall**
 
 Controller (`tools/agent-control/controller.mjs`) gọi `this.codexCommand`; từ commit `2d926d9` biến này lấy từ `CODEX_CLI_PATH` nếu được đặt, nếu không thì rơi về `codex` trên PATH ⇒ **chính là CLI hỏng**. Đây là lý do `doctor` vẫn báo lỗi trong các phiên không có `CODEX_CLI_PATH`.
 
-## 2. Chạy probe (một lệnh, không elevated)
+## 2. Script probe hiện có — không chạy trong intake
 
 ```powershell
 cd D:\Project\Job_Application_Tracker
@@ -29,17 +29,17 @@ Script tự:
 5. Chạy canary dưới profile `:read-only` (worker), `:workspace` (check runner) và baseline host (không sandbox).
 6. Tính verdict theo từng giới hạn và ghi `planning/jobtrack-agent-autonomy/CANARY-EVIDENCE.json`.
 
-Exit code: `0` = G-A đạt, `2` = chưa đạt (in `blockedBy`), `1` = lỗi môi trường.
+Script hiện dùng exit0/2 nhưng aggregate chưa đủ: gateA bỏ egress, read checks chưa đầy đủ/missing-fields fail-closed, egress chỉ so khác kết quả. Không dùng exit0 làm chứng nhận G-A trước task sửa. Script cũng mở file credential thật; thay bằng fake-only targets trước canary tiếp theo.
 
-## 3. Đặt `CODEX_CLI_PATH` vĩnh viễn cho máy này
+## 3. Cấp CODEX_CLI_PATH cho process controller
 
 Chỉ khi muốn `npm run agents -- doctor` dùng đúng CLI:
 
 ```powershell
-[Environment]::SetEnvironmentVariable('CODEX_CLI_PATH', 'C:\Users\Admin\AppData\Local\OpenAI\Codex\bin\896a0166b774037a\codex.exe', 'User')
+$env:CODEX_CLI_PATH = '<đường dẫn tuyệt đối codex.exe đã kiểm phiên bản/hash>'
 ```
 
-Rồi mở terminal mới (biến User chỉ có hiệu lực ở phiên mới) và kiểm tra:
+Đường dẫn hash thay đổi khi ứng dụng cập nhật; pin/version probe trong task, không chọn binary mới nhất mù quáng hoặc viết User env trong review. Kiểm tra:
 
 ```powershell
 $env:CODEX_CLI_PATH
@@ -57,7 +57,7 @@ Get-ChildItem "$env:LOCALAPPDATA\OpenAI\Codex\bin" -Recurse -Filter codex.exe
 ```
 
 - Có file ⇒ trỏ `CODEX_CLI_PATH` vào đường dẫn đó.
-- Không có ⇒ CLI trên PATH là bản duy nhất. Khi đó mới cần đi tiếp: cập nhật npm `codex-cli` lên bản mới, hoặc chạy probe elevated. **Chưa có bằng chứng cho giả thuyết "cần elevated"** — nếu phải thử thì ghi lại output thật.
+- Không có ⇒ CLI trên PATH là bản duy nhất. Khi đó mới cần đi tiếp: cập nhật npm `codex-cli` lên bản mới, hoặc chọn runtime được quản trị hỗ trợ. Không mặc định elevated/uninstall. Không cài/update CLI trong lượt review; chốt task/runtime riêng trước thay đổi.
 
 ## 5. Nếu CLI trên PATH vẫn được dùng và vẫn lỗi
 
@@ -81,7 +81,7 @@ Nếu trùng `C:\Users\Admin\AppData\Roaming\npm\codex.ps1` ⇒ đang dùng bả
 | `credentialFileOpen` / `accountsFileOpen` | `opened: false` | hiện đang `true` — worker mở được file credential |
 | `siblingWorktreeList` / `controlStateList` | `listed: false` | hiện đang `true` |
 | `homeCredentialList` | `DENIED` | đạt |
-| `egressTcp80` | khác baseline host | hiện đang **trùng** baseline ⇒ chưa chứng minh (cần positive control) |
+| `egressTcp80` | host positive control CONNECTED và sandbox DENIED tới cùng đích test | hiện đang **trùng** baseline ⇒ chưa chứng minh (cần positive control) |
 | `childProcessTree.stillAliveAfterKill` | `false` | fail V15 |
 
 Baseline host (chạy canary không sandbox) dùng để phân biệt "sandbox chặn" với "máy chặn sẵn". Mọi mục trùng baseline đều **không** được tính là bằng chứng denial.
@@ -95,3 +95,7 @@ Baseline host (chạy canary không sandbox) dùng để phân biệt "sandbox c
 | `COOKIE_SECURE` | cờ cookie | `apps/api/src/server.ts` |
 
 Không thêm `safe.directory` toàn cục và không đổi quyền hệ thống để "cho chạy được" — nếu cần, xem `GIT-ACL-NOTE.md`.
+
+## 8. G-A còn là gate theo quy trình
+
+Controller.run hiện chỉ kiểm launch probe trước gọi model, chưa kiểm isolation receipt. Operator không chạy run/dispatch; AG01/AG07 cần thêm gate fail-closed trước provider và canary predicates đúng. Không dùng doctor hardcodefalse như enforcement.

@@ -1,6 +1,6 @@
 # RUN-STATUS — trạng thái chạy thật của JobTrack (lượt 2026-10-21)
 
-Tài liệu này ghi trạng thái runtime đã **đo trong phiên này**, kèm cách khởi động và cách dừng. Không chứa credential, không chứa nội dung DB.
+Các bảng runtime bên dưới là snapshot từ lượt ghi e60185a, không phải cam kết PID/trạng thái còn đúng ở mọi phiên. Tài liệu này ghi trạng thái runtime đã **đo tại mốc đó**, kèm cách khởi động và cách dừng. Không chứa credential, không chứa nội dung DB.
 
 ## 1. Thành phần đang chạy
 
@@ -58,14 +58,7 @@ Nếu chạy nhiều lần, dùng `npm run dev:web` (có `--strictPort`) để b
 
 ## 5. Dừng an toàn
 
-Chỉ dừng tiến trình **do lượt này tạo**, không kill tiến trình khác:
-
-```powershell
-Get-NetTCPConnection -LocalPort 64364,64366 -State Listen |
-  ForEach-Object { Stop-Process -Id $_.OwningProcess }
-```
-
-Lưu ý: `npm run dev:api` dùng `node --watch`; dừng bằng Ctrl+C trong cửa sổ tương ứng sẽ dừng cả watcher. Không dùng `taskkill` theo hàng loạt và không đụng PID 8776 (Postgres).
+Không tự kill tiến trình chỉ vì nó đang giữ cổng ứng dụng. Chỉ operator dừng watcher do chính mình khởi chạy, ưu tiên Ctrl+C tại terminal sở hữu. Nếu phải dừng theo PID, xác minh executable/command line/start time/parent và quyền sở hữu run trước; không dùng PID lịch sử trong tài liệu. Không đụng Postgres hoặc tiến trình của phiên khác.
 
 ## 6. Log phiên này
 
@@ -84,14 +77,16 @@ Log được đọc bằng lệnh `Get-Content`, không commit vào repo.
 | Web báo "Chưa kết nối được máy chủ" | API chưa lên | `npm run dev:api`, kiểm tra `http://127.0.0.1:64366/api/health` |
 | API báo `Set DATABASE_URL and a JWT_SECRET of at least 32 characters` | thiếu `apps/api/.env` | khôi phục file env từ nguồn của bạn; **không** tạo mới bằng giá trị yếu và không commit |
 | `/api/ready` trả `not_ready` | DB chưa sẵn sàng | kiểm tra service Postgres 5432; không chạy migration từ lane ứng dụng |
-| `helper_unknown_error: setup refresh had errors` khi chạy `npm run agents -- doctor` | sandbox Windows của Codex lỗi ở bước setup refresh | xem `BASELINE-GAPS.md` §2.1; cần phiên elevated, **không** nới sandbox |
+| `helper_unknown_error: setup refresh had errors` khi chạy `npm run agents -- doctor` | Có thể chọn CLI PATH cũ thay CLI ứng dụng; kiểm log/probe thực tế | dùng CODEX_CLI_PATH đã xác minh; không mặc định elevated/uninstall; xem SANDBOX-READINESS.md |
 
-## 8. Trạng thái nền tảng agents (không liên quan runtime app)
+## 8. Trạng thái nền tảng agents
 
-| Hạng mục | Kết quả fresh |
-| --- | --- |
-| `npm run agents:test` | 21 pass / 0 fail |
-| `npm run agents -- status` | `[]` (không task đang chạy) |
-| `npm run agents -- doctor` | sandbox FAIL, `liveWorkersVerified: false` |
+Fixture21tests/status[]/doctorFAIL trong audit đầu là lịch sử, không phải hiện trạng sau các commit tiếp theo. Reviewer mới ghi lệnh/kết quả trong AG00-REVIEW.md.
 
-Chi tiết tại `BASELINE-GAPS.md` và `CAPABILITY-INVENTORY.md`.
+- Controller đã có regression lựa chọn CLI (mốc2d926d9 có23tests); không ép số đếm hiện tại bằng21.
+- Doctor với CLI ứng dụng có sandbox.code0, liveWorkersVerified vẫn false. Probe không tương đương live worker acceptance.
+- Registry hiện có task auth trùng và task abandoned; không giả định status[] trước cleanup. Sau cleanup task terminal vẫn được giữ trong audit.
+- G-A chưa đạt: read isolation, check runner confinement và egress cần triển khai/kiểm chứng.
+- Không tự dừng API/web/Postgres trong lượt review; PID cũ chỉ để đối chiếu, không dùng làm lệnh kill.
+
+Xem BASELINE-GAPS, CAPABILITY-INVENTORY, SANDBOX-READINESS và AG00-REVIEW cho trạng thái có phạm vi thời gian rõ.

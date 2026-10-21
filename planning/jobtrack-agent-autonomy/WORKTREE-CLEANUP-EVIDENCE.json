@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-21",
+  "target": "D:\\Project\\Job_Application_Tracker\\.worktrees\\auth-header-origin-fix",
+  "resolvedWithinWorkspace": true,
+  "registryStatusBeforeRemoval": "abandoned",
+  "sourceChanges": 0,
+  "ignoredExtras": 0,
+  "uniqueCommitsAgainstMain": 0,
+  "method": "git worktree remove, no force",
+  "worktreeRemoved": true,
+  "branchRetained": "feature/api/auth-header-origin-fix",
+  "registryAuditRetained": true,
+  "mainUnchangedByCleanup": true
+}
