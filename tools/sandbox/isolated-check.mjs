@@ -52,11 +52,12 @@ try {
   result.scratchWrite = { ok: false, code: error.code ?? 'UNKNOWN' };
 }
 
+const hostProbeTarget = process.env.HOST_PROBE_PATH || '/host-probe';
 try {
-  fs.writeFileSync('/host-probe', 'x');
-  result.hostWrite = { ok: true };
+  fs.writeFileSync(hostProbeTarget, 'x');
+  result.hostWrite = { ok: true, target: hostProbeTarget };
 } catch (error) {
-  result.hostWrite = { ok: false, code: error.code ?? 'UNKNOWN' };
+  result.hostWrite = { ok: false, code: error.code ?? 'UNKNOWN', target: hostProbeTarget };
 }
 
 for (const key of Object.keys(process.env).sort()) {

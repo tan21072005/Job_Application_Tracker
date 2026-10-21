@@ -46,7 +46,7 @@ const hostPaths = PROBE_TARGETS
   })
   .map(targetId => ({ targetId, hostPath: canonicalSource(TARGET_PATHS[targetId]) }));
 
-const adapter = createDockerAdapter({ repo: adapterRoot, forbiddenPaths: [canonicalSource(repo)] });
+const adapter = createDockerAdapter({ repo: adapterRoot, runRoot, deniedPaths: [canonicalSource(repo)] });
 let probe = null;
 let failure = null;
 try {

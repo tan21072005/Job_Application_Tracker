@@ -7,7 +7,6 @@ import { controlPlaneFingerprint } from '../agent-control/fingerprint.mjs';
 import { createTransportBroker } from '../agent-control/transport.mjs';
 import { createReadinessIssuer } from '../agent-control/issuer.mjs';
 
-const PUBLISHED_KEY = 'local-issuance-key-0123456789abcdef0123456789';
 const repo = process.argv[2] ?? process.cwd();
 const runRoot = process.argv[3] ?? 'D:/Long-term';
 const adapterRoot = process.argv[4] ?? repo;
@@ -18,11 +17,6 @@ const signingKey = process.env.READINESS_KEY ?? '';
 
 if (!signingKey) {
   process.stderr.write('READINESS_KEY is required; the issuer never falls back to a published key.\n');
-  process.exitCode = 1;
-  process.exit(1);
-}
-if (signingKey === PUBLISHED_KEY) {
-  process.stderr.write('READINESS_KEY must not be the published development key.\n');
   process.exitCode = 1;
   process.exit(1);
 }
@@ -72,7 +66,7 @@ const catalog = {
   base: process.env.JT_BASE ?? 'main',
   sourceDigest: createHash('sha256').update(content).digest('hex'),
   projectionManifestHash: createHash('sha256').update(JSON.stringify(manifest)).digest('hex'),
-  policyHash: controlPlaneFingerprint(repo),
+  policyHash: controlPlaneFingerprint(adapterRoot),
   environmentHash: createHash('sha256').update(`${process.platform}-${process.version}-${DEFAULT_IMAGE}`).digest('hex'),
   purpose: 'worker-read',
   profileHash: createHash('sha256').update('profile-read-only').digest('hex'),
@@ -94,7 +88,7 @@ const catalog = {
   mountSources: { projection: canonicalSource(projection), scratch: canonicalSource(scratch) }
 };
 
-const adapter = createDockerAdapter({ repo: adapterRoot, image: DEFAULT_IMAGE, forbiddenPaths: [canonicalSource(repo)] });
+const adapter = createDockerAdapter({ repo: adapterRoot, image: DEFAULT_IMAGE, runRoot, deniedPaths: [canonicalSource(repo)] });
 const broker = createTransportBroker({
   allowlist: [{ kind: 'local-transport', host: '127.0.0.1', port: modelPort, path: '/v1' }],
   endpoint: modelEndpoint,
@@ -109,7 +103,7 @@ const evidenceRoot = join(adapterRoot, 'planning/jobtrack-agent-autonomy/hardeni
 const issuer = createReadinessIssuer({
   catalog,
   key: signingKey,
-  forbidKey: PUBLISHED_KEY,
+  adapterRoot,
   evidenceRoot,
   adapter,
   broker,

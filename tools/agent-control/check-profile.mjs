@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import {
   assertNoHostAccess,
@@ -6,6 +7,7 @@ import {
   buildRunArgs,
   canonicalSource,
   forbiddenHostPaths,
+  inspectContainer,
   NETWORK_MODE,
   CANDIDATE_TARGET,
   FIXTURE_TARGET,
@@ -16,7 +18,7 @@ export const CHECK_PROJECTION_TARGET = CANDIDATE_TARGET;
 export const CHECK_SCRATCH_TARGET = SCRATCH_TARGET;
 export const CHECK_FIXTURE_TARGET = FIXTURE_TARGET;
 
-export const CHECK_ENV_KEYS = Object.freeze(['HOME', 'CHECK_ID', 'CANDIDATE_DIGEST', 'FIXTURE_ROOT', 'SCRATCH_ROOT']);
+export const CHECK_ENV_KEYS = Object.freeze(['HOME', 'CHECK_ID', 'CANDIDATE_DIGEST', 'FIXTURE_ROOT', 'SCRATCH_ROOT', 'HOST_PROBE_PATH']);
 
 export const FORBIDDEN_CHECK_ENV = Object.freeze([
   'DATABASE_URL',
@@ -42,19 +44,20 @@ export function assertCheckEnvironment(env) {
   return env;
 }
 
-export function buildCheckEnvironment({ checkId, candidateDigest, fixtureRoot = CHECK_FIXTURE_TARGET, scratchRoot = CHECK_SCRATCH_TARGET }) {
+export function buildCheckEnvironment({ checkId, candidateDigest, fixtureRoot = CHECK_FIXTURE_TARGET, scratchRoot = CHECK_SCRATCH_TARGET, hostProbePath = '' }) {
   const env = {
     HOME: '/nonexistent',
     CHECK_ID: checkId,
     CANDIDATE_DIGEST: candidateDigest,
     FIXTURE_ROOT: fixtureRoot,
-    SCRATCH_ROOT: scratchRoot
+    SCRATCH_ROOT: scratchRoot,
+    HOST_PROBE_PATH: hostProbePath
   };
   return assertCheckEnvironment(env);
 }
 
 export function buildCheckArgs(options) {
-  const { image, runId, candidate, scratch, fixtures, command } = options;
+  const { image, runId, candidate, scratch, fixtures, command, mode = 'run' } = options;
   assertPinnedImage(image);
   if (!Array.isArray(command) || !command.length) throw Error('Check profile needs a command.');
   const env = buildCheckEnvironment(options.check ?? {});
@@ -64,7 +67,8 @@ export function buildCheckArgs(options) {
     { kind: 'fixtures', source: fixtures, target: CHECK_FIXTURE_TARGET, readOnly: true }
   ];
   const args = [
-    'run', '--rm',
+    mode,
+    ...(mode === 'run' ? ['--rm'] : []),
     ...buildRunArgs({ image, runId }).slice(1),
     ...mounts.flatMap(mount => ['--mount', `type=bind,source=${mount.source},target=${mount.target}${mount.readOnly ? ',readonly' : ''}`]),
     ...Object.entries(env).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
@@ -72,6 +76,34 @@ export function buildCheckArgs(options) {
     ...command
   ];
   return { args, mounts, env };
+}
+
+export function runIsolatedCheck(options) {
+  const { docker, args, timeoutMs = 120_000 } = options;
+  const runDocker = (argv, timeout) => {
+    const result = spawnSync(docker, argv, { encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024, windowsHide: true });
+    if (result.error) throw Error(`Docker invocation failed: ${result.error.message}`);
+    return result;
+  };
+  const created = runDocker(args, timeoutMs);
+  const containerId = String(created.stdout ?? '').trim().split(/\s+/)[0] ?? '';
+  if (created.status !== 0 || !containerId) {
+    throw Error(`Check container could not be created: ${String(created.stderr).slice(-400)}`);
+  }
+  let observation = null;
+  let stdout = '';
+  let stderr = '';
+  let status = null;
+  try {
+    observation = inspectContainer(docker, containerId);
+    const started = runDocker(['start', '-a', containerId], timeoutMs);
+    stdout = started.stdout ?? '';
+    stderr = started.stderr ?? '';
+    status = started.status;
+  } finally {
+    runDocker(['rm', '-f', containerId], 60_000);
+  }
+  return { containerId, observation, stdout, stderr, status };
 }
 
 export function assertCheckProfile(args, { forbidden, image, expectedMounts = [] }) {

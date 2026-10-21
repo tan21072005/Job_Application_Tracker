@@ -92,8 +92,9 @@ export function createTransportBroker(options = {}) {
       if (!scratchRoot) throw Error('Transport request needs the scratch root.');
       const runId = assertRunId(input.runId ?? randomUUID());
       const requestedRoot = input.transportRoot ?? join(scratchRoot, 'transport');
-      mkdirSync(requestedRoot, { recursive: true });
-      const transportRoot = assertTransportRootInsideScratch(requestedRoot, scratchRoot);
+      const validatedRoot = assertTransportRootInsideScratch(requestedRoot, scratchRoot);
+      mkdirSync(validatedRoot, { recursive: true });
+      const transportRoot = assertTransportRootInsideScratch(validatedRoot, scratchRoot);
       mkdirSync(requestDir(transportRoot), { recursive: true });
       const runDirectory = join(requestDir(transportRoot), runId);
       mkdirSync(runDirectory, { recursive: true });
@@ -109,8 +110,7 @@ export function createTransportBroker(options = {}) {
         issuedAt: new Date().toISOString()
       };
       const requestHash = createHash('sha256').update(JSON.stringify(request)).digest('hex');
-      const token = signRequest({ requestHash, runId });
-      writeAtomic(requestPath, JSON.stringify({ request, requestHash, token }) + '\n');
+      writeAtomic(requestPath, JSON.stringify({ request, requestHash }) + '\n');
       const deadline = Date.now() + timeoutMs;
       while (Date.now() < deadline) {
         if (existsSync(responsePath)) {

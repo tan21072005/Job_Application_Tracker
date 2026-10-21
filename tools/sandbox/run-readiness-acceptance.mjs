@@ -1,15 +1,13 @@
-import { spawnSync } from 'node:child_process';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createServer, get as httpRequest } from 'node:http';
 import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createDockerAdapter, DEFAULT_IMAGE, canonicalSource } from '../agent-control/docker-adapter.mjs';
-import { buildCheckArgs, buildCheckEnvironment, checkEvidence } from '../agent-control/check-profile.mjs';
+import { createDockerAdapter, DEFAULT_IMAGE, canonicalSource, toContainerPath } from '../agent-control/docker-adapter.mjs';
+import { buildCheckArgs, buildCheckEnvironment, checkEvidence, runIsolatedCheck } from '../agent-control/check-profile.mjs';
 import { controlPlaneFingerprint } from '../agent-control/fingerprint.mjs';
 import { createTransportBroker } from '../agent-control/transport.mjs';
 import { createReadinessIssuer } from '../agent-control/issuer.mjs';
 
-const PUBLISHED_KEY = 'local-issuance-key-0123456789abcdef0123456789';
 const repo = process.argv[2] ?? process.cwd();
 const runRoot = process.argv[3] ?? 'D:/Long-term';
 const adapterRoot = process.argv[4] ?? repo;
@@ -70,7 +68,7 @@ const catalog = {
   base: process.env.JT_BASE ?? 'main',
   sourceDigest,
   projectionManifestHash: createHash('sha256').update(JSON.stringify(manifest)).digest('hex'),
-  policyHash: controlPlaneFingerprint(repo),
+  policyHash: controlPlaneFingerprint(adapterRoot),
   environmentHash: createHash('sha256').update(`${process.platform}-${process.version}-${DEFAULT_IMAGE}`).digest('hex'),
   purpose: 'worker-read',
   profileHash: createHash('sha256').update('profile-read-only').digest('hex'),
@@ -92,7 +90,7 @@ const catalog = {
   mountSources: { projection: canonicalSource(projection), scratch: canonicalSource(scratch) }
 };
 
-const adapter = createDockerAdapter({ repo: adapterRoot, image: DEFAULT_IMAGE, forbiddenPaths: [canonicalSource(repo)] });
+const adapter = createDockerAdapter({ repo: adapterRoot, image: DEFAULT_IMAGE, runRoot, deniedPaths: [canonicalSource(repo)] });
 const broker = createTransportBroker({
   allowlist: [{ kind: 'local-transport', host: '127.0.0.1', port: modelPort, path: '/v1' }],
   endpoint: modelEndpoint,
@@ -105,8 +103,8 @@ const evidenceRoot = join(base, 'evidence');
 const issuer = createReadinessIssuer({
   catalog,
   key: signingKey || randomBytes(48).toString('hex'),
-  forbidKey: PUBLISHED_KEY,
   evidenceRoot,
+  adapterRoot,
   adapter,
   broker,
   connect: async endpoint => httpReach(endpoint),
@@ -118,7 +116,7 @@ let check = null;
 let blockedProbe = null;
 try {
   issued = await issuer.issue({ runId, projection, scratch, manifest });
-  const checkEnv = buildCheckEnvironment({ checkId: 'build:api', candidateDigest: sourceDigest, fixtureRoot: '/fixtures', scratchRoot: '/scratch' });
+  const checkEnv = buildCheckEnvironment({ checkId: 'build:api', candidateDigest: sourceDigest, fixtureRoot: '/fixtures', scratchRoot: '/scratch', hostProbePath: toContainerPath(join(repo, '.check-host-probe')) });
   const { args, mounts } = buildCheckArgs({
     image: DEFAULT_IMAGE,
     runId,
@@ -126,20 +124,22 @@ try {
     scratch,
     fixtures,
     command: ['node', '/fixtures/isolated-check.mjs'],
-    check: { checkId: 'build:api', candidateDigest: sourceDigest, fixtureRoot: '/fixtures', scratchRoot: '/scratch' }
+    check: { checkId: 'build:api', candidateDigest: sourceDigest, fixtureRoot: '/fixtures', scratchRoot: '/scratch', hostProbePath: toContainerPath(join(repo, '.check-host-probe')) },
+    mode: 'create'
   });
-  const executed = spawnSync('docker', args, { encoding: 'utf8', timeout: 120_000, maxBuffer: 8 * 1024 * 1024, windowsHide: true });
+  const executed = runIsolatedCheck({ docker: 'docker', args });
   let observed = null;
   const start = String(executed.stdout ?? '').indexOf('{');
   const end = String(executed.stdout ?? '').lastIndexOf('}');
   if (start >= 0 && end >= 0) observed = JSON.parse(String(executed.stdout).slice(start, end + 1));
   check = checkEvidence({ checkId: checkEnv.CHECK_ID, candidateDigest: sourceDigest, image: DEFAULT_IMAGE, observed, exitCode: executed.status, stdout: executed.stdout, stderr: executed.stderr });
+  check.observedMounts = (executed.observation?.mounts ?? []).map(mount => ({ kind: mount.kind, source: mount.source, target: mount.target, readOnly: mount.readOnly }));
   check.mounts = mounts.map(mount => ({ target: mount.target, readOnly: mount.readOnly, source: canonicalSource(mount.source) }));
   const blockedIssuer = createReadinessIssuer({
     catalog,
     key: signingKey || randomBytes(48).toString('hex'),
-    forbidKey: PUBLISHED_KEY,
     evidenceRoot: join(base, 'blocked-evidence'),
+    adapterRoot,
     adapter,
     broker: { probe: async () => ({ connected: false }) },
     connect: async () => false

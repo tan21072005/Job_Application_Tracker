@@ -1,9 +1,8 @@
-import { spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { assertCheckProfile, buildCheckArgs, buildCheckEnvironment, checkEvidence } from '../agent-control/check-profile.mjs';
-import { DEFAULT_IMAGE, canonicalSource, forbiddenHostPaths } from '../agent-control/docker-adapter.mjs';
+import { assertCheckProfile, buildCheckArgs, buildCheckEnvironment, checkEvidence, runIsolatedCheck } from '../agent-control/check-profile.mjs';
+import { DEFAULT_IMAGE, canonicalSource, forbiddenHostPaths, toContainerPath } from '../agent-control/docker-adapter.mjs';
 
 const repo = process.argv[2] ?? process.cwd();
 const runRoot = process.argv[3] ?? 'D:/Long-term';
@@ -24,7 +23,8 @@ writeFileSync(join(fixtures, 'fixture.json'), '{}\n');
 copyFileSync(join(adapterRoot, 'tools/sandbox/isolated-check.mjs'), join(fixtures, 'isolated-check.mjs'));
 
 const candidateDigest = createHash('sha256').update(content).digest('hex');
-const check = { checkId: 'build:api', candidateDigest, fixtureRoot: '/fixtures', scratchRoot: '/scratch' };
+const hostProbePath = toContainerPath(join(repo, '.check-host-probe'));
+const check = { checkId: 'build:api', candidateDigest, fixtureRoot: '/fixtures', scratchRoot: '/scratch', hostProbePath };
 const env = buildCheckEnvironment(check);
 const { args, mounts } = buildCheckArgs({
   image: DEFAULT_IMAGE,
@@ -33,7 +33,8 @@ const { args, mounts } = buildCheckArgs({
   scratch,
   fixtures,
   command: ['node', '/fixtures/isolated-check.mjs'],
-  check
+  check,
+  mode: 'create'
 });
 
 let guardError = null;
@@ -47,17 +48,20 @@ try {
   guardError = String(error && error.message ? error.message : error);
 }
 
-let result = { status: null, stdout: '', stderr: '' };
+let execution = { containerId: null, observation: null, stdout: '', stderr: '', status: null };
 if (!guardError) {
-  const executed = spawnSync('docker', args, { encoding: 'utf8', timeout: 120_000, maxBuffer: 8 * 1024 * 1024, windowsHide: true });
-  result = { status: executed.status, stdout: executed.stdout ?? '', stderr: executed.stderr ?? '' };
+  try {
+    execution = runIsolatedCheck({ docker: 'docker', args });
+  } catch (error) {
+    guardError = String(error && error.message ? error.message : error);
+  }
 }
 
 let observed = null;
 try {
-  const start = String(result.stdout).indexOf('{');
-  const end = String(result.stdout).lastIndexOf('}');
-  observed = start >= 0 && end >= 0 ? JSON.parse(String(result.stdout).slice(start, end + 1)) : null;
+  const start = String(execution.stdout).indexOf('{');
+  const end = String(execution.stdout).lastIndexOf('}');
+  observed = start >= 0 && end >= 0 ? JSON.parse(String(execution.stdout).slice(start, end + 1)) : null;
 } catch {
   observed = null;
 }
@@ -67,24 +71,38 @@ const evidence = checkEvidence({
   candidateDigest,
   image: DEFAULT_IMAGE,
   observed,
-  exitCode: result.status,
-  stdout: result.stdout,
-  stderr: result.stderr
+  exitCode: execution.status,
+  stdout: execution.stdout,
+  stderr: execution.stderr
 });
 evidence.runId = runId;
 evidence.base = base;
 evidence.guardError = guardError;
-evidence.mounts = mounts.map(mount => ({ target: mount.target, readOnly: mount.readOnly, source: canonicalSource(mount.source) }));
+evidence.containerId = execution.containerId;
+evidence.observedContainer = execution.observation;
+evidence.observedMounts = (execution.observation?.mounts ?? []).map(mount => ({
+  kind: mount.kind,
+  source: mount.source,
+  target: mount.target,
+  readOnly: mount.readOnly
+}));
+evidence.declaredMounts = mounts.map(mount => ({ target: mount.target, readOnly: mount.readOnly, source: canonicalSource(mount.source) }));
 evidence.forbiddenHostPaths = forbiddenHostPaths(repo, process.env.USERPROFILE ?? '');
-evidence.stdoutTail = String(result.stdout).slice(-400);
-evidence.stderrTail = String(result.stderr).slice(-400);
+evidence.stdoutTail = String(execution.stdout).slice(-400);
+evidence.stderrTail = String(execution.stderr).slice(-400);
 
 if (process.env.JT_CHECK_EVIDENCE) writeFileSync(process.env.JT_CHECK_EVIDENCE, JSON.stringify(evidence, null, 2) + '\n');
 process.stdout.write(JSON.stringify(evidence, null, 2) + '\n');
 
-const failed = Boolean(guardError) || result.status !== 0 || observed?.candidateWrite?.ok === true || observed?.hostWrite?.ok === true;
+const environmentKeys = observed?.environment ? Object.keys(observed.environment) : [];
+const failed = Boolean(guardError)
+  || execution.status !== 0
+  || observed === null
+  || observed?.candidateWrite?.ok === true
+  || observed?.hostWrite?.ok === true
+  || environmentKeys.length > 0;
 if (failed) {
-  process.stderr.write(`isolated check did not pass: ${guardError ?? `exit ${result.status}`}\n`);
+  process.stderr.write(`isolated check did not pass: ${guardError ?? `exit ${execution.status}`}\n`);
   process.exitCode = 1;
 }
 if (!keep) rmSync(base, { recursive: true, force: true });

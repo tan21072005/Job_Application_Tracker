@@ -35,7 +35,7 @@ const flagValue = (args, flag) => {
 };
 
 const build = (options = {}) => {
-  const { candidate, scratch, fixtures } = fixture();
+  const { root, candidate, scratch, fixtures } = fixture();
   const built = buildCheckArgs({
     image: DEFAULT_IMAGE,
     runId: 'check-1',
@@ -46,8 +46,10 @@ const build = (options = {}) => {
     check: { checkId: 'build:api', candidateDigest: 'abc' },
     ...options
   });
-  return { ...built, candidate, scratch, fixtures };
+  return { ...built, root, candidate, scratch, fixtures };
 };
+
+const forbidden = forbiddenHostPaths('D:/Project/Job_Application_Tracker', '');
 
 test('the check profile mounts the candidate read only, the scratch writable and the fixtures read only', () => {
   const { args, mounts } = build();
@@ -71,19 +73,25 @@ test('the check profile keeps the containment controls of the worker profile', (
   assert.ok(args.includes('CANDIDATE_DIGEST=abc'));
 });
 
-test('the check profile names the pinned image before the command and removes its container', () => {
+test('the check profile names the pinned image before the command', () => {
   const { args } = build();
   assert.ok(args.includes(DEFAULT_IMAGE), 'check arguments must name the pinned image');
   assert.equal(args.indexOf(DEFAULT_IMAGE) < args.indexOf('check.mjs'), true);
-  assert.ok(args.includes('--rm'), 'the check container must be removed when it exits');
-  assert.equal(args[0], 'run');
+});
+
+test('the run mode removes the container and the create mode leaves the lifecycle to the runner', () => {
+  const { args } = build();
+  assert.ok(args.includes('--rm'), 'the run mode container must be removed when it exits');
+  const created = build({ mode: 'create' });
+  assert.equal(created.args[0], 'create');
+  assert.equal(created.args.includes('--rm'), false);
 });
 
 test('the check environment never carries a database, provider or secret variable', () => {
-  assert.throws(() => assertCheckEnvironment({ DATABASE_URL: 'postgres://x' }), /may only carry|must not carry/);
-  assert.throws(() => assertCheckEnvironment({ OPENAI_API_KEY: 'x' }), /may only carry|must not carry/);
-  assert.throws(() => assertCheckEnvironment({ READINESS_KEY: 'x' }), /may only carry|must not carry/);
-  assert.throws(() => assertCheckEnvironment({ NODE_OPTIONS: '--require x' }), /may only carry|must not carry/);
+  assert.throws(() => assertCheckEnvironment({ DATABASE_URL: 'postgres://x' }), /may only carry/);
+  assert.throws(() => assertCheckEnvironment({ OPENAI_API_KEY: 'x' }), /may only carry/);
+  assert.throws(() => assertCheckEnvironment({ READINESS_KEY: 'x' }), /may only carry/);
+  assert.throws(() => assertCheckEnvironment({ NODE_OPTIONS: '--require x' }), /may only carry/);
   const env = buildCheckEnvironment({ checkId: 'build:api', candidateDigest: 'abc' });
   for (const key of Object.keys(env)) assert.equal(FORBIDDEN_CHECK_ENV.includes(key), false, key);
   for (const key of Object.keys(env)) assert.equal(CHECK_ENV_KEYS.includes(key), true, key);
@@ -93,17 +101,23 @@ test('the check environment is built from the fixed allow list', () => {
   const { env } = build();
   assert.deepEqual(Object.keys(env).sort(), [...CHECK_ENV_KEYS].sort());
   assert.equal(env.HOME, '/nonexistent');
+  assert.equal(env.HOST_PROBE_PATH, '');
 });
 
 test('the check profile refuses an undeclared mount, a network and a forbidden environment variable', () => {
-  const { args, candidate, scratch, fixtures, mounts } = build();
-  const forbidden = forbiddenHostPaths('D:/Project/Job_Application_Tracker', 'C:/Users/Admin');
+  const { args, mounts } = build();
   const expectedMounts = mounts.map(mount => ({ ...mount, source: canonicalSource(mount.source) }));
-  assert.equal(assertCheckProfile(args, { forbidden, image: DEFAULT_IMAGE, expectedMounts: mounts }), true);
-  assert.throws(() => assertCheckProfile([...args, '--mount', 'type=bind,source=D:/Project/Job_Application_Tracker,target=/host'], { forbidden, image: DEFAULT_IMAGE, expectedMounts: mounts }), /exactly the expected bind set/);
-  assert.throws(() => assertCheckProfile([...args, '--env', 'DATABASE_URL=postgres://x'], { forbidden, image: DEFAULT_IMAGE, expectedMounts: mounts }), /may only carry|must not carry/);
+  assert.equal(assertCheckProfile(args, { forbidden, image: DEFAULT_IMAGE, expectedMounts }), true);
+  assert.throws(() => assertCheckProfile([...args, '--mount', 'type=bind,source=D:/Project/Job_Application_Tracker,target=/host'], { forbidden, image: DEFAULT_IMAGE, expectedMounts }), /exactly the expected bind set/);
+  assert.throws(() => assertCheckProfile([...args, '--env', 'DATABASE_URL=postgres://x'], { forbidden, image: DEFAULT_IMAGE, expectedMounts }), /may only carry/);
   const networked = args.map(value => value === 'none' ? 'host' : value);
-  assert.throws(() => assertCheckProfile(networked, { forbidden, image: DEFAULT_IMAGE, expectedMounts: mounts }), /without network access/);
+  assert.throws(() => assertCheckProfile(networked, { forbidden, image: DEFAULT_IMAGE, expectedMounts }), /without network access/);
+});
+
+test('the check profile refuses a declared mount set that does not match the arguments', () => {
+  const { args, mounts, root } = build();
+  const hostile = mounts.map(mount => ({ ...mount, source: join(root, 'scratch') }));
+  assert.throws(() => assertCheckProfile(args, { forbidden, image: DEFAULT_IMAGE, expectedMounts: hostile }), /not the declared source/);
 });
 
 test('the check profile needs a command and a pinned image', () => {

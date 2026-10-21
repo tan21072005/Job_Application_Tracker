@@ -1,7 +1,7 @@
 {
   "kind": "readiness-acceptance-report",
-  "at": "2026-10-21T15:03:35.870Z",
-  "runId": "db7c9b69-7450-4c38-948d-2b5307f21885",
+  "at": "2026-10-21T16:22:15.751Z",
+  "runId": "e65d242c-2136-4bdf-b249-0e40111583ca",
   "passed": true,
   "findings": [
     {
@@ -58,7 +58,8 @@
         },
         "hostWrite": {
           "ok": false,
-          "code": "EROFS"
+          "code": "ENOENT",
+          "target": "/mnt/d/Project/Job_Application_Tracker/.check-host-probe"
         },
         "environment": {}
       }
@@ -81,16 +82,16 @@
   ],
   "receipt": {
     "schemaVersion": 2,
-    "runId": "db7c9b69-7450-4c38-948d-2b5307f21885",
-    "issuedAt": "2026-10-21T15:03:33.743Z",
-    "expiresAt": "2026-10-21T15:18:33.743Z",
+    "runId": "e65d242c-2136-4bdf-b249-0e40111583ca",
+    "issuedAt": "2026-10-21T16:22:13.318Z",
+    "expiresAt": "2026-10-21T16:37:13.318Z",
     "binding": {
       "taskId": "readiness-canary",
       "feature": "web",
       "base": "main",
       "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
       "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
-      "policyHash": "bd0d4e57726730d5fc71b724f2b74a6dd95059cd207846847bdcd713628dbb4b",
+      "policyHash": "9c7f08959611f790f0f58741f0a9425028c0d47b8c2375b15b08b388ad605d92",
       "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
       "purpose": "worker-read",
       "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
@@ -100,13 +101,13 @@
       "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87"
     },
     "evidence": {
-      "path": "db7c9b69-7450-4c38-948d-2b5307f21885.evidence.json",
-      "rawSha256": "2e09b7f7c4df269a48db518b41e2f12cbb7f0224b8ef513947e33e81d6aaf99f",
-      "completedAt": "2026-10-21T15:03:33.724Z",
-      "bytes": 9076
+      "path": "e65d242c-2136-4bdf-b249-0e40111583ca.evidence.json",
+      "rawSha256": "b0c952777f9eb33cfc7d9851463673604a4667633c845893a87fc2a47a964320",
+      "completedAt": "2026-10-21T16:22:13.214Z",
+      "bytes": 9504
     },
     "verifier": {
-      "id": "jobtrack-trusted-issuer-v1",
+      "id": "jobtrack-trusted-issuer-v2",
       "implementationHash": "9890750ec796fe7f022b752e6877be7947e807b0356c18aa6e5cfddf144c5046"
     },
     "derived": {
@@ -117,9 +118,9 @@
       "egress": true,
       "gateA": true
     },
-    "signature": "6827bb36a14c2f642023396337b878f450415ddb9a948479cf9157b171dc5dee"
+    "signature": "10b1b7f235c7d0c99368d04df4c54a9dfa59ed7cf5ad214e4b3b76667a4dde38"
   },
-  "signingKeyFingerprint": "a9ce356b5fc01b721d8894bd46bb04d5d8165ae621374fe50627e7efed6b2e5d",
+  "signingKeyFingerprint": "7457508a87f15686754304c6386731e25e60744e21976f3a6e04119a3026db91",
   "check": {
     "kind": "isolated-check-profile-not-readiness-receipt",
     "checkId": "build:api",
@@ -143,28 +144,49 @@
       },
       "hostWrite": {
         "ok": false,
-        "code": "EROFS"
+        "code": "ENOENT",
+        "target": "/mnt/d/Project/Job_Application_Tracker/.check-host-probe"
       },
       "environment": {}
     },
     "exitCode": 0,
-    "stdoutHash": "163523eda63d54c0bcb1c4fa5ac4375fcafc00785220765a481a7a34d9076abb",
+    "stdoutHash": "61d791069ba5c28d440074b9230515f99ae57a9b6e97d501708abc22f7cb40bf",
     "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "observedMounts": [
+      {
+        "kind": "candidate",
+        "source": "D:\\Long-term\\JobTrack-acceptance-e65d242c\\candidate",
+        "target": "/candidate",
+        "readOnly": true
+      },
+      {
+        "kind": "scratch",
+        "source": "D:\\Long-term\\JobTrack-acceptance-e65d242c\\scratch",
+        "target": "/scratch",
+        "readOnly": false
+      },
+      {
+        "kind": "fixtures",
+        "source": "D:\\Long-term\\JobTrack-acceptance-e65d242c\\fixtures",
+        "target": "/fixtures",
+        "readOnly": true
+      }
+    ],
     "mounts": [
       {
         "target": "/candidate",
         "readOnly": true,
-        "source": "D:/Long-term/JobTrack-acceptance-db7c9b69/candidate"
+        "source": "D:/Long-term/JobTrack-acceptance-e65d242c/candidate"
       },
       {
         "target": "/scratch",
         "readOnly": false,
-        "source": "D:/Long-term/JobTrack-acceptance-db7c9b69/scratch"
+        "source": "D:/Long-term/JobTrack-acceptance-e65d242c/scratch"
       },
       {
         "target": "/fixtures",
         "readOnly": true,
-        "source": "D:/Long-term/JobTrack-acceptance-db7c9b69/fixtures"
+        "source": "D:/Long-term/JobTrack-acceptance-e65d242c/fixtures"
       }
     ]
   },

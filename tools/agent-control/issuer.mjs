@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import net from 'node:net';
@@ -10,13 +11,23 @@ import {
   READINESS_V2_PROBE_CATALOG,
   probeCatalogHash
 } from './readiness-v2.mjs';
-import { toContainerPath } from './docker-adapter.mjs';
+import { controlPlaneFingerprint } from './fingerprint.mjs';
+import { inspectContainer, toContainerPath } from './docker-adapter.mjs';
 
-export const ISSUER_ID = 'jobtrack-trusted-issuer-v1';
+export const ISSUER_ID = 'jobtrack-trusted-issuer-v2';
 export const READ_ONLY_TARGETS = Object.freeze(['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read']);
 export const PROBE_TARGETS = Object.freeze(['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read', 'host-write']);
+export const PUBLISHED_KEY_FINGERPRINTS = Object.freeze([
+  'fcd626538a7e4147c2df558d92ada9e3ffaf26e12b1af005d3aceaa22d0ec28e'
+]);
 
 const sha256 = value => createHash('sha256').update(value).digest('hex');
+
+export function isPublishedKey(key) {
+  if (typeof key !== 'string') return false;
+  const fingerprint = sha256(key);
+  return PUBLISHED_KEY_FINGERPRINTS.includes(fingerprint);
+}
 
 export function buildWitnessBindings(runId) {
   const bindings = {};
@@ -87,36 +98,52 @@ export function buildTrustedContext(catalog, runId) {
   };
 }
 
-export { toContainerPath } from './docker-adapter.mjs';
-
-export function buildEvidenceFromProbe(input) {
-  const { catalog, run, trusted, hostPositive, transportPositive, generalEgressBlocked } = input;
-  const probe = run.probe ?? {};
-  const observed = probe.observations ?? {};
-  const container = run.observation ?? {};
-  const observedMounts = Array.isArray(container.mounts) ? container.mounts : [];
-  if (!observedMounts.length) throw Error('The container that ran was not inspected.');
-  const namespaceMounts = observedMounts.map(mount => ({
-    kind: mount.kind,
-    source: mount.source,
-    target: mount.target,
-    readOnly: mount.readOnly === true
-  }));
-  for (const mount of namespaceMounts) {
-    const expected = trusted.mountSources[mount.kind];
-    if (!expected) throw Error(`Observed mount kind is not declared: ${mount.kind}`);
-    if (String(mount.source).replaceAll('\\', '/').toLowerCase() !== String(expected).replaceAll('\\', '/').toLowerCase()) {
-      throw Error(`Observed mount source is not the declared source: ${mount.kind}`);
-    }
-  }
-  for (const kind of Object.keys(trusted.mountSources)) {
-    if (!namespaceMounts.some(mount => mount.kind === kind)) throw Error(`The container did not carry the declared ${kind} mount.`);
-  }
+export function assertContainerMatchesTrust(container, trusted) {
+  if (!container || typeof container !== 'object') throw Error('The issuer could not inspect the container that ran.');
   const observedImageId = String(container.imageId ?? '').replace('sha256:', '');
   if (observedImageId !== trusted.imageDigest) throw Error('The container image content is not the pinned image digest.');
+  if (container.networkMode !== 'none') throw Error('The container did not run without network access.');
+  if (container.readonlyRootfs !== true) throw Error('The container root filesystem was not read only.');
+  if (String(container.user ?? '') !== '65534:65534') throw Error('The container did not run with the unprivileged user.');
+  const mounts = Array.isArray(container.mounts) ? container.mounts : [];
+  const expected = Object.keys(trusted.mountSources);
+  for (const kind of expected) {
+    const mount = mounts.find(candidate => candidate.kind === kind);
+    if (!mount) throw Error(`The container did not carry the declared ${kind} mount.`);
+    const source = String(mount.source).replaceAll('\\', '/').toLowerCase();
+    const trustedSource = String(trusted.mountSources[kind]).replaceAll('\\', '/').toLowerCase();
+    if (source !== trustedSource) throw Error(`The container mount source is not the declared source: ${kind}`);
+  }
+  if (mounts.length !== expected.length) throw Error('The container carried a mount that was not declared.');
+  return { observedImageId, mounts };
+}
+
+export function assertContainerSideMounts(containerMounts, trusted) {
+  const list = Array.isArray(containerMounts) ? containerMounts : [];
+  if (!list.length) throw Error('The probe did not report the mounts it saw inside the container.');
+  const targets = new Map();
+  for (const mount of list) {
+    targets.set(mount.mountPoint, mount);
+  }
+  for (const kind of Object.keys(trusted.mountSources)) {
+    const expectedTarget = kind === 'projection' ? '/projection' : kind === 'scratch' ? '/scratch' : null;
+    if (!expectedTarget) continue;
+    const mount = targets.get(expectedTarget);
+    if (!mount) throw Error(`The container did not see the ${kind} mount.`);
+    const readOnly = String(mount.options ?? '').includes('ro');
+    if (readOnly !== (kind === 'projection')) throw Error(`The container mount has the wrong read only flag: ${kind}.`);
+  }
+  return list;
+}
+
+export function buildEvidenceFromProbe(input) {
+  const { run, trusted, hostPositive, transportPositive, generalEgressBlocked, container, containerMounts } = input;
+  const probe = run.probe ?? {};
+  const observed = probe.observations ?? {};
+  const { observedImageId, mounts: namespaceMounts } = assertContainerMatchesTrust(container, trusted);
+  assertContainerSideMounts(containerMounts, trusted);
   const absentTargets = new Set((observed.hostPaths ?? []).filter(entry => entry.outcome === 'absent').map(entry => entry.targetId));
-  const invisible = [...absentTargets];
-  if (observed.hostWrite?.outcome === 'absent') invisible.push('host-write');
+  const invisible = [...new Set([...absentTargets, ...(observed.hostWrite?.outcome === 'absent' ? ['host-write'] : [])])];
   for (const targetId of PROBE_TARGETS) {
     if (!absentTargets.has(targetId) && targetId !== 'host-write') throw Error(`Isolation probe did not observe ${targetId} as absent.`);
   }
@@ -171,7 +198,13 @@ export function buildEvidenceFromProbe(input) {
     executions,
     observations: {
       hostPositive: hostPositive.map(witness => ({ ...witness, witnessSha256: witnessProofHash(witness.targetId, trusted.witnessBindings[witness.targetId]) })),
-      namespace: { inspected: true, mounts: namespaceMounts, invisibleHostPaths: invisible },
+      namespace: {
+        inspected: true,
+        mounts: namespaceMounts,
+        invisibleHostPaths: invisible,
+        containerMounts: containerMounts ?? [],
+        containerId: container.containerId ?? null
+      },
       readTargets,
       writeTargets,
       liveness: observed.liveness ?? [],
@@ -186,14 +219,24 @@ export function buildEvidenceFromProbe(input) {
   };
 }
 
+export function removeContainer(docker, containerId, dockerPrefix = []) {
+  if (!containerId) return false;
+  spawnSync(docker, [...dockerPrefix, 'rm', '-f', containerId], { encoding: 'utf8', timeout: 60_000, windowsHide: true });
+  return true;
+}
+
 export function createReadinessIssuer(options = {}) {
   const catalog = options.catalog;
   if (!catalog) throw Error('Issuer needs a maintainer catalog.');
   const key = options.key;
   if (typeof key !== 'string' || key.length < 32) throw Error('Issuer needs a signing key of at least 32 characters.');
-  if (options.forbidKey && key === options.forbidKey) throw Error('Issuer refuses the published development signing key.');
+  if (isPublishedKey(key)) throw Error('Issuer refuses the published development signing key.');
   const evidenceRoot = options.evidenceRoot;
   if (!evidenceRoot) throw Error('Issuer needs an evidence root.');
+  const adapterRoot = options.adapterRoot;
+  if (!adapterRoot) throw Error('Issuer needs the control plane root that executes the probe.');
+  const docker = options.docker ?? 'docker';
+  const dockerPrefix = options.dockerPrefix ?? [];
   const connect = options.connect ?? defaultConnect;
 
   const auditRecord = record => {
@@ -209,6 +252,10 @@ export function createReadinessIssuer(options = {}) {
         auditRecord({ at: new Date().toISOString(), event: 'readiness-issued', runId, taskId: catalog.taskId, signed: false, diagnostics });
         return { runId, evidence: null, evidencePath: null, evidenceHash: null, receipt: null, diagnostics, trusted };
       };
+      const observedPolicyHash = controlPlaneFingerprint(adapterRoot);
+      if (observedPolicyHash !== trusted.policyHash) {
+        return fail('The control plane that would execute the probe does not match the policy hash in the catalog.');
+      }
       let run = null;
       try {
         run = await options.adapter.probe({
@@ -216,6 +263,7 @@ export function createReadinessIssuer(options = {}) {
           projection: input.projection,
           scratch: input.scratch,
           manifest: input.manifest,
+          keepContainer: true,
           hostPaths: PROBE_TARGETS.map(targetId => ({
             targetId,
             hostPath: trusted.deniedHostPaths[targetId],
@@ -227,7 +275,15 @@ export function createReadinessIssuer(options = {}) {
       } catch (error) {
         return fail(String(error && error.message ? error.message : error));
       }
-      const egressHost = (/(?:https?:\/\/)?([^/:]+)/i.exec(trusted.generalEgressEndpoint) ?? [])[1] ?? '';
+      let container = null;
+      try {
+        container = inspectContainer(docker, run.containerId, dockerPrefix);
+      } catch (error) {
+        removeContainer(docker, run.containerId, dockerPrefix);
+        return fail(`The issuer could not confirm the container that produced the evidence: ${String(error && error.message ? error.message : error)}`);
+      }
+      try {
+        const egressHost = (/(?:https?:\/\/)?([^/:]+)/i.exec(trusted.generalEgressEndpoint) ?? [])[1] ?? '';
       if (isLoopbackHost(egressHost)) return fail('The general egress control must not be a loopback address.');
       const hostPositive = PROBE_TARGETS
         .concat(['projection-write'])
@@ -249,13 +305,14 @@ export function createReadinessIssuer(options = {}) {
       let evidence = null;
       try {
         evidence = buildEvidenceFromProbe({
-          catalog,
           run,
           runId,
           trusted,
           hostPositive,
           transportPositive,
-          generalEgressBlocked
+          generalEgressBlocked,
+          container,
+          containerMounts: run.probe?.observations?.containerMounts ?? []
         });
       } catch (error) {
         return fail(String(error && error.message ? error.message : error));
@@ -310,6 +367,9 @@ export function createReadinessIssuer(options = {}) {
         diagnostics
       });
       return { runId, evidence, evidencePath: receipt ? evidencePath : null, evidenceHash: receipt ? evidenceHash : null, receipt, diagnostics, trusted, payloadHash };
+      } finally {
+        removeContainer(docker, run.containerId, dockerPrefix);
+      }
     }
   };
 }

@@ -1,7 +1,7 @@
 {
   "kind": "readiness-receipt",
-  "runId": "40cab98e-9267-49ca-86a8-c8f848c37eea",
-  "base": "D:\\Long-term\\JobTrack-issuance-40cab98e",
+  "runId": "195f0635-1e49-445f-8a85-806cbe2ee11b",
+  "base": "D:\\Long-term\\JobTrack-issuance-195f0635",
   "catalog": {
     "taskId": "readiness-canary",
     "feature": "web",
@@ -9,28 +9,28 @@
     "purpose": "worker-read",
     "adapterId": "jobtrack-docker-adapter-v1",
     "imageDigest": "44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
-    "policyHash": "bd0d4e57726730d5fc71b724f2b74a6dd95059cd207846847bdcd713628dbb4b",
+    "policyHash": "9c7f08959611f790f0f58741f0a9425028c0d47b8c2375b15b08b388ad605d92",
     "modelEndpoint": "http://127.0.0.1:8099/v1/chat",
     "generalEgressEndpoint": "http://192.168.1.251:8098/general",
     "mountSources": {
-      "projection": "D:/Long-term/JobTrack-issuance-40cab98e/projection",
-      "scratch": "D:/Long-term/JobTrack-issuance-40cab98e/scratch"
+      "projection": "D:/Long-term/JobTrack-issuance-195f0635/projection",
+      "scratch": "D:/Long-term/JobTrack-issuance-195f0635/scratch"
     }
   },
-  "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\H2-H5-review-fixes\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\40cab98e-9267-49ca-86a8-c8f848c37eea.evidence.json",
-  "evidenceHash": "bbc9dd22d1291cb9f03bc641982640551e6be3ff38c193227abfc74451460542",
+  "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\review-fixes-2\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\195f0635-1e49-445f-8a85-806cbe2ee11b.evidence.json",
+  "evidenceHash": "25c48fad201c74100084fb5f79eb16f9f2e40392dac3431eb8d842caceff150a",
   "receipt": {
     "schemaVersion": 2,
-    "runId": "40cab98e-9267-49ca-86a8-c8f848c37eea",
-    "issuedAt": "2026-10-21T14:47:06.779Z",
-    "expiresAt": "2026-10-21T15:02:06.779Z",
+    "runId": "195f0635-1e49-445f-8a85-806cbe2ee11b",
+    "issuedAt": "2026-10-21T16:22:11.322Z",
+    "expiresAt": "2026-10-21T16:37:11.322Z",
     "binding": {
       "taskId": "readiness-canary",
       "feature": "web",
       "base": "main",
       "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
       "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
-      "policyHash": "bd0d4e57726730d5fc71b724f2b74a6dd95059cd207846847bdcd713628dbb4b",
+      "policyHash": "9c7f08959611f790f0f58741f0a9425028c0d47b8c2375b15b08b388ad605d92",
       "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
       "purpose": "worker-read",
       "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
@@ -40,13 +40,13 @@
       "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87"
     },
     "evidence": {
-      "path": "40cab98e-9267-49ca-86a8-c8f848c37eea.evidence.json",
-      "rawSha256": "bbc9dd22d1291cb9f03bc641982640551e6be3ff38c193227abfc74451460542",
-      "completedAt": "2026-10-21T14:47:06.764Z",
-      "bytes": 9066
+      "path": "195f0635-1e49-445f-8a85-806cbe2ee11b.evidence.json",
+      "rawSha256": "25c48fad201c74100084fb5f79eb16f9f2e40392dac3431eb8d842caceff150a",
+      "completedAt": "2026-10-21T16:22:11.186Z",
+      "bytes": 9490
     },
     "verifier": {
-      "id": "jobtrack-trusted-issuer-v1",
+      "id": "jobtrack-trusted-issuer-v2",
       "implementationHash": "9890750ec796fe7f022b752e6877be7947e807b0356c18aa6e5cfddf144c5046"
     },
     "derived": {
@@ -57,18 +57,18 @@
       "egress": true,
       "gateA": true
     },
-    "signature": "f0665fc1e61b94ff3e63dba312d30eaa3660ff7f4552d3b2788eda1efdd08a51"
+    "signature": "de47adf8430801e06949a4f083b4b30d366feafad7a8797aee3268b0cf6cf4dd"
   },
-  "signingKeyFingerprint": "8733b989d9662b9c8f9a2be6c64f3c167c9f5b5f7f0ee6fd72358d78a9c974c6",
+  "signingKeyFingerprint": "7457508a87f15686754304c6386731e25e60744e21976f3a6e04119a3026db91",
   "diagnostics": null,
   "audit": [
     {
-      "at": "2026-10-21T14:47:06.781Z",
+      "at": "2026-10-21T16:22:11.324Z",
       "event": "readiness-issued",
-      "runId": "40cab98e-9267-49ca-86a8-c8f848c37eea",
+      "runId": "195f0635-1e49-445f-8a85-806cbe2ee11b",
       "taskId": "readiness-canary",
-      "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\H2-H5-review-fixes\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\40cab98e-9267-49ca-86a8-c8f848c37eea.evidence.json",
-      "evidenceHash": "bbc9dd22d1291cb9f03bc641982640551e6be3ff38c193227abfc74451460542",
+      "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\review-fixes-2\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\195f0635-1e49-445f-8a85-806cbe2ee11b.evidence.json",
+      "evidenceHash": "25c48fad201c74100084fb5f79eb16f9f2e40392dac3431eb8d842caceff150a",
       "signed": true,
       "diagnostics": null
     }

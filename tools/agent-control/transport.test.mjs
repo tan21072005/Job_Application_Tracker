@@ -76,10 +76,10 @@ test('the broker round trip travels over the scratch channel and never trusts a 
   assert.equal(written.request.endpoint, 'https://model-endpoint.invalid/v1/chat');
   assert.equal(written.request.role, 'planner');
   assert.equal(written.requestHash.length, 64);
-  assert.equal(written.token, sign({ requestHash: written.requestHash, runId }));
+  assert.equal(Object.hasOwn(written, 'token'), false, 'the request file must never carry the response token');
   writeFileSync(join(runDirectory, 'response.json'), JSON.stringify({
     requestHash: written.requestHash,
-    token: written.token,
+    token: sign({ requestHash: written.requestHash, runId }),
     body: { verdict: 'plan' }
   }));
   const result = await pending;
@@ -102,6 +102,14 @@ test('an unauthenticated or foreign response is refused', async () => {
   const request = JSON.parse(readFileSync(join(runDirectory, 'request.json'), 'utf8'));
   writeFileSync(join(runDirectory, 'response.json'), JSON.stringify({ requestHash: request.requestHash, token: 'c'.repeat(64), body: {} }));
   await assert.rejects(() => second, /not authenticated/);
+});
+
+test('a transport root outside the scratch is refused and never created', async () => {
+  const { scratch } = scratchFixture();
+  const outside = join(tmpdir(), `jobtrack-transport-outside-${Date.now()}`);
+  const broker = createTransportBroker({ allowlist, endpoint: 'https://model-endpoint.invalid/v1/chat', secret, pollMs: 10, timeoutMs: 200 });
+  await assert.rejects(() => broker.request({ scratchRoot: scratch, runId, transportRoot: outside }), /inside the container scratch/);
+  assert.equal(existsSync(outside), false);
 });
 
 test('the broker refuses a request without a scratch root and times out without a response', async () => {

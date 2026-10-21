@@ -21,37 +21,110 @@
     },
     "hostWrite": {
       "ok": false,
-      "code": "EROFS"
+      "code": "ENOENT",
+      "target": "/mnt/d/Project/Job_Application_Tracker/.check-host-probe"
     },
     "environment": {}
   },
   "exitCode": 0,
-  "stdoutHash": "163523eda63d54c0bcb1c4fa5ac4375fcafc00785220765a481a7a34d9076abb",
+  "stdoutHash": "61d791069ba5c28d440074b9230515f99ae57a9b6e97d501708abc22f7cb40bf",
   "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "runId": "1f30b076-af68-4ff4-8ef5-3bc6025296c4",
-  "base": "D:\\Long-term\\JobTrack-check-1f30b076",
+  "runId": "43cc6847-afa5-4920-b25a-8ca1a8987eb0",
+  "base": "D:\\Long-term\\JobTrack-check-43cc6847",
   "guardError": null,
-  "mounts": [
+  "containerId": "fe2ee4a31009bc88c54e579348748d20a6db2df16f23e86fec73460d9863ba89",
+  "observedContainer": {
+    "containerId": "fe2ee4a31009bc88c54e579348748d20a6db2df16f23e86fec73460d9863ba89",
+    "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+    "imageId": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+    "user": "65534:65534",
+    "networkMode": "none",
+    "capDrop": [
+      "ALL"
+    ],
+    "securityOpt": [
+      "no-new-privileges"
+    ],
+    "memory": 536870912,
+    "pidsLimit": 256,
+    "nanoCpus": 1000000000,
+    "readonlyRootfs": true,
+    "tmpfs": {
+      "/tmp": "rw,noexec,nosuid,size=64m"
+    },
+    "mounts": [
+      {
+        "kind": "candidate",
+        "source": "D:\\Long-term\\JobTrack-check-43cc6847\\candidate",
+        "target": "/candidate",
+        "readOnly": true
+      },
+      {
+        "kind": "scratch",
+        "source": "D:\\Long-term\\JobTrack-check-43cc6847\\scratch",
+        "target": "/scratch",
+        "readOnly": false
+      },
+      {
+        "kind": "fixtures",
+        "source": "D:\\Long-term\\JobTrack-check-43cc6847\\fixtures",
+        "target": "/fixtures",
+        "readOnly": true
+      }
+    ],
+    "env": [
+      "HOME=/nonexistent",
+      "CHECK_ID=build:api",
+      "CANDIDATE_DIGEST=5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+      "FIXTURE_ROOT=/fixtures",
+      "SCRATCH_ROOT=/scratch",
+      "HOST_PROBE_PATH=/mnt/d/Project/Job_Application_Tracker/.check-host-probe",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "NODE_VERSION=24.22.0",
+      "YARN_VERSION=1.22.22"
+    ]
+  },
+  "observedMounts": [
+    {
+      "kind": "candidate",
+      "source": "D:\\Long-term\\JobTrack-check-43cc6847\\candidate",
+      "target": "/candidate",
+      "readOnly": true
+    },
+    {
+      "kind": "scratch",
+      "source": "D:\\Long-term\\JobTrack-check-43cc6847\\scratch",
+      "target": "/scratch",
+      "readOnly": false
+    },
+    {
+      "kind": "fixtures",
+      "source": "D:\\Long-term\\JobTrack-check-43cc6847\\fixtures",
+      "target": "/fixtures",
+      "readOnly": true
+    }
+  ],
+  "declaredMounts": [
     {
       "target": "/candidate",
       "readOnly": true,
-      "source": "D:/Long-term/JobTrack-check-1f30b076/candidate"
+      "source": "D:/Long-term/JobTrack-check-43cc6847/candidate"
     },
     {
       "target": "/scratch",
       "readOnly": false,
-      "source": "D:/Long-term/JobTrack-check-1f30b076/scratch"
+      "source": "D:/Long-term/JobTrack-check-43cc6847/scratch"
     },
     {
       "target": "/fixtures",
       "readOnly": true,
-      "source": "D:/Long-term/JobTrack-check-1f30b076/fixtures"
+      "source": "D:/Long-term/JobTrack-check-43cc6847/fixtures"
     }
   ],
   "forbiddenHostPaths": [
     "D:/Project/Job_Application_Tracker",
     "C:/Users/Admin"
   ],
-  "stdoutTail": "{\"candidateRead\":{\"ok\":true,\"bytes\":24},\"candidateWrite\":{\"ok\":false,\"code\":\"EROFS\"},\"fixtureRead\":{\"ok\":true,\"bytes\":3},\"scratchWrite\":{\"ok\":true},\"hostWrite\":{\"ok\":false,\"code\":\"EROFS\"},\"environment\":{}}",
+  "stdoutTail": "{\"candidateRead\":{\"ok\":true,\"bytes\":24},\"candidateWrite\":{\"ok\":false,\"code\":\"EROFS\"},\"fixtureRead\":{\"ok\":true,\"bytes\":3},\"scratchWrite\":{\"ok\":true},\"hostWrite\":{\"ok\":false,\"code\":\"ENOENT\",\"target\":\"/mnt/d/Project/Job_Application_Tracker/.check-host-probe\"},\"environment\":{}}",
   "stderrTail": ""
 }

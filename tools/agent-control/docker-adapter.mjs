@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { READINESS_V2_PROBE_CATALOG, probeCatalogHash } from './readiness-v2.mjs';
 
 export const ADAPTER_ID = 'jobtrack-docker-adapter-v1';
@@ -17,9 +17,30 @@ export const DEFAULT_PIDS = '256';
 export const DEFAULT_CPUS = '1';
 export const DEFAULT_TMPFS = '/tmp:rw,noexec,nosuid,size=64m';
 export const NETWORK_MODE = 'none';
+export const ALLOWED_DOCKER_FLAGS = Object.freeze([
+  'run',
+  'create',
+  'rm',
+  'start',
+  'inspect',
+  '--rm',
+  '--name',
+  '--label',
+  '--read-only',
+  '--network',
+  '--cap-drop',
+  '--security-opt',
+  '--user',
+  '--memory',
+  '--pids-limit',
+  '--cpus',
+  '--tmpfs',
+  '--env',
+  '--workdir',
+  '--mount'
+]);
 
 const IMAGE_PATTERN = /^[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$/;
-const ENV_FORBIDDEN_FLAG = '--env-file';
 
 export function assertPinnedImage(image) {
   if (typeof image !== 'string' || !IMAGE_PATTERN.test(image)) throw Error('Container image must be pinned to an immutable sha256 digest.');
@@ -27,7 +48,12 @@ export function assertPinnedImage(image) {
 }
 
 export function canonicalSource(path) {
-  return realpathSync(resolve(path)).replaceAll('\\', '/');
+  const resolved = resolve(path);
+  try {
+    return realpathSync(resolved).replaceAll('\\', '/');
+  } catch {
+    return resolved.replaceAll('\\', '/');
+  }
 }
 
 export function assertDirectory(path) {
@@ -37,15 +63,25 @@ export function assertDirectory(path) {
   return canonicalSource(path);
 }
 
-export function isInside(root, candidate) {
+export function pathIsInside(root, candidate) {
   const rel = relative(resolve(root), resolve(candidate));
-  return rel !== '' && !rel.startsWith('..') && !resolve(root).endsWith(sep) ? true : rel !== '';
+  if (isAbsolute(rel)) return false;
+  return rel !== '' && !rel.startsWith('..') && !rel.includes(`..${sep}`);
 }
 
 export function assertInsideRoot(root, candidate, label) {
-  const rel = relative(resolve(root), resolve(candidate));
-  if (!rel || rel.startsWith('..') || resolve(candidate) === resolve(root)) throw Error(`${label} must live inside the operator run root.`);
+  if (!root) throw Error('The operator run root is required.');
+  if (!pathIsInside(root, candidate)) throw Error(`${label} must live inside the operator run root.`);
   return resolve(candidate);
+}
+
+export function assertNotDeniedPath(deniedPaths, candidate) {
+  for (const denied of deniedPaths ?? []) {
+    if (!denied) continue;
+    if (canonicalSource(denied) === canonicalSource(candidate)) throw Error('Container bind source is a denied host path.');
+    if (pathIsInside(denied, candidate)) throw Error('Container bind source is inside a denied host path.');
+  }
+  return true;
 }
 
 export function buildMountArgs({ projection, scratch, fixtures, candidate }) {
@@ -97,7 +133,6 @@ function parseBinds(args) {
     }
     if (typeof value === 'string' && (value.startsWith('--volume=') || value.startsWith('-v='))) {
       binds.push({ form: 'volume', value: value.slice(value.indexOf('=') + 1) });
-      continue;
     }
   }
   return binds;
@@ -112,11 +147,13 @@ function bindParts(value) {
   return { source, target, readOnly: /,readonly(?:,|$)/.test(value) };
 }
 
-export function assertBinds(args, { allowedMounts, forbiddenPaths }) {
+export function assertBinds(args, { allowedMounts, deniedPaths }) {
   const binds = parseBinds(args);
-  if (binds.length !== allowedMounts.length) throw Error('Container must declare exactly the expected bind set.');
   for (const bind of binds) {
     if (bind.form === 'volume') throw Error('Container binds must use the audited mount form.');
+  }
+  if (binds.length !== allowedMounts.length) throw Error('Container must declare exactly the expected bind set.');
+  for (const bind of binds) {
     const parts = bindParts(bind.value);
     if (!parts || !parts.source) throw Error('Container bind has no source.');
     const match = allowedMounts.find(mount => canonicalSource(mount.source) === canonicalSource(parts.source));
@@ -124,38 +161,70 @@ export function assertBinds(args, { allowedMounts, forbiddenPaths }) {
     if (parts.target !== match.target) throw Error('Container bind target is not the declared target.');
     if (match.readOnly && !parts.readOnly) throw Error('Container bind that must be read only is writable.');
     if (!match.readOnly && parts.readOnly) throw Error('Container bind that must be writable is read only.');
-    for (const forbidden of forbiddenPaths) {
-      if (canonicalSource(parts.source) === canonicalSource(forbidden)) throw Error('Container bind source is a forbidden host path.');
-    }
+    assertNotDeniedPath(deniedPaths, parts.source);
   }
   return true;
 }
 
+export function looksLikeImageToken(value) {
+  if (typeof value !== 'string' || value.length === 0) return false;
+  if (value.startsWith('-')) return false;
+  if (value.includes('=') || value.includes('/') && value.startsWith('/')) return false;
+  if (value.includes('@sha256:')) return true;
+  const match = /^([a-z0-9][a-z0-9._-]*):([a-z0-9._-]+)$/i.exec(value);
+  if (!match) return false;
+  return !/^\d+$/.test(match[1]);
+}
+
 export function assertSingleImage(args, image) {
-  const tokens = args.filter(value => typeof value === 'string' && /@sha256:[a-f0-9]{64}$/.test(value));
+  const tokens = args.filter(value => looksLikeImageToken(value));
   if (tokens.length !== 1 || tokens[0] !== image) throw Error('Container arguments must name exactly the pinned image.');
   return true;
 }
 
-export function assertNoHostAccess(args, forbidden, expectedMounts = [], options = {}) {
-  assertBinds(args, { allowedMounts: expectedMounts, forbiddenPaths: forbidden });
-  assertSingleImage(args, options.image);
-  const networkIndex = args.indexOf('--network');
-  if (networkIndex < 0 || args[networkIndex + 1] !== NETWORK_MODE) throw Error('Container must run without network access.');
-  if (args.includes(ENV_FORBIDDEN_FLAG)) throw Error('Container must never receive an env file.');
+export function assertAllowedFlags(args) {
+  const imageIndex = args.findIndex(value => looksLikeImageToken(value));
+  const dockerArgs = imageIndex < 0 ? args : args.slice(0, imageIndex);
+  for (const value of dockerArgs) {
+    if (typeof value !== 'string' || !value.startsWith('-')) continue;
+    const flag = value.split('=')[0];
+    if (!ALLOWED_DOCKER_FLAGS.includes(flag)) throw Error(`Container arguments use a flag outside the allow list: ${flag}`);
+  }
+  return true;
+}
+
+export function assertNetwork(args) {
+  const networkFlags = args.filter(value => value === '--network' || value === '--net' || (typeof value === 'string' && (value.startsWith('--network=') || value.startsWith('--net='))));
+  if (networkFlags.length !== 1 || networkFlags[0] !== '--network') throw Error('Container must declare exactly one network mode.');
+  const index = args.indexOf('--network');
+  if (args[index + 1] !== NETWORK_MODE) throw Error('Container must run without network access.');
+  return true;
+}
+
+export function assertNoForbiddenReference(args, forbidden) {
   const remainder = [];
   for (let index = 0; index < args.length; index++) {
     if (args[index] === '--mount' || args[index] === '--eval' || args[index] === '--volume' || args[index] === '-v') { index += 1; continue; }
     remainder.push(args[index]);
   }
-  const haystack = remainder.join(' ').toLowerCase();
+  const haystack = remainder.join(' ').replaceAll('\\', '/').toLowerCase();
   for (const needle of forbidden) {
     if (!needle) continue;
-    if (haystack.includes(String(needle).toLowerCase().replaceAll('\\', '/'))) throw Error(`Adapter arguments reference a forbidden host path: ${needle}`);
+    if (haystack.includes(String(needle).replaceAll('\\', '/').toLowerCase())) throw Error(`Adapter arguments reference a forbidden host path: ${needle}`);
   }
   if (haystack.includes('docker.sock')) throw Error('Adapter arguments must never reference the Docker socket.');
   if (/(^|[\\/=\s])\.env(\.|$|[\s])/i.test(haystack)) throw Error('Adapter arguments must never reference a dotenv file.');
   if (/(^|[\\/=\s])accounts/i.test(haystack)) throw Error('Adapter arguments must never reference an account file.');
+  return true;
+}
+
+export function assertNoHostAccess(args, forbidden, expectedMounts = [], options = {}) {
+  assertAllowedFlags(args);
+  assertBinds(args, { allowedMounts: expectedMounts, deniedPaths: forbidden });
+  assertSingleImage(args, options.image);
+  assertNetwork(args);
+  if (args.includes('--env-file')) throw Error('Container must never receive an env file.');
+  assertNoForbiddenReference(args, forbidden);
   return true;
 }
 
@@ -171,6 +240,20 @@ export function buildProbeArgs(options) {
     '--env', `JT_PROBE_CONFIG=${config}`,
     image,
     'node', '--input-type=module', '--eval', program
+  ];
+  return args;
+}
+
+export function buildLaunchArgs(options) {
+  const { image, runId, projection, scratch, command } = options;
+  assertPinnedImage(image);
+  if (!Array.isArray(command) || !command.length) throw Error('Adapter launch needs a command.');
+  const args = [
+    'run', '--rm',
+    ...buildRunArgs({ image, runId }).slice(1),
+    ...buildMountArgs({ projection, scratch }),
+    image,
+    ...command
   ];
   return args;
 }
@@ -212,18 +295,11 @@ export function parseContainerObservation(raw) {
   };
 }
 
-export function buildLaunchArgs(options) {
-  const { image, runId, projection, scratch, command } = options;
-  assertPinnedImage(image);
-  if (!Array.isArray(command) || !command.length) throw Error('Adapter launch needs a command.');
-  const args = [
-    'run', '--rm',
-    ...buildRunArgs({ image, runId }).slice(1),
-    ...buildMountArgs({ projection, scratch }),
-    image,
-    ...command
-  ];
-  return args;
+export function inspectContainer(docker, containerId, dockerPrefix = []) {
+  const result = spawnSync(docker, [...dockerPrefix, 'inspect', containerId], { encoding: 'utf8', timeout: 30_000, windowsHide: true });
+  if (result.error) throw Error(`Container inspection failed: ${result.error.message}`);
+  if (result.status !== 0) throw Error(`Container inspection failed: ${String(result.stderr).slice(-300)}`);
+  return parseContainerObservation(result.stdout);
 }
 
 export function forbiddenHostPaths(repo, home) {
@@ -289,11 +365,16 @@ export function createDockerAdapter(options = {}) {
   const image = options.image ?? DEFAULT_IMAGE;
   const docker = options.docker ?? 'docker';
   const probeProgramPath = options.probeProgramPath ?? join(repo, 'tools/sandbox/isolation-probe.mjs');
-  const forbidden = [...forbiddenHostPaths(repo, home), ...(options.forbiddenPaths ?? [])].map(path => path.replaceAll('\\', '/'));
   const runRoot = options.runRoot ? resolve(options.runRoot) : null;
+  if (!runRoot) throw Error('The adapter requires the operator run root.');
+  const denied = [
+    ...forbiddenHostPaths(repo, home),
+    ...(options.deniedPaths ?? []).map(path => path.replaceAll('\\', '/'))
+  ];
+  const forbidden = denied.map(path => path.replaceAll('\\', '/'));
 
   const runDocker = (args, input, timeoutMs) => {
-    const result = spawnSync(docker, args, { input, encoding: 'utf8', timeout: timeoutMs, maxBuffer: 8 * 1024 * 1024, windowsHide: true });
+    const result = spawnSync(docker, [...(options.dockerPrefix ?? []), ...args], { input, encoding: 'utf8', timeout: timeoutMs, maxBuffer: 8 * 1024 * 1024, windowsHide: true });
     if (result.error) throw Error(`Docker invocation failed: ${result.error.message}`);
     return result;
   };
@@ -307,17 +388,23 @@ export function createDockerAdapter(options = {}) {
     return mounts;
   };
 
+  const resolveRunPaths = (projection, scratch) => {
+    assertInsideRoot(runRoot, projection, 'Projection');
+    assertInsideRoot(runRoot, scratch, 'Scratch');
+    assertNotDeniedPath(denied, projection);
+    assertNotDeniedPath(denied, scratch);
+    return { projection, scratch };
+  };
+
   return {
     id: ADAPTER_ID,
     image,
+    runRoot,
     async probe(probeOptions) {
       const runId = probeOptions.runId ?? randomUUID();
       const projection = assertDirectory(probeOptions.projection);
       const scratch = assertDirectory(probeOptions.scratch);
-      if (runRoot) {
-        assertInsideRoot(runRoot, projection, 'Projection');
-        assertInsideRoot(runRoot, scratch, 'Scratch');
-      }
+      resolveRunPaths(projection, scratch);
       const program = readFileSync(probeProgramPath, 'utf8');
       const config = Buffer.from(JSON.stringify({
         manifest: probeOptions.manifest,
@@ -344,22 +431,21 @@ export function createDockerAdapter(options = {}) {
       let probe = null;
       let failure = null;
       try {
-        const inspected = runDocker(['inspect', containerId], '', 30_000);
-        if (inspected.status !== 0) throw Error(`Container inspection failed: ${String(inspected.stderr).slice(-300)}`);
-        observation = parseContainerObservation(inspected.stdout);
+        observation = inspectContainer(docker, containerId, options.dockerPrefix ?? []);
         const started = runDocker(['start', '-a', containerId], '', probeOptions.timeoutMs ?? 120_000);
         if (started.status !== 0) throw Error(`Isolation probe container exited with ${started.status}: ${String(started.stderr).slice(-500)}`);
         probe = parseProbeOutput(started.stdout);
       } catch (error) {
         failure = String(error && error.message ? error.message : error);
       } finally {
-        runDocker(['rm', '-f', containerId], '', 60_000);
+        if (probeOptions.keepContainer !== true) runDocker(['rm', '-f', containerId], '', 60_000);
       }
       const completedAt = new Date().toISOString();
       if (failure) throw Error(failure);
       return {
         runId,
         image,
+        containerId,
         argv: args,
         argvHash: createHash('sha256').update(args.join(' ')).digest('hex'),
         observation,
@@ -372,10 +458,7 @@ export function createDockerAdapter(options = {}) {
       const runId = launchOptions.runId ?? randomUUID();
       const projection = assertDirectory(launchOptions.projection);
       const scratch = assertDirectory(launchOptions.scratch);
-      if (runRoot) {
-        assertInsideRoot(runRoot, projection, 'Projection');
-        assertInsideRoot(runRoot, scratch, 'Scratch');
-      }
+      resolveRunPaths(projection, scratch);
       const args = buildLaunchArgs({ image, runId, projection, scratch, command: launchOptions.command });
       assertNoHostAccess(args, forbidden, declaredMounts(projection, scratch), { image });
       return { runId, image, args, argvHash: createHash('sha256').update(args.join(' ')).digest('hex'), projection, scratch };
