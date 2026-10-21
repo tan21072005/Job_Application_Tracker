@@ -73,7 +73,7 @@ test('links are refused as projection sources', t => {
   let linked = true;
   try { symlinkSync(outside, junction, process.platform === 'win32' ? 'junction' : 'dir'); }
   catch (error) { if (!['EPERM', 'EACCES', 'ENOSYS'].includes(error.code)) throw error; linked = false; }
-  if (linked) assert.throws(() => buildProjectionManifest({ worktree: root, lane: 'web', files: ['apps/web/src/linked/file.js'] }), /regular file|Symlink or junction/);
+  if (linked) assert.throws(() => buildProjectionManifest({ worktree: root, lane: 'web', files: ['apps/web/src/linked/file.js'] }), /regular file|symlink or junction/i);
   linkSync(join(root, 'apps/web/src/module.js'), join(root, 'apps/web/src/hard.js'));
   assert.throws(() => buildProjectionManifest({ worktree: root, lane: 'web', files: ['apps/web/src/hard.js'] }), /hard linked|Hard-linked/);
 });
@@ -180,4 +180,76 @@ test('verification refuses a tampered projection', () => {
   chmodSync(join(target, 'apps/web/src/module.js'), 0o644);
   writeFileSync(join(target, 'apps/web/src/module.js'), 'export const value = 9;\n');
   assert.throws(() => verifyProjection(manifest, target), /changed/);
+});
+
+test('dependencies cannot expose control state or sibling worktrees', () => {
+  const root = fixture();
+  for (const rel of ['.agent-state/registry.json', '.worktrees/sibling/source.js']) {
+    assert.throws(() => buildProjectionManifest({ worktree: root, lane: 'web', files: laneFiles, dependencies: [rel], dependencyRoots: [rel.slice(0, rel.lastIndexOf('/') + 1)] }), /Protected/);
+  }
+});
+
+test('dependency ancestors cannot be junctions', () => {
+  const root = fixture();
+  const outside = join(root, 'external-dependency');
+  mkdirSync(outside);
+  writeFileSync(join(outside, 'module.js'), 'export const external = true;\n');
+  symlinkSync(outside, join(root, 'packages', 'linked'), process.platform === 'win32' ? 'junction' : 'dir');
+  assert.throws(() => buildProjectionManifest({ worktree: root, lane: 'web', files: laneFiles, dependencies: ['packages/linked/module.js'], dependencyRoots: ['packages/linked/'] }), /symlink or junction/i);
+});
+
+test('dependency casing must match the physical source', () => {
+  const root = fixture();
+  assert.throws(() => buildProjectionManifest({ worktree: root, lane: 'web', files: laneFiles, dependencies: ['packages/jobtrack-contract/src/Index.ts'], dependencyRoots: ['packages/jobtrack-contract/src/'] }), /casing mismatch/);
+});
+
+test('materialization rejects altered manifest metadata before writing', () => {
+  const root = fixture();
+  const scratchRoot = scratch();
+  const manifest = buildProjectionManifest({ worktree: root, lane: 'web', files: laneFiles });
+  const targetRoot = join(scratchRoot, 'projection');
+  for (const forged of [{ ...manifest, manifestHash: 'forged' }, { ...manifest, extra: true }]) {
+    assert.throws(() => materializeProjection(forged, { worktree: root, scratchRoot, targetRoot }), /manifest hash|manifest shape/);
+    assert.equal(existsSync(targetRoot), false);
+  }
+});
+
+test('a scratch ancestor junction cannot redirect materialization', () => {
+  const root = fixture();
+  const scratchRoot = scratch();
+  const outside = join(root, 'external-output');
+  mkdirSync(outside);
+  const link = join(scratchRoot, 'redirect');
+  symlinkSync(outside, link, process.platform === 'win32' ? 'junction' : 'dir');
+  const manifest = buildProjectionManifest({ worktree: root, lane: 'web', files: laneFiles });
+  assert.throws(() => materializeProjection(manifest, { worktree: root, scratchRoot, targetRoot: join(link, 'projection') }), /symlink or junction/i);
+  assert.equal(existsSync(join(outside, 'projection')), false);
+});
+
+test('verification rejects a descriptor change and a forged hash', () => {
+  const root = fixture();
+  const scratchRoot = scratch();
+  const targetRoot = join(scratchRoot, 'projection');
+  const manifest = buildProjectionManifest({ worktree: root, lane: 'web', files: laneFiles });
+  materializeProjection(manifest, { worktree: root, scratchRoot, targetRoot });
+  assert.throws(() => verifyProjection({ ...manifest, manifestHash: 'forged' }, targetRoot), /manifest hash/);
+  const descriptor = join(targetRoot, 'projection.json');
+  chmodSync(descriptor, 0o644);
+  writeFileSync(descriptor, '{}\n');
+  assert.throws(() => verifyProjection(manifest, targetRoot), /descriptor changed/);
+});
+
+test('verification rejects identical bytes substituted through a hard link', () => {
+  const root = fixture();
+  const scratchRoot = scratch();
+  const targetRoot = join(scratchRoot, 'projection');
+  const manifest = buildProjectionManifest({ worktree: root, lane: 'web', files: laneFiles });
+  materializeProjection(manifest, { worktree: root, scratchRoot, targetRoot });
+  const projected = join(targetRoot, 'apps/web/src/module.js');
+  const outside = join(scratchRoot, 'identical-source.js');
+  writeFileSync(outside, readFileSync(projected));
+  chmodSync(projected, 0o644);
+  rmSync(projected);
+  linkSync(outside, projected);
+  assert.throws(() => verifyProjection(manifest, targetRoot), /hard linked/);
 });
