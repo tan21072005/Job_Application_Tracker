@@ -1,5 +1,7 @@
 # JobTrack
 
+Quy trình agent/worktree/feature ownership hiện hành: [docs/agents](docs/agents/README.md). Bắt đầu bằng `rtk npm run agents -- doctor`; đọc `AGENTS.md` trước khi giao việc. Kiểm thử bộ điều phối: `rtk npm run agents:test`. Các mô tả frontend demo bên dưới là lịch sử; trạng thái sản phẩm hiện tại lấy từ source và context master riêng của người duy trì.
+
 Bản giao diện nâng cấp hiện tại chạy tại **http://127.0.0.1:64364/**. Mở `START-JOBTRACK-WEB.cmd` hoặc chạy `npm run dev:web`. Nếu thiếu dependency của app, chạy `npm ci --prefix apps/web`.
 
 Sửa giao diện tại `apps/web/src/JobTrack.tsx`, `views/`, `components/` và `jobtrack.css`. Xem [hướng dẫn bản web/mobile](apps/web/README.md) và [bàn giao triển khai](planning/jobtrack-ui-redesign/FRONTEND-IMPLEMENTATION.md). Bản mặc định có đầy đủ tương tác với dữ liệu mẫu lưu trong trình duyệt; backend thật chưa nằm trong vòng bàn giao này.

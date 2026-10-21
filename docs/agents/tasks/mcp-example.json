@@ -1,0 +1,12 @@
+{
+  "id": "mcp-example",
+  "feature": "mcp",
+  "objective": "Mẫu chưa được giao: làm rõ mô tả một MCP tool đã có theo hợp đồng được duyệt trước khi chạy.",
+  "acceptance": [
+    "Chỉ thay đổi phạm vi lane MCP được policy cho phép.",
+    "Không thay quyền tool, gọi dịch vụ thật hoặc sửa contract dùng chung.",
+    "Không ghi credential hoặc thêm comment vào code."
+  ],
+  "checks": ["build:mcp"],
+  "dependencies": []
+}

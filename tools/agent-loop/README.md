@@ -1,5 +1,7 @@
 # Vòng điều phối agent cho JobTrack
 
+> Runner cùng checkout bên dưới đã ngừng chạy live. Entry `agent:loop` chuyển sang controller feature tại [tools/agent-control](../agent-control/README.md). Các exports kiểm thử vẫn giữ. Xem [quy trình hiện hành](../../docs/agents/README.md) để dùng worktree, ownership, checks và review trước commit.
+
 Quy trình này áp dụng mẫu Planner → Coding agent → test/build → Reflector → Reviewer cho từng việc trong [PROJECT-PLAN.md](../../PROJECT-PLAN.md). Mỗi role chạy bằng Codex CLI trong cùng workspace. Runner ghi prompt, phản hồi, log kiểm tra và file nguồn đã thay đổi vào `output/agent-runs/<task-id>-<thời gian>/run.json`. Nó không chạy nền; một lần gọi xử lý đúng một task.
 
 ## Số vòng
