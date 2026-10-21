@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { PROJECTION_TARGET } from './docker-adapter.mjs';
+import { CANDIDATE_TARGET, FIXTURE_TARGET, PROJECTION_TARGET, SCRATCH_TARGET } from './docker-adapter.mjs';
+import { buildCheckEnvironment } from './check-profile.mjs';
 
 export const BOUNDARY_PURPOSES = Object.freeze(['worker-read', 'check-runner']);
 export const BINDING_EQUALITY_FIELDS = Object.freeze(['taskId', 'feature', 'base', 'purpose', 'adapterId']);
@@ -11,9 +12,14 @@ export function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-export function stageProjection({ files, sourceRoot, destination }) {
+export function stageProjection({ files, sourceRoot, destination, allowedRoot }) {
   if (!Array.isArray(files) || !files.length) throw Error('Projection needs at least one file.');
   const root = resolve(destination);
+  if (allowedRoot) {
+    const boundary = resolve(allowedRoot);
+    const relative = root.slice(boundary.length);
+    if (!relative || relative.startsWith('..') || relative.includes('..')) throw Error('The projection destination must live inside the operator run root.');
+  }
   rmSync(root, { recursive: true, force: true });
   mkdirSync(root, { recursive: true });
   const manifest = [];
@@ -141,7 +147,14 @@ export function createExecutionBoundary(options) {
         projection: prepared.staged.root,
         scratch: prepared.scratchRoot,
         command: request.command ?? [],
-        workdir: PROJECTION_TARGET,
+        profile: prepared.purpose === 'check-runner' ? 'check' : 'worker',
+        fixtures: request.fixtures ?? null,
+        env: prepared.purpose === 'check-runner' ? buildCheckEnvironment({
+          checkId: request.check ?? 'fixed-check',
+          candidateDigest: prepared.binding.projectionManifestHash,
+          fixtureRoot: FIXTURE_TARGET,
+          scratchRoot: SCRATCH_TARGET
+        }) : {},
         stdin: request.instruction ?? '',
         binding: prepared.binding,
         receipt: prepared.receipt

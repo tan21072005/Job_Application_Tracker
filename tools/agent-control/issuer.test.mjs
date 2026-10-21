@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +15,6 @@ import {
 } from './issuer.mjs';
 import { controlPlaneFingerprint } from './fingerprint.mjs';
 import { createDockerAdapter, DEFAULT_IMAGE } from './docker-adapter.mjs';
-import { verifyReadinessReceiptV2 } from './readiness-v2.mjs';
 
 const key = 'k'.repeat(48);
 const IMAGE_DIGEST = DEFAULT_IMAGE.split('@sha256:')[1];

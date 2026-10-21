@@ -83,10 +83,12 @@ export function assertNotDeniedPath(deniedPaths, candidate) {
   return true;
 }
 
-export function buildMountArgs({ projection, scratch }) {
+export function buildMountArgs({ projection, scratch, fixtures, candidate }) {
   const mounts = [];
   if (projection) mounts.push({ kind: 'projection', source: projection, target: PROJECTION_TARGET, readOnly: true });
+  if (candidate) mounts.push({ kind: 'candidate', source: candidate, target: CANDIDATE_TARGET, readOnly: true });
   if (scratch) mounts.push({ kind: 'scratch', source: scratch, target: SCRATCH_TARGET, readOnly: false });
+  if (fixtures) mounts.push({ kind: 'fixtures', source: fixtures, target: FIXTURE_TARGET, readOnly: true });
   return mounts.flatMap(mount => ['--mount', `type=bind,source=${mount.source},target=${mount.target}${mount.readOnly ? ',readonly' : ''}`]);
 }
 
@@ -324,14 +326,15 @@ export function assertContainerMatchesDeclaration(observation, { imageDigest, ex
 }
 
 export function buildLaunchArgs(options) {
-  const { image, runId, projection, scratch, command, mode = 'run', workdir = SCRATCH_TARGET } = options;
+  const { image, runId, projection, scratch, fixtures, candidate, command, mode = 'run', workdir = SCRATCH_TARGET, role = 'worker', env = {} } = options;
   assertPinnedImage(image);
   if (!Array.isArray(command) || !command.length) throw Error('Adapter launch needs a command.');
   const args = [
     mode,
     ...(mode === 'run' ? ['--rm'] : []),
-    ...buildRunArgs({ image, runId, role: 'worker', workdir }).slice(1),
-    ...buildMountArgs({ projection, scratch }),
+    ...buildRunArgs({ image, runId, role, workdir }).slice(1),
+    ...buildMountArgs({ projection: candidate ? null : projection, scratch, fixtures, candidate }),
+    ...Object.entries(env).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
     image,
     ...command
   ];
@@ -508,8 +511,25 @@ export function createDockerAdapter(options = {}) {
       resolveRunPaths(projection, scratch);
       const command = Array.isArray(launchOptions.command) ? launchOptions.command : [];
       if (!command.length) throw Error('Adapter launch needs a command.');
-      const args = buildLaunchArgs({ image, runId, projection, scratch, command, mode: 'create', workdir: launchOptions.workdir ?? SCRATCH_TARGET });
-      const mounts = declaredMounts(projection, scratch);
+      const profile = launchOptions.profile === 'check' ? 'check' : 'worker';
+      const fixtures = profile === 'check' && launchOptions.fixtures ? assertDirectory(launchOptions.fixtures) : null;
+      const target = profile === 'check' ? CANDIDATE_TARGET : PROJECTION_TARGET;
+      const args = buildLaunchArgs({
+        image,
+        runId,
+        projection,
+        scratch,
+        fixtures,
+        candidate: profile === 'check' ? projection : null,
+        command,
+        mode: 'create',
+        role: profile,
+        workdir: target,
+        env: launchOptions.env ?? {}
+      });
+      const mounts = declaredMounts(profile === 'check' ? null : projection, scratch);
+      if (profile === 'check') mounts.push({ kind: 'candidate', source: projection, target: CANDIDATE_TARGET, readOnly: true });
+      if (fixtures) mounts.push({ kind: 'fixtures', source: fixtures, target: FIXTURE_TARGET, readOnly: true });
       assertNoHostAccess(args, forbidden, mounts, { image });
       const created = runDocker(['create', '-i', ...args.slice(1)], '', launchOptions.timeoutMs ?? 120_000);
       const containerId = String(created.stdout ?? '').trim().split(/\s+/)[0] ?? '';

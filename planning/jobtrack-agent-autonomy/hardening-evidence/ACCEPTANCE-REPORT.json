@@ -1,7 +1,7 @@
 {
   "kind": "readiness-acceptance-report",
-  "at": "2026-10-21T19:47:20.039Z",
-  "runId": "5b312faf-4d2c-4360-8a7b-381852862cb1",
+  "at": "2026-10-21T20:21:50.607Z",
+  "runId": "d0009c73-91e1-4449-8c12-3d1586102d0d",
   "passed": true,
   "findings": [
     {
@@ -87,16 +87,16 @@
   ],
   "receipt": {
     "schemaVersion": 2,
-    "runId": "5b312faf-4d2c-4360-8a7b-381852862cb1",
-    "issuedAt": "2026-10-21T19:47:17.269Z",
-    "expiresAt": "2026-10-21T20:02:17.269Z",
+    "runId": "d0009c73-91e1-4449-8c12-3d1586102d0d",
+    "issuedAt": "2026-10-21T20:21:48.340Z",
+    "expiresAt": "2026-10-21T20:36:48.340Z",
     "binding": {
       "taskId": "readiness-canary",
       "feature": "web",
       "base": "main",
       "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
       "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
-      "policyHash": "8b7cc5b44e36b06df63dfd2af6a6f6201a2234d19ca6f2ebf71e7425ceba6690",
+      "policyHash": "e3091957a4a42c46affe9965f69666214a3ed92c500d5821bb53910ef719409c",
       "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
       "purpose": "worker-read",
       "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
@@ -108,9 +108,9 @@
       "probeProgramHash": "ad2a798a5c9fd4701b7df12f4011f0d18be49e46965c2d6416b0d4c195edf195"
     },
     "evidence": {
-      "path": "5b312faf-4d2c-4360-8a7b-381852862cb1.evidence.json",
-      "rawSha256": "3df9f27aa1f4099590c2638e3437202a8f9488a5605ad8c0caf73c2285b7c4ff",
-      "completedAt": "2026-10-21T19:47:17.074Z",
+      "path": "d0009c73-91e1-4449-8c12-3d1586102d0d.evidence.json",
+      "rawSha256": "6d71a307b5649a266fdb2be6013282f4d6946dda1a22f487fce5efb572de5957",
+      "completedAt": "2026-10-21T20:21:48.137Z",
       "bytes": 9876
     },
     "verifier": {
@@ -125,9 +125,9 @@
       "egress": true,
       "gateA": true
     },
-    "signature": "2fe10b1f1eb045b419b898b82eba434bde254b58137025429d57ebb9d2ef66ba"
+    "signature": "db4c1c8152b610f17d32e9fe1f5e0ac29ae10dc68a023c21ef4886b9139b170c"
   },
-  "signingKeyFingerprint": "125e16cf9d0c27f1064e9d16ffda9c1a3701012351d5b744895b0cc85c0eb42c",
+  "signingKeyFingerprint": "eb9fd13b6b0e7cce9655c449535d2d4ce0efc9957bc40fe6c702fb2d7e79f000",
   "check": {
     "kind": "isolated-check-profile-not-readiness-receipt",
     "checkId": "build:api",
@@ -161,39 +161,39 @@
     "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "observedMounts": [
       {
+        "kind": "fixtures",
+        "source": "D:\\Long-term\\JobTrack-acceptance-d0009c73\\fixtures",
+        "target": "/fixtures",
+        "readOnly": true
+      },
+      {
         "kind": "candidate",
-        "source": "D:\\Long-term\\JobTrack-acceptance-5b312faf\\candidate",
+        "source": "D:\\Long-term\\JobTrack-acceptance-d0009c73\\candidate",
         "target": "/candidate",
         "readOnly": true
       },
       {
         "kind": "scratch",
-        "source": "D:\\Long-term\\JobTrack-acceptance-5b312faf\\scratch",
+        "source": "D:\\Long-term\\JobTrack-acceptance-d0009c73\\scratch",
         "target": "/scratch",
         "readOnly": false
-      },
-      {
-        "kind": "fixtures",
-        "source": "D:\\Long-term\\JobTrack-acceptance-5b312faf\\fixtures",
-        "target": "/fixtures",
-        "readOnly": true
       }
     ],
     "mounts": [
       {
         "target": "/candidate",
         "readOnly": true,
-        "source": "D:/Long-term/JobTrack-acceptance-5b312faf/candidate"
+        "source": "D:/Long-term/JobTrack-acceptance-d0009c73/candidate"
       },
       {
         "target": "/scratch",
         "readOnly": false,
-        "source": "D:/Long-term/JobTrack-acceptance-5b312faf/scratch"
+        "source": "D:/Long-term/JobTrack-acceptance-d0009c73/scratch"
       },
       {
         "target": "/fixtures",
         "readOnly": true,
-        "source": "D:/Long-term/JobTrack-acceptance-5b312faf/fixtures"
+        "source": "D:/Long-term/JobTrack-acceptance-d0009c73/fixtures"
       }
     ]
   },

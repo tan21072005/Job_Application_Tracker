@@ -1,18 +1,18 @@
 {
   "kind": "adapter-probe-not-readiness-receipt",
-  "runId": "2d082c2a-2d1f-4312-b2a9-3b05681b53f8",
+  "runId": "3e90271e-c6a6-41ff-abd4-8d0782f7e65b",
   "adapter": "jobtrack-docker-adapter-v1",
   "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
-  "argvHash": "434d1687457a78943d64e4a0e6113999278bbb531c8ce4074e06030930e1a32b",
+  "argvHash": "d6bc1305af9a72d9b1dfeccfa1ddd321c4a44f4609d5224af11ccf2b8fff14cd",
   "container": {
-    "containerId": "03bc81ffe8f307f98182dcdc93c695dead5e44180445b800b045115cd94ceead",
+    "containerId": "d32f497adfbb069f7674724d7261a507d15477e27939d6ff1aeca5f3c985dba4",
     "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "imageId": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "user": "65534:65534",
     "labels": {
       "jobtrack.owner": "jobtrack",
       "jobtrack.role": "probe",
-      "jobtrack.run": "2d082c2a-2d1f-4312-b2a9-3b05681b53f8"
+      "jobtrack.run": "3e90271e-c6a6-41ff-abd4-8d0782f7e65b"
     },
     "networkMode": "none",
     "capDrop": [
@@ -31,28 +31,28 @@
     "mounts": [
       {
         "kind": "projection",
-        "source": "D:/Long-term/JobTrack-isolation-2d082c2a/projection",
+        "source": "D:/Long-term/JobTrack-isolation-3e90271e/projection",
         "target": "/projection",
         "readOnly": true
       },
       {
         "kind": "scratch",
-        "source": "D:/Long-term/JobTrack-isolation-2d082c2a/scratch",
+        "source": "D:/Long-term/JobTrack-isolation-3e90271e/scratch",
         "target": "/scratch",
         "readOnly": false
       }
     ],
     "env": [
-      "HOME=/nonexistent",
       "JT_PROBE_CONFIG=eyJtYW5pZmVzdCI6W3sicGF0aCI6ImFwcHMvd2ViL3NyYy9tb2R1bGUuanMiLCJzaGEyNTYiOiI1ZDhmNjVkMjc3NGUyMDZiYzlmN2E3YTRhZDM5Y2EyZGM1NjNiNWMzMWU0NmFiNTdlZjQ4NzQ5NjEyMzdjZTI5In0seyJwYXRoIjoiYXBwcy93ZWIvc3JjL3BhbmVsLnRzeCIsInNoYTI1NiI6ImZlMzYyNTFlM2JjODJkOGRhZjAzNjhjNTkyMDFkZmEzZWRlZWE2NTNiNjFjYjRhZTQ5ZWJlYWY2ZWJhOGUwNWEifSx7InBhdGgiOiJwYWNrYWdlcy9qb2J0cmFjay1jb250cmFjdC9zcmMvaW5kZXgudHMiLCJzaGEyNTYiOiI4MGY2YjdlZTM1M2FlMWI3MzcwMWIxNzRhYjBhYTdkZWVmZGJjOTQ2YjcwMDVjODNmY2Q3OTc3NDkzMjM0NzA4In1dLCJwcm9qZWN0aW9uVGFyZ2V0IjoiL3Byb2plY3Rpb24iLCJzY3JhdGNoVGFyZ2V0IjoiL3NjcmF0Y2giLCJob3N0UGF0aHMiOlt7InRhcmdldElkIjoiaG9zdC1yZXBvLXJlYWQiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIifSx7InRhcmdldElkIjoiY29tbW9uLWdpdC1yZWFkIiwiaG9zdFBhdGgiOiJEOi9Qcm9qZWN0L0pvYl9BcHBsaWNhdGlvbl9UcmFja2VyLy5naXQiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvLmdpdCJ9LHsidGFyZ2V0SWQiOiJjb250cm9sLXN0YXRlLXJlYWQiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvLmFnZW50LXN0YXRlIiwiY29udGFpbmVyUGF0aCI6Ii9tbnQvZC9Qcm9qZWN0L0pvYl9BcHBsaWNhdGlvbl9UcmFja2VyLy5hZ2VudC1zdGF0ZSJ9LHsidGFyZ2V0SWQiOiJob3N0LWNyZWRlbnRpYWwtcmVhZCIsImhvc3RQYXRoIjoiRDovUHJvamVjdC9Kb2JfQXBwbGljYXRpb25fVHJhY2tlci9hY2NvdW50cy50eHQiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvYWNjb3VudHMudHh0In0seyJ0YXJnZXRJZCI6Imhvc3Qtd3JpdGUiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIifV0sIm1vZGVsRW5kcG9pbnQiOiIiLCJnZW5lcmFsRWdyZXNzRW5kcG9pbnQiOiIiLCJ0aW1lb3V0TXMiOjEyMDAwMH0=",
+      "HOME=/nonexistent",
       "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "NODE_VERSION=24.22.0",
       "YARN_VERSION=1.22.22"
     ]
   },
-  "base": "D:\\Long-term\\JobTrack-isolation-2d082c2a",
-  "projection": "D:/Long-term/JobTrack-isolation-2d082c2a/projection",
-  "scratch": "D:/Long-term/JobTrack-isolation-2d082c2a/scratch",
+  "base": "D:\\Long-term\\JobTrack-isolation-3e90271e",
+  "projection": "D:/Long-term/JobTrack-isolation-3e90271e/projection",
+  "scratch": "D:/Long-term/JobTrack-isolation-3e90271e/scratch",
   "manifest": [
     {
       "path": "apps/web/src/module.js",
@@ -171,12 +171,12 @@
     },
     "containerMounts": [
       {
-        "root": "/Long-term/JobTrack-isolation-2d082c2a/projection",
+        "root": "/Long-term/JobTrack-isolation-3e90271e/projection",
         "mountPoint": "/projection",
         "options": "ro,noatime"
       },
       {
-        "root": "/Long-term/JobTrack-isolation-2d082c2a/scratch",
+        "root": "/Long-term/JobTrack-isolation-3e90271e/scratch",
         "mountPoint": "/scratch",
         "options": "rw,noatime"
       }
