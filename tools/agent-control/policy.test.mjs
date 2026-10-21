@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { FEATURES, normalizePath, assertOwnedPath, assertChangeSet, assertSafeCommand } from './policy.mjs';
+import { FEATURES, normalizePath, assertOwnedPath, assertChangeSet, assertSafeCommand, assertReadableSourcePath, assertSafeRootPath } from './policy.mjs';
 
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 const change = (name, content, beforeSha256 = null) => ({ path: name, content, beforeSha256 });
@@ -18,6 +18,15 @@ function fixture(t) {
 test('canonical paths reject traversal, ADS, control characters and Windows aliases', () => {
   assert.equal(normalizePath('apps/web/src/page.tsx'), 'apps/web/src/page.tsx');
   for (const candidate of ['', '/etc/passwd', '../x', 'apps//x', 'apps/./x', 'apps/../x', 'apps\\web\\src\\x', 'C:/x', 'x:ads', 'x\n', 'x.', 'x ', 'CON.ts', 'a/NUL', 'a/']) assert.throws(() => normalizePath(candidate), candidate);
+});
+
+test('readable source paths and root paths refuse protected names', () => {
+  assert.equal(assertReadableSourcePath('packages/jobtrack-contract/src/index.ts'), 'packages/jobtrack-contract/src/index.ts');
+  for (const candidate of ['apps/web/src/.env', 'apps/web/src/accounts.txt', 'apps/web/src/package.json', '.git/config', 'apps/web/src/agent-control/x.ts', 'apps/web/src/migrations/001.sql', 'apps/web/src/node_modules/pkg/index.js']) {
+    assert.throws(() => assertReadableSourcePath(candidate), candidate);
+  }
+  assert.equal(assertSafeRootPath('packages/jobtrack-contract/src'), 'packages/jobtrack-contract/src');
+  for (const candidate of ['migrations', 'agent-control', '.git', 'apps/web/src/.env']) assert.throws(() => assertSafeRootPath(candidate), candidate);
 });
 
 test('feature lanes and protected files enforce exact ownership', t => {

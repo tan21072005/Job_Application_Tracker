@@ -24,11 +24,26 @@ export function normalizePath(rel) {
   return rel;
 }
 
+export function assertSafeRootPath(rel) {
+  if (typeof rel !== 'string' || !rel) fail('Invalid root path');
+  for (const part of rel.split('/').filter(Boolean)) {
+    if (protectedParts.test(part) || protectedNames.test(part)) fail('Protected path');
+  }
+  return rel;
+}
+
+export function assertReadableSourcePath(rel) {
+  const normalized = normalizePath(rel);
+  const parts = normalized.split('/');
+  if (parts.some(part => protectedParts.test(part)) || protectedNames.test(parts.at(-1))) fail('Protected path');
+  return normalized;
+}
+
 export function assertOwnedPath(worktree, lane, rel) {
   const normalized = normalizePath(rel);
   if (!Object.hasOwn(FEATURES, lane) || !FEATURES[lane].some(prefix => normalized.startsWith(prefix))) fail('Path is outside feature ownership');
+  assertReadableSourcePath(normalized);
   const parts = normalized.split('/');
-  if (parts.some(part => protectedParts.test(part)) || protectedNames.test(parts.at(-1))) fail('Protected path');
   const root = path.resolve(worktree);
   if (!fs.existsSync(root) || !fs.lstatSync(root).isDirectory() || fs.lstatSync(root).isSymbolicLink()) fail('Invalid worktree');
   for (let ancestor = root; ; ancestor = path.dirname(ancestor)) {
