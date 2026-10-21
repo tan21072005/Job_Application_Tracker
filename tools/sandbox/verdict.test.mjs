@@ -16,10 +16,11 @@ function report(overrides = {}) {
       accountsFileOpen: { opened: false, code: 'DENIED', size: 0 },
       siblingWorktreeList: { listed: false, code: 'DENIED', entries: 0 },
       controlStateList: { listed: false, code: 'DENIED', entries: 0 },
+      homeCredentialList: { listed: false, code: 'DENIED', entries: 0 },
       writeInsideWorkspace: { allowed: false, code: 'DENIED' },
       writeOutsideWorkspace: { allowed: false, code: 'DENIED' },
       egressTcp80: { allowed: false, code: 'DENIED' },
-      childProcessTree: { spawnedPid: 1, killRequested: true, stillAliveAfterKill: false },
+      childProcessTree: { spawnedPid: 1, grandchildPid: 2, childAliveBeforeKill: true, grandchildAliveBeforeKill: true, killRequested: true, stillAliveAfterKill: false, grandchildAliveAfterKill: false },
       ...overrides
     }
   };
@@ -148,4 +149,37 @@ test('every failing verdict is reported', () => {
   for (const key of Object.keys(verdict.verdicts)) {
     if (verdict.verdicts[key] === false) assert.ok(verdict.blockedBy.some(reason => reason.length > 0), key);
   }
+});
+
+test('operational errors cannot stand in for denied read or write evidence', () => {
+  const broken = report();
+  for (const entry of Object.values(broken.checks)) if (entry.code === 'DENIED') entry.code = 'ERROR:EINVAL';
+  const verdict = evaluateCanaryEvidence({ doctor, readOnly: broken, workspaceProfile: broken, hostBaseline: hostConnected });
+  assert.equal(verdict.gateA, false);
+  assert.equal(verdict.verdicts.V01_readIsolation, false);
+  assert.equal(verdict.verdicts.V02_writeIsolation, false);
+  assert.equal(verdict.verdicts.V02_checkProfileConfined, false);
+  assert.equal(verdict.verdicts.V08_egressDenied, false);
+});
+
+test('a timed out probe cannot pass even with code zero', () => {
+  const verdict = evaluateCanaryEvidence({ doctor: { sandbox: { code: 0, timedOut: true } }, readOnly: report(), workspaceProfile: report(), hostBaseline: hostConnected });
+  assert.equal(verdict.gateA, false);
+  assert.equal(verdict.verdicts.sandboxProbePass, false);
+});
+
+test('cleanup requires child and grandchild to have run before termination', () => {
+  const complete = report().checks.childProcessTree;
+  for (const key of ['spawnedPid', 'grandchildPid', 'childAliveBeforeKill', 'grandchildAliveBeforeKill', 'killRequested', 'grandchildAliveAfterKill']) {
+    const childProcessTree = { ...complete };
+    delete childProcessTree[key];
+    const verdict = evaluateCanaryEvidence({ doctor, readOnly: report({ childProcessTree }), workspaceProfile: report(), hostBaseline: hostConnected });
+    assert.equal(verdict.verdicts.V15_childProcessTreeCleaned, false, key);
+  }
+});
+
+test('home credential visibility is part of read isolation', () => {
+  const verdict = evaluateCanaryEvidence({ doctor, readOnly: report({ homeCredentialList: { listed: true, code: null } }), workspaceProfile: report(), hostBaseline: hostConnected });
+  assert.equal(verdict.gateA, false);
+  assert.equal(verdict.verdicts.V01_readIsolation, false);
 });

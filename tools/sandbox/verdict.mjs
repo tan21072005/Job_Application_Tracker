@@ -8,6 +8,7 @@ export const REQUIRED_CHECKS = Object.freeze({
   accountsFileOpen: 'opened',
   siblingWorktreeList: 'listed',
   controlStateList: 'listed',
+  homeCredentialList: 'listed',
   writeInsideWorkspace: 'allowed',
   writeOutsideWorkspace: 'allowed',
   childProcessTree: 'stillAliveAfterKill',
@@ -24,6 +25,11 @@ function readOutcome(report, name) {
   if (entry.code === 'NO_TARGET') return { present: false, value: null };
   const value = entry[key];
   if (typeof value !== 'boolean') return { present: false, value: null };
+  if (typeof entry.code === 'string' && entry.code.startsWith('ERROR:')) return { present: false, value: null };
+  if (value === false && name !== 'childProcessTree') {
+    const deniedCodes = name === 'egressTcp80' ? ['DENIED', 'TIMEOUT'] : ['DENIED'];
+    if (!deniedCodes.includes(entry.code)) return { present: false, value: null };
+  }
   return { present: true, value };
 }
 
@@ -49,9 +55,9 @@ export function evaluateCanaryEvidence(input) {
   };
 
   const sandboxCode = doctor && doctor.sandbox ? doctor.sandbox.code : null;
-  report('sandboxProbePass', sandboxCode === 0, `sandbox probe did not pass (code ${sandboxCode})`);
+  report('sandboxProbePass', sandboxCode === 0 && doctor.sandbox.timedOut === false, `sandbox probe did not pass (code ${sandboxCode})`);
 
-  const readChecks = ['readOutsideWorkspace', 'gitCommonDirHead', 'gitCommonDirConfig', 'credentialFileOpen', 'accountsFileOpen', 'siblingWorktreeList', 'controlStateList'];
+  const readChecks = ['readOutsideWorkspace', 'gitCommonDirHead', 'gitCommonDirConfig', 'credentialFileOpen', 'accountsFileOpen', 'siblingWorktreeList', 'controlStateList', 'homeCredentialList'];
   const readFailures = [];
   for (const name of readChecks) {
     const outcome = readOutcome(readOnly, name);
@@ -69,7 +75,9 @@ export function evaluateCanaryEvidence(input) {
   report('V02_writeIsolation', writeFailures.length === 0, `write isolation is not proven: ${writeFailures.join('; ')}`);
 
   const child = readOutcome(readOnly, 'childProcessTree');
-  report('V15_childProcessTreeCleaned', child.present && child.value === false, child.present ? 'child process tree survived the kill' : 'child process cleanup: no evidence');
+  const tree = readOnly?.checks?.childProcessTree;
+  const treeObserved = Number.isSafeInteger(tree?.spawnedPid) && tree.spawnedPid > 0 && Number.isSafeInteger(tree?.grandchildPid) && tree.grandchildPid > 0 && tree.spawnedPid !== tree.grandchildPid && tree.childAliveBeforeKill === true && tree.grandchildAliveBeforeKill === true && tree.killRequested === true;
+  report('V15_childProcessTreeCleaned', child.present && child.value === false && treeObserved && tree.grandchildAliveAfterKill === false, child.present && child.value === true ? 'child process tree survived the kill' : 'child process cleanup: no complete tree evidence');
 
   const hostEgress = readOutcome(hostBaseline, 'egressTcp80');
   const sandboxEgress = readOutcome(readOnly, 'egressTcp80');
