@@ -23,8 +23,8 @@ export const READINESS_V2_PROBE_CATALOG = Object.freeze({
 });
 
 export const READINESS_V2_EXPECTED_MOUNTS = Object.freeze([
-  Object.freeze({ kind: 'projection', readOnly: true }),
-  Object.freeze({ kind: 'scratch', readOnly: false })
+  Object.freeze({ kind: 'projection', target: '/projection', readOnly: true }),
+  Object.freeze({ kind: 'scratch', target: '/scratch', readOnly: false })
 ]);
 
 const BINDING_FIELDS = Object.freeze([
@@ -70,12 +70,39 @@ function canonicalize(value) {
 
 const canonicalPayload = payload => JSON.stringify(canonicalize(payload));
 
+export function normalizePathValue(value) {
+  if (typeof value !== 'string' || !value) return '';
+  return value.replaceAll('\\', '/').replace(/\/+$/, '').toLowerCase();
+}
+
+export function pathsOverlap(left, right) {
+  const a = normalizePathValue(left).split('/').filter(Boolean);
+  const b = normalizePathValue(right).split('/').filter(Boolean);
+  if (!a.length || !b.length) return false;
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length <= b.length ? b : a;
+  return shorter.every((part, index) => longer[index] === part);
+}
+
+export function endpointHost(value) {
+  if (typeof value !== 'string' || !value) return '';
+  try {
+    return new URL(value).host.toLowerCase();
+  } catch {
+    return value.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
+  }
+}
+
 export function readinessV2PayloadHash(payload) {
   return sha256(canonicalPayload(payload));
 }
 
-export function probeCatalogHash(catalog = READINESS_V2_PROBE_CATALOG) {
-  return sha256(canonicalPayload(catalog));
+export function probeCatalogHash() {
+  return sha256(canonicalPayload(READINESS_V2_PROBE_CATALOG));
+}
+
+export function witnessProofHash(targetId, binding) {
+  return sha256(canonicalPayload({ targetId, binding }));
 }
 
 export function assertReadinessV2Key(key) {
@@ -104,15 +131,46 @@ export function assertReadinessV2Binding(binding) {
   return binding;
 }
 
+function requiredWitnessTargets() {
+  const targets = new Set(['transport-general-egress']);
+  for (const entry of Object.values(READINESS_V2_PROBE_CATALOG)) {
+    if (entry.kind === 'read' || entry.kind === 'write') {
+      if (entry.requirement === 'denied') targets.add(entry.targetId);
+    }
+  }
+  return [...targets].sort();
+}
+
 export function assertReadinessV2ExpectedContext(expected) {
   if (!expected || typeof expected !== 'object' || Array.isArray(expected)) throw Error('Readiness expected context is missing.');
   for (const field of BINDING_FIELDS) {
     if (!(field in expected)) throw Error(`Readiness expected context is missing ${field}.`);
   }
-  if (!('verifierImplementationHash' in expected)) throw Error('Readiness expected context is missing verifierImplementationHash.');
-  if (!('modelEndpoint' in expected) || typeof expected.modelEndpoint !== 'string' || !expected.modelEndpoint) throw Error('Readiness expected context is missing modelEndpoint.');
-  if (!('generalEgressEndpoint' in expected) || typeof expected.generalEgressEndpoint !== 'string' || !expected.generalEgressEndpoint) throw Error('Readiness expected context is missing generalEgressEndpoint.');
-  if (expected.modelEndpoint === expected.generalEgressEndpoint) throw Error('Readiness expected context uses the same endpoint for transport and general egress.');
+  for (const field of ['verifierImplementationHash', 'modelEndpoint', 'generalEgressEndpoint']) {
+    if (!(field in expected) || !expected[field]) throw Error(`Readiness expected context is missing ${field}.`);
+  }
+  if (!isHex64(expected.verifierImplementationHash)) throw Error('Readiness expected verifier implementation hash is invalid.');
+  if (endpointHost(expected.modelEndpoint) === endpointHost(expected.generalEgressEndpoint)) throw Error('Readiness expected context uses the same endpoint host for transport and general egress.');
+  if (!expected.deniedHostPaths || typeof expected.deniedHostPaths !== 'object' || Array.isArray(expected.deniedHostPaths)) throw Error('Readiness expected context is missing deniedHostPaths.');
+  for (const targetId of requiredWitnessTargets()) {
+    if (targetId === 'transport-general-egress') continue;
+    const hostPath = expected.deniedHostPaths[targetId];
+    if (typeof hostPath !== 'string' || !hostPath) throw Error(`Readiness expected context is missing the denied host path for ${targetId}.`);
+  }
+  if (!expected.mountSources || typeof expected.mountSources !== 'object' || Array.isArray(expected.mountSources)) throw Error('Readiness expected context is missing mountSources.');
+  for (const mount of READINESS_V2_EXPECTED_MOUNTS) {
+    const source = expected.mountSources[mount.kind];
+    if (typeof source !== 'string' || !source) throw Error(`Readiness expected context is missing the mount source for ${mount.kind}.`);
+  }
+  if (!expected.witnessBindings || typeof expected.witnessBindings !== 'object' || Array.isArray(expected.witnessBindings)) throw Error('Readiness expected context is missing witnessBindings.');
+  for (const targetId of requiredWitnessTargets()) {
+    const witnessBinding = expected.witnessBindings[targetId];
+    if (typeof witnessBinding !== 'string' || !witnessBinding) throw Error(`Readiness expected context is missing the witness binding for ${targetId}.`);
+  }
+  for (const targetId of requiredWitnessTargets()) {
+    const hostPath = expected.deniedHostPaths[targetId];
+    if (hostPath && expected.mountSources.scratch && pathsOverlap(hostPath, expected.mountSources.scratch)) throw Error(`Readiness expected context exposes a denied path through the scratch mount: ${targetId}.`);
+  }
   return expected;
 }
 
@@ -126,10 +184,14 @@ function catalogEntriesOfKind(kind) {
     .map(([commandId, entry]) => ({ commandId, ...entry }));
 }
 
-export function evaluateReadinessEvidence(report) {
+export function evaluateReadinessEvidence(report, context) {
   const failures = [];
   const verdicts = {};
   const fail = reason => failures.push(reason);
+  if (!context || typeof context !== 'object') throw Error('Readiness trusted context is missing.');
+  const deniedHostPaths = context.deniedHostPaths || {};
+  const mountSources = context.mountSources || {};
+  const witnessBindings = context.witnessBindings || {};
 
   if (!report || typeof report !== 'object' || Array.isArray(report)) throw Error('Readiness evidence is missing.');
   if (report.schemaVersion !== READINESS_V2_SCHEMA_VERSION) throw Error('Readiness evidence schema version is not supported.');
@@ -167,31 +229,39 @@ export function evaluateReadinessEvidence(report) {
   const observations = report.observations;
   if (!observations || typeof observations !== 'object') throw Error('Readiness evidence has no observations.');
 
+  const requiredWitnesses = requiredWitnessTargets();
   const witnessed = new Set();
   const hostPositive = Array.isArray(observations.hostPositive) ? observations.hostPositive : [];
   for (const witness of hostPositive) {
     if (!witness || typeof witness.targetId !== 'string' || !witness.targetId) { fail('readiness host witness is invalid'); continue; }
+    if (!requiredWitnesses.includes(witness.targetId)) { fail(`readiness host witness is not a required target: ${witness.targetId}`); continue; }
     if (witness.connected !== true) fail(`readiness host positive control did not connect: ${witness.targetId}`);
-    if (!isHex64(witness.witnessSha256)) fail(`readiness host witness has no proof hash: ${witness.targetId}`);
+    const expectedProof = witnessProofHash(witness.targetId, witnessBindings[witness.targetId]);
+    if (witness.witnessSha256 !== expectedProof) fail(`readiness host witness proof does not match the trusted binding: ${witness.targetId}`);
     witnessed.add(witness.targetId);
   }
-  if (!hostPositive.length) fail('readiness host positive controls are missing');
+  for (const targetId of requiredWitnesses) {
+    if (!witnessed.has(targetId)) fail(`readiness host positive witness is missing: ${targetId}`);
+  }
 
   const namespace = observations.namespace;
   const mounts = namespace && Array.isArray(namespace.mounts) ? namespace.mounts : [];
   const namespaceInspected = Boolean(namespace && namespace.inspected === true && mounts.length === READINESS_V2_EXPECTED_MOUNTS.length);
   if (!namespaceInspected) fail('readiness namespace inspection is missing');
-  const mountSources = [];
+  const trustedMounts = [];
   for (const mount of mounts) {
     if (!mount || typeof mount !== 'object' || typeof mount.kind !== 'string' || !mount.kind) { fail('readiness mount entry is invalid'); continue; }
+    const expectedMount = READINESS_V2_EXPECTED_MOUNTS.find(entry => entry.kind === mount.kind);
+    if (!expectedMount) { fail(`readiness mount kind is not in the fixed catalog: ${mount.kind}`); continue; }
+    if (mount.target !== expectedMount.target) fail(`readiness mount target does not match the fixed target: ${mount.kind}`);
+    if (mount.readOnly !== expectedMount.readOnly) fail(`readiness ${mount.kind} mount has the wrong read only flag`);
+    const trustedSource = mountSources[mount.kind];
     if (typeof mount.source !== 'string' || !mount.source) fail(`readiness mount entry has no source: ${mount.kind}`);
-    else mountSources.push(mount.source);
-    if (typeof mount.readOnly !== 'boolean') fail(`readiness mount entry has no read only flag: ${mount.kind}`);
+    else if (normalizePathValue(mount.source) !== normalizePathValue(trustedSource)) fail(`readiness mount source does not match the trusted source: ${mount.kind}`);
+    trustedMounts.push({ kind: mount.kind, source: trustedSource, readOnly: expectedMount.readOnly });
   }
   for (const expectedMount of READINESS_V2_EXPECTED_MOUNTS) {
-    const match = mounts.find(mount => mount && mount.kind === expectedMount.kind);
-    if (!match) { fail(`readiness namespace is missing the ${expectedMount.kind} mount`); continue; }
-    if (match.readOnly !== expectedMount.readOnly) fail(`readiness ${expectedMount.kind} mount has the wrong read only flag`);
+    if (!mounts.some(mount => mount && mount.kind === expectedMount.kind)) fail(`readiness namespace is missing the ${expectedMount.kind} mount`);
   }
   const invisible = new Set(Array.isArray(namespace?.invisibleHostPaths) ? namespace.invisibleHostPaths : []);
 
@@ -214,18 +284,25 @@ export function evaluateReadinessEvidence(report) {
         if (entry.outcome !== 'allowed') { ok = false; fail(`readiness positive control did not ${kind}: ${targetId}`); }
         continue;
       }
-      if (typeof entry.hostPath !== 'string' || !entry.hostPath) { ok = false; fail(`readiness ${kind} target has no host path: ${targetId}`); continue; }
+      const trustedHostPath = deniedHostPaths[targetId];
+      if (typeof trustedHostPath !== 'string' || !trustedHostPath) { ok = false; fail(`readiness ${kind} target has no trusted host path: ${targetId}`); continue; }
+      if (typeof entry.hostPath !== 'string' || normalizePathValue(entry.hostPath) !== normalizePathValue(trustedHostPath)) {
+        ok = false;
+        fail(`readiness ${kind} target host path does not match the trusted path: ${targetId}`);
+        continue;
+      }
       if (!witnessed.has(targetId)) { ok = false; fail(`readiness ${kind} target has no host positive witness: ${targetId}`); continue; }
       if (entry.outcome === 'denied') {
-        if (kind === 'read') {
-          const exposed = mountSources.some(source => source.toLowerCase().includes(entry.hostPath.toLowerCase()));
-          if (exposed) { ok = false; fail(`readiness ${kind} target is mounted into the isolated run: ${targetId}`); }
-        }
+        const writableMount = trustedMounts.find(mount => !mount.readOnly && pathsOverlap(mount.source, trustedHostPath));
+        if (writableMount) { ok = false; fail(`readiness ${kind} target is writable through a mount: ${targetId}`); continue; }
+        const readOnlyMount = trustedMounts.find(mount => mount.readOnly && pathsOverlap(mount.source, trustedHostPath));
+        if (kind === 'read') { ok = false; fail(`readiness ${kind} target denial contradicts the mount model: ${targetId}`); continue; }
+        if (!readOnlyMount) { ok = false; fail(`readiness ${kind} target denial is not explained by a read only mount: ${targetId}`); continue; }
         continue;
       }
       if (entry.outcome === 'absent') {
         if (!namespaceInspected || !invisible.has(targetId)) { ok = false; fail(`readiness ${kind} target is absent without namespace and mount proof: ${targetId}`); continue; }
-        const exposed = mountSources.some(source => source.toLowerCase().includes(entry.hostPath.toLowerCase()));
+        const exposed = trustedMounts.some(mount => pathsOverlap(mount.source, trustedHostPath));
         if (exposed) { ok = false; fail(`readiness ${kind} target is mounted into the isolated run: ${targetId}`); }
         continue;
       }
@@ -267,12 +344,12 @@ export function evaluateReadinessEvidence(report) {
   else {
     if (typeof transport.endpoint !== 'string' || !transport.endpoint) fail('readiness model transport has no endpoint');
     if (typeof transport.generalEgressEndpoint !== 'string' || !transport.generalEgressEndpoint) fail('readiness general egress has no endpoint');
-    if (transport.endpoint === transport.generalEgressEndpoint) fail('readiness general egress uses the model transport endpoint');
+    if (endpointHost(transport.endpoint) === endpointHost(transport.generalEgressEndpoint)) fail('readiness general egress uses the model transport endpoint host');
     if (transport.positiveConnected !== true) fail('readiness model transport positive control did not connect');
     if (transport.generalEgressBlocked !== true) fail('readiness general egress was not blocked');
     if (!witnessed.has('transport-general-egress')) fail('readiness general egress has no host positive witness');
     modelTransport = transport.positiveConnected === true && typeof transport.endpoint === 'string' && transport.endpoint.length > 0;
-    egress = transport.generalEgressBlocked === true && transport.generalEgressEndpoint !== transport.endpoint && witnessed.has('transport-general-egress');
+    egress = transport.generalEgressBlocked === true && endpointHost(transport.generalEgressEndpoint) !== endpointHost(transport.endpoint) && witnessed.has('transport-general-egress');
   }
   verdicts.modelTransport = modelTransport;
   verdicts.egress = egress;
@@ -283,9 +360,10 @@ export function evaluateReadinessEvidence(report) {
 }
 
 export function verifyReadinessReceiptV2(input) {
-  const { receipt, key, expected, resolveEvidence, now = Date.now() } = input || {};
+  const { receipt, key, expected, resolveEvidence } = input || {};
   assertReadinessV2Key(key);
   assertReadinessV2ExpectedContext(expected);
+  const now = Date.now();
   if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt)) throw Error('Readiness receipt is missing.');
   if (receipt.schemaVersion !== READINESS_V2_SCHEMA_VERSION) throw Error('Readiness receipt schema version is not supported.');
   for (const field of ['runId', 'issuedAt', 'expiresAt', 'binding', 'evidence', 'verifier', 'derived']) {
@@ -325,6 +403,7 @@ export function verifyReadinessReceiptV2(input) {
   const resolved = resolveEvidence(receipt.evidence.path);
   if (!resolved || resolved.exists !== true) throw Error('Readiness evidence file is missing.');
   if (typeof resolved.bytes !== 'string') throw Error('Readiness evidence resolver returned no bytes.');
+  if (typeof resolved.path === 'string' && normalizePathValue(resolved.path) !== normalizePathValue(receipt.evidence.path)) throw Error('Readiness evidence resolver returned a different path.');
   const byteLength = Buffer.byteLength(resolved.bytes, 'utf8');
   if (byteLength > READINESS_V2_MAX_EVIDENCE_BYTES) throw Error('Readiness evidence is larger than the maximum.');
   if (byteLength !== receipt.evidence.bytes) throw Error('Readiness evidence size does not match the receipt.');
@@ -345,10 +424,10 @@ export function verifyReadinessReceiptV2(input) {
   if (!bindingMatches(report.binding, receipt.binding)) throw Error('Readiness evidence binding does not match the receipt.');
   const transport = report.observations?.transport;
   if (!transport || typeof transport !== 'object') throw Error('Readiness evidence has no transport observation.');
-  if (transport.endpoint !== expected.modelEndpoint) throw Error('Readiness evidence model transport endpoint is not the allowlisted endpoint.');
-  if (transport.generalEgressEndpoint !== expected.generalEgressEndpoint) throw Error('Readiness evidence general egress endpoint is not the declared endpoint.');
+  if (endpointHost(transport.endpoint) !== endpointHost(expected.modelEndpoint)) throw Error('Readiness evidence model transport endpoint is not the allowlisted endpoint.');
+  if (endpointHost(transport.generalEgressEndpoint) !== endpointHost(expected.generalEgressEndpoint)) throw Error('Readiness evidence general egress endpoint is not the declared endpoint.');
 
-  const evaluated = evaluateReadinessEvidence(report);
+  const evaluated = evaluateReadinessEvidence(report, expected);
   if (!evaluated.ready) throw Error(`Readiness evidence does not prove isolation: ${evaluated.failures.join('; ')}`);
   if (report.gateA !== true) throw Error('Readiness evidence does not record a passing gate.');
   if (receipt.derived?.gateA !== true) throw Error('Readiness receipt does not record the derived gate.');

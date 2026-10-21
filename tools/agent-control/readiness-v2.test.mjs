@@ -8,12 +8,13 @@ import {
   evaluateReadinessEvidence,
   probeCatalogHash,
   signReadinessReceiptV2,
-  verifyReadinessReceiptV2
+  verifyReadinessReceiptV2,
+  witnessProofHash
 } from './readiness-v2.mjs';
 
 const key = 'k'.repeat(48);
 const hash = value => createHash('sha256').update(value).digest('hex');
-const now = Date.parse('2026-10-21T10:00:00.000Z');
+const now = Date.now();
 const issued = new Date(now - 30_000).toISOString();
 const completed = new Date(now - 60_000).toISOString();
 const started = new Date(now - 120_000).toISOString();
@@ -37,14 +38,33 @@ const binding = {
   nodeHash: hash('node')
 };
 
+const deniedHostPaths = {
+  'host-repo-read': 'D:/Project/Job_Application_Tracker',
+  'common-git-read': 'D:/Project/Job_Application_Tracker/.git',
+  'control-state-read': 'D:/Project/Job_Application_Tracker/.agent-state',
+  'host-credential-read': 'D:/Project/Job_Application_Tracker/accounts.txt',
+  'projection-write': 'D:/Long-term/projection',
+  'host-write': 'D:/Project/Job_Application_Tracker'
+};
+
+const mountSources = { projection: 'D:/Long-term/projection', scratch: 'D:/Long-term/scratch' };
+
+const witnessBindings = {
+  ...deniedHostPaths,
+  'transport-general-egress': generalEgressEndpoint
+};
+
 const expected = {
   ...binding,
   verifierImplementationHash: hash('verifier-impl'),
   modelEndpoint,
-  generalEgressEndpoint
+  generalEgressEndpoint,
+  deniedHostPaths,
+  mountSources,
+  witnessBindings
 };
 
-const witness = targetId => ({ targetId, connected: true, witnessSha256: hash(`witness-${targetId}`) });
+const witness = targetId => ({ targetId, connected: true, witnessSha256: witnessProofHash(targetId, witnessBindings[targetId]) });
 
 function report(overrides = {}) {
   const base = {
@@ -75,22 +95,22 @@ function report(overrides = {}) {
       namespace: {
         inspected: true,
         mounts: [
-          { kind: 'projection', source: 'D:/Long-term/projection', target: '/projection', readOnly: true },
-          { kind: 'scratch', source: 'D:/Long-term/scratch', target: '/scratch', readOnly: false }
+          { kind: 'projection', source: mountSources.projection, target: '/projection', readOnly: true },
+          { kind: 'scratch', source: mountSources.scratch, target: '/scratch', readOnly: false }
         ],
         invisibleHostPaths: ['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read', 'host-write']
       },
       readTargets: [
         { targetId: 'projection-read', requirement: 'allowed', outcome: 'allowed' },
-        { targetId: 'host-repo-read', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker', outcome: 'absent' },
-        { targetId: 'common-git-read', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker/.git', outcome: 'absent' },
-        { targetId: 'control-state-read', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker/.agent-state', outcome: 'absent' },
-        { targetId: 'host-credential-read', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker/accounts.txt', outcome: 'absent' }
+        { targetId: 'host-repo-read', requirement: 'denied', hostPath: deniedHostPaths['host-repo-read'], outcome: 'absent' },
+        { targetId: 'common-git-read', requirement: 'denied', hostPath: deniedHostPaths['common-git-read'], outcome: 'absent' },
+        { targetId: 'control-state-read', requirement: 'denied', hostPath: deniedHostPaths['control-state-read'], outcome: 'absent' },
+        { targetId: 'host-credential-read', requirement: 'denied', hostPath: deniedHostPaths['host-credential-read'], outcome: 'absent' }
       ],
       writeTargets: [
         { targetId: 'scratch-write', requirement: 'allowed', outcome: 'allowed' },
-        { targetId: 'projection-write', requirement: 'denied', hostPath: 'D:/Long-term/projection', outcome: 'denied' },
-        { targetId: 'host-write', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker', outcome: 'absent' }
+        { targetId: 'projection-write', requirement: 'denied', hostPath: deniedHostPaths['projection-write'], outcome: 'denied' },
+        { targetId: 'host-write', requirement: 'denied', hostPath: deniedHostPaths['host-write'], outcome: 'absent' }
       ],
       liveness: [
         { processId: 'child-1', generation: 'child', before: true, after: false },
@@ -108,9 +128,7 @@ function report(overrides = {}) {
   return { ...base, ...overrides };
 }
 
-function bytesFor(evidence) {
-  return JSON.stringify(evidence);
-}
+const bytesFor = evidence => JSON.stringify(evidence);
 
 function receiptFor(evidence, overrides = {}) {
   const bytes = bytesFor(evidence);
@@ -144,8 +162,7 @@ function resolverFor(evidence, options = {}) {
   const bytes = options.bytes ?? bytesFor(evidence);
   return path => {
     if (options.missing) return { exists: false, sha256: null, bytes: null, path };
-    if (options.hashOnly) return { exists: true, sha256: options.hashOnly, bytes: null, path };
-    return { exists: true, sha256: hash(bytes), bytes, path };
+    return { exists: true, sha256: hash(bytes), bytes, path: options.path ?? path };
   };
 }
 
@@ -155,7 +172,7 @@ function verify(evidence, options = {}) {
     key,
     expected: options.expected ?? expected,
     resolveEvidence: options.resolveEvidence ?? resolverFor(evidence, options),
-    now
+    ...(options.now === undefined ? {} : { now: options.now })
   });
 }
 
@@ -170,14 +187,7 @@ test('a complete schema 2 receipt verifies against the actual evidence bytes', (
 test('the schema 1 receipt and a schema 1 report body are rejected', () => {
   const legacyReceipt = { schemaVersion: 1, runId, isolation: { readIsolation: 'denied' }, signature: hash('x') };
   assert.throws(() => verify(report(), { receipt: legacyReceipt }), /schema version is not supported/);
-  const legacyReport = report({ schemaVersion: 1 });
-  assert.throws(() => verify(legacyReport), /schema version is not supported/);
-});
-
-test('an unrelated or altered report is rejected', () => {
-  const evidence = report();
-  const receipt = receiptFor(evidence);
-  assert.throws(() => verify(evidence, { receipt, resolveEvidence: resolverFor(report({ runId: '6f1b6a4e-2c7d-4a1e-9f2b-8c1d0e5a7b32' })) }), /content does not match the receipt/);
+  assert.throws(() => verify(report({ schemaVersion: 1 })), /schema version is not supported/);
 });
 
 test('a resolver that returns the signed hash with different bytes is rejected', () => {
@@ -185,13 +195,17 @@ test('a resolver that returns the signed hash with different bytes is rejected',
   const real = bytesFor(evidence);
   const other = `${real.slice(0, real.length - 1)}${real.at(-1) === '}' ? '"' : '}'}`;
   assert.equal(other.length, real.length);
-  const receipt = receiptFor(evidence);
-  assert.throws(() => verify(evidence, { receipt, resolveEvidence: () => ({ exists: true, sha256: hash(other), bytes: other, path: 'evidence/run.json' }) }), /content does not match the receipt/);
+  assert.throws(() => verify(evidence, { receipt: receiptFor(evidence), resolveEvidence: () => ({ exists: true, sha256: hash(other), bytes: other, path: 'evidence/run.json' }) }), /content does not match the receipt/);
+});
+
+test('a resolver that serves a different path is rejected', () => {
+  const evidence = report();
+  assert.throws(() => verify(evidence, { resolveEvidence: resolverFor(evidence, { path: 'evidence/other.json' }) }), /returned a different path/);
 });
 
 test('a missing resolver is rejected', () => {
   const evidence = report();
-  assert.throws(() => verifyReadinessReceiptV2({ receipt: receiptFor(evidence), key, expected, now }), /resolver is missing/);
+  assert.throws(() => verifyReadinessReceiptV2({ receipt: receiptFor(evidence), key, expected }), /resolver is missing/);
 });
 
 test('malformed and oversized evidence are rejected', () => {
@@ -216,16 +230,23 @@ test('a future capture and a capture after issuance are rejected', () => {
   assert.throws(() => verify(late), /completed after issuance/);
 });
 
+test('a caller supplied clock cannot extend the lifetime', () => {
+  const evidence = report();
+  const expired = receiptFor(evidence, { expiresAt: new Date(now - 1000).toISOString() });
+  assert.throws(() => verify(evidence, { receipt: expired, now: now - 7 * 24 * 60 * 60 * 1000 }), /has expired/);
+});
+
 test('the expected context must be complete', () => {
   const evidence = report();
   assert.throws(() => verify(evidence, { expected: {} }), /expected context is missing/);
-  const partial = { ...expected };
-  delete partial.purpose;
-  assert.throws(() => verify(evidence, { expected: partial }), /expected context is missing purpose/);
-  const withoutEndpoints = { ...expected };
-  delete withoutEndpoints.modelEndpoint;
-  assert.throws(() => verify(evidence, { expected: withoutEndpoints }), /expected context is missing modelEndpoint/);
-  assert.throws(() => verify(evidence, { expected: { ...expected, modelEndpoint: expected.generalEgressEndpoint } }), /same endpoint/);
+  for (const field of ['purpose', 'verifierImplementationHash', 'modelEndpoint', 'generalEgressEndpoint', 'deniedHostPaths', 'mountSources', 'witnessBindings']) {
+    const partial = { ...expected };
+    delete partial[field];
+    assert.throws(() => verify(evidence, { expected: partial }), new RegExp(field), field);
+  }
+  assert.throws(() => verify(evidence, { expected: { ...expected, modelEndpoint: expected.generalEgressEndpoint } }), /same endpoint host/);
+  const badMount = { ...expected, mountSources: { ...mountSources, scratch: 'D:/Project/Job_Application_Tracker' } };
+  assert.throws(() => verify(evidence, { expected: badMount }), /exposes a denied path through the scratch mount/);
 });
 
 test('a wrong binding is rejected for every bound field', () => {
@@ -245,7 +266,7 @@ test('a stored gateA true with failed observations is rejected', () => {
   const evidence = report({
     observations: {
       ...report().observations,
-      readTargets: [{ targetId: 'projection-read', requirement: 'allowed', outcome: 'allowed' }, { targetId: 'host-repo-read', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker', outcome: 'allowed' }]
+      readTargets: [{ targetId: 'projection-read', requirement: 'allowed', outcome: 'allowed' }, { targetId: 'host-repo-read', requirement: 'denied', hostPath: deniedHostPaths['host-repo-read'], outcome: 'allowed' }]
     }
   });
   assert.throws(() => verify(evidence), /does not prove isolation/);
@@ -269,9 +290,9 @@ test('a report that flips a target requirement is rejected', () => {
       readTargets: [
         { targetId: 'projection-read', requirement: 'allowed', outcome: 'allowed' },
         { targetId: 'host-repo-read', requirement: 'allowed', outcome: 'allowed' },
-        { targetId: 'common-git-read', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker/.git', outcome: 'absent' },
-        { targetId: 'control-state-read', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker/.agent-state', outcome: 'absent' },
-        { targetId: 'host-credential-read', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker/accounts.txt', outcome: 'absent' }
+        { targetId: 'common-git-read', requirement: 'denied', hostPath: deniedHostPaths['common-git-read'], outcome: 'absent' },
+        { targetId: 'control-state-read', requirement: 'denied', hostPath: deniedHostPaths['control-state-read'], outcome: 'absent' },
+        { targetId: 'host-credential-read', requirement: 'denied', hostPath: deniedHostPaths['host-credential-read'], outcome: 'absent' }
       ]
     }
   });
@@ -282,7 +303,7 @@ test('a duplicated or unknown target is rejected', () => {
   const duplicated = report({
     observations: {
       ...report().observations,
-      readTargets: [...report().observations.readTargets, { targetId: 'host-repo-read', requirement: 'denied', hostPath: 'D:/Project/Job_Application_Tracker', outcome: 'absent' }]
+      readTargets: [...report().observations.readTargets, { targetId: 'host-repo-read', requirement: 'denied', hostPath: deniedHostPaths['host-repo-read'], outcome: 'absent' }]
     }
   });
   assert.throws(() => verify(duplicated), /reported twice/);
@@ -339,25 +360,66 @@ test('namespace absence without host and mount proof is rejected', () => {
   assert.throws(() => verify(noNamespaceProof), /absent without namespace and mount proof/);
   const noWitness = report();
   noWitness.observations.hostPositive = noWitness.observations.hostPositive.filter(entry => entry.targetId !== 'host-repo-read');
-  assert.throws(() => verify(noWitness), /no host positive witness/);
+  assert.throws(() => verify(noWitness), /host positive witness is missing|does not match the trusted binding/);
 });
 
-test('a mount that exposes a denied target is rejected', () => {
-  const exposed = report();
-  exposed.observations.namespace.mounts = [
-    { kind: 'projection', source: 'D:/Project/Job_Application_Tracker', target: '/host-repo', readOnly: true },
-    { kind: 'scratch', source: 'D:/Long-term/scratch', target: '/scratch', readOnly: false }
-  ];
-  assert.throws(() => verify(exposed), /mounted into the isolated run/);
+test('a report cannot rename a denied host path', () => {
+  const renamed = report({
+    observations: {
+      ...report().observations,
+      readTargets: report().observations.readTargets.map(entry => entry.targetId === 'host-repo-read' ? { ...entry, hostPath: 'C:/unrelated-lookup-path' } : entry)
+    }
+  });
+  assert.throws(() => verify(renamed), /host path does not match the trusted path/);
 });
 
-test('the mount set must match the fixed projection and scratch mounts', () => {
-  const missingScratch = report();
-  missingScratch.observations.namespace.mounts = [missingScratch.observations.namespace.mounts[0]];
-  assert.throws(() => verify(missingScratch), /namespace inspection is missing|missing the scratch mount/);
-  const wrongFlag = report();
-  wrongFlag.observations.namespace.mounts = wrongFlag.observations.namespace.mounts.map(mount => mount.kind === 'projection' ? { ...mount, readOnly: false } : mount);
-  assert.throws(() => verify(wrongFlag), /wrong read only flag/);
+test('a mount that points somewhere else than the trusted source is rejected', () => {
+  const swapped = report();
+  swapped.observations.namespace.mounts = swapped.observations.namespace.mounts.map(mount => mount.kind === 'scratch' ? { ...mount, source: 'D:/Project/Job_Application_Tracker' } : mount);
+  assert.throws(() => verify(swapped), /mount source does not match the trusted source/);
+  const other = report();
+  other.observations.namespace.mounts = other.observations.namespace.mounts.map(mount => mount.kind === 'scratch' ? { ...mount, source: 'D:/Long-term/scratch-other' } : mount);
+  assert.throws(() => verify(other), /mount source does not match the trusted source/);
+});
+
+test('the same mount source in another separator form is accepted', () => {
+  const same = report();
+  same.observations.namespace.mounts = same.observations.namespace.mounts.map(mount => mount.kind === 'scratch' ? { ...mount, source: 'D:\\Long-term\\scratch' } : mount);
+  const verified = verify(same);
+  assert.equal(verified.derived.gateA, true);
+});
+
+test('a mount target that is not the fixed target is rejected', () => {
+  const rooted = report();
+  rooted.observations.namespace.mounts = rooted.observations.namespace.mounts.map(mount => mount.kind === 'projection' ? { ...mount, target: '/' } : mount);
+  assert.throws(() => verify(rooted), /mount target does not match the fixed target/);
+});
+
+test('a denied read target that is not mounted is inconsistent and rejected', () => {
+  const mounted = report({
+    observations: {
+      ...report().observations,
+      readTargets: report().observations.readTargets.map(entry => entry.targetId === 'host-repo-read' ? { ...entry, outcome: 'denied' } : entry)
+    }
+  });
+  assert.throws(() => verify(mounted), /denial contradicts the mount model/);
+});
+
+test('a denied write target is only accepted through a read only mount', () => {
+  const writable = report({
+    observations: {
+      ...report().observations,
+      writeTargets: report().observations.writeTargets.map(entry => entry.targetId === 'host-write' ? { ...entry, outcome: 'denied' } : entry)
+    }
+  });
+  assert.throws(() => verify(writable), /denial is not explained by a read only mount/);
+  const readOnlyProjection = report({
+    observations: {
+      ...report().observations,
+      writeTargets: report().observations.writeTargets.map(entry => entry.targetId === 'projection-write' ? { ...entry, outcome: 'denied' } : entry)
+    }
+  });
+  assert.equal(verify(readOnlyProjection).derived.gateA, true);
 });
 
 test('mismatched egress endpoints are rejected', () => {
@@ -365,8 +427,8 @@ test('mismatched egress endpoints are rejected', () => {
   mismatched.observations.transport.generalEgressEndpoint = 'https://other.invalid/';
   assert.throws(() => verify(mismatched), /general egress endpoint is not the declared endpoint/);
   const same = report();
-  same.observations.transport.generalEgressEndpoint = modelEndpoint;
-  assert.throws(() => verify(same), /same endpoint|declared endpoint/);
+  same.observations.transport.generalEgressEndpoint = `${modelEndpoint}/`;
+  assert.throws(() => verify(same), /same endpoint host|not the declared endpoint/);
   const notAllowlisted = report();
   notAllowlisted.observations.transport.endpoint = 'https://other-model.invalid/';
   assert.throws(() => verify(notAllowlisted), /not the allowlisted endpoint/);
@@ -395,10 +457,13 @@ test('a tampered receipt signature is rejected', () => {
   assert.throws(() => verify(evidence, { receipt: { ...receipt, runId: '6f1b6a4e-2c7d-4a1e-9f2b-8c1d0e5a7b33' } }), /signature does not verify/);
 });
 
-test('a host witness without a proof hash is rejected', () => {
-  const evidence = report();
-  evidence.observations.hostPositive = evidence.observations.hostPositive.map(entry => entry.targetId === 'host-repo-read' ? { targetId: entry.targetId, connected: true, witnessSha256: 'not-a-hash' } : entry);
-  assert.throws(() => verify(evidence), /witness has no proof hash/);
+test('a host witness proof must be derived from the trusted binding', () => {
+  const shared = report();
+  shared.observations.hostPositive = shared.observations.hostPositive.map(entry => ({ ...entry, witnessSha256: hash('shared') }));
+  assert.throws(() => verify(shared), /witness proof does not match the trusted binding/);
+  const unknown = report();
+  unknown.observations.hostPositive = [...unknown.observations.hostPositive, { targetId: 'invented', connected: true, witnessSha256: hash('invented') }];
+  assert.throws(() => verify(unknown), /not a required target/);
 });
 
 test('liveness proof must cover two distinct processes', () => {
@@ -419,8 +484,7 @@ test('a run longer than the maximum is rejected', () => {
 });
 
 test('the run id must be a uuid', () => {
-  const bad = report({ runId: 'run-1' });
-  assert.throws(() => verify(bad), /run id is not a uuid/);
+  assert.throws(() => verify(report({ runId: 'run-1' })), /run id is not a uuid/);
 });
 
 test('an unsafe evidence path is rejected', () => {
@@ -437,7 +501,7 @@ test('the declared probe command list must match the fixed catalog', () => {
 
 test('evidence with non ascii content is accepted and measured in bytes', () => {
   const evidence = report();
-  evidence.observations.hostPositive = evidence.observations.hostPositive.map(entry => ({ ...entry, witnessSha256: hash('w-ä-ö') }));
+  evidence.observations.liveness = evidence.observations.liveness.map(entry => ({ ...entry, processId: `${entry.processId}-tiếng Việt` }));
   const bytes = bytesFor(evidence);
   const receipt = receiptFor(evidence, { evidence: { path: 'evidence/run.json', rawSha256: hash(bytes), completedAt: evidence.completedAt, bytes: Buffer.byteLength(bytes, 'utf8') } });
   const verified = verify(evidence, { receipt, resolveEvidence: () => ({ exists: true, sha256: hash(bytes), bytes, path: 'evidence/run.json' }) });
@@ -446,11 +510,11 @@ test('evidence with non ascii content is accepted and measured in bytes', () => 
 
 test('the evaluator derives verdicts from observations and never trusts the stored gate', () => {
   const evidence = report();
-  const evaluated = evaluateReadinessEvidence(evidence);
+  const evaluated = evaluateReadinessEvidence(evidence, expected);
   assert.equal(evaluated.ready, true);
   assert.deepEqual(evaluated.failures, []);
   const degraded = report({ gateA: true, observations: { ...evidence.observations, liveness: [{ processId: 'child-1', generation: 'child', before: true, after: true }] } });
-  const result = evaluateReadinessEvidence(degraded);
+  const result = evaluateReadinessEvidence(degraded, expected);
   assert.equal(result.ready, false);
   assert.equal(result.verdicts.childCleanup, false);
 });
