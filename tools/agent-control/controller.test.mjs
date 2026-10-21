@@ -6,14 +6,40 @@ import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { AgentController } from './controller.mjs';
+import { signReadinessReceipt } from './readiness.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
+const readinessKey = 'k'.repeat(48);
+process.env.READINESS_KEY = readinessKey;
 const task = (id = 'web-one', feature = 'web') => ({ id, feature, objective: 'Add an isolated source module.', acceptance: ['Module exists in its feature checkout.'], checks: [feature === 'web' ? 'test:web' : 'build:api'], dependencies: [] });
 function write(root, path, text) { mkdirSync(dirname(join(root, path)), { recursive: true }); writeFileSync(join(root, path), text); }
 function git(root, args) {
   const result = spawnSync('rtk', ['proxy', 'git', '-c', `safe.directory=${root.replaceAll('\\', '/')}`, '-c', 'core.autocrlf=false', ...args], { cwd: root, shell: false, windowsHide: true, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   return result.stdout.trim();
+}
+function readyReceipt(controller, state, overrides = {}) {
+  const payload = {
+    schemaVersion: 1,
+    issuedAt: new Date(Date.now() - 60_000).toISOString(),
+    expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+    taskId: state.id,
+    feature: state.feature,
+    policyHash: controller.fingerprint(),
+    environmentFingerprint: controller.environmentFingerprint(),
+    projectionManifestHash: null,
+    targets: [{ path: 'readiness/evidence.json', sha256: digest('evidence') }],
+    isolation: {
+      readIsolation: 'denied',
+      writeIsolation: 'denied',
+      egress: 'denied-with-positive-control',
+      childCleanup: 'verified'
+    },
+    sandboxProbePass: true,
+    evidence: { canaryReportHash: digest('report'), capturedAt: new Date().toISOString(), verifier: 'fixture-verifier' },
+    ...overrides
+  };
+  return signReadinessReceipt(payload, readinessKey);
 }
 function setup(adapters = {}) {
   const root = mkdtempSync(join(tmpdir(), 'jobtrack-agents-test-'));
@@ -22,12 +48,16 @@ function setup(adapters = {}) {
   write(root, 'tools/agent-control/test-config.json', '{}\n');
   write(root, 'apps/web/src/existing.js', 'export const version = 1;\n');
   write(root, 'apps/api/src/existing.js', 'export const version = 1;\n');
+  write(root, '.agent-state/readiness/evidence.json', 'evidence');
   git(root, ['init', '-b', 'main']);
   git(root, ['config', 'user.name', 'Agent Fixture']);
   git(root, ['config', 'user.email', 'agent-fixture@example.test']);
   git(root, ['add', '--', '.gitignore', 'package.json', 'tools', 'apps']);
   git(root, ['commit', '-m', 'fixture baseline']);
-  return new AgentController(root, adapters);
+  const controller = new AgentController(root, adapters);
+  const provided = adapters.readiness;
+  controller.adapters.readiness = provided ?? (async state => readyReceipt(controller, state));
+  return controller;
 }
 const okCheck = async () => ({ code: 0, timedOut: false, output: 'passed', error: '' });
 const response = (verdict, changes = [], prompt = '') => ({ verdict, changes, prompt, summary: 'fixture result' });
@@ -66,6 +96,87 @@ test('an explicit invalid Codex executable fails closed instead of using PATH', 
     if (previous === undefined) delete process.env.CODEX_CLI_PATH;
     else process.env.CODEX_CLI_PATH = previous;
   }
+});
+
+test('a missing readiness receipt blocks the run before any model is invoked', async () => {
+  const roles = [];
+  const c = setup({ readiness: async () => null, worker: async role => { roles.push(role); return response('plan'); } });
+  const result = await c.run(task());
+  assert.equal(result.status, 'blocked-readiness');
+  assert.match(result.error, /Readiness receipt is missing/);
+  assert.deepEqual(roles, []);
+  assert.equal(existsSync(join(c.root, 'apps/web/src/new.js')), false);
+});
+
+test('an expired readiness receipt blocks the run before any model is invoked', async () => {
+  const roles = [];
+  const c = setup({ worker: async role => { roles.push(role); return response('plan'); } });
+  c.adapters.readiness = async state => readyReceipt(c, state, { expiresAt: new Date(Date.now() - 1000).toISOString() });
+  const result = await c.run(task());
+  assert.equal(result.status, 'blocked-readiness');
+  assert.match(result.error, /expired/);
+  assert.deepEqual(roles, []);
+});
+
+test('a readiness receipt for another control plane is blocked', async () => {
+  const roles = [];
+  const c = setup({ worker: async role => { roles.push(role); return response('plan'); } });
+  c.adapters.readiness = async state => readyReceipt(c, state, { policyHash: digest('other-control-plane') });
+  const result = await c.run(task());
+  assert.equal(result.status, 'blocked-readiness');
+  assert.match(result.error, /control plane/);
+  assert.deepEqual(roles, []);
+});
+
+test('a receipt that only proves a sandbox probe is blocked', async () => {
+  const roles = [];
+  const c = setup({ worker: async role => { roles.push(role); return response('plan'); } });
+  c.adapters.readiness = async state => readyReceipt(c, state, {
+    isolation: { readIsolation: 'not-verified', writeIsolation: 'not-verified', egress: 'not-verified', childCleanup: 'not-verified' }
+  });
+  const result = await c.run(task());
+  assert.equal(result.status, 'blocked-readiness');
+  assert.match(result.error, /readIsolation/);
+  assert.deepEqual(roles, []);
+});
+
+test('a missing signing key is refused instead of skipping the gate', async () => {
+  const previous = process.env.READINESS_KEY;
+  delete process.env.READINESS_KEY;
+  try {
+    const roles = [];
+    const c = setup({ worker: async role => { roles.push(role); return response('plan'); } });
+    const result = await c.run(task());
+    assert.equal(result.status, 'blocked-readiness');
+    assert.match(result.error, /at least 32 characters/);
+    assert.deepEqual(roles, []);
+  } finally {
+    process.env.READINESS_KEY = previous;
+  }
+});
+
+test('the readiness gate is verified before the planner role runs', async () => {
+  const order = [];
+  const c = setup({ check: okCheck, worker: async role => { order.push(`worker:${role}`); return response(role === 'coder' ? 'changes' : role === 'reviewer' ? 'pass' : 'plan', role === 'coder' ? [{ path: 'apps/web/src/new.js', beforeSha256: null, content: 'export const value = 2;\n' }] : [], 'Implement the isolated module.'); } });
+  c.adapters.readiness = async state => { order.push('readiness'); return readyReceipt(c, state); };
+  const result = await c.run(task());
+  assert.equal(result.status, 'committed', result.error);
+  assert.equal(order[0], 'readiness');
+  assert.equal(order[1], 'worker:planner');
+});
+
+test('doctor semantics separate probe, isolation and live worker evidence', async () => {
+  const c = setup({ check: okCheck, worker: async role => response(role === 'coder' ? 'changes' : role === 'reviewer' ? 'pass' : 'plan', role === 'coder' ? [{ path: 'apps/web/src/new.js', beforeSha256: null, content: 'export const value = 2;\n' }] : [], 'Implement the isolated module.') });
+  assert.equal(c.isolationReady(), false);
+  assert.equal(c.liveWorkerRunVerified(), false);
+  const receipt = readyReceipt(c, { id: 'web-one', feature: 'web' });
+  const receiptPath = join(c.stateDir, 'readiness', 'web-one.json');
+  writeFileSync(receiptPath, JSON.stringify(receipt, null, 2));
+  c.adapters.readiness = async () => JSON.parse(readFileSync(receiptPath, 'utf8'));
+  const result = await c.run(task());
+  assert.equal(result.status, 'committed', result.error);
+  assert.equal(c.liveWorkerRunVerified(), true);
+  assert.equal(c.isolationReady(), true);
 });
 
 test('prepare creates an isolated branch and rejects duplicate feature ownership', () => {

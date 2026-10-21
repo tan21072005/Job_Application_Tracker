@@ -2,7 +2,9 @@ import { spawnSync, spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, lstatSync, realpathSync, readdirSync, rmdirSync } from 'node:fs';
 import { resolve, relative, join, dirname, isAbsolute, basename } from 'node:path';
+import { release } from 'node:os';
 import { FEATURES, assertChangeSet, assertOwnedPath } from './policy.mjs';
+import { verifyReadinessReceipt } from './readiness.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const configurationHash = path => hash(readFileSync(path, 'utf8').replaceAll('\r\n', '\n'));
@@ -64,7 +66,134 @@ export class AgentController {
     const temporary = `${path}.${randomUUID()}.tmp`;
     writeFileSync(temporary, JSON.stringify(state, null, 2) + '\n', { flag: 'wx' });
     renameSync(temporary, path);
-    writeFileSync(join(this.stateDir, 'audit.jsonl'), JSON.stringify({ at: new Date().toISOString(), id: state.id, feature: state.feature, status: state.status, commit: state.commit || null }) + '\n', { flag: 'a' });
+    this.appendAudit({ id: state.id, feature: state.feature, status: state.status, commit: state.commit || null });
+  }
+
+  appendAudit(record) {
+    writeFileSync(join(this.stateDir, 'audit.jsonl'), JSON.stringify({ at: new Date().toISOString(), ...record }) + '\n', { flag: 'a' });
+  }
+
+  readinessDirectory() {
+    const directory = join(this.stateDir, 'readiness');
+    this.assertDirectory(directory);
+    return directory;
+  }
+
+  readReadinessReceipt(id) {
+    const path = join(this.readinessDirectory(), `${id}.json`);
+    if (!existsSync(path)) return null;
+    try {
+      return JSON.parse(readFileSync(path, 'utf8'));
+    } catch {
+      return null;
+    }
+  }
+
+  resolveEvidenceTarget(path) {
+    if (typeof path !== 'string' || !path) return { exists: false, sha256: null };
+    const base = realpathSync(this.stateDir);
+    const candidate = resolve(base, path);
+    const rel = relative(base, candidate);
+    if (rel.startsWith('..') || isAbsolute(rel)) return { exists: false, sha256: null };
+    if (!existsSync(candidate)) return { exists: false, sha256: null };
+    return { exists: true, sha256: hash(readFileSync(candidate)) };
+  }
+
+  environmentFingerprint() {
+    let binary = 'unknown';
+    try {
+      const stat = lstatSync(this.codexCommand);
+      binary = `${stat.size}:${Math.round(stat.mtimeMs)}`;
+    } catch {
+      binary = 'missing';
+    }
+    return hash(JSON.stringify({
+      platform: process.platform,
+      arch: process.arch,
+      release: release(),
+      node: process.version,
+      cli: this.codexCommand,
+      binary
+    }));
+  }
+
+  async assertReadiness(state) {
+    const receipt = this.adapters.readiness ? await this.adapters.readiness(state) : this.readReadinessReceipt(state.id);
+    if (!receipt) {
+      const error = new Error('Readiness receipt is missing; no model was invoked.');
+      error.code = 'readiness';
+      throw error;
+    }
+    let verified;
+    try {
+      verified = verifyReadinessReceipt({
+        receipt,
+        key: process.env.READINESS_KEY,
+        expected: {
+          taskId: state.id,
+          feature: state.feature,
+          policyHash: this.fingerprint(),
+          environmentFingerprint: this.environmentFingerprint(),
+          projectionManifestHash: state.projectionManifestHash ?? null
+        },
+        resolveTarget: path => this.resolveEvidenceTarget(path)
+      });
+    } catch (error) {
+      error.code = 'readiness';
+      throw error;
+    }
+    state.readiness = { payloadHash: verified.payloadHash, verifiedAt: new Date().toISOString() };
+    this.appendAudit({ id: state.id, event: 'readiness-verified', payloadHash: verified.payloadHash });
+    return verified;
+  }
+
+  isolationReady() {
+    const directory = join(this.stateDir, 'readiness');
+    if (!existsSync(directory)) return false;
+    for (const name of readdirSync(directory).filter(entry => entry.endsWith('.json'))) {
+      const receipt = (() => { try { return JSON.parse(readFileSync(join(directory, name), 'utf8')); } catch { return null; } })();
+      if (!receipt) continue;
+      try {
+        verifyReadinessReceipt({
+          receipt,
+          key: process.env.READINESS_KEY,
+          expected: { policyHash: this.fingerprint(), environmentFingerprint: this.environmentFingerprint() },
+          resolveTarget: path => this.resolveEvidenceTarget(path)
+        });
+        return true;
+      } catch {
+        continue;
+      }
+    }
+    return false;
+  }
+
+  liveWorkerRunVerified() {
+    const auditPath = join(this.stateDir, 'audit.jsonl');
+    if (!existsSync(auditPath)) return false;
+    const records = readFileSync(auditPath, 'utf8').split('\n').filter(Boolean).map(line => {
+      try { return JSON.parse(line); } catch { return null; }
+    }).filter(Boolean);
+    const runs = records.filter(record => record.event === 'worker-run' && record.readinessPayloadHash);
+    if (!runs.length) return false;
+    const directory = join(this.stateDir, 'readiness');
+    if (!existsSync(directory)) return false;
+    for (const name of readdirSync(directory).filter(entry => entry.endsWith('.json'))) {
+      const receipt = (() => { try { return JSON.parse(readFileSync(join(directory, name), 'utf8')); } catch { return null; } })();
+      if (!receipt) continue;
+      try {
+        const verified = verifyReadinessReceipt({
+          receipt,
+          key: process.env.READINESS_KEY,
+          expected: { policyHash: this.fingerprint(), environmentFingerprint: this.environmentFingerprint() },
+          resolveTarget: path => this.resolveEvidenceTarget(path)
+        });
+        if (runs.some(run => run.readinessPayloadHash === verified.payloadHash)) return true;
+      } catch {
+        continue;
+      }
+    }
+    return false;
   }
 
   locked(key, action) {
@@ -258,6 +387,7 @@ export class AgentController {
     }
     const verdicts = { planner: ['plan'], coder: ['changes'], reflector: ['repair'], reviewer: ['pass', 'fail'] };
     if (!response || !verdicts[role].includes(response.verdict) || typeof response.summary !== 'string' || typeof response.prompt !== 'string' || !Array.isArray(response.changes) || role !== 'coder' && response.changes.length) throw Error('Worker result does not match role schema.');
+    this.appendAudit({ id: state.id, event: 'worker-run', role, readinessPayloadHash: state.readiness?.payloadHash || null });
     return response;
   }
 
@@ -287,6 +417,7 @@ export class AgentController {
     return this.locked(state.id, async () => {
       let previous = '';
       try {
+        await this.assertReadiness(state);
         if (!this.adapters.worker) {
           const probe = await this.sandboxProbe(state.worktree);
           if (probe.code !== 0 || probe.timedOut) throw Error(`Sandbox preflight failed; no model was invoked: ${probe.error.slice(-1500)}`);
@@ -318,7 +449,10 @@ export class AgentController {
           if (attempt === 3) { state.status = 'blocked-review'; break; }
           prompt = (await this.role('planner', state, review.prompt)).prompt;
         }
-      } catch (error) { state.status = 'blocked'; state.error = redact(error.message); }
+      } catch (error) {
+        state.status = error.code === 'readiness' ? 'blocked-readiness' : 'blocked';
+        state.error = redact(error.message);
+      }
       this.save(state);
       return state;
     });

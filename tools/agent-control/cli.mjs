@@ -13,9 +13,20 @@ const controller = new AgentController(root);
 try {
   let result;
   switch (args[0]) {
-    case 'doctor':
-      result = { repository: controller.git(root, ['rev-parse', '--show-toplevel']), head: controller.git(root, ['rev-parse', 'HEAD']), features: ['web', 'api', 'extension', 'mcp', 'contracts'], sandbox: await controller.sandboxProbe(), liveWorkersVerified: false, safety: 'Read-only workers, scoped patch broker, local commits only. Hostile actors require OS/container isolation.' };
+    case 'doctor': {
+      const sandbox = await controller.sandboxProbe();
+      result = {
+        repository: controller.git(root, ['rev-parse', '--show-toplevel']),
+        head: controller.git(root, ['rev-parse', 'HEAD']),
+        features: ['web', 'api', 'extension', 'mcp', 'contracts'],
+        sandbox,
+        sandboxProbePass: sandbox.code === 0 && !sandbox.timedOut,
+        isolationReady: controller.isolationReady(),
+        liveWorkerRunVerified: controller.liveWorkerRunVerified(),
+        safety: 'Read-only workers, scoped patch broker, local commits only. Hostile actors require OS/container isolation.'
+      };
       break;
+    }
     case 'prepare': result = controller.prepare(read(option('--task'))); break;
     case 'status': result = controller.status(); break;
     case 'apply': result = controller.apply(option('--id'), read(option('--changes'))); break;
