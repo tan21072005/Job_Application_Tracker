@@ -168,6 +168,41 @@ test('the readiness gate is verified before the planner role runs', async () => 
   for (const [index, event] of order.entries()) if (event.startsWith('worker:')) assert.equal(order[index - 1], 'readiness');
 });
 
+test('the execution boundary owns the worker run and the host worker is never used', async () => {
+  const calls = [];
+  const verdicts = { planner: 'plan', coder: 'changes', reflector: 'repair', reviewer: 'pass' };
+  const boundaryResponse = role => role === 'coder'
+    ? response('changes', [{ path: 'apps/web/src/new.js', beforeSha256: null, content: 'export const value = 2;\n' }])
+    : response(verdicts[role] ?? 'plan');
+  const c = setup({
+    check: okCheck,
+    worker: async role => { calls.push(`host:${role}`); return boundaryResponse(role); },
+    boundary: { run: async (state, request) => {
+      calls.push(request.purpose === 'check-runner' ? `boundary:check-runner:${request.check}` : `boundary:worker-read:${request.role}`);
+      if (request.purpose === 'check-runner') return { launched: { result: await okCheck() } };
+      return { launched: { response: boundaryResponse(request.role) } };
+    } }
+  });
+  const result = await c.run(task());
+  assert.equal(result.status, 'committed', result.error);
+  assert.equal(calls.filter(entry => entry.startsWith('host:')).length, 0);
+  assert.ok(calls.includes('boundary:worker-read:planner'));
+  assert.ok(calls.includes('boundary:check-runner:test:web'));
+});
+
+test('a failing execution boundary blocks the task and never falls back to the host', async () => {
+  const calls = [];
+  const c = setup({
+    check: okCheck,
+    worker: async role => { calls.push(`host:${role}`); return response('plan'); },
+    boundary: { run: async () => { throw Error('container refused the launch'); } }
+  });
+  const result = await c.run(task());
+  assert.equal(result.status, 'blocked');
+  assert.match(result.error, /container refused the launch/);
+  assert.equal(calls.filter(entry => entry.startsWith('host:')).length, 0);
+});
+
 test('child execution never inherits the controller signing key', async () => {
   const c = setup();
   const result = await c.execute(process.execPath, ['-e', 'process.stdout.write(String(Object.hasOwn(process.env,"READINESS_KEY")))'], c.root);
