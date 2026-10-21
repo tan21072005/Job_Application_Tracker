@@ -40,7 +40,9 @@ const BINDING_FIELDS = Object.freeze([
   'adapterId',
   'imageDigest',
   'cliHash',
-  'nodeHash'
+  'nodeHash',
+  'dockerBinaryHash',
+  'probeProgramHash'
 ]);
 
 const HASH_BINDING_FIELDS = Object.freeze([
@@ -51,7 +53,9 @@ const HASH_BINDING_FIELDS = Object.freeze([
   'profileHash',
   'imageDigest',
   'cliHash',
-  'nodeHash'
+  'nodeHash',
+  'dockerBinaryHash',
+  'probeProgramHash'
 ]);
 
 const sha256 = value => createHash('sha256').update(value).digest('hex');
@@ -146,7 +150,7 @@ export function assertReadinessV2ExpectedContext(expected) {
   for (const field of BINDING_FIELDS) {
     if (!(field in expected)) throw Error(`Readiness expected context is missing ${field}.`);
   }
-  for (const field of ['verifierImplementationHash', 'modelEndpoint', 'generalEgressEndpoint']) {
+  for (const field of ['verifierImplementationHash', 'modelEndpoint', 'generalEgressEndpoint', 'dockerBinaryHash', 'probeProgramHash']) {
     if (!(field in expected) || !expected[field]) throw Error(`Readiness expected context is missing ${field}.`);
   }
   if (!isHex64(expected.verifierImplementationHash)) throw Error('Readiness expected verifier implementation hash is invalid.');
@@ -252,6 +256,10 @@ export function evaluateReadinessEvidence(report, context) {
   }
 
   const namespace = observations.namespace;
+  if (namespace && typeof namespace === 'object') {
+    if (namespace.dockerBinaryHash !== context.dockerBinaryHash) fail('readiness evidence container runtime hash does not match the trusted runtime');
+    if (namespace.probeProgramHash !== context.probeProgramHash) fail('readiness evidence probe program hash does not match the trusted probe program');
+  }
   const mounts = namespace && Array.isArray(namespace.mounts) ? namespace.mounts : [];
   const namespaceInspected = Boolean(namespace && namespace.inspected === true && mounts.length === READINESS_V2_EXPECTED_MOUNTS.length);
   if (!namespaceInspected) fail('readiness namespace inspection is missing');

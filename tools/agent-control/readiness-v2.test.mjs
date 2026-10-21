@@ -35,7 +35,9 @@ const binding = {
   adapterId: 'docker-adapter',
   imageDigest: hash('image'),
   cliHash: hash('cli'),
-  nodeHash: hash('node')
+  nodeHash: hash('node'),
+  dockerBinaryHash: hash('docker-binary'),
+  probeProgramHash: hash('probe-program')
 };
 
 const deniedHostPaths = {
@@ -94,6 +96,8 @@ function report(overrides = {}) {
       ],
       namespace: {
         inspected: true,
+        dockerBinaryHash: binding.dockerBinaryHash,
+        probeProgramHash: binding.probeProgramHash,
         mounts: [
           { kind: 'projection', source: mountSources.projection, target: '/projection', readOnly: true },
           { kind: 'scratch', source: mountSources.scratch, target: '/scratch', readOnly: false }
@@ -182,6 +186,15 @@ test('a complete schema 2 receipt verifies against the actual evidence bytes', (
   assert.equal(verified.derived.gateA, true);
   assert.equal(verified.derived.readIsolation, true);
   assert.equal(verified.payloadHash.length, 64);
+});
+
+test('a receipt whose evidence names a foreign container runtime is rejected', () => {
+  const evidence = report();
+  evidence.observations.namespace.dockerBinaryHash = hash('another-runtime');
+  assert.throws(() => verify(evidence), /container runtime hash does not match the trusted runtime/);
+  const otherProgram = report();
+  otherProgram.observations.namespace.probeProgramHash = hash('another-probe');
+  assert.throws(() => verify(otherProgram), /probe program hash does not match the trusted probe program/);
 });
 
 test('the schema 1 receipt and a schema 1 report body are rejected', () => {
