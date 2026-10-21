@@ -320,7 +320,7 @@ export class AgentController {
   }
 
   async execute(command, args, cwd, input = '', timeout = 180_000) {
-    const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !/(?:TOKEN|SECRET|PASSWORD|DATABASE|^PG|API_KEY|NODE_OPTIONS)/i.test(name)));
+    const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !/(?:TOKEN|SECRET|PASSWORD|DATABASE|^PG|API_KEY|READINESS_KEY|NODE_OPTIONS)/i.test(name)));
     return new Promise(resolveRun => {
       const child = spawn('rtk', ['proxy', command, ...args], { cwd, env, shell: false, windowsHide: true, detached: process.platform !== 'win32', stdio: ['pipe', 'pipe', 'pipe'] });
       let output = '', error = '', timedOut = false, settled = false;
@@ -352,6 +352,7 @@ export class AgentController {
     const digest = this.digest(state);
     const results = [];
     for (const name of state.checks) {
+      await this.assertReadiness(state);
       const [command, args] = checks[name];
       const result = this.adapters.check ? await this.adapters.check(name, state) : await this.execute(this.codexCommand, ['sandbox', '--permission-profile', ':workspace', '-C', state.worktree, '--', 'rtk', 'proxy', command, ...args], state.worktree);
       results.push({ name, ...result });
@@ -367,6 +368,7 @@ export class AgentController {
   check(id) { return this.locked(id, () => this.checkUnlocked(this.load(id))); }
 
   async role(role, state, prompt) {
+    await this.assertReadiness(state);
     const manifest = {};
     const ownedFiles = this.git(state.worktree, ['ls-files', '-z', '--', ...FEATURES[state.feature]]).split('\0').filter(Boolean);
     for (const file of [...new Set([...ownedFiles, ...this.changes(state)])]) {

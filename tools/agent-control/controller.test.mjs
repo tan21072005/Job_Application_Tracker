@@ -162,7 +162,49 @@ test('the readiness gate is verified before the planner role runs', async () => 
   const result = await c.run(task());
   assert.equal(result.status, 'committed', result.error);
   assert.equal(order[0], 'readiness');
-  assert.equal(order[1], 'worker:planner');
+  assert.equal(order.at(-1), 'worker:reviewer');
+  for (const [index, event] of order.entries()) if (event.startsWith('worker:')) assert.equal(order[index - 1], 'readiness');
+});
+
+test('child execution never inherits the controller signing key', async () => {
+  const c = setup();
+  const result = await c.execute(process.execPath, ['-e', 'process.stdout.write(String(Object.hasOwn(process.env,"READINESS_KEY")))'], c.root);
+  assert.equal(result.code, 0, result.error);
+  assert.equal(result.output, 'false');
+});
+
+test('direct worker calls require readiness before reading source or invoking a worker', async () => {
+  let calls = 0;
+  const c = setup({ readiness: async () => null, worker: async () => { calls++; return response('plan'); } });
+  const state = c.prepare(task());
+  await assert.rejects(() => c.role('planner', state, 'Inspect source'), /Readiness receipt is missing/);
+  assert.equal(calls, 0);
+});
+
+test('revoking readiness after the planner prevents the coder call', async () => {
+  const calls = [];
+  const c = setup({ worker: async role => { calls.push(role); c.adapters.readiness = async () => null; return response('plan'); } });
+  const result = await c.run(task());
+  assert.equal(result.status, 'blocked-readiness');
+  assert.deepEqual(calls, ['planner']);
+});
+
+test('manual checks require readiness before executing changed source', async () => {
+  let calls = 0;
+  const c = setup({ readiness: async () => null, check: async () => { calls++; return okCheck(); } });
+  const state = c.prepare(task());
+  c.apply(state.id, [{ path: 'apps/web/src/new.js', beforeSha256: null, content: 'export {};' }]);
+  await assert.rejects(() => c.check(state.id), /Readiness receipt is missing/);
+  assert.equal(calls, 0);
+});
+
+test('readiness is verified independently before each fixed check', async () => {
+  let calls = 0;
+  const c = setup({ check: async () => { calls++; c.adapters.readiness = async () => null; return okCheck(); } });
+  const state = c.prepare({ ...task(), checks: ['test:web', 'build:web'] });
+  c.apply(state.id, [{ path: 'apps/web/src/new.js', beforeSha256: null, content: 'export {};' }]);
+  await assert.rejects(() => c.check(state.id), /Readiness receipt is missing/);
+  assert.equal(calls, 1);
 });
 
 test('doctor semantics separate probe, isolation and live worker evidence', async () => {
