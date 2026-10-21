@@ -1,0 +1,177 @@
+{
+  "kind": "readiness-acceptance-report",
+  "at": "2026-10-21T15:03:35.870Z",
+  "runId": "db7c9b69-7450-4c38-948d-2b5307f21885",
+  "passed": true,
+  "findings": [
+    {
+      "name": "the issuer produced a signed receipt",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "the receipt binds the same source digest as the projection and the check",
+      "passed": true,
+      "detail": {
+        "binding": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+        "check": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+        "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29"
+      }
+    },
+    {
+      "name": "the receipt records a passing gate",
+      "passed": true,
+      "detail": {
+        "readIsolation": true,
+        "writeIsolation": true,
+        "childCleanup": true,
+        "modelTransport": true,
+        "egress": true,
+        "gateA": true
+      }
+    },
+    {
+      "name": "the audit trail records the issuance",
+      "passed": true,
+      "detail": [
+        "readiness-issued"
+      ]
+    },
+    {
+      "name": "the check ran in the isolated profile and was refused the candidate write",
+      "passed": true,
+      "detail": {
+        "candidateRead": {
+          "ok": true,
+          "bytes": 24
+        },
+        "candidateWrite": {
+          "ok": false,
+          "code": "EROFS"
+        },
+        "fixtureRead": {
+          "ok": true,
+          "bytes": 3
+        },
+        "scratchWrite": {
+          "ok": true
+        },
+        "hostWrite": {
+          "ok": false,
+          "code": "EROFS"
+        },
+        "environment": {}
+      }
+    },
+    {
+      "name": "the check saw no database, provider or secret variable",
+      "passed": true,
+      "detail": {}
+    },
+    {
+      "name": "the gate stays blocked when a proof is missing",
+      "passed": true,
+      "detail": "Readiness evidence does not prove isolation: readiness host positive control did not connect: transport-general-egress; readiness model transport positive control did not connect"
+    },
+    {
+      "name": "no artifact claims to be a live worker run",
+      "passed": true,
+      "detail": "worker-read"
+    }
+  ],
+  "receipt": {
+    "schemaVersion": 2,
+    "runId": "db7c9b69-7450-4c38-948d-2b5307f21885",
+    "issuedAt": "2026-10-21T15:03:33.743Z",
+    "expiresAt": "2026-10-21T15:18:33.743Z",
+    "binding": {
+      "taskId": "readiness-canary",
+      "feature": "web",
+      "base": "main",
+      "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+      "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
+      "policyHash": "bd0d4e57726730d5fc71b724f2b74a6dd95059cd207846847bdcd713628dbb4b",
+      "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
+      "purpose": "worker-read",
+      "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
+      "adapterId": "jobtrack-docker-adapter-v1",
+      "imageDigest": "44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+      "cliHash": "2726b1cce5c5805259ab3000c9521b790819f91381a2caa41f5b6fc588f46643",
+      "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87"
+    },
+    "evidence": {
+      "path": "db7c9b69-7450-4c38-948d-2b5307f21885.evidence.json",
+      "rawSha256": "2e09b7f7c4df269a48db518b41e2f12cbb7f0224b8ef513947e33e81d6aaf99f",
+      "completedAt": "2026-10-21T15:03:33.724Z",
+      "bytes": 9076
+    },
+    "verifier": {
+      "id": "jobtrack-trusted-issuer-v1",
+      "implementationHash": "9890750ec796fe7f022b752e6877be7947e807b0356c18aa6e5cfddf144c5046"
+    },
+    "derived": {
+      "readIsolation": true,
+      "writeIsolation": true,
+      "childCleanup": true,
+      "modelTransport": true,
+      "egress": true,
+      "gateA": true
+    },
+    "signature": "6827bb36a14c2f642023396337b878f450415ddb9a948479cf9157b171dc5dee"
+  },
+  "signingKeyFingerprint": "a9ce356b5fc01b721d8894bd46bb04d5d8165ae621374fe50627e7efed6b2e5d",
+  "check": {
+    "kind": "isolated-check-profile-not-readiness-receipt",
+    "checkId": "build:api",
+    "candidateDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+    "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+    "observed": {
+      "candidateRead": {
+        "ok": true,
+        "bytes": 24
+      },
+      "candidateWrite": {
+        "ok": false,
+        "code": "EROFS"
+      },
+      "fixtureRead": {
+        "ok": true,
+        "bytes": 3
+      },
+      "scratchWrite": {
+        "ok": true
+      },
+      "hostWrite": {
+        "ok": false,
+        "code": "EROFS"
+      },
+      "environment": {}
+    },
+    "exitCode": 0,
+    "stdoutHash": "163523eda63d54c0bcb1c4fa5ac4375fcafc00785220765a481a7a34d9076abb",
+    "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mounts": [
+      {
+        "target": "/candidate",
+        "readOnly": true,
+        "source": "D:/Long-term/JobTrack-acceptance-db7c9b69/candidate"
+      },
+      {
+        "target": "/scratch",
+        "readOnly": false,
+        "source": "D:/Long-term/JobTrack-acceptance-db7c9b69/scratch"
+      },
+      {
+        "target": "/fixtures",
+        "readOnly": true,
+        "source": "D:/Long-term/JobTrack-acceptance-db7c9b69/fixtures"
+      }
+    ]
+  },
+  "limitations": [
+    "The model transport is a local broker endpoint on the loopback interface; no provider credential was used and no paid service was called.",
+    "The general egress control is a host reachable endpoint on the local network address; it proves the isolated run had no path to a reachable non loopback endpoint, not that the public internet was measured.",
+    "The projection is synthetic; the real checkout was never mounted into the container.",
+    "No live worker ran: the container image does not carry the Codex CLI, so the worker audit in this report is the issuer audit, not a worker run."
+  ]
+}
