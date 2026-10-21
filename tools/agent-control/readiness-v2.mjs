@@ -8,8 +8,8 @@ export const READINESS_V2_MAX_RUN_DURATION_MS = 30 * 60 * 1000;
 export const READINESS_V2_PURPOSES = Object.freeze(['worker-read', 'check-runner']);
 
 export const READINESS_V2_PROBE_CATALOG = Object.freeze({
-  'projection-read': Object.freeze({ kind: 'read', requirement: 'allowed', targetId: 'projection-read' }),
-  'scratch-write': Object.freeze({ kind: 'write', requirement: 'allowed', targetId: 'scratch-write' }),
+  'projection-read': Object.freeze({ kind: 'read', requirement: 'allowed', targetId: 'projection-read', mountKind: 'projection' }),
+  'scratch-write': Object.freeze({ kind: 'write', requirement: 'allowed', targetId: 'scratch-write', mountKind: 'scratch' }),
   'host-repo-read': Object.freeze({ kind: 'read', requirement: 'denied', targetId: 'host-repo-read' }),
   'common-git-read': Object.freeze({ kind: 'read', requirement: 'denied', targetId: 'common-git-read' }),
   'control-state-read': Object.freeze({ kind: 'read', requirement: 'denied', targetId: 'control-state-read' }),
@@ -58,7 +58,7 @@ const sha256 = value => createHash('sha256').update(value).digest('hex');
 const isHex64 = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const isTimestamp = value => typeof value === 'string' && !Number.isNaN(Date.parse(value));
 const isUuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-const isSafeRelativePath = value => typeof value === 'string' && value.length > 0 && value.length <= 240 && !value.includes('\\') && !value.startsWith('/') && !value.includes(':') && value.split('/').every(part => part && part !== '.' && part !== '..');
+const isSafeRelativePath = value => typeof value === 'string' && value.length > 0 && value.length <= 240 && !value.includes('\\') && !value.startsWith('/') && !value.includes(':') && !/[\x00-\x1f\x7f]/.test(value) && value.split('/').every(part => part && part !== '.' && part !== '..' && !/[ .]$/.test(part));
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -169,7 +169,14 @@ export function assertReadinessV2ExpectedContext(expected) {
   }
   for (const targetId of requiredWitnessTargets()) {
     const hostPath = expected.deniedHostPaths[targetId];
-    if (hostPath && expected.mountSources.scratch && pathsOverlap(hostPath, expected.mountSources.scratch)) throw Error(`Readiness expected context exposes a denied path through the scratch mount: ${targetId}.`);
+    if (!hostPath) continue;
+    const entry = Object.values(READINESS_V2_PROBE_CATALOG).find(candidate => candidate.targetId === targetId);
+    for (const mount of READINESS_V2_EXPECTED_MOUNTS) {
+      const source = expected.mountSources[mount.kind];
+      if (!source || !pathsOverlap(hostPath, source)) continue;
+      if (entry && entry.kind === 'read') throw Error(`Readiness expected context exposes a denied read path through the ${mount.kind} mount: ${targetId}.`);
+      if (!mount.readOnly) throw Error(`Readiness expected context exposes a denied path through the ${mount.kind} mount: ${targetId}.`);
+    }
   }
   return expected;
 }
@@ -276,11 +283,17 @@ export function evaluateReadinessEvidence(report, context) {
       else byTarget.set(entry.targetId, entry);
     }
     let ok = true;
-    for (const { targetId, requirement } of expected) {
+    for (const { targetId, requirement, mountKind } of expected) {
       const entry = byTarget.get(targetId);
       if (!entry) { ok = false; fail(`readiness ${kind} target is missing: ${targetId}`); continue; }
       if (entry.requirement !== requirement) { ok = false; fail(`readiness ${kind} target has the wrong requirement: ${targetId}`); continue; }
       if (requirement === 'allowed') {
+        const expectedSource = mountKind ? mountSources[mountKind] : null;
+        if (expectedSource && (typeof entry.hostPath !== 'string' || normalizePathValue(entry.hostPath) !== normalizePathValue(expectedSource))) {
+          ok = false;
+          fail(`readiness positive control is not bound to the trusted ${mountKind} source: ${targetId}`);
+          continue;
+        }
         if (entry.outcome !== 'allowed') { ok = false; fail(`readiness positive control did not ${kind}: ${targetId}`); }
         continue;
       }
@@ -403,7 +416,8 @@ export function verifyReadinessReceiptV2(input) {
   const resolved = resolveEvidence(receipt.evidence.path);
   if (!resolved || resolved.exists !== true) throw Error('Readiness evidence file is missing.');
   if (typeof resolved.bytes !== 'string') throw Error('Readiness evidence resolver returned no bytes.');
-  if (typeof resolved.path === 'string' && normalizePathValue(resolved.path) !== normalizePathValue(receipt.evidence.path)) throw Error('Readiness evidence resolver returned a different path.');
+  if (typeof resolved.path !== 'string') throw Error('Readiness evidence resolver returned no path.');
+  if (normalizePathValue(resolved.path) !== normalizePathValue(receipt.evidence.path)) throw Error('Readiness evidence resolver returned a different path.');
   const byteLength = Buffer.byteLength(resolved.bytes, 'utf8');
   if (byteLength > READINESS_V2_MAX_EVIDENCE_BYTES) throw Error('Readiness evidence is larger than the maximum.');
   if (byteLength !== receipt.evidence.bytes) throw Error('Readiness evidence size does not match the receipt.');

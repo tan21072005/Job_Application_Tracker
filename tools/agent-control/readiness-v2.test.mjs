@@ -101,14 +101,14 @@ function report(overrides = {}) {
         invisibleHostPaths: ['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read', 'host-write']
       },
       readTargets: [
-        { targetId: 'projection-read', requirement: 'allowed', outcome: 'allowed' },
+        { targetId: 'projection-read', requirement: 'allowed', hostPath: mountSources.projection, outcome: 'allowed' },
         { targetId: 'host-repo-read', requirement: 'denied', hostPath: deniedHostPaths['host-repo-read'], outcome: 'absent' },
         { targetId: 'common-git-read', requirement: 'denied', hostPath: deniedHostPaths['common-git-read'], outcome: 'absent' },
         { targetId: 'control-state-read', requirement: 'denied', hostPath: deniedHostPaths['control-state-read'], outcome: 'absent' },
         { targetId: 'host-credential-read', requirement: 'denied', hostPath: deniedHostPaths['host-credential-read'], outcome: 'absent' }
       ],
       writeTargets: [
-        { targetId: 'scratch-write', requirement: 'allowed', outcome: 'allowed' },
+        { targetId: 'scratch-write', requirement: 'allowed', hostPath: mountSources.scratch, outcome: 'allowed' },
         { targetId: 'projection-write', requirement: 'denied', hostPath: deniedHostPaths['projection-write'], outcome: 'denied' },
         { targetId: 'host-write', requirement: 'denied', hostPath: deniedHostPaths['host-write'], outcome: 'absent' }
       ],
@@ -203,6 +203,29 @@ test('a resolver that serves a different path is rejected', () => {
   assert.throws(() => verify(evidence, { resolveEvidence: resolverFor(evidence, { path: 'evidence/other.json' }) }), /returned a different path/);
 });
 
+test('a resolver that returns no path is rejected', () => {
+  const evidence = report();
+  assert.throws(() => verify(evidence, { resolveEvidence: () => ({ exists: true, sha256: hash(bytesFor(evidence)), bytes: bytesFor(evidence) }) }), /returned no path/);
+});
+
+test('an evidence path with control characters or a trailing space segment is rejected', () => {
+  const evidence = report();
+  for (const path of ['evidence/run\u0000.json', 'evidence/run\n.json', 'evidence /run.json', 'evidence/run.json ']) {
+    const receipt = receiptFor(evidence, { evidence: { path, rawSha256: hash(bytesFor(evidence)), completedAt: evidence.completedAt, bytes: Buffer.byteLength(bytesFor(evidence)) } });
+    assert.throws(() => verify(evidence, { receipt }), /safe relative path/, path);
+  }
+});
+
+test('a positive control that is not bound to the trusted source is rejected', () => {
+  const unbound = report({
+    observations: {
+      ...report().observations,
+      readTargets: report().observations.readTargets.map(entry => entry.targetId === 'projection-read' ? { ...entry, hostPath: 'D:/Project/Job_Application_Tracker' } : entry)
+    }
+  });
+  assert.throws(() => verify(unbound), /not bound to the trusted projection source/);
+});
+
 test('a missing resolver is rejected', () => {
   const evidence = report();
   assert.throws(() => verifyReadinessReceiptV2({ receipt: receiptFor(evidence), key, expected }), /resolver is missing/);
@@ -246,7 +269,7 @@ test('the expected context must be complete', () => {
   }
   assert.throws(() => verify(evidence, { expected: { ...expected, modelEndpoint: expected.generalEgressEndpoint } }), /same endpoint host/);
   const badMount = { ...expected, mountSources: { ...mountSources, scratch: 'D:/Project/Job_Application_Tracker' } };
-  assert.throws(() => verify(evidence, { expected: badMount }), /exposes a denied path through the scratch mount/);
+  assert.throws(() => verify(evidence, { expected: badMount }), /exposes a denied .* path through the scratch mount/);
 });
 
 test('a wrong binding is rejected for every bound field', () => {
@@ -320,8 +343,8 @@ test('a broken sandbox that denies everything is rejected because positive contr
   const broken = report({
     observations: {
       ...report().observations,
-      readTargets: [{ targetId: 'projection-read', requirement: 'allowed', outcome: 'denied' }],
-      writeTargets: [{ targetId: 'scratch-write', requirement: 'allowed', outcome: 'denied' }]
+      readTargets: report().observations.readTargets.map(entry => entry.targetId === 'projection-read' ? { ...entry, outcome: 'denied' } : entry),
+      writeTargets: report().observations.writeTargets.map(entry => entry.targetId === 'scratch-write' ? { ...entry, outcome: 'denied' } : entry)
     }
   });
   assert.throws(() => verify(broken), /positive control did not/);
@@ -497,6 +520,18 @@ test('the declared probe command list must match the fixed catalog', () => {
   const evidence = report();
   evidence.catalog.commandIds = ['projection-read'];
   assert.throws(() => verify(evidence), /does not list the fixed commands/);
+});
+
+test('a declared probe catalog hash that is not the fixed one is rejected', () => {
+  const evidence = report();
+  evidence.catalog.probeCatalogHash = hash('other-catalog');
+  assert.throws(() => verify(evidence), /probe catalog hash does not match the fixed catalog/);
+});
+
+test('a mount with an inverted read only flag is rejected', () => {
+  const evidence = report();
+  evidence.observations.namespace.mounts = evidence.observations.namespace.mounts.map(mount => mount.kind === 'scratch' ? { ...mount, readOnly: true } : mount);
+  assert.throws(() => verify(evidence), /wrong read only flag/);
 });
 
 test('evidence with non ascii content is accepted and measured in bytes', () => {
