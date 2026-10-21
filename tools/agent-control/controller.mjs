@@ -1,7 +1,7 @@
 import { spawnSync, spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, lstatSync, realpathSync, readdirSync, rmdirSync } from 'node:fs';
-import { resolve, relative, join, dirname, isAbsolute } from 'node:path';
+import { resolve, relative, join, dirname, isAbsolute, basename } from 'node:path';
 import { FEATURES, assertChangeSet, assertOwnedPath } from './policy.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -23,6 +23,9 @@ export class AgentController {
     this.stateDir = join(this.root, '.agent-state');
     this.worktreeDir = join(this.root, '.worktrees');
     this.adapters = adapters;
+    const configuredCodex = process.env.CODEX_CLI_PATH;
+    this.codexCommand = configuredCodex || 'codex';
+    if (configuredCodex && (!isAbsolute(configuredCodex) || !/^codex(?:\.exe)?$/i.test(basename(configuredCodex)) || !existsSync(configuredCodex) || !lstatSync(configuredCodex).isFile() || lstatSync(configuredCodex).isSymbolicLink())) throw Error('CODEX_CLI_PATH must point to an existing absolute Codex executable.');
     this.assertDirectory(this.stateDir);
     this.assertDirectory(this.worktreeDir);
   }
@@ -221,7 +224,7 @@ export class AgentController {
     const results = [];
     for (const name of state.checks) {
       const [command, args] = checks[name];
-      const result = this.adapters.check ? await this.adapters.check(name, state) : await this.execute('codex', ['sandbox', '--permission-profile', ':workspace', '-C', state.worktree, '--', 'rtk', 'proxy', command, ...args], state.worktree);
+      const result = this.adapters.check ? await this.adapters.check(name, state) : await this.execute(this.codexCommand, ['sandbox', '--permission-profile', ':workspace', '-C', state.worktree, '--', 'rtk', 'proxy', command, ...args], state.worktree);
       results.push({ name, ...result });
     }
     if (this.digest(state) !== digest) throw Error('Source changed while checks ran.');
@@ -247,7 +250,7 @@ export class AgentController {
     if (this.adapters.worker) response = await this.adapters.worker(role, state, instruction);
     else {
       const args = ['-a', 'never', 'exec', '--ignore-user-config', '--ephemeral', '--json', '--sandbox', 'read-only', '-C', state.worktree, '--output-schema', join(this.root, 'tools/agent-control/worker.schema.json'), '-'];
-      const result = await this.execute('codex', args, state.worktree, instruction, 300_000);
+      const result = await this.execute(this.codexCommand, args, state.worktree, instruction, 300_000);
       if (result.code || result.timedOut) throw Error(`Worker failed: ${result.error.slice(-1500)}`);
       const messages = result.output.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)).filter(event => event.type === 'item.completed' && event.item?.type === 'agent_message');
       if (!messages.length) throw Error('Worker produced no structured result.');
@@ -329,7 +332,7 @@ export class AgentController {
   }
 
   sandboxProbe(cwd = this.root) {
-    return this.execute('codex', ['sandbox', '--permission-profile', ':read-only', '-C', cwd, '--', process.execPath, '--version'], cwd, '', 30_000);
+    return this.execute(this.codexCommand, ['sandbox', '--permission-profile', ':read-only', '-C', cwd, '--', process.execPath, '--version'], cwd, '', 30_000);
   }
 
   abandon(id) {

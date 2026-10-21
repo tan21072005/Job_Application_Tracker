@@ -32,6 +32,42 @@ function setup(adapters = {}) {
 const okCheck = async () => ({ code: 0, timedOut: false, output: 'passed', error: '' });
 const response = (verdict, changes = [], prompt = '') => ({ verdict, changes, prompt, summary: 'fixture result' });
 
+test('sandbox probes use the executable supplied by the running Codex app', async () => {
+  const executable = join(mkdtempSync(join(tmpdir(), 'jobtrack-codex-path-')), 'codex.exe');
+  writeFileSync(executable, 'fixture executable is never run');
+  const previous = process.env.CODEX_CLI_PATH;
+  let c;
+  try {
+    process.env.CODEX_CLI_PATH = executable;
+    c = setup();
+  } finally {
+    if (previous === undefined) delete process.env.CODEX_CLI_PATH;
+    else process.env.CODEX_CLI_PATH = previous;
+  }
+  const requested = [];
+  c.execute = async (command, args) => {
+    requested.push({ command, args });
+    return { code: 0, timedOut: false, output: 'fixture version', error: '' };
+  };
+  await c.sandboxProbe();
+  assert.equal(requested.length, 1);
+  assert.equal(requested[0].command, executable);
+  assert.deepEqual(requested[0].args.slice(0, 3), ['sandbox', '--permission-profile', ':read-only']);
+});
+
+test('an explicit invalid Codex executable fails closed instead of using PATH', () => {
+  const previous = process.env.CODEX_CLI_PATH;
+  try {
+    for (const configured of ['relative-codex', 'codex', join(tmpdir(), 'missing-codex-runtime', 'codex.exe')]) {
+      process.env.CODEX_CLI_PATH = configured;
+      assert.throws(() => setup(), /absolute Codex executable/);
+    }
+  } finally {
+    if (previous === undefined) delete process.env.CODEX_CLI_PATH;
+    else process.env.CODEX_CLI_PATH = previous;
+  }
+});
+
 test('prepare creates an isolated branch and rejects duplicate feature ownership', () => {
   const c = setup();
   const s = c.prepare(task());
