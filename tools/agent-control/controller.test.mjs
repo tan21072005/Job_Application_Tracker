@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -204,6 +204,19 @@ test('reconcile leaves an unintegrated branch without a commit', () => {
   assert.equal(reconciled.integratedCommit, null);
   const status = c.status().find(entry => entry.id === s.id);
   assert.equal(status.commit, null);
+});
+
+test('reconcile works after the task worktree was removed', () => {
+  const c = setup();
+  const s = c.prepare(task());
+  git(s.worktree, ['commit', '--allow-empty', '-m', 'feature work']);
+  git(c.root, ['merge', '--ff-only', s.branch]);
+  c.abandon(s.id);
+  rmSync(s.worktree, { recursive: true, force: true });
+  const reconciled = c.reconcile(s.id);
+  assert.equal(reconciled.integratedCommit.length, 40);
+  const status = c.status().find(entry => entry.id === s.id);
+  assert.equal(status.commit, reconciled.integratedCommit);
 });
 
 test('prepare creates an isolated branch and rejects duplicate feature ownership', () => {

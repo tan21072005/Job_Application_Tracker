@@ -468,7 +468,7 @@ export class AgentController {
   branchCommitState(state) {
     const commits = [];
     try {
-      commits.push(...this.git(state.worktree, ['log', '--format=%H', `${state.base}..${state.branch}`]).split('\n').filter(Boolean));
+      commits.push(...this.git(this.root, ['log', '--format=%H', `${state.base}..${state.branch}`]).split('\n').filter(Boolean));
     } catch {
       commits.push();
     }
@@ -485,7 +485,10 @@ export class AgentController {
 
   reconcile(id) {
     return this.locked(id, () => {
-      const state = this.load(id);
+      const path = this.statePath(id);
+      if (!existsSync(path)) throw Error('Task is not prepared.');
+      const state = JSON.parse(readFileSync(path, 'utf8'));
+      if (state.id !== id || typeof state.branch !== 'string' || typeof state.base !== 'string') throw Error('Invalid task state.');
       const { commits, integrated } = this.branchCommitState(state);
       state.branchCommits = commits;
       state.integratedCommit = integrated[0] || null;
