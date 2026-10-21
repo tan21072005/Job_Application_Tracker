@@ -27,6 +27,12 @@ import {
   parseEtagVersion
 } from './services/jobtrack-service.ts';
 import { createMcpRouter } from './routes/mcp.ts';
+import {
+  decideCredential,
+  parseBearerToken,
+  type BearerGrant,
+  type SessionIdentity
+} from './security/credential-policy.ts';
 import { fetchPageContent, extractJobDetails } from './services/url-fetcher.ts';
 import { SubscriptionCrawlerService } from './services/subscription-crawler.ts';
 import { CandidateProfileService } from './services/candidate-profile.ts';
@@ -176,37 +182,56 @@ async function createSession(userId: string, client: PoolClient | Pool = pool) {
 
 async function auth(req: Request, _res: Response, next: NextFunction) {
   try {
-    const authHeader = req.get('Authorization');
-    if (authHeader?.startsWith('Bearer ')) {
-      const plainToken = authHeader.slice(7).trim();
-      const tokenHash = createHash('sha256').update(plainToken).digest('hex');
+    const bearer = parseBearerToken(req.get('Authorization'));
+    let grant: BearerGrant | null = null;
+    let session: SessionIdentity | null = null;
+
+    if (bearer.present) {
+      const tokenHash = createHash('sha256').update(bearer.token).digest('hex');
       const grantRes = await pool.query(
         'SELECT user_id, scopes, client FROM ai_grants WHERE token_hash=$1 AND revoked_at IS NULL AND expires_at>CURRENT_TIMESTAMP',
         [tokenHash]
       );
       if (grantRes.rowCount) {
-        Object.assign(req, {
+        grant = {
           userId: grantRes.rows[0].user_id,
-          sessionId: 'ai-bearer-session',
           scopes: grantRes.rows[0].scopes || ['full_control'],
           client: grantRes.rows[0].client
-        });
-        return next();
+        };
+      }
+    } else {
+      const token = cookies(req.headers.cookie).jobtrack_session;
+      if (token) {
+        const verified = await jwtVerify(token, key, { algorithms: ['HS256'] }).catch(() => null);
+        if (verified) {
+          const payload = verified.payload;
+          if (uuid(payload.sub) && uuid(payload.sid)) {
+            const result = await pool.query(
+              'SELECT id FROM sessions WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL AND expires_at>CURRENT_TIMESTAMP',
+              [payload.sid, payload.sub]
+            );
+            if (result.rowCount) session = { userId: payload.sub, sessionId: payload.sid };
+          }
+        }
       }
     }
 
-    const token = cookies(req.headers.cookie).jobtrack_session;
-    if (!token) fail(401, 'Phiên đăng nhập đã hết hạn.', 'unauthorized');
-    const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] }).catch(() =>
-      fail(401, 'Phiên đăng nhập đã hết hạn.', 'unauthorized')
-    );
-    if (!uuid(payload.sub) || !uuid(payload.sid)) fail(401, 'Phiên đăng nhập đã hết hạn.', 'unauthorized');
-    const result = await pool.query(
-      'SELECT id FROM sessions WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL AND expires_at>CURRENT_TIMESTAMP',
-      [payload.sid, payload.sub]
-    );
-    if (!result.rowCount) fail(401, 'Phiên đăng nhập đã hết hạn.', 'unauthorized');
-    Object.assign(req, { userId: payload.sub, sessionId: payload.sid, scopes: ['*'] });
+    const decision = decideCredential({ bearerPresent: bearer.present, grant, session });
+    if (decision.kind === 'rejected') fail(401, 'Phiên đăng nhập đã hết hạn.', 'unauthorized');
+    if (decision.kind === 'grant') {
+      Object.assign(req, {
+        userId: decision.userId,
+        sessionId: decision.sessionId,
+        scopes: decision.scopes,
+        client: decision.client
+      });
+    } else {
+      Object.assign(req, {
+        userId: decision.userId,
+        sessionId: decision.sessionId,
+        scopes: decision.scopes
+      });
+    }
     next();
   } catch (error) {
     next(error);
