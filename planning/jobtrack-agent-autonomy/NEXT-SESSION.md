@@ -24,10 +24,11 @@ The user explicitly approved moving sandbox storage to `D:\Long-term`, using the
 5. Runtime fingerprint hashes actual executable bytes; evidence paths are constrained; reconcile preserves evidence on operational Git errors.
 6. Final aggregate fixtures: **95/95 agents +17/17 verdict**, no skips. Exact source hashes and logs are in hardening-evidence/CHECK-RESULTS.json.
 7. Real Docker synthetic pilot demonstrated read-only projection/root, private scratch, child/grandchild cleanup and host-connected/isolated-blocked TCP. Its own container was removed and absence verified. It is not a live worker or readiness receipt.
+8. **H1 schema 2 readiness contract** implemented in `tools/agent-control/readiness-v2.mjs` and independently reviewed three times (rounds: CHANGES REQUIRED, PASS_WITH_LIMITS, PASS_WITH_LIMITS). The contract is a total function of (report, trusted context, resolver) and gives the report no authority, but it is **not** isolation evidence and it has **no production consumer**. Record: `H1-REVIEW.md`. The trusted-context ownership sentence is now written into `READINESS-V2-PLAN.md`, `HARDENING-REVIEW.md`, `tools/agent-control/SAFETY-VERIFICATION.md` and `tools/agent-control/README.md` so no consumer can mistake conformance for proof.
 
 ## What is still incomplete
 
-**G-A remains not accepted.** Current schema1 receipt semantics, real adapter wiring, model transport allowlist, isolated check execution, trusted issuer and actual live-run binding remain unfinished. The legacy canary cannot satisfy the strengthened verifier. Never relabel ENOENT as DENIED or weaken fields to make it pass.
+**G-A remains not accepted.** The schema 2 contract exists and is reviewed, but the real adapter wiring, model transport allowlist, isolated check execution, trusted issuer and actual live-run binding remain unfinished. The legacy canary cannot satisfy the strengthened verifier. Never relabel ENOENT as DENIED or weaken fields to make it pass. The controller still verifies schema 1 receipts; switching it to schema 2 is the H6 wiring increment, and the trusted expected context must then be built by the issuer and the controller from maintainer-owned catalogs, never from a report, an evidence file, a receipt or a task field.
 
 The broader T1–T6 independent review requested changes. Four narrow security increments have passed independent review; that is not acceptance of the whole control plane. Read HARDENING-REVIEW.md for exact scope and READINESS-V2-PLAN.md for the dependency-ordered continuation.
 

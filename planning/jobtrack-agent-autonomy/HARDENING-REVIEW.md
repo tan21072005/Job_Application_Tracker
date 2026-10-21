@@ -32,7 +32,7 @@ The broader T1–T6 review is **CHANGES REQUIRED**, despite the four accepted na
 2. `role()` still uses the original worktree; it is not yet wired into a production container adapter.
 3. The check runner still uses `:workspace`; its actual host write confinement is unproven. Do not run untrusted changes through it.
 4. Environment binding still needs adapter identity, image/profile, network configuration, purpose and source/projection binding.
-5. `isolationReady()` and live-run audit need task/profile/projection binding; injected fixtures must never count as real worker evidence.
+5. `isolationReady()` and live-run audit need task/profile/projection binding; injected fixtures must never count as real worker evidence. Schema 2 conformance is **not** isolation evidence: the H1 contract in `tools/agent-control/readiness-v2.mjs` closes none of findings 1, 4 or 5, and it has no production consumer yet.
 6. The legacy canary producer lacks the newly required grandchild and liveness fields. It must fail closed until upgraded. Do not weaken the verifier to accept old output.
 
 Protected controller-owned directories remain necessary: filesystem check/open races cannot be solved by path validation alone. A self-computed projection hash is integrity evidence, not authorization. Dependency roots must come from a maintainer catalog.

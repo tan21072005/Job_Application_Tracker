@@ -12,12 +12,12 @@ Software work uses small dependency-ordered increments and a visible backlog. Se
 
 | ID | Deliverable | Depends on | Required acceptance |
 | --- | --- | --- | --- |
-| H1 | Receipt/evidence schema 2 and pure evaluator | Review this contract | Reject schema 1, unbound/stale/invalid reports and self-asserted verdicts |
+| H1 | Receipt/evidence schema 2 and pure evaluator | Review this contract | Reject schema 1, unbound/stale/invalid reports and self-asserted verdicts. **Done**: implemented in `tools/agent-control/readiness-v2.mjs`, three independent review rounds, see `H1-REVIEW.md`. The contract is **not** isolation evidence, see the note in the H5–H7 section |
 | H2 | Production Docker adapter with a fixed operation/probe catalog | H1 contract | Exact inspected mounts, UID/caps/rootfs/resource restrictions, no host secrets or Docker socket |
 | H3 | Actual model transport/broker with a narrow allowlist | H2 | Real transport positive control plus host-positive/isolated-negative general-egress pair |
 | H4 | Separate isolated fixed-check execution profile | H2 | Changed code cannot write/read outside declared scratch/projection; no production DB/provider access |
-| H5 | Trusted maintainer issuer and audit path | H1–H4 | Executes probes itself, derives verdicts, signs only passing evidence, no manual passed flag/report import |
-| H6 | Projection/adapter/receipt wiring at each execution boundary | H5 | Every planner/coder/reflector/reviewer/check uses exact staged projection and purpose-bound receipt |
+| H5 | Trusted maintainer issuer and audit path | H1–H4 | Executes probes itself, derives verdicts, signs only passing evidence, no manual passed flag/report import. The issuer builds the expected context from a **maintainer-owned catalog** (denied host paths, mount sources, allowlisted model endpoint, declared general egress endpoint, per-run issuer-held witness bindings) and never from the report, the evidence file, the receipt or any worker-writable source. Witness bindings are per-run secrets the report producer cannot compute |
+| H6 | Projection/adapter/receipt wiring at each execution boundary | H5 | Every planner/coder/reflector/reviewer/check uses exact staged projection and purpose-bound receipt. The controller rebuilds the expected context from the staged projection manifest plus that maintainer catalog at each execution boundary; the context is never derived from the report, the evidence file, the receipt or a task field |
 | H7 | Independent end-to-end acceptance and one scoped live canary task | H6 | Same source digest for checks/review, real worker audit, no fixture counted as live, gate remains blocked on any missing proof |
 | H8 | C03 residual API/MCP auth feature task | Separate approved lane after the execution path is safe | Fresh auth/Origin/MCP regression coverage and independent review |
 
@@ -49,6 +49,8 @@ General networking must remain blocked. Define and review the model transport/br
 Worker and check profiles are different contracts. A check runner needs isolated write/build scratch and approved dependencies, without an original repo mount, production database connectivity or inherited credentials. Missing dependencies are a blocker, not a reason to mount node_modules/secrets broadly.
 
 ## H5–H7: issuer and controller wiring
+
+A passing schema 2 receipt proves only that one report matched one trusted expected context, one trusted resolver and one trusted signing key; it is **not** evidence that the original checkout, the Git common directory, controller state, account files or credentials were unreachable, and no consumer may treat `gateA=true` from a schema 2 receipt as proof of isolation. The trusted expected context is the only authority in the contract, so the H5 issuer and the H6 controller must construct it from maintainer-owned catalogs and the staged projection — never from the report, the evidence file, the receipt or any worker-writable source — and must use issuer-held per-run witness bindings. Isolation is established only by the H2 adapter's independently inspected mounts, the H3 transport pair, the H4 check-runner confinement and the H5 issuer, and this contract becomes live-capable only after H7's independent end-to-end acceptance.
 
 The maintainer issuer runs the fixed trusted probe catalog itself. There is no arbitrary command, --passed flag or free-form report import path. It verifies projection/container configuration, derives results, atomically writes evidence, signs only a passing bound result and appends audit. Failure produces diagnostics and no receipt. Keep the signing key out of child/container environments.
 
