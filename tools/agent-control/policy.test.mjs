@@ -25,6 +25,7 @@ test('feature lanes and protected files enforce exact ownership', t => {
   assert.equal(assertOwnedPath(root, 'web', 'apps/web/src/page.tsx'), 'apps/web/src/page.tsx');
   for (const candidate of ['apps/api/src/a.ts', 'apps/Web/src/a.ts', 'apps/web/src/AGENTS.md', 'apps/web/src/.env.local', 'apps/web/src/.git/config', 'apps/web/src/package.json', 'apps/web/src/package-lock.json', 'apps/web/src/README.md', 'apps/web/src/secret.key', 'apps/web/src/agent-control/a.ts']) assert.throws(() => assertOwnedPath(root, 'web', candidate), candidate);
   assert.throws(() => assertOwnedPath(root, '__proto__', 'apps/web/src/a.ts'));
+  for (const candidate of ['packages/jobtrack-extension/accounts.txt', 'packages/jobtrack-extension/accounts-backup.txt', 'packages/jobtrack-extension/.claude/config.json']) assert.throws(() => assertOwnedPath(root, 'extension', candidate), candidate);
   fs.mkdirSync(path.join(root, 'apps/web/src/Panel'));
   assert.throws(() => assertOwnedPath(root, 'web', 'apps/web/src/panel/a.ts'));
 });
@@ -75,7 +76,7 @@ test('bounded changes reject oversized batches and possible credentials', t => {
   assert.throws(() => assertChangeSet(root, 'web', Array.from({ length: 21 }, (_, i) => change(`apps/web/src/${i}.ts`, ''))));
   assert.throws(() => assertChangeSet(root, 'web', [change(file, 'a'.repeat(256 * 1024 + 1))]));
   assert.throws(() => assertChangeSet(root, 'web', Array.from({ length: 9 }, (_, i) => change(`apps/web/src/${i}.txt`, 'a'.repeat(256 * 1024)))));
-  for (const content of ['const key = "sk-' + 'a'.repeat(30) + '";', '-----BEGIN PRIVATE KEY-----', 'const apiKey = "abcdefghijklmno";', 'const password = "abcdefghijklmnop";']) assert.throws(() => assertChangeSet(root, 'web', [change(file, content)]));
+  for (const content of ['const key = "sk-' + 'a'.repeat(30) + '";', 'jt_sec_' + 'a'.repeat(24), '-----BEGIN PRIVATE KEY-----', 'const apiKey = "abcdefghijklmno";', 'const password = "abcdefghijklmnop";']) assert.throws(() => assertChangeSet(root, 'web', [change(file, content)]));
 });
 
 test('new code rejects comments while strings URLs regex and template text are preserved', t => {
