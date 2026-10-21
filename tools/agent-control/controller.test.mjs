@@ -179,6 +179,33 @@ test('doctor semantics separate probe, isolation and live worker evidence', asyn
   assert.equal(c.isolationReady(), true);
 });
 
+test('reconcile records a commit that reached main after the task was abandoned', () => {
+  const c = setup();
+  const s = c.prepare(task());
+  c.abandon(s.id);
+  git(s.worktree, ['commit', '--allow-empty', '-m', 'feature work']);
+  git(c.root, ['merge', '--ff-only', s.branch]);
+  const reconciled = c.reconcile(s.id);
+  assert.equal(reconciled.branchCommits.length, 1);
+  assert.equal(reconciled.integratedCommit.length, 40);
+  const status = c.status().find(entry => entry.id === s.id);
+  assert.equal(status.commit, reconciled.integratedCommit);
+  assert.equal(c.git(c.root, ['branch', '--show-current']), 'main');
+  assert.equal(existsSync(s.worktree), true);
+});
+
+test('reconcile leaves an unintegrated branch without a commit', () => {
+  const c = setup();
+  const s = c.prepare(task());
+  c.abandon(s.id);
+  git(s.worktree, ['commit', '--allow-empty', '-m', 'feature work']);
+  const reconciled = c.reconcile(s.id);
+  assert.equal(reconciled.branchCommits.length, 1);
+  assert.equal(reconciled.integratedCommit, null);
+  const status = c.status().find(entry => entry.id === s.id);
+  assert.equal(status.commit, null);
+});
+
 test('prepare creates an isolated branch and rejects duplicate feature ownership', () => {
   const c = setup();
   const s = c.prepare(task());

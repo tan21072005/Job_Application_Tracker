@@ -461,7 +461,38 @@ export class AgentController {
   status() {
     return readdirSync(this.stateDir).filter(name => /^[a-z][a-z0-9-]*\.json$/.test(name)).map(name => {
       const state = JSON.parse(readFileSync(join(this.stateDir, name), 'utf8'));
-      return { id: state.id, feature: state.feature, status: state.status, branch: state.branch, worktree: state.worktree, commit: state.commit || null, error: state.error || null };
+      return { id: state.id, feature: state.feature, status: state.status, branch: state.branch, worktree: state.worktree, commit: state.commit || state.integratedCommit || null, error: state.error || null };
+    });
+  }
+
+  branchCommitState(state) {
+    const commits = [];
+    try {
+      commits.push(...this.git(state.worktree, ['log', '--format=%H', `${state.base}..${state.branch}`]).split('\n').filter(Boolean));
+    } catch {
+      commits.push();
+    }
+    const integrated = commits.filter(commit => {
+      try {
+        this.git(this.root, ['merge-base', '--is-ancestor', commit, 'main']);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    return { commits, integrated };
+  }
+
+  reconcile(id) {
+    return this.locked(id, () => {
+      const state = this.load(id);
+      const { commits, integrated } = this.branchCommitState(state);
+      state.branchCommits = commits;
+      state.integratedCommit = integrated[0] || null;
+      state.reconciledAt = new Date().toISOString();
+      this.save(state);
+      this.appendAudit({ id: state.id, event: 'registry-reconciled', branchCommits: commits.length, integratedCommit: state.integratedCommit });
+      return state;
     });
   }
 

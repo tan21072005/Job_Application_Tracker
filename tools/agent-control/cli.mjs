@@ -33,6 +33,7 @@ try {
     case 'check': result = await controller.check(option('--id')); break;
     case 'commit': result = controller.commit(option('--id')); break;
     case 'abandon': result = controller.abandon(option('--id')); break;
+    case 'reconcile': result = controller.reconcile(option('--id')); break;
     case 'run': result = await controller.run(read(option('--task'))); break;
     case 'dispatch': {
       const tasks = option('--tasks').split(',').map(read);
@@ -47,7 +48,7 @@ try {
       break;
     }
     case 'guard': result = { allowed: assertSafeCommand(read(option('--argv'))) !== false }; break;
-    default: throw Error('Use doctor|prepare|status|apply|check|commit|run|dispatch|guard|abandon.');
+    default: throw Error('Use doctor|prepare|status|apply|check|commit|run|dispatch|guard|abandon|reconcile.');
   }
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
   if (result?.status?.startsWith('blocked') || Array.isArray(result) && result.some(r => r.status?.startsWith('blocked'))) process.exitCode = 1;
