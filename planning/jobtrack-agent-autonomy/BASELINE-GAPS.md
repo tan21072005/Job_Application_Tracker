@@ -71,9 +71,9 @@ Kết luận mức: hệ thống **chưa được chứng nhận live**. 21/21 f
 
 Lần audit này chỉ xác minh các mục có thể kiểm chứng không phá hủy. Không sửa, không chạy migration/restore/load/payment.
 
-### 4.1 P0 — Origin/CSRF bypass kèm fallback Bearer → cookie (XÁC NHẬN LIVE)
+### 4.1 P0 — Origin/CSRF bypass kèm fallback Bearer → cookie (ĐÃ SỬA, commit `443b8ac`)
 
-Hai điểm nguồn trong `apps/api/src/server.ts`:
+Phát hiện ban đầu (giữ nguyên để đối chiếu) — hai điểm nguồn trong `apps/api/src/server.ts`:
 
 - `server.ts:229` — middleware `/api` bỏ qua kiểm tra `Origin` cho method ghi nếu header `Authorization` bắt đầu bằng `Bearer ` và path thuộc danh sách cho phép (`/applications`, `/ai`, `/pro`, `/datasets`, `/profile`, `/subscriptions`, `/mcp`, `/auth/extension`).
 - `server.ts:177-196` — `auth()` xử lý Bearer **chỉ khi grant hợp lệ**; nếu Bearer sai/hết hạn/đã thu hồi thì `grantRes.rowCount === 0` và hàm **rơi tiếp xuống cookie session** ở `server.ts:198` thay vì trả 401.
@@ -88,7 +88,19 @@ Probe không phá hủy (không dùng credential, không ghi dữ liệu) đã x
 | B: Origin nước ngoài + không Bearer | `403` | Origin có hiệu lực khi không có Bearer |
 | C: không Origin + không Bearer | `403` | Origin có hiệu lực |
 
-Phạm vi: chưa khai thác với session thật (phiên này không có và không được tạo tài khoản). Đã chứng minh **cơ chế bypass**, chưa chứng minh **tác động thực tế** trên browser thật. Task C03 cần regression khóa cả hai điểm: (1) Origin check không được bỏ qua chỉ vì có header Bearer; (2) Bearer không hợp lệ phải trả 401 chứ không fallback sang cookie. Không dùng fallback im lặng.
+Phạm vi tại thời điểm phát hiện: chưa khai thác với session thật. Đã chứng minh **cơ chế bypass**, chưa chứng minh **tác động thực tế** trên browser thật.
+
+**Trạng thái sau khi sửa (commit `443b8ac`, lane `api`):** Bearer có mặt nhưng không dùng được ⇒ **401**, không bao giờ rơi xuống cookie session. Chọn credential được tách thành policy thuần ở `apps/api/src/security/credential-policy.ts` và có regression test `apps/api/src/credential-policy.test.ts` (6 pass / 0 fail). Kiểm chứng end-to-end trên **DB test `jobtrack_test`** (DB vận hành `jobtrack` không bị chạm), đối chiếu bản chưa sửa với bản đã sửa chạy song song:
+
+| Probe | Bản chưa sửa | Bản đã sửa |
+| --- | --- | --- |
+| POST cross-origin + Bearer sai + cookie phiên nạn nhân | `422` (đã xác thực!) | **`401`** |
+| GET `/api/auth/me` + Bearer sai + cookie phiên hợp lệ | `200` (rơi xuống cookie) | **`401`** |
+| POST same-origin + Bearer sai + cookie phiên | `422` (rơi xuống cookie) | **`401`** |
+| POST chỉ cookie + Origin hợp lệ | `422` | `422` (không hồi quy) |
+| POST cross-origin + không Bearer | `403 invalid_origin` | `403 invalid_origin` (không đổi) |
+
+Bằng chứng đầy đủ: `AUTH-FIX-EVIDENCE.md`. Còn tồn đọng: Origin bypass vẫn dựa trên **hình thức header** chứ không phải grant đã xác thực — cần task riêng, không gộp vào bản sửa này. Chưa có review độc lập cho chính bản sửa (theo `AGENTS.md`, cần trước khi tích hợp chính thức).
 
 ### 4.2 Các mục còn lại — xác nhận source, chưa sửa
 
@@ -96,9 +108,9 @@ Phạm vi: chưa khai thác với session thật (phiên này không có và kh�
 | --- | --- | --- | --- |
 | G-02 | MCP package không có SDK MCP chính thức, chỉ phụ thuộc `pg` | `packages/jobtrack-mcp/package.json` | C14 — cần transport/client matrix |
 | G-03 | ATS/cover-letter dùng heuristic chấm điểm từ điểm, không gọi model | `apps/api/src/services/ai-pro-service.ts:122-129` (`score = matchRatio*55 + 25`) | C12 — UI phải phân biệt heuristic vs AI |
-| G-04 | Origin bypass ảnh hưởng nhóm route AI/MCP/datasets/subscriptions | `server.ts:235-244` | P0, nằm trong 4.1 |
+| G-04 | Origin bypass ảnh hưởng nhóm route AI/MCP/datasets/subscriptions | `server.ts:235-244` | P0 — đã đóng chain CSRF ở `443b8ac`; còn tồn đọng bypass theo hình thức header |
 | G-05 | `check:all` không gọi `agents:test` | `package.json:40` | C20 — controller chưa nằm trong gate chính |
-| G-06 | Sandbox live chưa dùng được | `doctor` probe | **AG02 BLOCKED** |
+| G-06 | Sandbox probe đã pass nhưng **cách ly đọc chưa có** | `CANARY-EVIDENCE.json` → `V01_readIsolation: false` | **AG02 PARTIAL** — G-A chưa đạt |
 
 Các gap còn lại trong `planning/jobtrack-full-completion/CURRENT-STATE.md` (crawler egress, billing, extension least-privilege, n8n streaming, mutation idempotency) **chưa được kiểm chứng lại** trong lượt này; giữ trạng thái "chưa xác minh", không coi là đã xác nhận lại.
 

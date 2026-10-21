@@ -6,9 +6,11 @@ Tài liệu này ghi trạng thái runtime đã **đo trong phiên này**, kèm 
 
 | Thành phần | URL | Cổng | PID node | Trạng thái |
 | --- | --- | --- | --- | --- |
-| Backend API | http://127.0.0.1:64366 | 64366 | 52948 | **LISTENING**, `/api/health` = 200 `{"status":"ok"}` |
+| Backend API | http://127.0.0.1:64366 | 64366 | 45824 | **LISTENING**, `/api/health` = 200 `{"status":"ok"}` |
 | Frontend Web (Vite) | http://127.0.0.1:64364 | 64364 | 42104 | **LISTENING**, `/` = 200, title `JobTrack — Hành trình ứng tuyển` |
 | PostgreSQL | 127.0.0.1:5432 | 5432 | 8776 | **LISTENING** (service có sẵn, không do lượt này khởi động) |
+
+> API chạy bằng `node --watch`, nên PID đổi mỗi khi source đổi. Sau khi tích hợp `443b8ac` (bản vá P0 auth), API đã tự restart và probe lại trên instance đang chạy: cross-origin + Bearer sai → **401**, cross-origin + không Bearer → **403**, `/api/ready` → **200 `version:6`**.
 
 Bằng chứng đo được:
 
