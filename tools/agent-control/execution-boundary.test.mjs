@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +18,8 @@ import { createDockerAdapter, DEFAULT_IMAGE } from './docker-adapter.mjs';
 import { createReadinessIssuer, dockerBinaryHash } from './issuer.mjs';
 
 const repositoryRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+
+const dockerReachable = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], { encoding: 'utf8', timeout: 30_000, windowsHide: true }).status === 0;
 
 function sourceFixture() {
   const root = mkdtempSync(join(tmpdir(), 'jobtrack-boundary-'));
@@ -131,7 +133,89 @@ test('the boundary refuses an issuer that produced no receipt', async () => {
   await assert.rejects(() => boundary.run({ worktree, id: 'web-one' }, { purpose: 'worker-read', files: ['apps/web/src/module.js'], sourceDigest: '1'.repeat(64) }), /produced no readiness receipt/);
 });
 
-const dockerReachable = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], { encoding: 'utf8', timeout: 30_000, windowsHide: true }).status === 0;
+test('a fixed check runs against the staged projection and passes', { skip: dockerReachable ? false : 'Docker is not reachable in this environment' }, async () => {
+  const runRoot = join('D:/Long-term', `jobtrack-boundary-check-${Date.now()}`);
+  mkdirSync(runRoot, { recursive: true });
+  const projection = join(runRoot, 'projection');
+  const scratch = join(runRoot, 'scratch');
+  const worktree = join(runRoot, 'worktree');
+  mkdirSync(join(projection, 'apps/web/src'), { recursive: true });
+  mkdirSync(join(worktree, 'apps/web/src'), { recursive: true });
+  mkdirSync(scratch, { recursive: true });
+  writeFileSync(join(projection, 'apps/web/src/module.js'), 'export const value = 1;\n');
+  writeFileSync(join(worktree, 'apps/web/src/module.js'), 'export const value = 1;\n');
+  const denied = [repositoryRoot, process.env.USERPROFILE ?? repositoryRoot].map(path => path.replaceAll('\\', '/'));
+  const credentialFile = join(runRoot, 'accounts.txt');
+  writeFileSync(credentialFile, 'fixture-only\n');
+  const egressServer = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end('{}');
+  });
+  await new Promise(resolve => egressServer.listen(0, '0.0.0.0', resolve));
+  const egressPort = egressServer.address().port;
+  const catalog = {
+    taskId: 'web-one',
+    feature: 'web',
+    base: 'base-sha',
+    sourceDigest: '1'.repeat(64),
+    projectionManifestHash: '2'.repeat(64),
+    policyHash: controlPlaneFingerprint(repositoryRoot),
+    environmentHash: '4'.repeat(64),
+    purpose: 'check-runner',
+    profileHash: '5'.repeat(64),
+    adapterId: 'jobtrack-docker-adapter-v1',
+    imageDigest: DEFAULT_IMAGE.split('@sha256:')[1],
+    cliHash: '7'.repeat(64),
+    nodeHash: '8'.repeat(64),
+    verifierImplementationHash: controlPlaneFingerprint(repositoryRoot),
+    modelEndpoint: 'http://127.0.0.1:9/v1',
+    generalEgressEndpoint: `http://${process.env.JT_EGRESS_HOST ?? '192.168.1.251'}:${egressPort}/general`,
+    deniedHostPaths: {
+      'host-repo-read': denied[0],
+      'host-home-read': denied[1],
+      'common-git-read': `${denied[0]}/.git`,
+      'control-state-read': `${denied[0]}/.agent-state`,
+      'host-credential-read': credentialFile.replaceAll('\\', '/'),
+      'projection-write': projection.replaceAll('\\', '/'),
+      'host-write': denied[0]
+    },
+    mountSources: { projection: projection.replaceAll('\\', '/'), scratch: scratch.replaceAll('\\', '/') },
+    dockerBinaryHash: dockerBinaryHash('docker'),
+    probeProgramHash: probeProgramHash(repositoryRoot)
+  };
+  const adapter = createDockerAdapter({ repo: repositoryRoot, runRoot, image: DEFAULT_IMAGE, deniedPaths: denied });
+  const issuer = createReadinessIssuer({
+    catalog,
+    key: 'k'.repeat(48),
+    adapterRoot: repositoryRoot,
+    evidenceRoot: join(runRoot, 'evidence'),
+    contextDirectory: join(runRoot, 'context'),
+    adapter,
+    broker: { probe: async () => ({ connected: true }) }
+  });
+  const boundary = createExecutionBoundary({
+    context: (state, request) => ({ ...catalog, taskId: state.id, purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
+    projection: { destinationFor: () => projection, scratchFor: () => scratch },
+    adapter,
+    issuer
+  });
+  let outcome;
+  try {
+    outcome = await boundary.run({ worktree, id: 'web-one' }, {
+      purpose: 'check-runner',
+      files: ['apps/web/src/module.js'],
+      sourceDigest: '1'.repeat(64),
+      command: ['node', '-e', 'const fs = require("node:fs"); process.stdout.write(fs.existsSync("apps/web/src/module.js") ? "CANDIDATE-VISIBLE" : "CANDIDATE-MISSING");']
+    });
+  } finally {
+    egressServer.close();
+    rmSync(runRoot, { recursive: true, force: true });
+  }
+  assert.equal(outcome.launched.status, 0);
+  assert.match(outcome.launched.stdout, /CANDIDATE-VISIBLE/);
+  assert.equal(outcome.receipt.binding.purpose, 'check-runner');
+});
+
 
 test('the boundary completes a run against the real issuer and the real adapter in a real container', { skip: dockerReachable ? false : 'Docker is not reachable in this environment' }, async () => {
   const runRoot = join('D:/Long-term', `jobtrack-boundary-live-${Date.now()}`);
@@ -180,7 +264,8 @@ test('the boundary completes a run against the real issuer and the real adapter 
       'host-write': denied[0]
     },
     mountSources: { projection: projection.replaceAll('\\', '/'), scratch: scratch.replaceAll('\\', '/') },
-    dockerBinaryHash: dockerBinaryHash('docker')
+    dockerBinaryHash: dockerBinaryHash('docker'),
+    probeProgramHash: probeProgramHash(repositoryRoot)
   };
   const adapter = createDockerAdapter({ repo: repositoryRoot, runRoot, image: DEFAULT_IMAGE, deniedPaths: denied });
   const issuer = createReadinessIssuer({
@@ -209,6 +294,7 @@ test('the boundary completes a run against the real issuer and the real adapter 
     });
   } finally {
     egressServer.close();
+    rmSync(runRoot, { recursive: true, force: true });
   }
   assert.equal(outcome.launched.status, 0);
   assert.match(outcome.launched.stdout, /GOT:hello from the boundary/);

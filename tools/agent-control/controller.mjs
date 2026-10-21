@@ -491,7 +491,7 @@ export class AgentController {
       let previous = '';
       try {
         await this.assertReadiness(state);
-        if (!this.adapters.worker) {
+        if (!this.adapters.worker && !this.adapters.boundary) {
           const probe = await this.sandboxProbe(state.worktree);
           if (probe.code !== 0 || probe.timedOut) throw Error(`Sandbox preflight failed; no model was invoked: ${probe.error.slice(-1500)}`);
         }

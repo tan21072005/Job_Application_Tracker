@@ -1,7 +1,7 @@
 {
   "kind": "readiness-acceptance-report",
-  "at": "2026-10-21T19:09:13.158Z",
-  "runId": "21f71152-8c54-400a-9aaa-99cb84e43aaf",
+  "at": "2026-10-21T19:47:20.039Z",
+  "runId": "5b312faf-4d2c-4360-8a7b-381852862cb1",
   "passed": true,
   "findings": [
     {
@@ -87,33 +87,35 @@
   ],
   "receipt": {
     "schemaVersion": 2,
-    "runId": "21f71152-8c54-400a-9aaa-99cb84e43aaf",
-    "issuedAt": "2026-10-21T19:09:10.793Z",
-    "expiresAt": "2026-10-21T19:24:10.793Z",
+    "runId": "5b312faf-4d2c-4360-8a7b-381852862cb1",
+    "issuedAt": "2026-10-21T19:47:17.269Z",
+    "expiresAt": "2026-10-21T20:02:17.269Z",
     "binding": {
       "taskId": "readiness-canary",
       "feature": "web",
       "base": "main",
       "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
       "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
-      "policyHash": "507349164dc7f75eb520e4c5aaff31f4da79b8b0a9afad70f1c03775a17784bd",
+      "policyHash": "8b7cc5b44e36b06df63dfd2af6a6f6201a2234d19ca6f2ebf71e7425ceba6690",
       "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
       "purpose": "worker-read",
       "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
       "adapterId": "jobtrack-docker-adapter-v1",
       "imageDigest": "44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
       "cliHash": "2726b1cce5c5805259ab3000c9521b790819f91381a2caa41f5b6fc588f46643",
-      "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87"
+      "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87",
+      "dockerBinaryHash": "834d45bd30c6d08f1045f39a48fda64cf563f89e6f217a0dac53742612634fe2",
+      "probeProgramHash": "ad2a798a5c9fd4701b7df12f4011f0d18be49e46965c2d6416b0d4c195edf195"
     },
     "evidence": {
-      "path": "21f71152-8c54-400a-9aaa-99cb84e43aaf.evidence.json",
-      "rawSha256": "126d46e541dee26a4cc3aca0d165a303166594fda82a3d6e920baf5e413b2e29",
-      "completedAt": "2026-10-21T19:09:10.596Z",
-      "bytes": 9692
+      "path": "5b312faf-4d2c-4360-8a7b-381852862cb1.evidence.json",
+      "rawSha256": "3df9f27aa1f4099590c2638e3437202a8f9488a5605ad8c0caf73c2285b7c4ff",
+      "completedAt": "2026-10-21T19:47:17.074Z",
+      "bytes": 9876
     },
     "verifier": {
       "id": "jobtrack-trusted-issuer-v2",
-      "implementationHash": "9890750ec796fe7f022b752e6877be7947e807b0356c18aa6e5cfddf144c5046"
+      "implementationHash": "35ecce37502ceae8bb7f83d2bbc5c3a7cd66c471fe472289ff95a31446b39705"
     },
     "derived": {
       "readIsolation": true,
@@ -123,9 +125,9 @@
       "egress": true,
       "gateA": true
     },
-    "signature": "ff274376cb7f8c726db0dc941049daecdfa02c3e67529e5e5921009f9af9778b"
+    "signature": "2fe10b1f1eb045b419b898b82eba434bde254b58137025429d57ebb9d2ef66ba"
   },
-  "signingKeyFingerprint": "5f88582e9ebd3b7d484ed090605d8c3ddd607cbb25f050f30fd07f852259ca6f",
+  "signingKeyFingerprint": "125e16cf9d0c27f1064e9d16ffda9c1a3701012351d5b744895b0cc85c0eb42c",
   "check": {
     "kind": "isolated-check-profile-not-readiness-receipt",
     "checkId": "build:api",
@@ -160,19 +162,19 @@
     "observedMounts": [
       {
         "kind": "candidate",
-        "source": "D:\\Long-term\\JobTrack-acceptance-21f71152\\candidate",
+        "source": "D:\\Long-term\\JobTrack-acceptance-5b312faf\\candidate",
         "target": "/candidate",
         "readOnly": true
       },
       {
         "kind": "scratch",
-        "source": "D:\\Long-term\\JobTrack-acceptance-21f71152\\scratch",
+        "source": "D:\\Long-term\\JobTrack-acceptance-5b312faf\\scratch",
         "target": "/scratch",
         "readOnly": false
       },
       {
         "kind": "fixtures",
-        "source": "D:\\Long-term\\JobTrack-acceptance-21f71152\\fixtures",
+        "source": "D:\\Long-term\\JobTrack-acceptance-5b312faf\\fixtures",
         "target": "/fixtures",
         "readOnly": true
       }
@@ -181,17 +183,17 @@
       {
         "target": "/candidate",
         "readOnly": true,
-        "source": "D:/Long-term/JobTrack-acceptance-21f71152/candidate"
+        "source": "D:/Long-term/JobTrack-acceptance-5b312faf/candidate"
       },
       {
         "target": "/scratch",
         "readOnly": false,
-        "source": "D:/Long-term/JobTrack-acceptance-21f71152/scratch"
+        "source": "D:/Long-term/JobTrack-acceptance-5b312faf/scratch"
       },
       {
         "target": "/fixtures",
         "readOnly": true,
-        "source": "D:/Long-term/JobTrack-acceptance-21f71152/fixtures"
+        "source": "D:/Long-term/JobTrack-acceptance-5b312faf/fixtures"
       }
     ]
   },

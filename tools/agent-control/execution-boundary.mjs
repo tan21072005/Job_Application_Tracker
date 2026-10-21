@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { PROJECTION_TARGET } from './docker-adapter.mjs';
 
 export const BOUNDARY_PURPOSES = Object.freeze(['worker-read', 'check-runner']);
 export const BINDING_EQUALITY_FIELDS = Object.freeze(['taskId', 'feature', 'base', 'purpose', 'adapterId']);
@@ -13,6 +14,7 @@ export function sha256File(path) {
 export function stageProjection({ files, sourceRoot, destination }) {
   if (!Array.isArray(files) || !files.length) throw Error('Projection needs at least one file.');
   const root = resolve(destination);
+  rmSync(root, { recursive: true, force: true });
   mkdirSync(root, { recursive: true });
   const manifest = [];
   for (const file of files) {
@@ -88,6 +90,7 @@ export function createExecutionBoundary(options) {
     if (!BOUNDARY_PURPOSES.includes(purpose)) throw Error('Execution purpose is invalid.');
     const scratchRoot = request.scratchRoot ?? projection.scratchFor(state);
     mkdirSync(scratchRoot, { recursive: true });
+    if (!Array.isArray(request.files) || !request.files.length) throw Error('The execution request must list the files to stage.');
     const staged = stageProjection({
       files: request.files,
       sourceRoot: state.worktree,
@@ -138,6 +141,7 @@ export function createExecutionBoundary(options) {
         projection: prepared.staged.root,
         scratch: prepared.scratchRoot,
         command: request.command ?? [],
+        workdir: PROJECTION_TARGET,
         stdin: request.instruction ?? '',
         binding: prepared.binding,
         receipt: prepared.receipt

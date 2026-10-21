@@ -55,7 +55,7 @@ export function buildCheckArgs(options) {
   const args = [
     mode,
     ...(mode === 'run' ? ['--rm'] : []),
-    ...buildRunArgs({ image, runId }).slice(1),
+    ...buildRunArgs({ image, runId, role: 'check' }).slice(1),
     ...mounts.flatMap(mount => ['--mount', `type=bind,source=${mount.source},target=${mount.target}${mount.readOnly ? ',readonly' : ''}`]),
     ...Object.entries(env).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
     image,

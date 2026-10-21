@@ -1,13 +1,13 @@
 {
   "kind": "fixture-check-record-not-readiness-receipt",
-  "capturedAt": "2026-10-21T19:11:36.442Z",
-  "note": "The control plane fixture record of this increment. The digest of every source file below is the file that was executed. The recorded counts are the counts of the run that produced the archived logs. A fixture record is never a readiness receipt and no live worker ran.",
+  "capturedAt": "2026-10-21T19:48:46.204Z",
+  "note": "The control plane fixture record of this increment. Every source digest below is the file that was executed and every count is parsed from the archived log that the record hashes. A fixture record is never a readiness receipt and no live worker ran.",
   "sourceSha256": {
-    "tools/agent-control/controller.mjs": "0495cf117ba66bf00c2802a4336f2ebe47fad5b23c71e9fdbde0de7c1da94304",
+    "tools/agent-control/controller.mjs": "3c586d33a6cba34e085cd170847a32ea4b5a1b494eced5d70f99366aca89b42f",
     "tools/agent-control/controller.test.mjs": "48f9d622605aef6d97b2e3e17c8b3706ff20f8ae099da6fb753f6c86e892fd82",
-    "tools/agent-control/docker-adapter.mjs": "1ee4c02026b9e4e743f6fd3b43097666ca6c854ada0a88ded31b6db64507d13d",
-    "tools/agent-control/issuer.mjs": "0e8254c79bde1408d19d00bfa1af3f02959c7318d8ed4392f331492a6629eab4",
-    "tools/agent-control/execution-boundary.mjs": "270b3c4fe56718223b821945fac129c043a8e3fde8930b565bc974de95667f69",
+    "tools/agent-control/docker-adapter.mjs": "8d105afde8a9de8100aa659ea73ad1f0afb4bb91a32cf52d4891d26f8cc0266a",
+    "tools/agent-control/execution-boundary.mjs": "eebe1dcb30a72cd8b1a8cd854467280a8e50e66d7ffc58bb1d62a0ebb9d50112",
+    "tools/agent-control/issuer.mjs": "1044e9f287aa08078c16c8bf72e732cd74029d2689e2388afafd9aec56855ccf",
     "tools/agent-control/projection.mjs": "8fe3d1f305f6c14a367fdec66f5ea3a1eaa8214011077231a8455cfe92f631b4",
     "tools/agent-control/projection.test.mjs": "96a6225b6803b34c217bb1ae1a9efbed30e84b13df22679fdd22633fb1332bfa",
     "tools/sandbox/isolation-probe.mjs": "ad2a798a5c9fd4701b7df12f4011f0d18be49e46965c2d6416b0d4c195edf195",
@@ -26,14 +26,16 @@
       ],
       "exitCode": 0,
       "counts": {
-        "tests": 208,
-        "pass": 208,
+        "tests": 207,
+        "pass": 207,
         "fail": 0,
         "cancelled": 0,
-        "skipped": 0
+        "skipped": 0,
+        "todo": 0
       },
       "log": "agents-fixture-tests.txt",
-      "logSha256": "3b33ed0a873d432dc6a9b8926027c3434cf62e69ede61fce46a49159acad7685"
+      "logSha256": "3c4d58620ace7d4b17d2937684e9ce7322ed33dcf020de5c1b740c2acfaa1b59",
+      "logBytes": 15691
     },
     {
       "command": [
@@ -49,13 +51,15 @@
         "pass": 17,
         "fail": 0,
         "cancelled": 0,
-        "skipped": 0
+        "skipped": 0,
+        "todo": 0
       },
       "log": "verdict-fixture-tests.txt",
-      "logSha256": "81f69950b8704d86c0d6e1c1c3a14998cd30643990cdaaa3516c4537af762ca5"
+      "logSha256": "2444d224a3112983c51fe48abfa5860a6c281931a7a6ea6440d34a596509bd2c",
+      "logBytes": 1236
     }
   ],
   "readinessReceiptIssued": false,
   "liveWorkerRunVerified": false,
-  "textNormalization": "Archived text files use LF. logSha256 hashes the actual archived UTF-8 bytes."
+  "textNormalization": "Archived text files are UTF-8 without a byte order mark and use LF line endings. logSha256 hashes the actual archived bytes."
 }

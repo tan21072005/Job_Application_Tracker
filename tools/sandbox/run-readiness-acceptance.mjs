@@ -5,7 +5,7 @@ import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'no
 import { join } from 'node:path';
 import { createDockerAdapter, DEFAULT_IMAGE, canonicalSource, forbiddenHostPaths, toContainerPath } from '../agent-control/docker-adapter.mjs';
 import { assertCheckProfile, buildCheckArgs, buildCheckEnvironment, checkEvidence, runIsolatedCheck } from '../agent-control/check-profile.mjs';
-import { controlPlaneFingerprint } from '../agent-control/fingerprint.mjs';
+import { controlPlaneFingerprint, probeProgramHash } from '../agent-control/fingerprint.mjs';
 import { createTransportBroker, createTransportResponder } from '../agent-control/transport.mjs';
 import { createReadinessIssuer, dockerBinaryHash } from '../agent-control/issuer.mjs';
 
@@ -76,6 +76,7 @@ const catalog = {
   adapterId: 'jobtrack-docker-adapter-v1',
   imageDigest: DEFAULT_IMAGE.split('@sha256:')[1],
   dockerBinaryHash: dockerBinaryHash('docker'),
+  probeProgramHash: probeProgramHash(adapterRoot),
   cliHash: createHash('sha256').update('codex-cli-0.163.0-alpha.10.2').digest('hex'),
   nodeHash: createHash('sha256').update(process.version).digest('hex'),
   verifierImplementationHash: createHash('sha256').update(readFileSync(join(adapterRoot, 'tools/agent-control/readiness-v2.mjs'), 'utf8')).digest('hex'),
@@ -203,8 +204,9 @@ record('the check profile guard accepted the check arguments', guardError === nu
 record('the check ran in the isolated profile and was refused the candidate write', check?.observed?.candidateRead?.ok === true && check?.observed?.candidateWrite?.ok === false, check?.observed ?? null);
 record('the check saw no database, provider or secret variable', check?.observed?.environment && Object.keys(check.observed.environment).length === 0, check?.observed?.environment ?? null);
 record('the gate stays blocked when a proof is missing', blockedProbe?.receipt === null && typeof blockedProbe?.diagnostics === 'string', blockedProbe?.diagnostics ?? null);
-const workerContainers = spawnSync('docker', ['ps', '-a', '--filter', 'label=jobtrack.role=worker', '--format', '{{.ID}}'], { encoding: 'utf8', timeout: 30_000, windowsHide: true }).stdout?.trim() ?? '';
-record('no worker container exists after this acceptance', workerContainers.length === 0, workerContainers);
+const containerQuery = spawnSync('docker', ['ps', '-a', '--filter', 'label=jobtrack.role=worker', '--format', '{{.ID}}'], { encoding: 'utf8', timeout: 30_000, windowsHide: true });
+const workerContainers = containerQuery.status === 0 ? (containerQuery.stdout ?? '').trim() : null;
+record('no worker container exists after this acceptance', workerContainers === '', workerContainers ?? 'the container runtime could not be queried');
 
 const passed = findings.every(finding => finding.passed);
 const report = {

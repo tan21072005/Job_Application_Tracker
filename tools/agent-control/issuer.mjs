@@ -89,6 +89,8 @@ export function buildTrustedContext(catalog, runId, task = {}) {
     imageDigest: catalog.imageDigest,
     cliHash: catalog.cliHash,
     nodeHash: catalog.nodeHash,
+    dockerBinaryHash: catalog.dockerBinaryHash,
+    probeProgramHash: catalog.probeProgramHash,
     verifierImplementationHash: catalog.verifierImplementationHash,
     modelEndpoint: catalog.modelEndpoint,
     generalEgressEndpoint: catalog.generalEgressEndpoint,
@@ -225,7 +227,9 @@ export function buildEvidenceFromProbe(input) {
       adapterId: trusted.adapterId,
       imageDigest: observedImageId,
       cliHash: trusted.cliHash,
-      nodeHash: trusted.nodeHash
+      nodeHash: trusted.nodeHash,
+      dockerBinaryHash: trusted.dockerBinaryHash,
+      probeProgramHash: trusted.probeProgramHash
     },
     catalog: { probeCatalogHash: probeCatalogHash(), commandIds: commands },
     executions,
@@ -374,9 +378,9 @@ export function createReadinessIssuer(options = {}) {
       }
       let container = null;
       try {
-        container = inspectContainer(docker, run.containerId, dockerPrefix);
+        container = inspectContainer(adapterDocker, run.containerId, adapterPrefix);
       } catch (error) {
-        removeContainer(docker, run.containerId, dockerPrefix);
+        removeContainer(adapterDocker, run.containerId, adapterPrefix);
         return fail(`The issuer could not confirm the container that produced the evidence: ${String(error && error.message ? error.message : error)}`);
       }
       try {
@@ -480,7 +484,7 @@ export function createReadinessIssuer(options = {}) {
       });
       return { runId, evidence, evidencePath: receipt ? evidencePath : null, evidenceHash: receipt ? evidenceHash : null, receipt, diagnostics, trusted, payloadHash };
       } finally {
-        removeContainer(docker, run.containerId, dockerPrefix);
+        removeContainer(adapterDocker, run.containerId, adapterPrefix);
       }
     }
   };

@@ -90,7 +90,7 @@ export function buildMountArgs({ projection, scratch }) {
   return mounts.flatMap(mount => ['--mount', `type=bind,source=${mount.source},target=${mount.target}${mount.readOnly ? ',readonly' : ''}`]);
 }
 
-export function buildRunArgs({ image, runId, role = 'probe', memory = DEFAULT_MEMORY, pids = DEFAULT_PIDS, cpus = DEFAULT_CPUS, tmpfs = DEFAULT_TMPFS }) {
+export function buildRunArgs({ image, runId, role = 'probe', workdir = SCRATCH_TARGET, memory = DEFAULT_MEMORY, pids = DEFAULT_PIDS, cpus = DEFAULT_CPUS, tmpfs = DEFAULT_TMPFS }) {
   return [
     'run',
     '--name', `jobtrack-${runId}`,
@@ -107,7 +107,7 @@ export function buildRunArgs({ image, runId, role = 'probe', memory = DEFAULT_ME
     '--cpus', cpus,
     '--tmpfs', tmpfs,
     '--env', 'HOME=/nonexistent',
-    '--workdir', SCRATCH_TARGET
+    '--workdir', workdir
   ];
 }
 
@@ -324,13 +324,13 @@ export function assertContainerMatchesDeclaration(observation, { imageDigest, ex
 }
 
 export function buildLaunchArgs(options) {
-  const { image, runId, projection, scratch, command, mode = 'run' } = options;
+  const { image, runId, projection, scratch, command, mode = 'run', workdir = SCRATCH_TARGET } = options;
   assertPinnedImage(image);
   if (!Array.isArray(command) || !command.length) throw Error('Adapter launch needs a command.');
   const args = [
     mode,
     ...(mode === 'run' ? ['--rm'] : []),
-    ...buildRunArgs({ image, runId, role: 'worker' }).slice(1),
+    ...buildRunArgs({ image, runId, role: 'worker', workdir }).slice(1),
     ...buildMountArgs({ projection, scratch }),
     image,
     ...command
@@ -508,7 +508,7 @@ export function createDockerAdapter(options = {}) {
       resolveRunPaths(projection, scratch);
       const command = Array.isArray(launchOptions.command) ? launchOptions.command : [];
       if (!command.length) throw Error('Adapter launch needs a command.');
-      const args = buildLaunchArgs({ image, runId, projection, scratch, command, mode: 'create' });
+      const args = buildLaunchArgs({ image, runId, projection, scratch, command, mode: 'create', workdir: launchOptions.workdir ?? SCRATCH_TARGET });
       const mounts = declaredMounts(projection, scratch);
       assertNoHostAccess(args, forbidden, mounts, { image });
       const created = runDocker(['create', '-i', ...args.slice(1)], '', launchOptions.timeoutMs ?? 120_000);
