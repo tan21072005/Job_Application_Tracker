@@ -1,0 +1,12 @@
+{
+  "id": "extension-example",
+  "feature": "extension",
+  "objective": "Mẫu chưa được giao: cải thiện thông báo lỗi lưu tin của extension theo yêu cầu được xác nhận trước khi chạy.",
+  "acceptance": [
+    "Chỉ thay đổi phạm vi lane extension được policy cho phép.",
+    "Không mở rộng quyền manifest hoặc sửa API contract.",
+    "Không đưa token vào thông báo, log hoặc code và không thêm comment."
+  ],
+  "checks": ["test:extension"],
+  "dependencies": []
+}
