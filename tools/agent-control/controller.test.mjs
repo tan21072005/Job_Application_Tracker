@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync, linkSync, statSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -41,7 +41,7 @@ function readyReceipt(controller, state, overrides = {}) {
   };
   return signReadinessReceipt(payload, readinessKey);
 }
-function setup(adapters = {}) {
+function setup(adapters = {}, preserveConfiguredRuntime = false) {
   const root = mkdtempSync(join(tmpdir(), 'jobtrack-agents-test-'));
   write(root, '.gitignore', '.agent-state/\n.worktrees/\n');
   write(root, 'package.json', '{}\n');
@@ -49,12 +49,14 @@ function setup(adapters = {}) {
   write(root, 'apps/web/src/existing.js', 'export const version = 1;\n');
   write(root, 'apps/api/src/existing.js', 'export const version = 1;\n');
   write(root, '.agent-state/readiness/evidence.json', 'evidence');
+  write(root, 'codex.exe', 'fixture runtime never executed');
   git(root, ['init', '-b', 'main']);
   git(root, ['config', 'user.name', 'Agent Fixture']);
   git(root, ['config', 'user.email', 'agent-fixture@example.test']);
   git(root, ['add', '--', '.gitignore', 'package.json', 'tools', 'apps']);
   git(root, ['commit', '-m', 'fixture baseline']);
   const controller = new AgentController(root, adapters);
+  if (!preserveConfiguredRuntime) controller.codexCommand = join(root, 'codex.exe');
   const provided = adapters.readiness;
   controller.adapters.readiness = provided ?? (async state => readyReceipt(controller, state));
   return controller;
@@ -69,7 +71,7 @@ test('sandbox probes use the executable supplied by the running Codex app', asyn
   let c;
   try {
     process.env.CODEX_CLI_PATH = executable;
-    c = setup();
+    c = setup({}, true);
   } finally {
     if (previous === undefined) delete process.env.CODEX_CLI_PATH;
     else process.env.CODEX_CLI_PATH = previous;
@@ -362,4 +364,61 @@ test('manual source edits cannot bypass the proposal policy', async () => {
   write(s.worktree, 'apps/web/src/new.js', 'export const unreviewed = true;');
   await assert.rejects(() => c.check(s.id), /Unbrokered/);
   assert.throws(() => c.commit(s.id), /Unbrokered/);
+});
+
+test('the environment fingerprint binds executable bytes even when size and mtime are unchanged', () => {
+  const c = setup();
+  const fixedTime = new Date('2026-10-21T00:00:00.000Z');
+  utimesSync(c.codexCommand, fixedTime, fixedTime);
+  const before = c.environmentFingerprint();
+  const stat = statSync(c.codexCommand);
+  writeFileSync(c.codexCommand, Buffer.alloc(stat.size, 120));
+  utimesSync(c.codexCommand, stat.atime, stat.mtime);
+  assert.notEqual(c.environmentFingerprint(), before);
+});
+
+test('an unresolved PATH executable cannot produce a verifiable environment fingerprint', () => {
+  const c = setup();
+  c.codexCommand = 'codex';
+  assert.throws(() => c.environmentFingerprint(), /absolute|executable/);
+});
+
+test('evidence targets reject ancestor junctions and hard linked files', () => {
+  const c = setup();
+  const outside = join(c.root, 'external-fixture');
+  mkdirSync(outside);
+  writeFileSync(join(outside, 'canary.json'), '{}');
+  symlinkSync(outside, join(c.stateDir, 'redirect'), process.platform === 'win32' ? 'junction' : 'dir');
+  assert.equal(c.resolveEvidenceTarget('redirect/canary.json').exists, false);
+  linkSync(join(outside, 'canary.json'), join(c.stateDir, 'aliased.json'));
+  assert.equal(c.resolveEvidenceTarget('aliased.json').exists, false);
+});
+
+test('evidence targets reject protected names, traversal and noncanonical paths', () => {
+  const c = setup();
+  write(c.stateDir, '.env', 'synthetic-marker');
+  for (const path of ['.env', '../external.json', 'readiness\\evidence.json', '/absolute.json']) assert.equal(c.resolveEvidenceTarget(path).exists, false, path);
+});
+
+test('reconcile refuses Git log errors without overwriting previous evidence', () => {
+  const c = setup();
+  const state = c.prepare(task());
+  c.reconcile(state.id);
+  const before = readFileSync(c.statePath(state.id), 'utf8');
+  const original = c.git.bind(c);
+  c.git = (cwd, args) => { if (args[0] === 'log') throw Error('fixture Git unavailable'); return original(cwd, args); };
+  assert.throws(() => c.reconcile(state.id), /Git unavailable/);
+  assert.equal(readFileSync(c.statePath(state.id), 'utf8'), before);
+});
+
+test('reconcile distinguishes ancestry exit one from operational errors', () => {
+  const c = setup();
+  const state = c.prepare(task());
+  c.git = (cwd, args) => {
+    if (args[0] === 'log') return 'a'.repeat(40);
+    const error = Error('fixture merge-base failure');
+    error.gitExitCode = 128;
+    throw error;
+  };
+  assert.throws(() => c.branchCommitState(state), /merge-base failure/);
 });

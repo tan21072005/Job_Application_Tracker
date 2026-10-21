@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, lstatSync, realpathSync, readdirSync, rmdirSync } from 'node:fs';
 import { resolve, relative, join, dirname, isAbsolute, basename } from 'node:path';
 import { release } from 'node:os';
-import { FEATURES, assertChangeSet, assertOwnedPath } from './policy.mjs';
+import { FEATURES, assertChangeSet, assertOwnedPath, assertReadableSourcePath } from './policy.mjs';
 import { verifyReadinessReceipt } from './readiness.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -41,7 +41,12 @@ export class AgentController {
 
   git(cwd, args) {
     const result = spawnSync('rtk', ['proxy', 'git', '-c', `safe.directory=${cwd.replaceAll('\\', '/')}`, ...args], { cwd, shell: false, windowsHide: true, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024, timeout: 30_000 });
-    if (result.error || result.status !== 0) throw Error(redact(result.error?.message || result.stderr || 'Git operation failed.'));
+    if (result.error || result.status !== 0) {
+      const error = Error(redact(result.error?.message || result.stderr || 'Git operation failed.'));
+      error.gitExitCode = result.status;
+      error.gitSpawnFailure = Boolean(result.error || result.signal);
+      throw error;
+    }
     return result.stdout.trim();
   }
 
@@ -91,22 +96,31 @@ export class AgentController {
 
   resolveEvidenceTarget(path) {
     if (typeof path !== 'string' || !path) return { exists: false, sha256: null };
-    const base = realpathSync(this.stateDir);
-    const candidate = resolve(base, path);
-    const rel = relative(base, candidate);
-    if (rel.startsWith('..') || isAbsolute(rel)) return { exists: false, sha256: null };
-    if (!existsSync(candidate)) return { exists: false, sha256: null };
-    return { exists: true, sha256: hash(readFileSync(candidate)) };
+    try {
+      const normalized = assertReadableSourcePath(path);
+      const base = realpathSync(this.stateDir);
+      let candidate = base;
+      const parts = normalized.split('/');
+      for (const [index, part] of parts.entries()) {
+        if (!readdirSync(candidate).includes(part)) return { exists: false, sha256: null };
+        candidate = join(candidate, part);
+        const stat = lstatSync(candidate);
+        if (stat.isSymbolicLink() || index !== parts.length - 1 && !stat.isDirectory()) return { exists: false, sha256: null };
+        if (index === parts.length - 1 && (!stat.isFile() || stat.nlink !== 1 || stat.size > 4 * 1024 * 1024)) return { exists: false, sha256: null };
+      }
+      const rel = relative(base, realpathSync(candidate));
+      if (rel.startsWith('..') || isAbsolute(rel)) return { exists: false, sha256: null };
+      return { exists: true, sha256: hash(readFileSync(candidate)) };
+    } catch {
+      return { exists: false, sha256: null };
+    }
   }
 
   environmentFingerprint() {
-    let binary = 'unknown';
-    try {
-      const stat = lstatSync(this.codexCommand);
-      binary = `${stat.size}:${Math.round(stat.mtimeMs)}`;
-    } catch {
-      binary = 'missing';
-    }
+    if (!isAbsolute(this.codexCommand)) throw Error('Readiness requires an absolute Codex executable.');
+    const stat = lstatSync(this.codexCommand);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw Error('Readiness executable must be a regular file.');
+    const binary = hash(readFileSync(this.codexCommand));
     return hash(JSON.stringify({
       platform: process.platform,
       arch: process.arch,
@@ -468,18 +482,14 @@ export class AgentController {
   }
 
   branchCommitState(state) {
-    const commits = [];
-    try {
-      commits.push(...this.git(this.root, ['log', '--format=%H', `${state.base}..${state.branch}`]).split('\n').filter(Boolean));
-    } catch {
-      commits.push();
-    }
+    const commits = this.git(this.root, ['log', '--format=%H', `${state.base}..${state.branch}`]).split('\n').filter(Boolean);
     const integrated = commits.filter(commit => {
       try {
         this.git(this.root, ['merge-base', '--is-ancestor', commit, 'main']);
         return true;
-      } catch {
-        return false;
+      } catch (error) {
+        if (error.gitExitCode === 1 && !error.gitSpawnFailure) return false;
+        throw error;
       }
     });
     return { commits, integrated };
