@@ -71,10 +71,12 @@ test('the check profile keeps the containment controls of the worker profile', (
   assert.ok(args.includes('CANDIDATE_DIGEST=abc'));
 });
 
-test('the check profile names the pinned image before the command', () => {
+test('the check profile names the pinned image before the command and removes its container', () => {
   const { args } = build();
   assert.ok(args.includes(DEFAULT_IMAGE), 'check arguments must name the pinned image');
   assert.equal(args.indexOf(DEFAULT_IMAGE) < args.indexOf('check.mjs'), true);
+  assert.ok(args.includes('--rm'), 'the check container must be removed when it exits');
+  assert.equal(args[0], 'run');
 });
 
 test('the check environment never carries a database, provider or secret variable', () => {

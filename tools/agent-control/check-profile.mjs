@@ -64,7 +64,8 @@ export function buildCheckArgs(options) {
     { kind: 'fixtures', source: fixtures, target: CHECK_FIXTURE_TARGET, readOnly: true }
   ];
   const args = [
-    ...buildRunArgs({ image, runId }),
+    'run', '--rm',
+    ...buildRunArgs({ image, runId }).slice(1),
     ...mounts.flatMap(mount => ['--mount', `type=bind,source=${mount.source},target=${mount.target}${mount.readOnly ? ',readonly' : ''}`]),
     ...Object.entries(env).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
     image,

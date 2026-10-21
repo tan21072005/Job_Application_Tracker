@@ -28,32 +28,29 @@
   "exitCode": 0,
   "stdoutHash": "163523eda63d54c0bcb1c4fa5ac4375fcafc00785220765a481a7a34d9076abb",
   "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "runId": "32113726-51de-445c-9029-ed350ebfa111",
-  "base": "D:\\Long-term\\JobTrack-check-32113726",
+  "runId": "1f30b076-af68-4ff4-8ef5-3bc6025296c4",
+  "base": "D:\\Long-term\\JobTrack-check-1f30b076",
+  "guardError": null,
   "mounts": [
     {
       "target": "/candidate",
       "readOnly": true,
-      "source": "D:/Long-term/JobTrack-check-32113726/candidate"
+      "source": "D:/Long-term/JobTrack-check-1f30b076/candidate"
     },
     {
       "target": "/scratch",
       "readOnly": false,
-      "source": "D:/Long-term/JobTrack-check-32113726/scratch"
+      "source": "D:/Long-term/JobTrack-check-1f30b076/scratch"
     },
     {
       "target": "/fixtures",
       "readOnly": true,
-      "source": "D:/Long-term/JobTrack-check-32113726/fixtures"
+      "source": "D:/Long-term/JobTrack-check-1f30b076/fixtures"
     }
   ],
   "forbiddenHostPaths": [
-    "D:\\Project\\Job_Application_Tracker",
-    "C:\\Users\\Admin",
-    ".git",
-    "Docker.sock",
-    "sandbox",
-    "AppData"
+    "D:/Project/Job_Application_Tracker",
+    "C:/Users/Admin"
   ],
   "stdoutTail": "{\"candidateRead\":{\"ok\":true,\"bytes\":24},\"candidateWrite\":{\"ok\":false,\"code\":\"EROFS\"},\"fixtureRead\":{\"ok\":true,\"bytes\":3},\"scratchWrite\":{\"ok\":true},\"hostWrite\":{\"ok\":false,\"code\":\"EROFS\"},\"environment\":{}}",
   "stderrTail": ""

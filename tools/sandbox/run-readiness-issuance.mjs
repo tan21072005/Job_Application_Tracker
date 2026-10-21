@@ -144,6 +144,7 @@ const report = {
   evidencePath: result?.evidencePath ?? null,
   evidenceHash: result?.evidenceHash ?? null,
   receipt: result?.receipt ?? null,
+  signingKeyFingerprint: createHash('sha256').update(signingKey).digest('hex'),
   diagnostics: result?.diagnostics ?? null,
   audit,
   limitations: [

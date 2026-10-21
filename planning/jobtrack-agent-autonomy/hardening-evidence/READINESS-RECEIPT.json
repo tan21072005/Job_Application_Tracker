@@ -1,43 +1,36 @@
 {
   "kind": "readiness-receipt",
-  "runId": "e20fadab-1340-44b8-ada0-61c9e1c048e1",
-  "base": "D:\\Long-term\\JobTrack-issuance-e20fadab",
+  "runId": "40cab98e-9267-49ca-86a8-c8f848c37eea",
+  "base": "D:\\Long-term\\JobTrack-issuance-40cab98e",
   "catalog": {
     "taskId": "readiness-canary",
     "feature": "web",
     "base": "main",
-    "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
-    "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
-    "policyHash": "153fbdbd324d43a426ac74f91243e4b0072370445708cc5d5d911a6f0805c7b6",
-    "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
     "purpose": "worker-read",
-    "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
     "adapterId": "jobtrack-docker-adapter-v1",
     "imageDigest": "44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
-    "cliHash": "2726b1cce5c5805259ab3000c9521b790819f91381a2caa41f5b6fc588f46643",
-    "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87",
-    "verifierImplementationHash": "9890750ec796fe7f022b752e6877be7947e807b0356c18aa6e5cfddf144c5046",
+    "policyHash": "bd0d4e57726730d5fc71b724f2b74a6dd95059cd207846847bdcd713628dbb4b",
     "modelEndpoint": "http://127.0.0.1:8099/v1/chat",
-    "generalEgressEndpoint": "http://127.0.0.1:8098/general",
+    "generalEgressEndpoint": "http://192.168.1.251:8098/general",
     "mountSources": {
-      "projection": "D:/Long-term/JobTrack-issuance-e20fadab/projection",
-      "scratch": "D:/Long-term/JobTrack-issuance-e20fadab/scratch"
+      "projection": "D:/Long-term/JobTrack-issuance-40cab98e/projection",
+      "scratch": "D:/Long-term/JobTrack-issuance-40cab98e/scratch"
     }
   },
-  "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\H5-trusted-issuer\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\e20fadab-1340-44b8-ada0-61c9e1c048e1.evidence.json",
-  "evidenceHash": "3d2c2951c18ab605d81f41f420714ef0b8aa81824469e94ee51ecb2a78466281",
+  "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\H2-H5-review-fixes\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\40cab98e-9267-49ca-86a8-c8f848c37eea.evidence.json",
+  "evidenceHash": "bbc9dd22d1291cb9f03bc641982640551e6be3ff38c193227abfc74451460542",
   "receipt": {
     "schemaVersion": 2,
-    "runId": "e20fadab-1340-44b8-ada0-61c9e1c048e1",
-    "issuedAt": "2026-10-21T12:26:24.279Z",
-    "expiresAt": "2026-10-21T12:41:24.279Z",
+    "runId": "40cab98e-9267-49ca-86a8-c8f848c37eea",
+    "issuedAt": "2026-10-21T14:47:06.779Z",
+    "expiresAt": "2026-10-21T15:02:06.779Z",
     "binding": {
       "taskId": "readiness-canary",
       "feature": "web",
       "base": "main",
       "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
       "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
-      "policyHash": "153fbdbd324d43a426ac74f91243e4b0072370445708cc5d5d911a6f0805c7b6",
+      "policyHash": "bd0d4e57726730d5fc71b724f2b74a6dd95059cd207846847bdcd713628dbb4b",
       "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
       "purpose": "worker-read",
       "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
@@ -47,10 +40,10 @@
       "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87"
     },
     "evidence": {
-      "path": "e20fadab-1340-44b8-ada0-61c9e1c048e1.evidence.json",
-      "rawSha256": "3d2c2951c18ab605d81f41f420714ef0b8aa81824469e94ee51ecb2a78466281",
-      "completedAt": "2026-10-21T12:26:24.266Z",
-      "bytes": 9040
+      "path": "40cab98e-9267-49ca-86a8-c8f848c37eea.evidence.json",
+      "rawSha256": "bbc9dd22d1291cb9f03bc641982640551e6be3ff38c193227abfc74451460542",
+      "completedAt": "2026-10-21T14:47:06.764Z",
+      "bytes": 9066
     },
     "verifier": {
       "id": "jobtrack-trusted-issuer-v1",
@@ -64,24 +57,25 @@
       "egress": true,
       "gateA": true
     },
-    "signature": "46b0e47ac713e62c27c80671f7b2375cfa7f9e59a372b49be4c9a77c44239455"
+    "signature": "f0665fc1e61b94ff3e63dba312d30eaa3660ff7f4552d3b2788eda1efdd08a51"
   },
+  "signingKeyFingerprint": "8733b989d9662b9c8f9a2be6c64f3c167c9f5b5f7f0ee6fd72358d78a9c974c6",
   "diagnostics": null,
   "audit": [
     {
-      "at": "2026-10-21T12:26:24.283Z",
+      "at": "2026-10-21T14:47:06.781Z",
       "event": "readiness-issued",
-      "runId": "e20fadab-1340-44b8-ada0-61c9e1c048e1",
+      "runId": "40cab98e-9267-49ca-86a8-c8f848c37eea",
       "taskId": "readiness-canary",
-      "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\H5-trusted-issuer\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\e20fadab-1340-44b8-ada0-61c9e1c048e1.evidence.json",
-      "evidenceHash": "3d2c2951c18ab605d81f41f420714ef0b8aa81824469e94ee51ecb2a78466281",
+      "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\H2-H5-review-fixes\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\40cab98e-9267-49ca-86a8-c8f848c37eea.evidence.json",
+      "evidenceHash": "bbc9dd22d1291cb9f03bc641982640551e6be3ff38c193227abfc74451460542",
       "signed": true,
       "diagnostics": null
     }
   ],
   "limitations": [
-    "The general egress control is a host reachable local endpoint, not the public internet; it proves the isolated run has no path to a host reachable endpoint.",
-    "The model transport is a local broker endpoint; no provider credential was used and no paid service was called.",
+    "The model transport is a local broker endpoint on the loopback interface; no provider credential was used and no paid service was called.",
+    "The general egress control is a host reachable endpoint on the local network address; it proves the isolated run had no path to a reachable non loopback endpoint, not that the public internet was measured.",
     "The projection is synthetic; the real checkout was never mounted into the container.",
     "The receipt was verified by the schema 2 verifier inside the issuer before it was signed. A later re-verification needs the issuer run context, including the per run witness bindings, which are deliberately not stored in this artifact."
   ]

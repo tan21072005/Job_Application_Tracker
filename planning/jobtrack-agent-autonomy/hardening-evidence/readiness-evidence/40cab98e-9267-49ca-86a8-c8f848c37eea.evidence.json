@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
-  "runId": "e20fadab-1340-44b8-ada0-61c9e1c048e1",
-  "startedAt": "2026-10-21T12:26:23.072Z",
-  "completedAt": "2026-10-21T12:26:24.266Z",
+  "runId": "40cab98e-9267-49ca-86a8-c8f848c37eea",
+  "startedAt": "2026-10-21T14:47:05.239Z",
+  "completedAt": "2026-10-21T14:47:06.764Z",
   "binding": {
     "taskId": "readiness-canary",
     "feature": "web",
     "base": "main",
     "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
     "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
-    "policyHash": "153fbdbd324d43a426ac74f91243e4b0072370445708cc5d5d911a6f0805c7b6",
+    "policyHash": "bd0d4e57726730d5fc71b724f2b74a6dd95059cd207846847bdcd713628dbb4b",
     "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
     "purpose": "worker-read",
     "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
@@ -56,7 +56,7 @@
       "commandId": "host-repo-read",
       "exitCode": 0,
       "timedOut": false,
-      "stdoutSha256": "d99607fa8cfa4fd50118d91edc94046dc8e933f8719af96b6e820d1aad1c2b98",
+      "stdoutSha256": "0de8f4649ea8f8009392885061710a43c59e48f490a2f4970cca726175e7b2db",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "error": null
     },
@@ -64,7 +64,7 @@
       "commandId": "common-git-read",
       "exitCode": 0,
       "timedOut": false,
-      "stdoutSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "stdoutSha256": "0de8f4649ea8f8009392885061710a43c59e48f490a2f4970cca726175e7b2db",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "error": null
     },
@@ -72,7 +72,7 @@
       "commandId": "control-state-read",
       "exitCode": 0,
       "timedOut": false,
-      "stdoutSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "stdoutSha256": "0de8f4649ea8f8009392885061710a43c59e48f490a2f4970cca726175e7b2db",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "error": null
     },
@@ -80,7 +80,7 @@
       "commandId": "host-credential-read",
       "exitCode": 0,
       "timedOut": false,
-      "stdoutSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "stdoutSha256": "0de8f4649ea8f8009392885061710a43c59e48f490a2f4970cca726175e7b2db",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "error": null
     },
@@ -96,7 +96,7 @@
       "commandId": "host-write",
       "exitCode": 0,
       "timedOut": false,
-      "stdoutSha256": "d99607fa8cfa4fd50118d91edc94046dc8e933f8719af96b6e820d1aad1c2b98",
+      "stdoutSha256": "0de8f4649ea8f8009392885061710a43c59e48f490a2f4970cca726175e7b2db",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "error": null
     },
@@ -120,7 +120,7 @@
       "commandId": "transport-positive",
       "exitCode": 0,
       "timedOut": false,
-      "stdoutSha256": "0137d4ee3e1d77182feceab06a38090bef3a4171d1c74445206e8f34aa3c2ecd",
+      "stdoutSha256": "103c4ed73fc333e802cb7b34a1dc82be564574a52d271bf1c0847aac25e9acd1",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "error": null
     },
@@ -128,7 +128,7 @@
       "commandId": "transport-general-egress",
       "exitCode": 0,
       "timedOut": false,
-      "stdoutSha256": "0137d4ee3e1d77182feceab06a38090bef3a4171d1c74445206e8f34aa3c2ecd",
+      "stdoutSha256": "f8f42b216b5fd60f79e9953a22779a9d9afd4364f7ee9ed5efc11cbd11433ab5",
       "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "error": null
     }
@@ -138,37 +138,37 @@
       {
         "targetId": "host-repo-read",
         "connected": true,
-        "witnessSha256": "a917b437d8945bf516b70c12b8750b17e27fd7e1169650c10775086c85e1642c"
+        "witnessSha256": "aea47abe5dd8cbd204c57bd7ebec0668e0dd05cc94055bc83c3297b8ded3665d"
       },
       {
         "targetId": "common-git-read",
         "connected": true,
-        "witnessSha256": "7cae6bdd9527f8294f64e1b14915ccc5715ea21d036eb55306fc23247d644dc6"
+        "witnessSha256": "0261176e20b5ca6f6939dc27669b4ad2748c1eba68243a06fcef383a5bde0e0d"
       },
       {
         "targetId": "control-state-read",
         "connected": true,
-        "witnessSha256": "c8ac32efe08250a8615713d67e8396ac01465487dedc87d2e79ea81acd777a04"
+        "witnessSha256": "f33af587c249074f68172d96dea36b365900ab42eaa9d85a62183e2733ebd56d"
       },
       {
         "targetId": "host-credential-read",
         "connected": true,
-        "witnessSha256": "1c23ee36cdf4c1a29411e794ca6559b3b1df22a98cb8502d801c652cc94f5b4e"
-      },
-      {
-        "targetId": "projection-write",
-        "connected": true,
-        "witnessSha256": "d0e1ca0c917e6cf1576dbbe5a815945d77c03ab892bb2f51f0cf9b93ead49770"
+        "witnessSha256": "7eaff0f725e05c92940c2c693bb5105575f179520c01cfe6a5fb84343a67c4cd"
       },
       {
         "targetId": "host-write",
         "connected": true,
-        "witnessSha256": "cff0c19742212adb83e3c9d88f85194a54a44f22e45588715dee1c66891d4cdb"
+        "witnessSha256": "a255211f89291a05ad801d5b66e728610ab38201ee74474b6b080276a68d3542"
+      },
+      {
+        "targetId": "projection-write",
+        "connected": true,
+        "witnessSha256": "c8827491f9fd897d1bd62574d0b663f939d7367aae8493d6c67241e31150be70"
       },
       {
         "targetId": "transport-general-egress",
         "connected": true,
-        "witnessSha256": "3988f5516af741fb9621ff2774acfc4340a48306f541c3f4d22d1d567f3abe0f"
+        "witnessSha256": "acd1abafd3ab75143521d1b5dae3c3916da67bde1f977db7846fa1bf769f6938"
       }
     ],
     "namespace": {
@@ -176,13 +176,13 @@
       "mounts": [
         {
           "kind": "projection",
-          "source": "D:/Long-term/JobTrack-issuance-e20fadab/projection",
+          "source": "D:/Long-term/JobTrack-issuance-40cab98e/projection",
           "target": "/projection",
           "readOnly": true
         },
         {
           "kind": "scratch",
-          "source": "D:/Long-term/JobTrack-issuance-e20fadab/scratch",
+          "source": "D:/Long-term/JobTrack-issuance-40cab98e/scratch",
           "target": "/scratch",
           "readOnly": false
         }
@@ -192,6 +192,7 @@
         "common-git-read",
         "control-state-read",
         "host-credential-read",
+        "host-write",
         "host-write"
       ]
     },
@@ -199,7 +200,7 @@
       {
         "targetId": "projection-read",
         "requirement": "allowed",
-        "hostPath": "D:/Long-term/JobTrack-issuance-e20fadab/projection",
+        "hostPath": "D:/Long-term/JobTrack-issuance-40cab98e/projection",
         "outcome": "allowed"
       },
       {
@@ -231,13 +232,13 @@
       {
         "targetId": "scratch-write",
         "requirement": "allowed",
-        "hostPath": "D:/Long-term/JobTrack-issuance-e20fadab/scratch",
+        "hostPath": "D:/Long-term/JobTrack-issuance-40cab98e/scratch",
         "outcome": "allowed"
       },
       {
         "targetId": "projection-write",
         "requirement": "denied",
-        "hostPath": "D:/Long-term/JobTrack-issuance-e20fadab/projection",
+        "hostPath": "D:/Long-term/JobTrack-issuance-40cab98e/projection",
         "outcome": "denied"
       },
       {
@@ -263,7 +264,7 @@
     ],
     "transport": {
       "endpoint": "http://127.0.0.1:8099/v1/chat",
-      "generalEgressEndpoint": "http://127.0.0.1:8098/general",
+      "generalEgressEndpoint": "http://192.168.1.251:8098/general",
       "positiveConnected": true,
       "generalEgressBlocked": true
     }

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
 
 const config = JSON.parse(Buffer.from(process.env.JT_PROBE_CONFIG ?? '', 'base64').toString('utf8'));
 const REQUIRED_READ_TARGETS = ['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read'];

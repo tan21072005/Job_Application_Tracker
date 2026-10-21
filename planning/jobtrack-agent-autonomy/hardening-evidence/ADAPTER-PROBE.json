@@ -1,11 +1,53 @@
 {
   "kind": "adapter-probe-not-readiness-receipt",
-  "runId": "53265912-008d-4a03-b4dd-22deba36e15d",
+  "runId": "93a16c3e-024f-4724-8527-482e600acb1b",
   "adapter": "jobtrack-docker-adapter-v1",
   "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
-  "base": "D:\\Long-term\\JobTrack-isolation-53265912",
-  "projection": "D:/Long-term/JobTrack-isolation-53265912/projection",
-  "scratch": "D:/Long-term/JobTrack-isolation-53265912/scratch",
+  "argvHash": "a91c770cce6db8d0fe40c6e662408069ec0f2e09262f135e5e7e8ad92b6e59de",
+  "container": {
+    "containerId": "5bfd6c507bf4d05ed61d8087fb7ee45b758a6e024b69ed98a7dbd37354783a12",
+    "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+    "imageId": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+    "user": "65534:65534",
+    "networkMode": "none",
+    "capDrop": [
+      "ALL"
+    ],
+    "securityOpt": [
+      "no-new-privileges"
+    ],
+    "memory": 536870912,
+    "pidsLimit": 256,
+    "nanoCpus": 1000000000,
+    "readonlyRootfs": true,
+    "tmpfs": {
+      "/tmp": "rw,noexec,nosuid,size=64m"
+    },
+    "mounts": [
+      {
+        "kind": "projection",
+        "source": "D:/Long-term/JobTrack-isolation-93a16c3e/projection",
+        "target": "/projection",
+        "readOnly": true
+      },
+      {
+        "kind": "scratch",
+        "source": "D:/Long-term/JobTrack-isolation-93a16c3e/scratch",
+        "target": "/scratch",
+        "readOnly": false
+      }
+    ],
+    "env": [
+      "HOME=/nonexistent",
+      "JT_PROBE_CONFIG=eyJtYW5pZmVzdCI6W3sicGF0aCI6ImFwcHMvd2ViL3NyYy9tb2R1bGUuanMiLCJzaGEyNTYiOiI1ZDhmNjVkMjc3NGUyMDZiYzlmN2E3YTRhZDM5Y2EyZGM1NjNiNWMzMWU0NmFiNTdlZjQ4NzQ5NjEyMzdjZTI5In0seyJwYXRoIjoiYXBwcy93ZWIvc3JjL3BhbmVsLnRzeCIsInNoYTI1NiI6ImZlMzYyNTFlM2JjODJkOGRhZjAzNjhjNTkyMDFkZmEzZWRlZWE2NTNiNjFjYjRhZTQ5ZWJlYWY2ZWJhOGUwNWEifSx7InBhdGgiOiJwYWNrYWdlcy9qb2J0cmFjay1jb250cmFjdC9zcmMvaW5kZXgudHMiLCJzaGEyNTYiOiI4MGY2YjdlZTM1M2FlMWI3MzcwMWIxNzRhYjBhYTdkZWVmZGJjOTQ2YjcwMDVjODNmY2Q3OTc3NDkzMjM0NzA4In1dLCJwcm9qZWN0aW9uVGFyZ2V0IjoiL3Byb2plY3Rpb24iLCJzY3JhdGNoVGFyZ2V0IjoiL3NjcmF0Y2giLCJob3N0UGF0aHMiOlt7InRhcmdldElkIjoiaG9zdC1yZXBvLXJlYWQiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIifSx7InRhcmdldElkIjoiY29tbW9uLWdpdC1yZWFkIiwiaG9zdFBhdGgiOiJEOi9Qcm9qZWN0L0pvYl9BcHBsaWNhdGlvbl9UcmFja2VyLy5naXQiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvLmdpdCJ9LHsidGFyZ2V0SWQiOiJjb250cm9sLXN0YXRlLXJlYWQiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvLmFnZW50LXN0YXRlIiwiY29udGFpbmVyUGF0aCI6Ii9tbnQvZC9Qcm9qZWN0L0pvYl9BcHBsaWNhdGlvbl9UcmFja2VyLy5hZ2VudC1zdGF0ZSJ9LHsidGFyZ2V0SWQiOiJob3N0LWNyZWRlbnRpYWwtcmVhZCIsImhvc3RQYXRoIjoiRDovUHJvamVjdC9Kb2JfQXBwbGljYXRpb25fVHJhY2tlci9hY2NvdW50cy50eHQiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvYWNjb3VudHMudHh0In0seyJ0YXJnZXRJZCI6Imhvc3Qtd3JpdGUiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIifV0sIm1vZGVsRW5kcG9pbnQiOiIiLCJnZW5lcmFsRWdyZXNzRW5kcG9pbnQiOiIiLCJ0aW1lb3V0TXMiOjEyMDAwMH0=",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "NODE_VERSION=24.22.0",
+      "YARN_VERSION=1.22.22"
+    ]
+  },
+  "base": "D:\\Long-term\\JobTrack-isolation-93a16c3e",
+  "projection": "D:/Long-term/JobTrack-isolation-93a16c3e/projection",
+  "scratch": "D:/Long-term/JobTrack-isolation-93a16c3e/scratch",
   "manifest": [
     {
       "path": "apps/web/src/module.js",
@@ -22,20 +64,24 @@
   ],
   "hostPaths": [
     {
-      "hostPath": "D:/Project/Job_Application_Tracker",
-      "containerPath": "/mnt/d/Project/Job_Application_Tracker"
+      "targetId": "host-repo-read",
+      "hostPath": "D:/Project/Job_Application_Tracker"
     },
     {
-      "hostPath": "D:/Project/Job_Application_Tracker/.git",
-      "containerPath": "/mnt/d/Project/Job_Application_Tracker/.git"
+      "targetId": "common-git-read",
+      "hostPath": "D:/Project/Job_Application_Tracker/.git"
     },
     {
-      "hostPath": "D:/Project/Job_Application_Tracker/.agent-state",
-      "containerPath": "/mnt/d/Project/Job_Application_Tracker/.agent-state"
+      "targetId": "control-state-read",
+      "hostPath": "D:/Project/Job_Application_Tracker/.agent-state"
     },
     {
-      "hostPath": "D:/Project/Job_Application_Tracker/accounts.txt",
-      "containerPath": "/mnt/d/Project/Job_Application_Tracker/accounts.txt"
+      "targetId": "host-credential-read",
+      "hostPath": "D:/Project/Job_Application_Tracker/accounts.txt"
+    },
+    {
+      "targetId": "host-write",
+      "hostPath": "D:/Project/Job_Application_Tracker"
     }
   ],
   "failure": null,
@@ -55,26 +101,37 @@
     },
     "hostPaths": [
       {
+        "targetId": "host-repo-read",
         "hostPath": "D:/Project/Job_Application_Tracker",
         "containerPath": "/mnt/d/Project/Job_Application_Tracker",
         "outcome": "absent",
         "code": "ENOENT"
       },
       {
+        "targetId": "common-git-read",
         "hostPath": "D:/Project/Job_Application_Tracker/.git",
         "containerPath": "/mnt/d/Project/Job_Application_Tracker/.git",
         "outcome": "absent",
         "code": "ENOENT"
       },
       {
+        "targetId": "control-state-read",
         "hostPath": "D:/Project/Job_Application_Tracker/.agent-state",
         "containerPath": "/mnt/d/Project/Job_Application_Tracker/.agent-state",
         "outcome": "absent",
         "code": "ENOENT"
       },
       {
+        "targetId": "host-credential-read",
         "hostPath": "D:/Project/Job_Application_Tracker/accounts.txt",
         "containerPath": "/mnt/d/Project/Job_Application_Tracker/accounts.txt",
+        "outcome": "absent",
+        "code": "ENOENT"
+      },
+      {
+        "targetId": "host-write",
+        "hostPath": "D:/Project/Job_Application_Tracker",
+        "containerPath": "/mnt/d/Project/Job_Application_Tracker",
         "outcome": "absent",
         "code": "ENOENT"
       }
@@ -95,6 +152,28 @@
         "generation": "grandchild",
         "before": true,
         "after": false
+      }
+    ],
+    "transport": {
+      "endpoint": null,
+      "directConnected": false,
+      "code": "NO_ENDPOINT",
+      "mediation": "broker-scratch-channel"
+    },
+    "generalEgress": {
+      "outcome": "denied",
+      "code": "NO_ENDPOINT"
+    },
+    "containerMounts": [
+      {
+        "root": "/Long-term/JobTrack-isolation-93a16c3e/scratch",
+        "mountPoint": "/scratch",
+        "options": "rw,noatime"
+      },
+      {
+        "root": "/Long-term/JobTrack-isolation-93a16c3e/projection",
+        "mountPoint": "/projection",
+        "options": "ro,noatime"
       }
     ]
   }
