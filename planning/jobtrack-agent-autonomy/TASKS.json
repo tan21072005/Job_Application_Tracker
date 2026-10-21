@@ -1,0 +1,613 @@
+{
+  "schemaVersion": 1,
+  "generatedOn": "2026-10-21",
+  "purpose": "Planning backlog for autonomous development orchestration, not runnable controller input or an instruction to execute immediately.",
+  "workspace": "D:\\Project\\Job_Application_Tracker",
+  "productPlan": "../jobtrack-full-completion/PLAN.md",
+  "baseline": "30db3fd (recheck current Git before work; never reset)",
+  "startingMode": "L0-plan-fixture",
+  "liveBlocker": "Windows sandbox setup refresh previously failed; not re-probed in this planning turn.",
+  "guardrails": {
+    "maxWorkers": 3,
+    "wipPerLane": 1,
+    "maxCoderAttempts": 3,
+    "sameFailureStopAfter": 2,
+    "workerWrites": false,
+    "workerCommits": false,
+    "brokerWrites": true,
+    "automaticIntegration": false,
+    "automaticPush": false,
+    "newCodeComments": false,
+    "defaultBranchPrefix": "codex/",
+    "runtimeBudgetRequired": true
+  },
+  "tasks": [
+    {
+      "id": "AG00",
+      "title": "Audit baseline, gaps và phạm vi tự động hóa",
+      "status": "review",
+      "dependencies": [],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "AGENTS.md",
+        "docs/agents",
+        "tools/agent-control",
+        "planning"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Đọc source/tests/CLI hiện hành, chụp Git/worktrees mà không reset.",
+        "Map yêu cầu sang implemented/fixture-tested/live-tested/blocked; chốt scope L0→L2.",
+        "Xác định trusted checks, fixture targets và bootstrap owner."
+      ],
+      "acceptance": [
+        "Mỗi claim có nguồn/bằng chứng hoặc NOT-RUN.",
+        "Không đọc secrets, chạy provider/DB hoặc sửa feature trong audit.",
+        "DAG và phạm vi nối rõ với C00–C27, không yêu cầu viết lại phần đã đúng."
+      ],
+      "verification": [
+        "Read-only source/Git/config-example audit.",
+        "Independent review gap matrix."
+      ],
+      "deliverables": [
+        "BASELINE-GAPS.md",
+        "CAPABILITY-INVENTORY.md",
+        "RUN-STATUS.md"
+      ],
+      "acceptanceIds": [
+        "V24"
+      ],
+      "implementationPrompt": "Thực hiện AG00: Audit baseline, gaps và phạm vi tự động hóa. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG01",
+      "title": "Thiết kế quyền, capability và control plane",
+      "status": "planned",
+      "dependencies": [
+        "AG00"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "docs/agents",
+        "tools/agent-control/policy.mjs",
+        "runtime isolation configuration"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Thiết kế ownership đọc/ghi/commands, capability gắn task/lane/base/expiry.",
+        "Bảo vệ registry/policy/Git common-dir ngoài tầm worker; README khớp enforcement.",
+        "Chọn sandbox/identity/container adapter từ nhu cầu thực và ghi threat assumptions."
+      ],
+      "acceptance": [
+        "Có matrix mỗi quyền→code gate→OS enforcement→canary.",
+        "Không xem README hoặc worktree là ACL.",
+        "Bootstrap không yêu cầu worker tự sửa policy hoặc nới sandbox."
+      ],
+      "verification": [
+        "Review architecture/threat scenarios bằng fake paths/capabilities.",
+        "Chưa gọi live model khi chưa qua AG02."
+      ],
+      "deliverables": [
+        "PERMISSION-MATRIX.md",
+        "CONTROL-PLANE-ADR.md"
+      ],
+      "acceptanceIds": [
+        "V01",
+        "V02",
+        "V07",
+        "V08",
+        "V18"
+      ],
+      "implementationPrompt": "Thực hiện AG01: Thiết kế quyền, capability và control plane. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG02",
+      "title": "Sửa sandbox và kiểm read/write/network/timeout canary",
+      "status": "planned",
+      "dependencies": [
+        "AG01"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "host runtime configuration (maintainer scope)",
+        "tools/agent-control sandbox adapter",
+        "evidence/agents"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Tái hiện setup refresh lỗi bằng Node probe fixture, điều tra runtime/tài nguyên/quyền đúng phạm vi.",
+        "Thực hiện canary đọc/ghi/egress/process trên dữ liệu giả, không truy secrets thật.",
+        "Nếu denial chưa enforce thì FAIL/BLOCKED hoặc adapter khác qua review; giữ fail-closed."
+      ],
+      "acceptance": [
+        "Probe chạy được và từng giới hạn đọc/ghi/network có evidence thực.",
+        "Worker không truy sibling/control/commonGit/credential canaries.",
+        "Process timeout đóng đúng owned tree; không unrestricted fallback."
+      ],
+      "verification": [
+        "Sandbox-only fake canary, child process cleanup tests.",
+        "rtk npm run agents:test sau thay đổi phù hợp."
+      ],
+      "deliverables": [
+        "SANDBOX-READINESS.md",
+        "CANARY-EVIDENCE.json"
+      ],
+      "acceptanceIds": [
+        "V01",
+        "V02",
+        "V07",
+        "V08",
+        "V15",
+        "V24"
+      ],
+      "implementationPrompt": "Thực hiện AG02: Sửa sandbox và kiểm read/write/network/timeout canary. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG03",
+      "title": "Workspace manager và ownership theo feature",
+      "status": "planned",
+      "dependencies": [
+        "AG02"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "tools/agent-control workspace/lease logic",
+        "docs/agents"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Reserve branch/worktree/base và capability riêng cho từng task.",
+        "Kiểm overlap canonical paths, Windows links/case/rename và protected files.",
+        "Cấp snapshot source tối thiểu; shared contract tích hợp trước consumer."
+      ],
+      "acceptance": [
+        "Hai feature độc lập có branch/worktree/commit lineage riêng.",
+        "Overlap hoặc dependency chưa integrated bị chặn.",
+        "Không expose commonGit/control plane cho worker và không tự cướp lease."
+      ],
+      "verification": [
+        "Disposable Git repo tests: overlap, case, link escapes, dependency ancestry.",
+        "Fixture restart/lease tests."
+      ],
+      "deliverables": [
+        "workspace implementation",
+        "OWNERSHIP-EVIDENCE.md"
+      ],
+      "acceptanceIds": [
+        "V03",
+        "V04",
+        "V05",
+        "V17"
+      ],
+      "implementationPrompt": "Thực hiện AG03: Workspace manager và ownership theo feature. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG04",
+      "title": "Planner tạo DAG và prompt giao việc có cấu trúc",
+      "status": "planned",
+      "dependencies": [
+        "AG03"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "tools/agent-control planner/schema logic",
+        "docs/agents task templates"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Định nghĩa interface brief→validated task DAG và per-role prompt.",
+        "Validate scope/paths/check IDs/dependencies/limits trước dispatch.",
+        "Lưu version/hash prompt và input evidence; malformed output không mở quyền."
+      ],
+      "acceptance": [
+        "DAG cycle/overlap/unapproved checks/out-of-scope feature bị từ chối.",
+        "Mỗi task có acceptance/test/evidence/stop và base rõ.",
+        "Prompt không có secrets hoặc source ngoài snapshot được cấp."
+      ],
+      "verification": [
+        "Injected planner fixtures valid/invalid/adversarial.",
+        "Prompt/schema compatibility với controller thực."
+      ],
+      "deliverables": [
+        "planner interface/schema",
+        "PROMPT-REGISTRY.md"
+      ],
+      "acceptanceIds": [
+        "V05",
+        "V06",
+        "V07"
+      ],
+      "implementationPrompt": "Thực hiện AG04: Planner tạo DAG và prompt giao việc có cấu trúc. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG05",
+      "title": "Scheduler, journal và crash recovery",
+      "status": "planned",
+      "dependencies": [
+        "AG04"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "tools/agent-control scheduler/registry logic",
+        "docs/agents recovery runbook"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Thiết kế atomic transitions và idempotency submit/dispatch/run/commit.",
+        "Schedule task ready theo integrated dependencies, WIP1/lane và concurrency cap.",
+        "Reconcile restart/owned PID/lease/digest, stop state và needs_recovery."
+      ],
+      "acceptance": [
+        "Duplicate events không tạo worktree/run/commit trùng.",
+        "Restart không auto resume process bất định hoặc chiếm lease.",
+        "Abandoned terminal, task ngoài budget/dependency không chạy."
+      ],
+      "verification": [
+        "Fake-clock/state crash tests qua interface scheduler.",
+        "Fixture duplicate submit và concurrent dispatcher tests."
+      ],
+      "deliverables": [
+        "scheduler/journal implementation",
+        "RECOVERY-RUNBOOK.md"
+      ],
+      "acceptanceIds": [
+        "V04",
+        "V05",
+        "V11",
+        "V15",
+        "V16",
+        "V17",
+        "V20"
+      ],
+      "implementationPrompt": "Thực hiện AG05: Scheduler, journal và crash recovery. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG06",
+      "title": "Proposal broker và policy không thêm comments",
+      "status": "planned",
+      "dependencies": [
+        "AG03"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "tools/agent-control/policy.mjs",
+        "tools/agent-control apply logic"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Validate cả proposal batch bằng priorhash/capability/path/link/size/secret checks.",
+        "Dùng parser/lexer cho ngôn ngữ hỗ trợ để phân biệt comment mới với strings/URLs.",
+        "Reject direct edits và thiết kế recovery partial apply, bảo vệ bytes và audit."
+      ],
+      "acceptance": [
+        "Một file invalid làm reject batch trước ghi; stale hashes fail.",
+        "Comment mới bị chặn nhưng comment cũ/URL/string không bị phá.",
+        "Secret values không vào logs; unknown language không silently skip."
+      ],
+      "verification": [
+        "Negative broker fixtures traversal/links/hardlinks/comment/secrets/oversize.",
+        "Fault injection apply interruption và recovery."
+      ],
+      "deliverables": [
+        "broker hardening",
+        "POLICY-EVIDENCE.md"
+      ],
+      "acceptanceIds": [
+        "V03",
+        "V09",
+        "V10",
+        "V11",
+        "V17"
+      ],
+      "implementationPrompt": "Thực hiện AG06: Proposal broker và policy không thêm comments. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG07",
+      "title": "Check runner sandbox và evidence digest",
+      "status": "planned",
+      "dependencies": [
+        "AG02",
+        "AG06"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "tools/agent-control check executor",
+        "package/CI config (maintainer only)"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Pin trusted catalog/scripts/locks; chỉ structured operation và argv được duyệt.",
+        "Sandbox tests vì source test có thể chạy arbitrary code; env/scratch/network/DB fixture tối thiểu.",
+        "Capture exit/log hashes; timeout cleanup và cancellation có kiểm chứng."
+      ],
+      "acceptance": [
+        "Source worker sửa không được thay check commands hoặc đọc host secrets.",
+        "Check evidence gắn đúng digest; skipped/timeout không là pass.",
+        "Không chạy migrate/restore/load/payment hoặc DB gốc như check mặc định."
+      ],
+      "verification": [
+        "Malicious test fixture tries read/egress/spawn, denial canary.",
+        "Exit code/timeout/cleanup/digest tests."
+      ],
+      "deliverables": [
+        "check runner implementation",
+        "TRUSTED-CHECK-CATALOG.md"
+      ],
+      "acceptanceIds": [
+        "V07",
+        "V08",
+        "V12",
+        "V15",
+        "V24"
+      ],
+      "implementationPrompt": "Thực hiện AG07: Check runner sandbox và evidence digest. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG08",
+      "title": "Reflector và reviewer độc lập trong loop hữu hạn",
+      "status": "planned",
+      "dependencies": [
+        "AG04",
+        "AG05",
+        "AG07"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "tools/agent-control role/loop logic",
+        "docs/agents role prompts"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Reflector nhận lỗi/log/diff thật, phân loại môi trường/code và viết prompt sửa.",
+        "Enforce max3 coder attempts và cùng failure fingerprint2lần dừng.",
+        "Reviewer run độc lập, verdict gắn acceptance và checked source digest."
+      ],
+      "acceptance": [
+        "Không self-approve hoặc PASS từ source khác digest.",
+        "Vòng sửa tuân limits, không nới policy/test để qua.",
+        "Blocked evidence đủ để maintainer tiếp tục, không retry vô hạn."
+      ],
+      "verification": [
+        "Injected deterministic loop tests với lỗi lặp/lỗi khác/review fail.",
+        "Independent reviewer lineage và digest invalidation tests."
+      ],
+      "deliverables": [
+        "role loop implementation",
+        "LOOP-EVIDENCE.md"
+      ],
+      "acceptanceIds": [
+        "V12",
+        "V13",
+        "V14",
+        "V20"
+      ],
+      "implementationPrompt": "Thực hiện AG08: Reflector và reviewer độc lập trong loop hữu hạn. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG09",
+      "title": "Feature commit và integration gate",
+      "status": "planned",
+      "dependencies": [
+        "AG08"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "tools/agent-control Git delivery logic",
+        "docs/agents integration guide"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Chỉ controller commit explicit reviewed paths với task/run metadata.",
+        "Kiểm source/check/review/commit digest, base ancestry và dependencies.",
+        "Conflict/stale base tạo reconciliation task; maintainer tích hợp, không auto push/cleanup."
+      ],
+      "acceptance": [
+        "Commit không có file lane khác, unreviewed edit hoặc secrets.",
+        "Feature committed chưa mở consumer cho tới integration verified.",
+        "Git operations nguy hiểm/overwrite không có trong worker catalog."
+      ],
+      "verification": [
+        "Disposable Git fixture commit, stale base, conflict và dependency tests.",
+        "Verify branch/main không bị tác động ngoài integration được giao."
+      ],
+      "deliverables": [
+        "delivery/integration implementation",
+        "GIT-DELIVERY-EVIDENCE.md"
+      ],
+      "acceptanceIds": [
+        "V05",
+        "V12",
+        "V16",
+        "V18",
+        "V19"
+      ],
+      "implementationPrompt": "Thực hiện AG09: Feature commit và integration gate. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG10",
+      "title": "Quy trình Agile và AI experiment registry",
+      "status": "planned",
+      "dependencies": [
+        "AG00",
+        "AG04"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "docs/agents",
+        "planning",
+        "experiment registry metadata"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Chốt Kanban/DoR/DoD, tùy chọn Scrum và release/migration gates.",
+        "Tạo CRISP-DM brief và Code/Data/Model/Prompt provenance/eval templates.",
+        "Pipeline API-model eval/review/monitor/rollback, data-centric error taxonomy; chưa auto-train."
+      ],
+      "acceptance": [
+        "Software và AI briefs có acceptance, owner, budget và stop rõ.",
+        "Holdout tách tuning, thresholds chốt trước; deterministic quyền không do LLM tự chấm.",
+        "Version/cost/latency/drift/provenance có schema; thiếu usage không ghi0."
+      ],
+      "verification": [
+        "Validate templates/registry schema và hai example briefs tổng hợp.",
+        "Review mapping tới C24, không gọi model thật mặc định."
+      ],
+      "deliverables": [
+        "DEFINITION-OF-READY-DONE.md",
+        "EXPERIMENT-SCHEMA.json",
+        "example briefs"
+      ],
+      "acceptanceIds": [
+        "V21",
+        "V22"
+      ],
+      "implementationPrompt": "Thực hiện AG10: Quy trình Agile và AI experiment registry. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG11",
+      "title": "Canary end-to-end và pilot feature có giám sát",
+      "status": "planned",
+      "dependencies": [
+        "AG09",
+        "AG10"
+      ],
+      "executionOwner": "maintainer for pilot; workers only after isolation gates",
+      "proposedPaths": [
+        "evidence/agents",
+        "fixture repository",
+        "one ready product lane by assigned task"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Chạy fixture2feature song song, dependency contract→consumer, repair, blocked và timeout/recovery.",
+        "Sau gates chọn1 task sản phẩm ready, base và dependencies đúng; không tự tạo feature.",
+        "Live model call chỉ khi runtime/credential/budget đã cấp; ghi fixture và live riêng."
+      ],
+      "acceptance": [
+        "Toàn bộ V01–V24 liên quan có expected/actual và artifact hashes.",
+        "Một live feature có proposal→checks→review→commit riêng, không sửa sibling/main.",
+        "Thiếu sandbox/provider evidence ghi BLOCKED, không suy ra từ fixture."
+      ],
+      "verification": [
+        "Fixture acceptance suite; live canary có budget hữu hạn được giao.",
+        "Recheck product acceptance của task pilot."
+      ],
+      "deliverables": [
+        "PILOT-REPORT.md",
+        "redacted live evidence",
+        "pilot feature commit"
+      ],
+      "acceptanceIds": [
+        "V01",
+        "V02",
+        "V03",
+        "V04",
+        "V05",
+        "V06",
+        "V07",
+        "V08",
+        "V09",
+        "V10",
+        "V11",
+        "V12",
+        "V13",
+        "V14",
+        "V15",
+        "V16",
+        "V17",
+        "V18",
+        "V19",
+        "V20",
+        "V21",
+        "V22",
+        "V23",
+        "V24"
+      ],
+      "implementationPrompt": "Thực hiện AG11: Canary end-to-end và pilot feature có giám sát. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG12",
+      "title": "Batch tự chạy có giới hạn và stop control",
+      "status": "planned",
+      "dependencies": [
+        "AG11"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "tools/agent-control batch coordinator",
+        "operator configuration (maintainer only)"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "Opt-in scope backlog/budget/limits trước run; tự chọn ready task theo DAG.",
+        "Enforce task count/concurrency/time/cost/retries bằng code, tính cả failures.",
+        "Stop/cancel đóng owned workers an toàn, hết ready/budget thì kết thúc; không tự schedule định kỳ."
+      ],
+      "acceptance": [
+        "Default đề xuất3tasks/batch,3workers,WIP1/lane,20phút/task,60phút/batch được validate trước run.",
+        "Budget thiếu/không hữu hạn không được gọi trả phí; task blocked không loop mãi.",
+        "Không tự integrate/push/deploy hoặc resume needs_recovery."
+      ],
+      "verification": [
+        "Fake-clock/cost/batch-limit stop tests.",
+        "Một bounded live batch sau pilot, evidence riêng."
+      ],
+      "deliverables": [
+        "BATCH-OPERATOR-GUIDE.md",
+        "BATCH-ACCEPTANCE.md"
+      ],
+      "acceptanceIds": [
+        "V04",
+        "V05",
+        "V14",
+        "V15",
+        "V16",
+        "V17",
+        "V20",
+        "V23"
+      ],
+      "implementationPrompt": "Thực hiện AG12: Batch tự chạy có giới hạn và stop control. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    },
+    {
+      "id": "AG13",
+      "title": "Quan sát, bàn giao và nghiệm thu L2",
+      "status": "planned",
+      "dependencies": [
+        "AG12"
+      ],
+      "executionOwner": "maintainer bootstrap/control-plane work item",
+      "proposedPaths": [
+        "docs/agents",
+        "evidence/agents",
+        "planning handoff artifacts"
+      ],
+      "pathRule": "Paths are planning scope, not a worker capability. Assign explicit files after source audit. Protected control/config/docs changes require maintainer operation, not worker policy expansion.",
+      "steps": [
+        "CLI status/report/stop và audit task/run/digest/commit/lease/budget/blocker.",
+        "Cập nhật state/tests/limits/next ready tasks, đóng context ZIP với manifests.",
+        "Operator kiểm recovery/continuation; tách product release acceptance khỏi nền tảng agents."
+      ],
+      "acceptance": [
+        "Trace được từng quyết định và side effect tới task/role/run.",
+        "ZIP có context/prompts/evidence index và không có credentials/rawCV/DBdump.",
+        "L2 chỉ accepted sau live batch/canary, người vận hành xác nhận; không gọi fixtures là production."
+      ],
+      "verification": [
+        "Package JSON/link/DAG/CRC/hash checks.",
+        "Operator walkthrough status→stop→recover→handoff."
+      ],
+      "deliverables": [
+        "AUTONOMY-RELEASE-HANDOVER.md",
+        "verified context ZIP",
+        "operator acceptance"
+      ],
+      "acceptanceIds": [
+        "V15",
+        "V20",
+        "V23",
+        "V24"
+      ],
+      "implementationPrompt": "Thực hiện AG13: Quan sát, bàn giao và nghiệm thu L2. Đọc AGENTS và plan agent-autonomy cùng source hiện tại; chỉ sửa gap có evidence. Hoàn tất steps và acceptance entry này; AG tasks chỉnh controller/policy/config là maintainer bootstrap, không tự cấp worker quyền control-plane. Tách work items theo explicit paths/base, không ghi sibling hoặc secrets, không thêm code comments. Enforce dependencies và live isolation gates, tests/review cùng digest. Dùng fixture trước; provider/DB/network chỉ target và budget đã giao. Báo diff/commit nếu có, checks+exitcodes, evidence và limits; NOT-RUN/BLOCKED khi thiếu điều kiện, không bypass hoặc fake PASS."
+    }
+  ]
+}
