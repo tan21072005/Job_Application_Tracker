@@ -59,13 +59,13 @@ const receiptFixture = (binding, overrides = {}) => ({
 });
 
 test('the projection stages the declared files and verifies the copied bytes', () => {
-  const { worktree, destination } = sourceFixture();
-  const staged = stageProjection({ files: ['apps/web/src/module.js'], sourceRoot: worktree, destination });
+  const { worktree, destination, root } = sourceFixture();
+  const staged = stageProjection({ files: ['apps/web/src/module.js'], sourceRoot: worktree, destination, allowedRoot: root });
   assert.equal(staged.manifest.length, 1);
   assert.match(staged.manifest[0].sha256, /^[a-f0-9]{64}$/);
   assert.match(staged.manifestHash, /^[a-f0-9]{64}$/);
-  assert.throws(() => stageProjection({ files: ['apps/web/src/missing.js'], sourceRoot: worktree, destination }), /source file is missing/);
-  assert.throws(() => stageProjection({ files: [], sourceRoot: worktree, destination }), /at least one file/);
+  assert.throws(() => stageProjection({ files: ['apps/web/src/missing.js'], sourceRoot: worktree, destination, allowedRoot: root }), /source file is missing/);
+  assert.throws(() => stageProjection({ files: [], sourceRoot: worktree, destination, allowedRoot: root }), /at least one file/);
 });
 
 test('the trusted binding is validated', () => {
@@ -76,6 +76,19 @@ test('the trusted binding is validated', () => {
   const withoutTask = { ...binding };
   delete withoutTask.taskId;
   assert.throws(() => buildTrustedBinding(withoutTask), /missing taskId/);
+});
+
+test('a projection destination outside the operator run root is refused and nothing is deleted', () => {
+  const { worktree, root } = sourceFixture();
+  const victim = join(root, 'victim');
+  mkdirSync(victim, { recursive: true });
+  writeFileSync(join(victim, 'keep.txt'), 'keep\n');
+  const outside = join(root, '..', `jobtrack-outside-${Date.now()}`);
+  assert.throws(() => stageProjection({ files: ['apps/web/src/module.js'], sourceRoot: worktree, destination: victim, allowedRoot: join(root, 'runs') }), /must live inside the operator run root/);
+  assert.throws(() => stageProjection({ files: ['apps/web/src/module.js'], sourceRoot: worktree, destination: outside, allowedRoot: join(root, 'runs') }), /must live inside the operator run root/);
+  assert.throws(() => stageProjection({ files: ['apps/web/src/module.js'], sourceRoot: worktree, destination: join(root, 'runs'), allowedRoot: join(root, 'runs') }), /must live inside the operator run root/);
+  assert.throws(() => stageProjection({ files: ['apps/web/src/module.js'], sourceRoot: worktree, destination: join(root, 'runs', 'projection') }), /needs the operator run root/);
+  assert.equal(existsSync(join(victim, 'keep.txt')), true);
 });
 
 test('a receipt must match the binding, be unexpired and record a passing gate', () => {
@@ -89,11 +102,11 @@ test('a receipt must match the binding, be unexpired and record a passing gate',
 });
 
 test('the boundary issues, verifies and launches in that order and creates the scratch', async () => {
-  const { worktree, destination, scratch } = sourceFixture();
+  const { worktree, destination, scratch, root } = sourceFixture();
   const order = [];
   const boundary = createExecutionBoundary({
     context: (state, request) => bindingFixture({ purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
-    projection: { destinationFor: () => destination, scratchFor: () => scratch },
+    projection: { allowedRoot: root, destinationFor: () => destination, scratchFor: () => scratch },
     adapter: { launch: async () => { order.push('launch'); return { status: 0, stdout: 'ok', stderr: '' }; } },
     issuer: {
       issue: async input => { order.push('issue'); return { receipt: receiptFixture(bindingFixture({ taskId: input.taskId, sourceDigest: input.sourceDigest, projectionManifestHash: input.projectionManifestHash, purpose: input.purpose })) }; },
@@ -109,10 +122,10 @@ test('the boundary issues, verifies and launches in that order and creates the s
 });
 
 test('the boundary propagates a launch failure and never falls back', async () => {
-  const { worktree, destination, scratch } = sourceFixture();
+  const { worktree, destination, scratch, root } = sourceFixture();
   const boundary = createExecutionBoundary({
     context: () => bindingFixture(),
-    projection: { destinationFor: () => destination, scratchFor: () => scratch },
+    projection: { allowedRoot: root, destinationFor: () => destination, scratchFor: () => scratch },
     adapter: { launch: async () => { throw Error('container refused the launch'); } },
     issuer: {
       issue: async input => ({ receipt: receiptFixture(bindingFixture({ taskId: input.taskId })) }),
@@ -123,10 +136,10 @@ test('the boundary propagates a launch failure and never falls back', async () =
 });
 
 test('the boundary refuses an issuer that produced no receipt', async () => {
-  const { worktree, destination, scratch } = sourceFixture();
+  const { worktree, destination, scratch, root } = sourceFixture();
   const boundary = createExecutionBoundary({
     context: () => bindingFixture(),
-    projection: { destinationFor: () => destination, scratchFor: () => scratch },
+    projection: { allowedRoot: root, destinationFor: () => destination, scratchFor: () => scratch },
     adapter: { launch: async () => ({ status: 0 }) },
     issuer: { issue: async () => ({ receipt: null, diagnostics: 'probe failed' }), verify: async receipt => ({ receipt }) }
   });
@@ -195,7 +208,7 @@ test('a fixed check runs against the staged projection and passes', { skip: dock
   });
   const boundary = createExecutionBoundary({
     context: (state, request) => ({ ...catalog, taskId: state.id, purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
-    projection: { destinationFor: () => projection, scratchFor: () => scratch },
+    projection: { allowedRoot: runRoot, destinationFor: () => projection, scratchFor: () => scratch },
     adapter,
     issuer
   });
@@ -279,7 +292,7 @@ test('the boundary completes a run against the real issuer and the real adapter 
   });
   const boundary = createExecutionBoundary({
     context: (state, request) => ({ ...catalog, taskId: state.id, purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
-    projection: { destinationFor: () => projection, scratchFor: () => scratch },
+    projection: { allowedRoot: runRoot, destinationFor: () => projection, scratchFor: () => scratch },
     adapter,
     issuer
   });

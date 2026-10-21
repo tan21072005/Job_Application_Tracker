@@ -10,6 +10,7 @@ export const SCRATCH_TARGET = '/scratch';
 export const FIXTURE_TARGET = '/fixtures';
 export const CANDIDATE_TARGET = '/candidate';
 export const CONTAINER_UID = 65534;
+export const ALLOWED_LAUNCH_ENV_KEYS = Object.freeze(['HOME', 'CHECK_ID', 'CANDIDATE_DIGEST', 'FIXTURE_ROOT', 'SCRATCH_ROOT', 'HOST_PROBE_PATH']);
 export const CONTAINER_GID = 65534;
 export const DEFAULT_MEMORY = '512m';
 export const DEFAULT_PIDS = '256';
@@ -79,6 +80,14 @@ export function assertNotDeniedPath(deniedPaths, candidate) {
     if (!denied) continue;
     if (canonicalSource(denied) === canonicalSource(candidate)) throw Error('Container bind source is a denied host path.');
     if (pathIsInside(denied, candidate)) throw Error('Container bind source is inside a denied host path.');
+  }
+  return true;
+}
+
+export function assertAllowedLaunchEnv(env) {
+  const keys = Object.keys(env ?? {});
+  for (const key of keys) {
+    if (!ALLOWED_LAUNCH_ENV_KEYS.includes(key)) throw Error(`Container environment may only carry ${ALLOWED_LAUNCH_ENV_KEYS.join(', ')}.`);
   }
   return true;
 }
@@ -513,6 +522,11 @@ export function createDockerAdapter(options = {}) {
       if (!command.length) throw Error('Adapter launch needs a command.');
       const profile = launchOptions.profile === 'check' ? 'check' : 'worker';
       const fixtures = profile === 'check' && launchOptions.fixtures ? assertDirectory(launchOptions.fixtures) : null;
+      if (fixtures) {
+        assertInsideRoot(runRoot, fixtures, 'Fixtures');
+        assertNotDeniedPath(denied, canonicalSource(fixtures));
+      }
+      assertAllowedLaunchEnv(launchOptions.env ?? {});
       const target = profile === 'check' ? CANDIDATE_TARGET : PROJECTION_TARGET;
       const args = buildLaunchArgs({
         image,

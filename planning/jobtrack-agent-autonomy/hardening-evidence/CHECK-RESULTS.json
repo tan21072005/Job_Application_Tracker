@@ -1,23 +1,47 @@
 {
   "kind": "fixture-check-record-not-readiness-receipt",
-  "capturedAt": "2026-10-21T20:23:01.877Z",
-  "note": "The control plane fixture record of this increment. Every source digest below is the file that was executed and every count is parsed from the archived log that the record hashes. A fixture record is never a readiness receipt and no live worker ran.",
+  "capturedAt": "2026-10-21T20:55:18.915Z",
+  "note": "The control plane fixture record of this increment. Every digest below is the executed file with the line endings normalized to LF, exactly as the control plane fingerprint hashes them, and every count is parsed from the archived log that the record hashes. A fixture record is never a readiness receipt and no live worker ran.",
   "sourceSha256": {
-    "tools/agent-control/check-profile.mjs": "fc0c20a4763357efe88c43f4d51ad1b965594b36f55d87c668dcd5091248b65a",
-    "tools/agent-control/cli.mjs": "23c98a8596843b4df43754fe7fc47117733135ac91d631231a6d2ca62e169240",
+    "apps/api/package.json": "3414f33697196d5c408bb998b6c0b74dc5b08ee1fe5bca264ec8d4171f55fe40",
+    "apps/web/package.json": "09afb1a4594cdfd4e240ce77a888d78c4eda37bf48b87b4b139c7bd1669139c7",
+    "package-lock.json": "88d932e4a1d092d598533612301861e6f7ad323e434d24f9af743b2c6d8dce9f",
+    "package.json": "8c5c083accdee9441df3ba6e91aa1af772652cef88026b7e6f15a647eb75f2a6",
+    "packages/jobtrack-contract/package.json": "e23ec0e764e9cd0d67ce00891c0b94080ffd52d0456d81f2dc55ce38087d1b9e",
+    "packages/jobtrack-mcp/package.json": "b59c0a9ecea82d0ea47a827eb486e3552adddecf896072ced9cc1ed50be6d0f1",
+    "tools/agent-control/check-profile.mjs": "84e860185416a51bcb19af02bf57c4373e9f026246b12f0f6b5ad616f66ec835",
+    "tools/agent-control/check-profile.test.mjs": "e2a6210944b346684f40f5155251f298bd777021df01f126d30ca7a59fcc1a0d",
+    "tools/agent-control/claude-hook.mjs": "6ed5af70c9c8e94608b89201fa8cd9040a5725d09a3886886d094531618381d5",
+    "tools/agent-control/cli.mjs": "593645ca8c3270efaab2dea6d3c84393b3e980af9825189529854e9172c2e844",
     "tools/agent-control/controller.mjs": "3c586d33a6cba34e085cd170847a32ea4b5a1b494eced5d70f99366aca89b42f",
     "tools/agent-control/controller.test.mjs": "48f9d622605aef6d97b2e3e17c8b3706ff20f8ae099da6fb753f6c86e892fd82",
-    "tools/agent-control/docker-adapter.mjs": "5158a27068896f3782014470a187fd31146c259baf32e0b759bca50417e279e6",
-    "tools/agent-control/execution-boundary.mjs": "8cb9a888e82fb35da00b11c557f1e9cbedddaf757fb0bbc1e513388ba763db76",
-    "tools/agent-control/execution-boundary.test.mjs": "b5bb302a8d8249e0974932398a85599c4634637caa252aacfc13ccd226c349d7",
+    "tools/agent-control/docker-adapter.mjs": "16a7739218c839e6a0b0e3c655a1919f457a7c9fde0605aa9ba44b90605a39d1",
+    "tools/agent-control/docker-adapter.test.mjs": "faef6b3719366a964298ca4f44be7355b0c0b3cfff0bbeb5fd726bb886fbed7c",
+    "tools/agent-control/execution-boundary.mjs": "04ae90f4c15a9b6d56786416e947e1c0a3351642996e67b43b0fcdbddee7e0e9",
+    "tools/agent-control/execution-boundary.test.mjs": "9e75b0704d51dcc1edbb10fc44ca63748b8d875adc2e76d8a6f1e3e4c64b63c8",
     "tools/agent-control/fingerprint.mjs": "e9a24004d456f14a35e246cb743887af6b0b752546d203ebb60509aa9c024da3",
+    "tools/agent-control/hooks.test.mjs": "03110d6c935d79819717b98dd0e1feae369bde8b2fcdb16a6479e9acf7c2a92b",
+    "tools/agent-control/isolation.mjs": "03e205e6e0342d0c73cb1e77ddf08b9ed09a0051863f469376ca0fcbc4d45c28",
+    "tools/agent-control/isolation.test.mjs": "0f67d77c2412e7a73d6ff3c66d439e03daeabf58fd69c25beeebfd9a7da15483",
     "tools/agent-control/issuer.mjs": "1044e9f287aa08078c16c8bf72e732cd74029d2689e2388afafd9aec56855ccf",
     "tools/agent-control/issuer.test.mjs": "ff4684d880fef6eab0d833c93378255fca6c9cf3779ca5a52fabd2ce60751a6a",
+    "tools/agent-control/policy.mjs": "69e6f16205061869a0731f3bcd7a80c79c23384d1cdc0e7d06505b06c02ac4ed",
+    "tools/agent-control/policy.test.mjs": "fa9216f5d04d15c835c26371eaa889d13a29c2c18a79e27237cc19bff0ce7e1c",
+    "tools/agent-control/projection.mjs": "8fe3d1f305f6c14a367fdec66f5ea3a1eaa8214011077231a8455cfe92f631b4",
+    "tools/agent-control/projection.test.mjs": "96a6225b6803b34c217bb1ae1a9efbed30e84b13df22679fdd22633fb1332bfa",
     "tools/agent-control/readiness-v2.mjs": "35ecce37502ceae8bb7f83d2bbc5c3a7cd66c471fe472289ff95a31446b39705",
     "tools/agent-control/readiness-v2.test.mjs": "026403f916abc17892a41cd1d71b97242b4e4c43ed7b65fb030d27c9dcfe2867",
+    "tools/agent-control/readiness.mjs": "1df164253f94c44d2d42ebf3145ce25d5fcddb5c1da90c6fd73b3738fc6fa666",
+    "tools/agent-control/readiness.test.mjs": "ebf8246aa4a7588b9d63d77e213fdfd47020440525d5f2acb8aeff9197ab588f",
     "tools/agent-control/transport.mjs": "d1a0aadcff27eacd496ced37237ed0508aed1cefaaf0a12019c0a089df20394f",
     "tools/agent-control/transport.test.mjs": "a0ae511c287bf31e830f11bac672eb9e745e19c674e23ac9a429f89abca0c3e8",
+    "tools/agent-control/worker.schema.json": "6f5b22e73826c0f79b5bedc1202ce53b2738264175caf1a268cb59ed61dc4d75",
+    "tools/sandbox/isolated-check.mjs": "5f2240a688636e8947d6391579b1ad13569b60ff48115aa7f7c1cb1332e981b5",
     "tools/sandbox/isolation-probe.mjs": "ad2a798a5c9fd4701b7df12f4011f0d18be49e46965c2d6416b0d4c195edf195",
+    "tools/sandbox/run-isolated-check.mjs": "0466c35c8e31f4343051c350aa61c923dd4ca52fe931e0a2dc142c0d0588df72",
+    "tools/sandbox/run-isolation-probe.mjs": "b9209838dc65d506cb71e415a6a570eb38ce8a0a43848a898e0b442c46cc5cd0",
+    "tools/sandbox/run-readiness-acceptance.mjs": "e67b47ea8139e725b01ba79b53f5c4a1cc1f01dff1146f91f0a7e5fc7ddbdb61",
+    "tools/sandbox/run-readiness-issuance.mjs": "3aa010926199f769a1e31e27a74b368c3dd17567d41e6869bdb41c78ce89e805",
     "tools/sandbox/verdict.mjs": "2093c5db0fc14ad385954542229e94f9db1b1ba140214e48c2f9726d9d00e859",
     "tools/sandbox/verdict.test.mjs": "9f464fbd6dc92289c33404e6a77ca87774aca1112e869eb78835d35b8a4fe7bd"
   },
@@ -33,16 +57,16 @@
       ],
       "exitCode": 0,
       "counts": {
-        "tests": 207,
-        "pass": 207,
+        "tests": 209,
+        "pass": 209,
         "fail": 0,
         "cancelled": 0,
         "skipped": 0,
         "todo": 0
       },
       "log": "agents-fixture-tests.txt",
-      "logSha256": "7dd7605487346e7ef75928e6c61d46bb5982c1c7f093e6f673729f03acbdae51",
-      "logBytes": 15669
+      "logSha256": "642864704224b145fd1e72e3bc406c7e2e4433efa2482f733f456729e98cba05",
+      "logBytes": 15859
     },
     {
       "command": [
@@ -62,11 +86,11 @@
         "todo": 0
       },
       "log": "verdict-fixture-tests.txt",
-      "logSha256": "31d9baba90264dd3ebd85f0657e43e668854aa10fe128cbd1b97a6fca7094619",
-      "logBytes": 1233
+      "logSha256": "2c37eeaedf961fbeb16f4f6d8d588fe2da0210c98e51449a2cb9fb640df47700",
+      "logBytes": 1235
     }
   ],
   "readinessReceiptIssued": false,
   "liveWorkerRunVerified": false,
-  "textNormalization": "Archived text files are UTF-8 without a byte order mark and use LF line endings. logSha256 hashes the actual archived bytes."
+  "textNormalization": "Archived text files are UTF-8 without a byte order mark and use LF line endings. logSha256 hashes the actual archived bytes and sourceSha256 hashes the executed file bytes with CRLF normalized to LF."
 }

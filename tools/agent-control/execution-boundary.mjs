@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { CANDIDATE_TARGET, FIXTURE_TARGET, PROJECTION_TARGET, SCRATCH_TARGET } from './docker-adapter.mjs';
 import { buildCheckEnvironment } from './check-profile.mjs';
 
@@ -14,11 +14,12 @@ export function sha256File(path) {
 
 export function stageProjection({ files, sourceRoot, destination, allowedRoot }) {
   if (!Array.isArray(files) || !files.length) throw Error('Projection needs at least one file.');
+  if (!allowedRoot) throw Error('The projection needs the operator run root.');
   const root = resolve(destination);
-  if (allowedRoot) {
-    const boundary = resolve(allowedRoot);
-    const relative = root.slice(boundary.length);
-    if (!relative || relative.startsWith('..') || relative.includes('..')) throw Error('The projection destination must live inside the operator run root.');
+  const boundary = resolve(allowedRoot);
+  const inside = relative(boundary, root);
+  if (!inside || isAbsolute(inside) || inside.startsWith('..') || inside.includes(`..${sep}`)) {
+    throw Error('The projection destination must live inside the operator run root.');
   }
   rmSync(root, { recursive: true, force: true });
   mkdirSync(root, { recursive: true });
@@ -100,7 +101,8 @@ export function createExecutionBoundary(options) {
     const staged = stageProjection({
       files: request.files,
       sourceRoot: state.worktree,
-      destination: projection.destinationFor(state)
+      destination: projection.destinationFor(state),
+      allowedRoot: projection.allowedRoot
     });
     const binding = buildTrustedBinding(context(state, {
       purpose,

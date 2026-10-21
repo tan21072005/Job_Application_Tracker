@@ -50,6 +50,7 @@ function buildAdapters() {
       nodeHash: catalog.nodeHash
     }),
     projection: {
+      allowedRoot: resolve(runRoot),
       destinationFor: state => resolve(runRoot, state.id, 'projection'),
       scratchFor: state => resolve(runRoot, state.id, 'scratch')
     },

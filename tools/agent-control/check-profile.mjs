@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import {
+  ALLOWED_LAUNCH_ENV_KEYS,
   assertNoHostAccess,
   assertPinnedImage,
   buildRunArgs,
@@ -19,7 +20,7 @@ export const CHECK_PROJECTION_TARGET = CANDIDATE_TARGET;
 export const CHECK_SCRATCH_TARGET = SCRATCH_TARGET;
 export const CHECK_FIXTURE_TARGET = FIXTURE_TARGET;
 
-export const CHECK_ENV_KEYS = Object.freeze(['HOME', 'CHECK_ID', 'CANDIDATE_DIGEST', 'FIXTURE_ROOT', 'SCRATCH_ROOT', 'HOST_PROBE_PATH']);
+export const CHECK_ENV_KEYS = ALLOWED_LAUNCH_ENV_KEYS;
 
 
 export function assertCheckEnvironment(env) {

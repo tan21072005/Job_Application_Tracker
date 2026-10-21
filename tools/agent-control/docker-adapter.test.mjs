@@ -6,6 +6,8 @@ import { join } from 'node:path';
 import {
   ADAPTER_ID,
   ALLOWED_DOCKER_FLAGS,
+  ALLOWED_LAUNCH_ENV_KEYS,
+  assertAllowedLaunchEnv,
   CONTAINER_UID,
   DEFAULT_IMAGE,
   NETWORK_MODE,
@@ -271,4 +273,11 @@ test('the probe program is shipped and reads its configuration from the environm
   for (const commandId of ['projection-read', 'scratch-write', 'projection-write', 'host-write', 'child-liveness', 'grandchild-liveness', 'transport-positive', 'transport-general-egress']) {
     assert.ok(program.includes(`'${commandId}'`), commandId);
   }
+});
+test('the launch refuses an environment variable outside the allow list', async () => {
+  const { runRoot, projection, scratch } = fixture();
+  const adapter = createDockerAdapter({ repo: process.cwd(), runRoot, home: '' });
+  await assert.rejects(() => adapter.launch({ projection, scratch, command: ['node', 'worker.mjs'], env: { READINESS_KEY: 'secret' } }), /may only carry/);
+  await assert.rejects(() => adapter.launch({ projection, scratch, command: ['node', 'worker.mjs'], env: { DATABASE_URL: 'postgres://user:pw@host/db' } }), /may only carry/);
+  assert.equal(assertAllowedLaunchEnv({ HOME: '/nonexistent', CHECK_ID: 'build:api' }), true);
 });
