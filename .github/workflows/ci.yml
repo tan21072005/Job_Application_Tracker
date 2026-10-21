@@ -1,0 +1,64 @@
+name: JobTrack Full-Stack CI
+"on": [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+
+jobs:
+  check-all:
+    name: Full-Stack Verification & Check All
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: jobtrack
+          POSTGRES_PASSWORD: jobtrack
+          POSTGRES_DB: jobtrack_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      APP_ORIGIN: http://127.0.0.1:64364
+      JWT_SECRET: jobtrack_test_jwt_secret_with_minimum_32_characters
+      DATABASE_URL: postgres://jobtrack:jobtrack@localhost:5432/jobtrack_test
+      TEST_DATABASE_URL: postgres://jobtrack:jobtrack@localhost:5432/jobtrack_test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install root and workspace dependencies
+        run: npm ci
+
+      - name: Install API dependencies
+        run: npm --prefix apps/api ci
+
+      - name: Install Web dependencies
+        run: npm --prefix apps/web ci
+
+      - name: Run Database Migrations
+        run: npm run db:migrate
+
+      - name: Run Full-Stack Check All Suite
+        run: npm run check:all

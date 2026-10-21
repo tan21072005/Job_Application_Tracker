@@ -1,0 +1,82 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: jobtrack-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-jobtrack}
+      POSTGRES_USER: ${POSTGRES_USER:-jobtrack}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobtrack_secure_local_dev_password}
+      PGDATA: /var/lib/postgresql/18/docker
+    volumes:
+      - jobtrack-postgres-data:/var/lib/postgresql/18/docker
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobtrack} -d ${POSTGRES_DB:-jobtrack}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jobtrack-internal
+
+  migration:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.api
+    container_name: jobtrack-migration
+    command: ["node", "src/migrate.ts"]
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jobtrack}:${POSTGRES_PASSWORD:-jobtrack_secure_local_dev_password}@postgres:5432/${POSTGRES_DB:-jobtrack}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - jobtrack-internal
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.api
+    container_name: jobtrack-api
+    restart: unless-stopped
+    environment:
+      PORT: "64366"
+      HOST: "0.0.0.0"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jobtrack}:${POSTGRES_PASSWORD:-jobtrack_secure_local_dev_password}@postgres:5432/${POSTGRES_DB:-jobtrack}
+      JWT_SECRET: ${JWT_SECRET:-jobtrack_production_local_jwt_secret_minimum_32_characters}
+      APP_ORIGIN: ${APP_ORIGIN:-http://127.0.0.1:64364}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      NODE_ENV: production
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:64366/api/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jobtrack-internal
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.web
+    container_name: jobtrack-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:64364:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - jobtrack-internal
+
+volumes:
+  jobtrack-postgres-data:
+    name: jobtrack-postgres-data
+
+networks:
+  jobtrack-internal:
+    name: jobtrack-internal
+    driver: bridge
