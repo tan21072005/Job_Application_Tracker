@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkS
 import { resolve, relative, join, dirname, isAbsolute, basename } from 'node:path';
 import { release } from 'node:os';
 import { FEATURES, assertChangeSet, assertOwnedPath, assertReadableSourcePath } from './policy.mjs';
+import { controlPlaneFingerprint } from './fingerprint.mjs';
 import { verifyReadinessReceipt } from './readiness.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -240,9 +241,7 @@ export class AgentController {
   }
 
   fingerprint() {
-    const files = ['package.json', 'package-lock.json', 'apps/api/package.json', 'apps/web/package.json', 'packages/jobtrack-contract/package.json', 'packages/jobtrack-mcp/package.json'];
-    for (const name of readdirSync(join(this.root, 'tools/agent-control')).sort()) if (/\.(mjs|json)$/.test(name)) files.push(`tools/agent-control/${name}`);
-    return hash(files.map(file => `${file}:${existsSync(join(this.root, file)) ? configurationHash(join(this.root, file)) : 'missing'}`).join('\n'));
+    return controlPlaneFingerprint(this.root);
   }
 
   prepare(taskInput) {

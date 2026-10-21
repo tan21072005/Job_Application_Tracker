@@ -1,0 +1,88 @@
+{
+  "kind": "readiness-receipt",
+  "runId": "e20fadab-1340-44b8-ada0-61c9e1c048e1",
+  "base": "D:\\Long-term\\JobTrack-issuance-e20fadab",
+  "catalog": {
+    "taskId": "readiness-canary",
+    "feature": "web",
+    "base": "main",
+    "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+    "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
+    "policyHash": "153fbdbd324d43a426ac74f91243e4b0072370445708cc5d5d911a6f0805c7b6",
+    "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
+    "purpose": "worker-read",
+    "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
+    "adapterId": "jobtrack-docker-adapter-v1",
+    "imageDigest": "44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+    "cliHash": "2726b1cce5c5805259ab3000c9521b790819f91381a2caa41f5b6fc588f46643",
+    "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87",
+    "verifierImplementationHash": "9890750ec796fe7f022b752e6877be7947e807b0356c18aa6e5cfddf144c5046",
+    "modelEndpoint": "http://127.0.0.1:8099/v1/chat",
+    "generalEgressEndpoint": "http://127.0.0.1:8098/general",
+    "mountSources": {
+      "projection": "D:/Long-term/JobTrack-issuance-e20fadab/projection",
+      "scratch": "D:/Long-term/JobTrack-issuance-e20fadab/scratch"
+    }
+  },
+  "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\H5-trusted-issuer\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\e20fadab-1340-44b8-ada0-61c9e1c048e1.evidence.json",
+  "evidenceHash": "3d2c2951c18ab605d81f41f420714ef0b8aa81824469e94ee51ecb2a78466281",
+  "receipt": {
+    "schemaVersion": 2,
+    "runId": "e20fadab-1340-44b8-ada0-61c9e1c048e1",
+    "issuedAt": "2026-10-21T12:26:24.279Z",
+    "expiresAt": "2026-10-21T12:41:24.279Z",
+    "binding": {
+      "taskId": "readiness-canary",
+      "feature": "web",
+      "base": "main",
+      "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+      "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
+      "policyHash": "153fbdbd324d43a426ac74f91243e4b0072370445708cc5d5d911a6f0805c7b6",
+      "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
+      "purpose": "worker-read",
+      "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
+      "adapterId": "jobtrack-docker-adapter-v1",
+      "imageDigest": "44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+      "cliHash": "2726b1cce5c5805259ab3000c9521b790819f91381a2caa41f5b6fc588f46643",
+      "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87"
+    },
+    "evidence": {
+      "path": "e20fadab-1340-44b8-ada0-61c9e1c048e1.evidence.json",
+      "rawSha256": "3d2c2951c18ab605d81f41f420714ef0b8aa81824469e94ee51ecb2a78466281",
+      "completedAt": "2026-10-21T12:26:24.266Z",
+      "bytes": 9040
+    },
+    "verifier": {
+      "id": "jobtrack-trusted-issuer-v1",
+      "implementationHash": "9890750ec796fe7f022b752e6877be7947e807b0356c18aa6e5cfddf144c5046"
+    },
+    "derived": {
+      "readIsolation": true,
+      "writeIsolation": true,
+      "childCleanup": true,
+      "modelTransport": true,
+      "egress": true,
+      "gateA": true
+    },
+    "signature": "46b0e47ac713e62c27c80671f7b2375cfa7f9e59a372b49be4c9a77c44239455"
+  },
+  "diagnostics": null,
+  "audit": [
+    {
+      "at": "2026-10-21T12:26:24.283Z",
+      "event": "readiness-issued",
+      "runId": "e20fadab-1340-44b8-ada0-61c9e1c048e1",
+      "taskId": "readiness-canary",
+      "evidencePath": "D:\\Project\\Job_Application_Tracker\\.worktrees\\H5-trusted-issuer\\planning\\jobtrack-agent-autonomy\\hardening-evidence\\readiness-evidence\\e20fadab-1340-44b8-ada0-61c9e1c048e1.evidence.json",
+      "evidenceHash": "3d2c2951c18ab605d81f41f420714ef0b8aa81824469e94ee51ecb2a78466281",
+      "signed": true,
+      "diagnostics": null
+    }
+  ],
+  "limitations": [
+    "The general egress control is a host reachable local endpoint, not the public internet; it proves the isolated run has no path to a host reachable endpoint.",
+    "The model transport is a local broker endpoint; no provider credential was used and no paid service was called.",
+    "The projection is synthetic; the real checkout was never mounted into the container.",
+    "The receipt was verified by the schema 2 verifier inside the issuer before it was signed. A later re-verification needs the issuer run context, including the per run witness bindings, which are deliberately not stored in this artifact."
+  ]
+}

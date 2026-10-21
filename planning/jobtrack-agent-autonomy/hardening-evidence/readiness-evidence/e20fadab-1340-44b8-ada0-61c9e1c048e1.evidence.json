@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 2,
+  "runId": "e20fadab-1340-44b8-ada0-61c9e1c048e1",
+  "startedAt": "2026-10-21T12:26:23.072Z",
+  "completedAt": "2026-10-21T12:26:24.266Z",
+  "binding": {
+    "taskId": "readiness-canary",
+    "feature": "web",
+    "base": "main",
+    "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+    "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
+    "policyHash": "153fbdbd324d43a426ac74f91243e4b0072370445708cc5d5d911a6f0805c7b6",
+    "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
+    "purpose": "worker-read",
+    "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
+    "adapterId": "jobtrack-docker-adapter-v1",
+    "imageDigest": "44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+    "cliHash": "2726b1cce5c5805259ab3000c9521b790819f91381a2caa41f5b6fc588f46643",
+    "nodeHash": "8a2de0bf57482bc655621fdf52e8df1abc775984dddb175e59c8981b75a7cc87"
+  },
+  "catalog": {
+    "probeCatalogHash": "c8c116df67ae73c4fbb37a6732be9ba6b800eb0d804ea399c9c6e33a924be3cb",
+    "commandIds": [
+      "projection-read",
+      "scratch-write",
+      "host-repo-read",
+      "common-git-read",
+      "control-state-read",
+      "host-credential-read",
+      "projection-write",
+      "host-write",
+      "child-liveness",
+      "grandchild-liveness",
+      "transport-positive",
+      "transport-general-egress"
+    ]
+  },
+  "executions": [
+    {
+      "commandId": "projection-read",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "767e99144dab23041fdbc295e57b778316b9c009ac6ed844330df07d83c84c96",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "scratch-write",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "f0118e483833bdbdf6e3d941797d829112ce7e05cece3a7373b0d0131db17bf0",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "host-repo-read",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "d99607fa8cfa4fd50118d91edc94046dc8e933f8719af96b6e820d1aad1c2b98",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "common-git-read",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "control-state-read",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "host-credential-read",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "projection-write",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "f5aa816c496939f0fe120d1aaff1b12d86d92b49752cae74eb17d26674dd5b18",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "host-write",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "d99607fa8cfa4fd50118d91edc94046dc8e933f8719af96b6e820d1aad1c2b98",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "child-liveness",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "894ed3c9e41ae3311a3fd0f0bc823828efd0845da6ab2fbabec0fca163d00bce",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "grandchild-liveness",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "894ed3c9e41ae3311a3fd0f0bc823828efd0845da6ab2fbabec0fca163d00bce",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "transport-positive",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "0137d4ee3e1d77182feceab06a38090bef3a4171d1c74445206e8f34aa3c2ecd",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    },
+    {
+      "commandId": "transport-general-egress",
+      "exitCode": 0,
+      "timedOut": false,
+      "stdoutSha256": "0137d4ee3e1d77182feceab06a38090bef3a4171d1c74445206e8f34aa3c2ecd",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "error": null
+    }
+  ],
+  "observations": {
+    "hostPositive": [
+      {
+        "targetId": "host-repo-read",
+        "connected": true,
+        "witnessSha256": "a917b437d8945bf516b70c12b8750b17e27fd7e1169650c10775086c85e1642c"
+      },
+      {
+        "targetId": "common-git-read",
+        "connected": true,
+        "witnessSha256": "7cae6bdd9527f8294f64e1b14915ccc5715ea21d036eb55306fc23247d644dc6"
+      },
+      {
+        "targetId": "control-state-read",
+        "connected": true,
+        "witnessSha256": "c8ac32efe08250a8615713d67e8396ac01465487dedc87d2e79ea81acd777a04"
+      },
+      {
+        "targetId": "host-credential-read",
+        "connected": true,
+        "witnessSha256": "1c23ee36cdf4c1a29411e794ca6559b3b1df22a98cb8502d801c652cc94f5b4e"
+      },
+      {
+        "targetId": "projection-write",
+        "connected": true,
+        "witnessSha256": "d0e1ca0c917e6cf1576dbbe5a815945d77c03ab892bb2f51f0cf9b93ead49770"
+      },
+      {
+        "targetId": "host-write",
+        "connected": true,
+        "witnessSha256": "cff0c19742212adb83e3c9d88f85194a54a44f22e45588715dee1c66891d4cdb"
+      },
+      {
+        "targetId": "transport-general-egress",
+        "connected": true,
+        "witnessSha256": "3988f5516af741fb9621ff2774acfc4340a48306f541c3f4d22d1d567f3abe0f"
+      }
+    ],
+    "namespace": {
+      "inspected": true,
+      "mounts": [
+        {
+          "kind": "projection",
+          "source": "D:/Long-term/JobTrack-issuance-e20fadab/projection",
+          "target": "/projection",
+          "readOnly": true
+        },
+        {
+          "kind": "scratch",
+          "source": "D:/Long-term/JobTrack-issuance-e20fadab/scratch",
+          "target": "/scratch",
+          "readOnly": false
+        }
+      ],
+      "invisibleHostPaths": [
+        "host-repo-read",
+        "common-git-read",
+        "control-state-read",
+        "host-credential-read",
+        "host-write"
+      ]
+    },
+    "readTargets": [
+      {
+        "targetId": "projection-read",
+        "requirement": "allowed",
+        "hostPath": "D:/Long-term/JobTrack-issuance-e20fadab/projection",
+        "outcome": "allowed"
+      },
+      {
+        "targetId": "host-repo-read",
+        "requirement": "denied",
+        "hostPath": "D:/Project/Job_Application_Tracker",
+        "outcome": "absent"
+      },
+      {
+        "targetId": "common-git-read",
+        "requirement": "denied",
+        "hostPath": "D:/Project/Job_Application_Tracker/.git",
+        "outcome": "absent"
+      },
+      {
+        "targetId": "control-state-read",
+        "requirement": "denied",
+        "hostPath": "D:/Project/Job_Application_Tracker/.agent-state",
+        "outcome": "absent"
+      },
+      {
+        "targetId": "host-credential-read",
+        "requirement": "denied",
+        "hostPath": "D:/Project/Job_Application_Tracker/accounts.txt",
+        "outcome": "absent"
+      }
+    ],
+    "writeTargets": [
+      {
+        "targetId": "scratch-write",
+        "requirement": "allowed",
+        "hostPath": "D:/Long-term/JobTrack-issuance-e20fadab/scratch",
+        "outcome": "allowed"
+      },
+      {
+        "targetId": "projection-write",
+        "requirement": "denied",
+        "hostPath": "D:/Long-term/JobTrack-issuance-e20fadab/projection",
+        "outcome": "denied"
+      },
+      {
+        "targetId": "host-write",
+        "requirement": "denied",
+        "hostPath": "D:/Project/Job_Application_Tracker",
+        "outcome": "absent"
+      }
+    ],
+    "liveness": [
+      {
+        "processId": "14",
+        "generation": "child",
+        "before": true,
+        "after": false
+      },
+      {
+        "processId": "21",
+        "generation": "grandchild",
+        "before": true,
+        "after": false
+      }
+    ],
+    "transport": {
+      "endpoint": "http://127.0.0.1:8099/v1/chat",
+      "generalEgressEndpoint": "http://127.0.0.1:8098/general",
+      "positiveConnected": true,
+      "generalEgressBlocked": true
+    }
+  },
+  "gateA": true
+}
