@@ -6,9 +6,12 @@ import { spawn } from 'node:child_process';
 
 const workspace = path.resolve(process.argv[2] ?? process.cwd());
 const canaryRoot = path.resolve(process.env.JT_CANARY_ROOT ?? path.join(os.tmpdir(), 'jobtrack-sandbox-canary'));
+const fixtureRoot = path.resolve(process.env.JT_CANARY_FIXTURE ?? path.join(canaryRoot, 'fixture'));
 const outsideTarget = path.join(canaryRoot, 'outside', 'write-probe.txt');
 const insideTarget = path.join(workspace, '.jt-canary-write-probe.txt');
 const readProbe = path.join(canaryRoot, 'outside', 'read-probe.txt');
+const fixtureCredential = path.join(fixtureRoot, 'host-repo', '.env');
+const fixtureAccounts = path.join(fixtureRoot, 'host-repo', 'accounts.txt');
 
 function classify(error) {
   if (!error) return 'ALLOWED';
@@ -114,6 +117,7 @@ const report = {
   capturedAt: new Date().toISOString(),
   workspace,
   canaryRoot,
+  fixtureRoot,
   profile: process.env.JT_SANDBOX_PROFILE ?? 'unknown',
   platform: `${process.platform} ${os.release()}`,
   node: process.version,
@@ -131,9 +135,11 @@ report.checks.sandboxMarkerPresent = fs.existsSync(path.join(canaryRoot, 'outsid
 report.checks.gitCommonDirHead = attemptOpen(path.join(workspace, '.git', 'HEAD'));
 report.checks.gitCommonDirConfig = attemptOpen(path.join(workspace, '.git', 'config'));
 report.checks.siblingWorktreeList = attemptList(path.join(workspace, '.worktrees'));
-report.checks.credentialFileOpen = attemptOpen(path.join(workspace, '.env'));
-report.checks.accountsFileOpen = attemptOpen(path.join(workspace, 'accounts.txt'));
+report.checks.credentialFileOpen = attemptOpen(fixtureCredential);
+report.checks.accountsFileOpen = attemptOpen(fixtureAccounts);
 report.checks.homeCredentialList = attemptList(path.join(os.homedir(), '.ssh'));
 report.checks.controlStateList = attemptList(path.join(workspace, '.agent-state'));
+report.checks.credentialFixture = { opened: fs.existsSync(fixtureCredential), path: 'fixture/host-repo/.env' };
+report.checks.accountsFixture = { opened: fs.existsSync(fixtureAccounts), path: 'fixture/host-repo/accounts.txt' };
 
 process.stdout.write(JSON.stringify(report, null, 2) + '\n');
