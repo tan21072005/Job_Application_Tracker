@@ -1,0 +1,28 @@
+﻿{
+    "ACLsBroadened":  false,
+    "note":  "Active log handles may continue writing original backup until Codex restart. Backups not deleted.",
+    "records":  [
+                    {
+                        "destination":  "D:\\Long-term\\Codex-storage-20261021-active\\.sandbox-bin",
+                        "backup":  "C:\\Users\\Admin\\.codex\\.sandbox-bin.migration-backup-20261021",
+                        "junctionVerified":  true,
+                        "source":  "C:\\Users\\Admin\\.codex\\.sandbox-bin",
+                        "sourceBackupRetained":  true
+                    },
+                    {
+                        "destination":  "D:\\Long-term\\Codex-storage-20261021-active\\.sandbox",
+                        "backup":  "C:\\Users\\Admin\\.codex\\.sandbox.migration-backup-20261021",
+                        "junctionVerified":  true,
+                        "source":  "C:\\Users\\Admin\\.codex\\.sandbox",
+                        "sourceBackupRetained":  true
+                    }
+                ],
+    "projectUnchanged":  "D:\\Project\\Job_Application_Tracker",
+    "sandboxSecretsMoved":  false,
+    "verifiedSandboxFiles":  91,
+    "authMoved":  false,
+    "status":  "migrated-with-backups",
+    "concurrentlyChangingLogs":  [
+
+                                 ]
+}

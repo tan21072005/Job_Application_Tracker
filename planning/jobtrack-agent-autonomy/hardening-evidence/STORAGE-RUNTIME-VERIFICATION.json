@@ -1,0 +1,34 @@
+{
+  "checks": [
+    {
+      "command": [
+        "C:\\Users\\Admin\\AppData\\Local\\OpenAI\\Codex\\bin\\896a0166b774037a\\codex.exe",
+        "sandbox",
+        "--permission-profile",
+        ":read-only",
+        "-C",
+        "D:\\Project\\Job_Application_Tracker",
+        "--",
+        "C:\\Program Files\\nodejs\\node.EXE",
+        "--version"
+      ],
+      "code": 0,
+      "output": "v24.18.0\n",
+      "error": ""
+    },
+    {
+      "command": [
+        "node",
+        "D:\\Project\\Job_Application_Tracker\\tools\\agent-control\\cli.mjs",
+        "doctor"
+      ],
+      "code": 0,
+      "output": "{\n  \"repository\": \"D:/Project/Job_Application_Tracker\",\n  \"head\": \"256e6f1edffc7a09f1ba88be6e6f90273ad55abf\",\n  \"features\": [\n    \"web\",\n    \"api\",\n    \"extension\",\n    \"mcp\",\n    \"contracts\"\n  ],\n  \"sandbox\": {\n    \"code\": 0,\n    \"timedOut\": false,\n    \"output\": \"v24.18.0\\r\\n\",\n    \"error\": \"[rtk] /!\\\\ No hook installed \u00e2\u20ac\u201d run `rtk init -g` for automatic token savings\\n\"\n  },\n  \"sandboxProbePass\": true,\n  \"isolationReady\": false,\n  \"liveWorkerRunVerified\": false,\n  \"safety\": \"Read-only workers, scoped patch broker, local commits only. Hostile actors require OS/container isolation.\"\n}\n",
+      "error": ""
+    }
+  ],
+  "diskFree": {
+    "C:\\": 18626314240,
+    "D:\\": 3970646061056
+  }
+}

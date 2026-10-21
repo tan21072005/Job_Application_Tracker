@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-10-21T10:21:03.530401+00:00",
+  "artifacts": [
+    {
+      "file": "STORAGE-MIGRATION.json",
+      "sha256": "5db29beed82594d0fdf0cc980b846be1bc2a2e32cdf53b54d9ea53ccc72dac1f",
+      "bytes": 1307
+    },
+    {
+      "file": "STORAGE-RUNTIME-VERIFICATION.json",
+      "sha256": "3d52e978a5c54557b9f6387141185836333292b7d128f867ef64a6ff6e940b47",
+      "bytes": 1393
+    },
+    {
+      "file": "CONTAINER-PILOT.json",
+      "sha256": "5e3d5c0f59e1ccfb4ccab1c96a068352048d1f2074e700d6599000833f01d2e9",
+      "bytes": 2172
+    },
+    {
+      "file": "reproduce-container-pilot.py",
+      "sha256": "734ef7c4b10b65f1cba829d382f51abde2dd3c9314a7d9802ace956fc007aa16",
+      "bytes": 7624
+    }
+  ],
+  "textNormalization": "Archived text bytes use LF; hashes cover archived bytes, not the original platform newline representation."
+}

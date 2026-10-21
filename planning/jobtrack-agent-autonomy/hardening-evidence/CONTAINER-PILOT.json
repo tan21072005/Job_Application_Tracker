@@ -1,0 +1,79 @@
+{
+  "kind": "pilot-only-not-readiness-receipt",
+  "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+  "containerId": "940e38e093fc246f6f492dbfc48a58f71fa111ebb168783ded915606b5c5d675",
+  "storage": "D:\\Long-term\\JobTrack-isolation-pilot-04eeff74a75d",
+  "mounts": [
+    {
+      "destination": "/projection",
+      "writable": false,
+      "source": "D:\\Long-term\\JobTrack-isolation-pilot-04eeff74a75d\\projection"
+    },
+    {
+      "destination": "/scratch",
+      "writable": true,
+      "source": "D:\\Long-term\\JobTrack-isolation-pilot-04eeff74a75d\\scratch"
+    }
+  ],
+  "hostPositiveControl": {
+    "endpoint": "1.1.1.1:443",
+    "connected": true
+  },
+  "observed": {
+    "uid": 65534,
+    "projectionRead": {
+      "success": true
+    },
+    "projectionWrite": {
+      "success": false,
+      "code": "EROFS"
+    },
+    "scratchWrite": {
+      "success": true
+    },
+    "rootWrite": {
+      "success": false,
+      "code": "EROFS"
+    },
+    "hostNamespacePaths": {
+      "/mnt/d/Project/Job_Application_Tracker": {
+        "success": false,
+        "code": "ENOENT"
+      },
+      "/run/desktop/mnt/host/d/Project/Job_Application_Tracker": {
+        "success": false,
+        "code": "ENOENT"
+      },
+      "/var/run/docker.sock": {
+        "success": false,
+        "code": "ENOENT"
+      },
+      "/host": {
+        "success": false,
+        "code": "ENOENT"
+      }
+    },
+    "tree": {
+      "spawnedPid": 15,
+      "grandchildPid": 22,
+      "childAliveBeforeKill": true,
+      "grandchildAliveBeforeKill": true,
+      "killRequested": true,
+      "stillAliveAfterKill": false,
+      "grandchildAliveAfterKill": false
+    },
+    "network": {
+      "connected": false,
+      "code": "ENETUNREACH"
+    }
+  },
+  "projectionBytesUnchanged": true,
+  "modelTransportVerified": false,
+  "readinessReceiptIssued": false,
+  "limitations": [
+    "Synthetic projection only; no product source or credentials mounted.",
+    "Namespace absence is recorded as ENOENT, not relabeled as filesystem access denial.",
+    "No model transport allowlist or production worker exercised."
+  ],
+  "ownedContainerCleanupVerified": true
+}

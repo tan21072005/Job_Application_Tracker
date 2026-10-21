@@ -1,0 +1,55 @@
+{
+  "kind": "fixture-check-record-not-readiness-receipt",
+  "capturedAt": "2026-10-21T10:17:59.996716+00:00",
+  "sourceSha256": {
+    "tools/agent-control/controller.mjs": "5fd9b6860794e8ff5e3c6ee420d98dcd1da53917ebd44ae6dc386143b989263e",
+    "tools/agent-control/controller.test.mjs": "d213b1d43ba80055590b1566383c0d5c2cd74833f51e3db6320012f37c683c8d",
+    "tools/agent-control/projection.mjs": "8fe3d1f305f6c14a367fdec66f5ea3a1eaa8214011077231a8455cfe92f631b4",
+    "tools/agent-control/projection.test.mjs": "96a6225b6803b34c217bb1ae1a9efbed30e84b13df22679fdd22633fb1332bfa",
+    "tools/sandbox/verdict.mjs": "2093c5db0fc14ad385954542229e94f9db1b1ba140214e48c2f9726d9d00e859",
+    "tools/sandbox/verdict.test.mjs": "9f464fbd6dc92289c33404e6a77ca87774aca1112e869eb78835d35b8a4fe7bd"
+  },
+  "results": [
+    {
+      "command": [
+        "rtk",
+        "proxy",
+        "npm",
+        "run",
+        "agents:test"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "tests": 95,
+        "pass": 95,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "log": "agents-fixture-tests.txt",
+      "logSha256": "166fc2baaa8ccbec4069588b485a1d18b4888c66e34243065033898e54314ef0"
+    },
+    {
+      "command": [
+        "rtk",
+        "proxy",
+        "node",
+        "--test",
+        "tools/sandbox/verdict.test.mjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "log": "verdict-fixture-tests.txt",
+      "logSha256": "ee870a7fbf50044099b322cc0b10e43dbf75a373c0fc53de8464daa8af6297e5"
+    }
+  ],
+  "readinessReceiptIssued": false,
+  "liveWorkerRunVerified": false,
+  "textNormalization": "Archived text files use LF. logSha256 hashes the actual archived UTF-8 bytes."
+}

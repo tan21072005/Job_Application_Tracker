@@ -1,0 +1,27 @@
+✔ canary reports are resolved by profile when only the list is given (1.0193ms)
+✔ a complete evidence set passes the gate (0.5331ms)
+✔ a missing check is treated as no evidence and never as a pass (0.2019ms)
+✔ a check present without the expected field is no evidence (0.1394ms)
+✔ every read target must be denied (0.2742ms)
+✔ a missing canary report fails closed (0.1503ms)
+✔ egress needs a host positive control (0.137ms)
+✔ egress that stays open in the isolated run is a failure (0.1214ms)
+✔ a failing sandbox probe blocks the gate (0.1358ms)
+✔ the check runner profile must not write outside the checkout (0.1536ms)
+✔ a surviving child process is a failure (0.1337ms)
+✔ a target that does not exist is no evidence and never a pass (0.1078ms)
+✔ every failing verdict is reported (0.1523ms)
+✔ operational errors cannot stand in for denied read or write evidence (0.6629ms)
+✔ a timed out probe cannot pass even with code zero (0.1613ms)
+✔ cleanup requires child and grandchild to have run before termination (0.172ms)
+✔ home credential visibility is part of read isolation (0.1487ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 79.0378
+
+[rtk] /!\ No hook installed — run `rtk init -g` for automatic token savings
