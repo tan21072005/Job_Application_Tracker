@@ -23,9 +23,11 @@ test('canonical paths reject traversal, ADS, control characters and Windows alia
 test('feature lanes and protected files enforce exact ownership', t => {
   const root = fixture(t);
   assert.equal(assertOwnedPath(root, 'web', 'apps/web/src/page.tsx'), 'apps/web/src/page.tsx');
+  assert.equal(assertOwnedPath(root, 'web', 'apps/web/src/useDashboardClock.ts'), 'apps/web/src/useDashboardClock.ts');
+  assert.equal(assertOwnedPath(root, 'api', 'apps/api/src/lockSession.ts'), 'apps/api/src/lockSession.ts');
   for (const candidate of ['apps/api/src/a.ts', 'apps/Web/src/a.ts', 'apps/web/src/AGENTS.md', 'apps/web/src/.env.local', 'apps/web/src/.git/config', 'apps/web/src/package.json', 'apps/web/src/package-lock.json', 'apps/web/src/README.md', 'apps/web/src/secret.key', 'apps/web/src/agent-control/a.ts']) assert.throws(() => assertOwnedPath(root, 'web', candidate), candidate);
   assert.throws(() => assertOwnedPath(root, '__proto__', 'apps/web/src/a.ts'));
-  for (const candidate of ['packages/jobtrack-extension/accounts.txt', 'packages/jobtrack-extension/accounts-backup.txt', 'packages/jobtrack-extension/.claude/config.json']) assert.throws(() => assertOwnedPath(root, 'extension', candidate), candidate);
+  for (const candidate of ['packages/jobtrack-extension/accounts.txt', 'packages/jobtrack-extension/accounts-backup.txt', 'packages/jobtrack-extension/.claude/config.json', 'packages/jobtrack-extension/package-lock.json', 'packages/jobtrack-extension/pnpm-lock.yaml', 'packages/jobtrack-extension/bun.lockb']) assert.throws(() => assertOwnedPath(root, 'extension', candidate), candidate);
   fs.mkdirSync(path.join(root, 'apps/web/src/Panel'));
   assert.throws(() => assertOwnedPath(root, 'web', 'apps/web/src/panel/a.ts'));
 });

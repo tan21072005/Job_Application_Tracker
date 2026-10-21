@@ -12,7 +12,7 @@ export const FEATURES = Object.freeze(Object.fromEntries(Object.entries({
 
 const fail = message => { throw new Error(message); };
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-const protectedNames = /^(?:agents\.md|readme(?:\.[^.]+)?|package\.json|.*lock.*|\.env(?:\..*)?|.*\.(?:pem|key|p12|pfx)|credentials(?:\..*)?|secrets?(?:\..*)?|accounts.*\.txt|id_rsa|id_ed25519)$/i;
+const protectedNames = /^(?:agents\.md|readme(?:\.[^.]+)?|package\.json|package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lockb?|deno\.lock|composer\.lock|cargo\.lock|poetry\.lock|uv\.lock|pipfile\.lock|gemfile\.lock|\.env(?:\..*)?|.*\.(?:pem|key|p12|pfx)|credentials(?:\..*)?|secrets?(?:\..*)?|accounts.*\.txt|id_rsa|id_ed25519)$/i;
 const protectedParts = /^(?:\.git|\.agents|\.codex|\.claude|\.aws|node_modules|agent-control|migrations)$/i;
 const secretPattern = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:jt_sec_[A-Za-z0-9_-]{24,}|sk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16})\b|\b(?:api[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]\s*["'][^"'\r\n]{12,}["']/i;
 
