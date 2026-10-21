@@ -64,7 +64,7 @@
     {
       "id": "AG01",
       "title": "Thiết kế quyền, capability và control plane",
-      "status": "planned",
+      "status": "implementing",
       "dependencies": [
         "AG00"
       ],
@@ -106,7 +106,7 @@
     {
       "id": "AG02",
       "title": "Sửa sandbox và kiểm read/write/network/timeout canary",
-      "status": "planned",
+      "status": "implementing",
       "dependencies": [
         "AG01"
       ],
