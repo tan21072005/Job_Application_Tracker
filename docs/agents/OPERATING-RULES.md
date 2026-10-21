@@ -6,7 +6,7 @@ Root policy trong `tools/agent-control` là nguồn máy đọc được về la
 
 Mỗi task có ID chữ thường dạng kebab-case, một feature, branch và worktree riêng. Chỉ một task đang chạy được sở hữu một phạm vi ghi. Các lane web, API, extension, MCP phải có tập đường dẫn ghi tách biệt. Mã hợp đồng dùng chung thuộc lane contracts; tài liệu và control plane thuộc người duy trì. Không cho agent web sửa contract, API sửa MCP hoặc extension sửa cấu hình root chỉ để làm check pass.
 
-Nếu feature đi qua nhiều lớp, orchestrator chia thành task có dependency: contract trước, API/MCP/extension/web sau theo hợp đồng đã chốt. Thay đổi ngoài lane được ghi thành yêu cầu bàn giao, không lén đưa vào patch. Các task phụ thuộc dùng baseline đã tích hợp hoặc ref được người duy trì xác nhận, không đọc nhánh khác rồi giả định file đó đã nằm trong checkout của mình.
+Nếu feature đi qua nhiều lớp, orchestrator chia thành task có dependency: contract trước, API/MCP/extension/web sau theo hợp đồng đã chốt. Thay đổi ngoài lane được ghi thành yêu cầu bàn giao, không lén đưa vào patch. Dependency chỉ sẵn sàng khi người duy trì đã tích hợp commit của nó vào base của controller; có commit ở feature branch riêng chưa đủ. Task sau phải dùng baseline đã chứa commit tích hợp đó. Không có tự động tích hợp giữa các agents.
 
 ## Proposal và patch broker
 
@@ -21,6 +21,8 @@ Code mới không thêm comment, kể cả comment giải thích inline, block, 
 Task phải có acceptance và checks trước khi chạy. Chỉ chạy check có trong allowlist, trên checkout đúng baseline và với timeout. Không thực thi chuỗi shell do mô hình tự tạo. Không suy ra một task đã đạt chỉ vì build thành công.
 
 Checks trong các file mẫu chỉ là ví dụ không ghi dữ liệu vận hành. Người duy trì phải chọn thêm kiểm thử hành vi phù hợp với task thật và môi trường test cách ly trước khi duyệt task. Không coi `check:contract` thay cho kiểm thử MCP, hoặc `build:api` thay cho kiểm thử endpoint; chỉ được chạy khi check tương ứng đã có trong policy và môi trường đủ điều kiện.
+
+Các gate cơ bản theo lane: API dùng `build:api`, contracts dùng `check:contract`, web dùng `build:web` và `test:web`, extension dùng `test:extension`, MCP dùng `build:mcp`. Chúng là gate tối thiểu chứ không thay thế acceptance. Controller chạy lệnh cố định trong worktree, loại bỏ biến môi trường credential, không copy dotenv và kiểm tra fingerprint command/package để tránh đổi script kiểm tra. Test vẫn có thể chạy code đã sửa, nên đây không phải cách ly tiến trình thù địch. Thiếu dependency, capability hoặc môi trường cần thiết thì dừng và báo blocked; không ghi kết quả pass thay thế.
 
 Một lần thử bao gồm proposal, áp dụng và kiểm tra. Giới hạn ba lần thử sửa cho mỗi task; cùng chữ ký lỗi xuất hiện hai lần thì dừng. Reflector phải dựa trên lỗi thật: tên check, lỗi đã rút gọn, diff liên quan và tiêu chí thất bại. Không tự tăng giới hạn hoặc đổi mục tiêu để che lỗi.
 
@@ -37,6 +39,8 @@ Không tự bật scheduler hay cho agents chạy vô hạn. Một yêu cầu ch
 ## Dữ liệu, secret và tiến trình
 
 Không đọc hoặc ghi `.env`, file tài khoản, token, mật khẩu, khóa API, khóa mã hóa hoặc thư mục credential trong vòng agent. Không sao chép file bối cảnh có secret vào prompt đầy đủ. Log phải được rút gọn và che dữ liệu trước khi đưa cho Reflector/Reviewer.
+
+Không copy `.env`, file accounts, key hoặc bản sao DB vào worktree để làm check chạy được. Dùng fixture tổng hợp và dependency không nhạy cảm đã được chuẩn bị; nếu thiếu thì báo đúng điều kiện còn thiếu.
 
 Không chạy migration, account generator, restore, delete dữ liệu hoặc test dùng DB thật từ lane feature. Test DB phải được nhận diện riêng và không trùng DB vận hành; thiếu môi trường riêng thì báo blocked. Không dùng “local” làm bằng chứng rằng dữ liệu được phép xóa. Schema đã áp dụng không được sửa lại; đề xuất migration mới qua lane được người duy trì giao.
 

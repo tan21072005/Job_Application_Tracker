@@ -7,6 +7,6 @@
     "Giữ đúng owner isolation và hợp đồng lỗi đã được duyệt.",
     "Không ghi DB thật, sửa migration đã áp dụng hoặc thêm comment vào code."
   ],
-  "checks": ["build:api", "check:contract"],
+  "checks": ["build:api"],
   "dependencies": []
 }
