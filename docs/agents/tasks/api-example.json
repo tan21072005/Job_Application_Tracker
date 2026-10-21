@@ -1,0 +1,12 @@
+{
+  "id": "api-example",
+  "feature": "api",
+  "objective": "Mẫu chưa được giao: bổ sung validation cho một endpoint đã có sau khi xác nhận yêu cầu và hợp đồng dùng chung.",
+  "acceptance": [
+    "Chỉ thay đổi phạm vi lane API được policy cho phép.",
+    "Giữ đúng owner isolation và hợp đồng lỗi đã được duyệt.",
+    "Không ghi DB thật, sửa migration đã áp dụng hoặc thêm comment vào code."
+  ],
+  "checks": ["build:api", "check:contract"],
+  "dependencies": []
+}
