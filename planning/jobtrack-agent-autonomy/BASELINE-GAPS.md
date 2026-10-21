@@ -29,30 +29,23 @@ Lưu ý quyền: thư mục `.git` do tài khoản sandbox cũ (`PC\CodexSandbox
 | Trạng thái task | `npm run agents -- status` | `[]` | Không task/lease nào đang chạy |
 | Sandbox probe | `npm run agents -- doctor` | `sandbox.code = 1`, `helper_unknown_error: setup refresh had errors`, `liveWorkersVerified: false` | **Live dispatch vẫn BLOCKED** |
 
-### 2.1 Cô lập nguyên nhân sandbox (bằng chứng mới, loại bỏ nghi vấn cũ)
+### 2.1 Nguyên nhân sandbox — ĐÃ CHỐT (cập nhật sau AG02)
 
-Lỗi trước đây được ghi nhận ở mọi lần probe; nghi vấn là chính `rtk` làm nhiễu stderr. Đã chạy hai lệnh giống hệt nhau, chỉ khác tiền tố:
+Bản ghi đầu tiên của mục này giả định lỗi nằm ở "cần phiên Administrator" và "cần `codex sandbox uninstall`". **Cả hai giả định đã bị bác bỏ bằng đo thật** vào 21/10/2026 (sau commit `2d926d9`):
 
-```text
-codex sandbox --permission-profile :read-only -C <repo> -- node --version
-  -> exit 1, windows sandbox failed: helper_unknown_error: setup refresh had errors
+| CLI | Phiên bản | Probe `:read-only` |
+| --- | --- | --- |
+| `codex` trên PATH (`%APPDATA%\npm\codex.ps1`) | `codex-cli 0.162.0` | **FAIL** — `helper_unknown_error: setup refresh had errors` |
+| CLI của ứng dụng (`%LOCALAPPDATA%\OpenAI\Codex\bin\<hash>\codex.exe`) | `codex-cli 0.163.0-alpha.10.2` | **PASS** — `v24.18.0`, exit 0 |
 
-codex sandbox --permission-profile :read-only -C <repo> -- rtk proxy node --version
-  -> exit 1, windows sandbox failed: helper_unknown_error: setup refresh had errors
-```
+Nguyên nhân thật: **controller gọi nhầm CLI**. `tools/agent-control/controller.mjs` dùng `this.codexCommand`, lấy từ `CODEX_CLI_PATH` nếu có, nếu không thì rơi về `codex` trên PATH — tức bản npm 0.162.0 bị lỗi. Khi `CODEX_CLI_PATH` trỏ đúng CLI của ứng dụng, `npm run agents -- doctor` trả `sandbox.code = 0`, `sandbox.output = "v24.18.0"`.
 
-Kết luận: **RTK không phải nguyên nhân.** Lỗi nằm ở helper sandbox Windows của Codex CLI, bước "setup refresh" (thiết lập/refresh tài khoản và quy tắc mạng machine-wide).
+Hệ quả cho kế hoạch:
+- `codex sandbox uninstall` **không cần thiết** và **chưa được chạy** — không có bằng chứng cho nó.
+- Chạy elevated **không cần thiết** — toàn bộ bằng chứng thu được ở phiên không elevated.
+- Sandbox **đã dùng được**, nhưng **cách ly đọc chưa có** ⇒ gate G-A **chưa đạt** ⇒ live dispatch vẫn bị chặn. Chi tiết: `SANDBOX-READINESS.md` + `CANARY-EVIDENCE.json`.
 
-Trạng thái tài khoản sandbox trên host:
-
-```text
-CodexSandboxOffline  Enabled=True  LastLogon=10/21/2026 11:32
-CodexSandboxOnline   Enabled=True  LastLogon=<never>
-Group: CodexSandboxUsers ("Codex sandbox internal group (managed)")
-Phiên hiện tại: pc\admin — isAdmin: False (không elevated)
-```
-
-Giả thuyết nguyên nhân đã đủ bằng chứng để kiểm chứng ở AG02: bước setup refresh cần **phiên elevated** để quản lý tài khoản machine-wide; phiên hiện tại không elevated nên helper báo `helper_unknown_error`. Hệ quả: cần chạy lại probe trong một phiên Administrator (hoặc dùng `codex sandbox uninstall` để dọn trạng thái cũ rồi setup lại) — **đây là thao tác host-level ngoài workspace, phải do người duy trì thực hiện và review**, không tự động nới sandbox.
+Các kiểm tra trước đó vẫn đúng và giữ nguyên giá trị: RTK không phải nguyên nhân (lỗi giống hệt khi có và không có `rtk proxy`); tài khoản `CodexSandboxOffline`/`CodexSandboxOnline` và group `CodexSandboxUsers` tồn tại trên host; session đo chạy `PC\Admin` không elevated.
 
 ## 3. Gap matrix nền tảng agents
 
@@ -68,11 +61,11 @@ Giả thuyết nguyên nhân đã đủ bằng chứng để kiểm chứng ở 
 | Crash recovery / atomic journal | một phần | một phần | không | chưa có evidence |
 | Scheduler DAG / nextReady / budget | chưa có | — | — | AG05 |
 | Planner tạo DAG + prompt schema | chưa có | — | — | AG04 |
-| Canary read/write/egress/timeout | chưa có | — | **không** | **AG02 / BLOCKED** |
+| Canary read/write/egress/timeout | **đã có** (`:read-only` chặn ghi, child cleanup sạch) | **live-tested** | **read isolation FAIL** (V01) | AG02 PARTIAL → G-A chưa đạt |
 | Batch tự chạy + stop | chưa có | — | — | AG12 |
-| Mức hiện tại | **L0 (plan/fixture)** | — | — | chưa đạt L1 |
+| Mức hiện tại | **L0 (plan/fixture)** — probe sandbox đã pass, nhưng G-A chưa đạt | — | — | chưa đạt L1 |
 
-Kết luận mức: hệ thống **chưa được chứng nhận live**. 21/21 fixture pass chỉ chứng minh policy logic đúng với worker/check giả lập; không suy ra provider hay sandbox chạy được (V24).
+Kết luận mức: hệ thống **chưa được chứng nhận live**. 21/21 fixture pass chỉ chứng minh policy logic đúng với worker/check giả lập; probe sandbox pass chỉ chứng minh helper chạy được, **không** suy ra cách ly đọc (V01 đang fail) — xem `CANARY-EVIDENCE.json` (V24).
 
 ## 4. Gap sản phẩm C00–C27 có bằng chứng fresh
 
@@ -124,9 +117,10 @@ Không chạy và không được coi là đã kiểm chứng: `db:migrate`, `db
 
 ## 7. Task ready kế tiếp theo thứ tự gate
 
-1. **AG02 (maintainer, host-level)** — probe lại `codex sandbox` trong phiên **elevated**; nếu vẫn lỗi thì `codex sandbox uninstall` rồi setup lại; ghi `CANARY-EVIDENCE.json` với read/write/egress/timeout bằng dữ liệu giả. Đây là mốc chặn duy nhất cho live dispatch.
-2. **AG01 (maintainer)** — `PERMISSION-MATRIX.md` + `CONTROL-PLANE-ADR.md`, khớp với bằng chứng sandbox thực tế ở mục 2.1.
-3. **AG00 đóng** — cập nhật `TASKS.json` (AG00 → `accepted`) khi có review độc lập cho gap matrix này.
-4. AG03–AG09 — chỉ mở sau khi G-A/G-B/G-C đạt.
+1. **AG01 (maintainer)** — `PERMISSION-MATRIX.md` + `CONTROL-PLANE-ADR.md`, phải khớp với bằng chứng thật: sandbox chặn **ghi** nhưng **không chặn đọc** (worker mở được `.git` common dir, `.env`, `accounts.txt`, sibling worktree, control state). Không được mô tả worker là "không đọc được ngoài quyền" khi điều đó chưa được enforce ở tầng OS.
+2. **AG00 đóng** — reviewer độc lập duyệt gap matrix này (brief: `AG00-REVIEW-BRIEF.md`), rồi mới chuyển `TASKS.json` AG00 → `accepted`.
+3. **AG02 đóng (PARTIAL)** — probe đã pass nhờ `CODEX_CLI_PATH`; còn lại: cách ly đọc (AG01), egress có positive control (AG07), profile riêng cho check runner, bỏ `liveWorkersVerified: false` hardcode. Ghi rõ phần nào của G-A chưa đạt, không tính là đạt.
+4. **Sửa P0 auth (C03)** — xem §4.1; fix + regression test phải đi qua feature branch của lane `api` và review độc lập.
+5. AG03–AG09 — chỉ mở sau khi G-A/G-B/G-C đạt.
 
-Không mở live worker, không tự sửa `tools/agent-control/policy.mjs`, không nới sandbox trong lúc chờ AG02.
+Không mở live worker, không tự sửa `tools/agent-control/policy.mjs`, không nới sandbox trong lúc chờ G-A đạt.

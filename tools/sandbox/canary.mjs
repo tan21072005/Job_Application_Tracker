@@ -90,6 +90,26 @@ function attemptChildTree() {
   });
 }
 
+function attemptOpen(target) {
+  try {
+    const handle = fs.openSync(target, 'r');
+    const stat = fs.fstatSync(handle);
+    fs.closeSync(handle);
+    return { opened: true, code: null, size: stat.size };
+  } catch (error) {
+    return { opened: false, code: classify(error) };
+  }
+}
+
+function attemptList(target) {
+  try {
+    const names = fs.readdirSync(target);
+    return { listed: true, code: null, entries: names.length };
+  } catch (error) {
+    return { listed: false, code: classify(error) };
+  }
+}
+
 const report = {
   capturedAt: new Date().toISOString(),
   workspace,
@@ -107,5 +127,13 @@ report.checks.readOutsideWorkspace = attemptRead(readProbe);
 report.checks.egressTcp80 = await attemptEgress();
 report.checks.childProcessTree = await attemptChildTree();
 report.checks.sandboxMarkerPresent = fs.existsSync(path.join(canaryRoot, 'outside', 'read-probe.txt'));
+
+report.checks.gitCommonDirHead = attemptOpen(path.join(workspace, '.git', 'HEAD'));
+report.checks.gitCommonDirConfig = attemptOpen(path.join(workspace, '.git', 'config'));
+report.checks.siblingWorktreeList = attemptList(path.join(workspace, '.worktrees'));
+report.checks.credentialFileOpen = attemptOpen(path.join(workspace, '.env'));
+report.checks.accountsFileOpen = attemptOpen(path.join(workspace, 'accounts.txt'));
+report.checks.homeCredentialList = attemptList(path.join(os.homedir(), '.ssh'));
+report.checks.controlStateList = attemptList(path.join(workspace, '.agent-state'));
 
 process.stdout.write(JSON.stringify(report, null, 2) + '\n');

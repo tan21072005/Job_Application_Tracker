@@ -1,107 +1,97 @@
-# AG02 — Runbook gỡ lỗi sandbox Windows (chạy trong terminal Administrator)
+# AG02 — Runbook probe sandbox Windows (đã cập nhật sau khi chốt nguyên nhân)
 
-Mục tiêu: biến `helper_unknown_error: setup refresh had errors` thành **bằng chứng có/không có**, rồi chỉ mở live dispatch khi từng giới hạn đọc/ghi/network có denial thật.
+Mục tiêu: probe sandbox **không cần elevated**, **không cần uninstall**, sinh bằng chứng denial theo từng giới hạn.
 
-Trạng thái hiện tại (đo 21/10/2026, không elevated): `codex sandbox` lỗi **giống hệt** với `-- node --version` và `-- rtk proxy node --version` ⇒ RTK không phải nguyên nhân. Host có `CodexSandboxOffline`, `CodexSandboxOnline`, group `CodexSandboxUsers`; session đo chạy `PC\Admin` **không elevated** ⇒ giả thuyết: bước `setup refresh` cần phiên Administrator.
+> Lưu ý lịch sử: bản runbook đầu tiên giả định nguyên nhân là "cần Administrator" và "cần `codex sandbox uninstall`". **Hai giả định đó đã bị bác bỏ bằng đo thật** — xem mục 1. Không chạy `codex sandbox uninstall` nếu chưa có bằng chứng mới đòi.
 
-## Bước 0 — mở terminal Administrator
+## 1. Nguyên nhân đã chốt
 
-Cách 1 (Explorer): Start → gõ `powershell` → **Run as administrator** → Yes (UAC).
-Cách 2 (từ terminal hiện tại, sẽ bật UAC):
+| CLI | Phiên bản | Kết quả probe `:read-only` |
+| --- | --- | --- |
+| `%APPDATA%\npm\codex.ps1` (trên PATH) | `codex-cli 0.162.0` | **FAIL** — `helper_unknown_error: setup refresh had errors` |
+| `%LOCALAPPDATA%\OpenAI\Codex\bin\<hash>\codex.exe` (CLI của ứng dụng) | `codex-cli 0.163.0-alpha.10.2` | **PASS** — `v24.18.0`, exit 0 |
 
-```powershell
-Start-Process powershell -Verb RunAs -ArgumentList '-NoExit','-Command','Set-Location ''D:\Project\Job_Application_Tracker'''
-```
+Controller (`tools/agent-control/controller.mjs`) gọi `this.codexCommand`; từ commit `2d926d9` biến này lấy từ `CODEX_CLI_PATH` nếu được đặt, nếu không thì rơi về `codex` trên PATH ⇒ **chính là CLI hỏng**. Đây là lý do `doctor` vẫn báo lỗi trong các phiên không có `CODEX_CLI_PATH`.
 
-Trong cửa sổ mới, xác nhận đã elevated (không được nói "deny only"):
-
-```powershell
-whoami /groups | Select-String 'S-1-5-32-544'
-```
-
-Kỳ vọng: dòng `BUILTIN\Administrators` hiện là **Mandatory group, Enabled by default** (không phải "Group used for deny only"). Nếu vẫn "deny only" ⇒ cửa sổ chưa elevated, đóng và mở lại.
-
-## Bước 1 — probe sandbox (không sửa gì)
+## 2. Chạy probe (một lệnh, không elevated)
 
 ```powershell
 cd D:\Project\Job_Application_Tracker
-node tools/agent-control/cli.mjs doctor
+.\tools\sandbox\probe.ps1
 ```
 
-Đọc `sandbox.code` và `sandbox.error`:
+Script tự:
 
-| `sandbox.code` | `sandbox.error` | Kết luận | Hành động |
-|---|---|---|---|
-| `0` | rỗng | Sandbox khỏe | sang **Bước 3** (canary) |
-| khác `0` | `helper_unknown_error: setup refresh had errors` | Đúng lỗi cũ | sang **Bước 2** |
-| khác `0` | lỗi khác (ghi nguyên văn) | Lỗi mới, chưa hiểu | sang **Bước 4** |
+1. Tìm `codex.exe` của ứng dụng trong `%LOCALAPPDATA%\OpenAI\Codex\bin` (hoặc dùng `CODEX_CLI_PATH` nếu đã đặt) và in ra phiên bản.
+2. So sánh với CLI trên PATH và in kết quả probe của CLI đó.
+3. Tạo **canary giả** ở `%TEMP%\jobtrack-sandbox-canary` (marker giả, không secret).
+4. Chạy `node tools/agent-control/cli.mjs doctor` với `CODEX_CLI_PATH` trỏ đúng CLI → in JSON.
+5. Chạy canary dưới profile `:read-only` (worker), `:workspace` (check runner) và baseline host (không sandbox).
+6. Tính verdict theo từng giới hạn và ghi `planning/jobtrack-agent-autonomy/CANARY-EVIDENCE.json`.
 
-## Bước 2 — dọn trạng thái sandbox cũ rồi probe lại
+Exit code: `0` = G-A đạt, `2` = chưa đạt (in `blockedBy`), `1` = lỗi môi trường.
 
-`codex sandbox uninstall` xóa tài khoản sandbox machine-wide và quy tắc mạng do Codex tạo (lệnh này nằm ngoài workspace ⇒ cần Administrator; đây là thao tác host-level, **không** phải nới sandbox).
+## 3. Đặt `CODEX_CLI_PATH` vĩnh viễn cho máy này
+
+Chỉ khi muốn `npm run agents -- doctor` dùng đúng CLI:
 
 ```powershell
-codex sandbox uninstall
-Start-Sleep -Seconds 3
-node tools/agent-control/cli.mjs doctor
+[Environment]::SetEnvironmentVariable('CODEX_CLI_PATH', 'C:\Users\Admin\AppData\Local\OpenAI\Codex\bin\896a0166b774037a\codex.exe', 'User')
 ```
 
-Lệnh `sandbox` sẽ tự thiết lập lại tài khoản ở lần chạy kế tiếp — nếu vẫn lỗi, nguyên nhân không nằm ở trạng thái tài khoản mà ở môi trường (xem Bước 4).
-
-**Không dùng** `--danger-full-access`, không tắt sandbox, không sửa ACL rộng để "cho chạy được". Lỗi phải được ghi BLOCKED kèm bằng chứng, không được vòng qua.
-
-## Bước 3 — chạy canary và tạo bằng chứng
-
-Một lệnh, chạy trong terminal Administrator đang mở:
+Rồi mở terminal mới (biến User chỉ có hiệu lực ở phiên mới) và kiểm tra:
 
 ```powershell
-cd D:\Project\Job_Application_Tracker
-.\tools\sandbox\probe-elevated.ps1 -Uninstall
+$env:CODEX_CLI_PATH
+npm run agents -- doctor
 ```
 
-Script sẽ: kiểm tra elevation → tạo **dữ liệu giả** ở `%TEMP%\jobtrack-sandbox-canary` (không đụng secret/DB thật) → chạy `doctor` trước → nếu `-Uninstall` được phép thì uninstall + probe lại → chạy canary dưới 2 profile (`:read-only` và `:workspace`) → ghi `planning/jobtrack-agent-autonomy/CANARY-EVIDENCE.json`.
+Kỳ vọng: `sandbox.code = 0`, `sandbox.output = "v24.18.0"`. Trường `sandbox.error` vẫn có thể chứa banner cảnh báo của `rtk` — đó là **nhiễu stderr, không phải lỗi**; tiêu chí là `code` và `timedOut`.
 
-Exit code: `0` = sandbox probe pass, `2` = vẫn lỗi (giữ fail-closed), `1` = chưa elevated.
+Kiểm tra ràng buộc mà controller áp (`2d926d9`): `CODEX_CLI_PATH` phải là **đường dẫn tuyệt đối** tới file tên `codex`/`codex.exe`, tồn tại, không phải symlink. Sai ⇒ controller ném lỗi ngay khi khởi tạo.
 
-### Đọc kết quả canary như thế nào
-
-| Check | Kỳ vọng khi sandbox hoạt động | Nếu khác |
-|---|---|---|
-| `writeOutsideWorkspace` | `DENIED` | sandbox không chặn ghi ngoài checkout ⇒ **fail** |
-| `writeInsideWorkspace` (profile `:read-only`) | `DENIED` | profile không read-only ⇒ **fail** |
-| `readOutsideWorkspace` | `DENIED` hoặc `ALLOWED` | `ALLOWED` **không phải fail**, nhưng là giới hạn đã biết: read-only không bảo đảm chặn đọc file riêng. Muốn chặn thật cần OS identity/container riêng (AG01) |
-| `egressTcp80` | `DENIED`/`TIMEOUT` | `ALLOWED` ⇒ cần network policy riêng cho worker (AG07) |
-| `childProcessTree.stillAliveAfterKill` | `false` | `true` ⇒ timeout không dọn được process con ⇒ **fail V15** |
-
-Baseline đối chiếu (đo trên host, **không** sandbox): write trong/ngoài workspace = `ALLOWED`, read ngoài = `ALLOWED`, egress = `TIMEOUT` (mạng chặn sẵn), child kill = sạch. Canary phải cho ra kết quả **khác** baseline ở các mục ghi, nếu không thì sandbox chưa thật sự cô lập.
-
-## Bước 4 — nếu vẫn lỗi sau uninstall
-
-Ghi lại bằng chứng, đừng đoán:
+## 4. Nếu máy không có CLI của ứng dụng
 
 ```powershell
+Get-ChildItem "$env:LOCALAPPDATA\OpenAI\Codex\bin" -Recurse -Filter codex.exe
+```
+
+- Có file ⇒ trỏ `CODEX_CLI_PATH` vào đường dẫn đó.
+- Không có ⇒ CLI trên PATH là bản duy nhất. Khi đó mới cần đi tiếp: cập nhật npm `codex-cli` lên bản mới, hoặc chạy probe elevated. **Chưa có bằng chứng cho giả thuyết "cần elevated"** — nếu phải thử thì ghi lại output thật.
+
+## 5. Nếu CLI trên PATH vẫn được dùng và vẫn lỗi
+
+Kiểm tra CLI nào thực sự được gọi:
+
+```powershell
+Get-Command codex -All | Select-Object Source
 codex --version
-codex sandbox --permission-profile :read-only -C D:\Project\Job_Application_Tracker -- cmd /c echo ok
-Get-ChildItem C:\Users\Admin\.codex -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 20 FullName, LastWriteTime
 ```
 
-Các nguyên nhân thường gặp: helper sandbox bị AppLocker/EDR chặn; Windows build không tương thích với cơ chế restricted token của Codex CLI 0.162.0; profile Group Policy chặn tạo local user. Ghi kết quả vào `SANDBOX-READINESS.md` với trạng thái **BLOCKED**, kèm lệnh đã chạy và output thật. Khi đó live dispatch **vẫn bị chặn** và AG01/AG03+ chỉ tiếp tục phần tài liệu/fixture.
+Nếu trùng `C:\Users\Admin\AppData\Roaming\npm\codex.ps1` ⇒ đang dùng bản 0.162.0 hỏng. Sửa bằng `CODEX_CLI_PATH`, **không** bằng việc nới quyền hay tắt sandbox.
 
-## Bước 5 — sau khi canary đạt
+## 6. Đọc kết quả canary
 
-1. `CANARY-EVIDENCE.json` + `SANDBOX-READINESS.md` là bằng chứng AG02; commit explicit paths.
-2. Đánh dấu AG02 trong `TASKS.json` là `accepted` **chỉ khi** reviewer độc lập đọc `CANARY-EVIDENCE.json` và xác nhận từng denial khớp kỳ vọng.
-3. Gate **G-A** mở khi: worker không đọc được sibling/control/common-Git/credential canary; không ghi được source/Git; check runner không thoát vùng scratch/fixture; egress đúng policy; có bằng chứng **denial** cho từng giới hạn (không phải "prompt yêu cầu").
-4. Sau đó mới mở AG01 (permission matrix) rồi AG03–AG09. **Chưa dispatch live worker** khi G-A chưa đạt.
+| Check | Kỳ vọng (profile `:read-only`) | Nếu lệch |
+| --- | --- | --- |
+| `writeInsideWorkspace` | `DENIED` | fail |
+| `writeOutsideWorkspace` | `DENIED` | fail |
+| `readOutsideWorkspace` | `DENIED` | hiện đang `ALLOWED` — đây là hạn chế đã biết, cần OS identity/container (AG01) |
+| `gitCommonDirHead` / `gitCommonDirConfig` | `opened: false` | hiện đang `true` — worker đọc được Git common dir |
+| `credentialFileOpen` / `accountsFileOpen` | `opened: false` | hiện đang `true` — worker mở được file credential |
+| `siblingWorktreeList` / `controlStateList` | `listed: false` | hiện đang `true` |
+| `homeCredentialList` | `DENIED` | đạt |
+| `egressTcp80` | khác baseline host | hiện đang **trùng** baseline ⇒ chưa chứng minh (cần positive control) |
+| `childProcessTree.stillAliveAfterKill` | `false` | fail V15 |
 
-## Lệnh tương đương nếu không dùng script
+Baseline host (chạy canary không sandbox) dùng để phân biệt "sandbox chặn" với "máy chặn sẵn". Mọi mục trùng baseline đều **không** được tính là bằng chứng denial.
 
-```powershell
-# canary read-only
-codex sandbox --permission-profile :read-only -C D:\Project\Job_Application_Tracker -- node tools\sandbox\canary.mjs D:\Project\Job_Application_Tracker
+## 7. Cấu hình cần chốt (chưa được tự động hoá)
 
-# canary workspace (profile dùng cho check runner)
-codex sandbox --permission-profile :workspace -C D:\Project\Job_Application_Tracker -- node tools\sandbox\canary.mjs D:\Project\Job_Application_Tracker
-```
+| Biến | Ảnh hưởng | Nơi dùng |
+| --- | --- | --- |
+| `CODEX_CLI_PATH` | chọn CLI cho probe/check/worker | `tools/agent-control/controller.mjs` |
+| `APP_ORIGIN` | origin được API chấp nhận | `apps/api/src/server.ts` |
+| `COOKIE_SECURE` | cờ cookie | `apps/api/src/server.ts` |
 
-Copy JSON trả về vào `planning/jobtrack-agent-autonomy/CANARY-EVIDENCE.json` cùng trường `host` và `verdict`.
+Không thêm `safe.directory` toàn cục và không đổi quyền hệ thống để "cho chạy được" — nếu cần, xem `GIT-ACL-NOTE.md`.

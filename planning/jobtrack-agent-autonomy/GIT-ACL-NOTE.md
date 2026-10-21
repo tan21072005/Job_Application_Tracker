@@ -1,5 +1,7 @@
 # Ghi chú kỹ thuật — vì sao `git switch` / `git checkout` / `git symbolic-ref HEAD` lỗi trên máy này
 
+> **ĐÃ XỬ LÝ (21/10/2026).** Người duy trì đã cấp quyền cho `PC\Admin` trên đúng `.git` và `.git\HEAD`. Kiểm chứng lại: `git switch` **không còn lỗi `couldn't set 'HEAD'`** — nó chỉ dừng vì lý do thường thấy là "local changes would be overwritten". Không cần chạy elevated, không cần `icacls` thêm, không cần dùng plumbing. Mục 1 giữ lại để giải thích nguyên nhân gốc và để tránh tái phạm trên máy khác.
+
 Triệu chứng (chỉ xảy ra với tài khoản `PC\Admin` **không elevated**):
 
 ```text

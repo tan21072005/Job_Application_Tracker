@@ -9,6 +9,7 @@ Mục tiêu: AG00 được viết bởi một phiên khác (tác giả: orchestr
 | Gap matrix (đối tượng chính) | `planning/jobtrack-agent-autonomy/BASELINE-GAPS.md` |
 | Inventory quyền | `planning/jobtrack-agent-autonomy/CAPABILITY-INVENTORY.md` |
 | Trạng thái runtime | `planning/jobtrack-agent-autonomy/RUN-STATUS.md` |
+| Bằng chứng sandbox | `planning/jobtrack-agent-autonomy/CANARY-EVIDENCE.json`, `SANDBOX-READINESS.md`, `AG02-RUNBOOK.md` |
 | Registry task | `planning/jobtrack-agent-autonomy/TASKS.json` (entry `AG00`, status hiện tại `review`) |
 | Kế hoạch đối chiếu | `planning/jobtrack-agent-autonomy/PLAN.md`, `ACCEPTANCE.md`, `ARCHITECTURE.md` |
 
@@ -42,6 +43,10 @@ Kỳ vọng: `9dc80e0` ở đầu, `git status` không có dòng nào cho các f
 | C12 | Comment policy bỏ sót `.sql/.py/.md/.yml` | đọc `policy.mjs` dòng 115-131 | regex `/\.(?:[cm]?[jt]sx?|css|html)$/` không phủ các ngôn ngữ đó |
 | C13 | Không claim sai về live/AGENTS | đọc lại toàn bộ 3 file audit | không có câu nào biến fixture thành live |
 | C14 | Runtime claim: API 64366 `/api/ready` = version 6, web 64364 render | `Invoke-WebRequest http://127.0.0.1:64366/api/ready`; mở `http://127.0.0.1:64364/` | đúng; nếu server đã dừng thì đánh dấu "cần khởi động lại", không coi là sai |
+| C15 | Nguyên nhân sandbox là **chọn nhầm CLI**, không phải thiếu elevated | chạy `codex sandbox --permission-profile :read-only -C . -- node --version` (PATH) và lặp lại với `codex.exe` của ứng dụng | PATH lỗi, app CLI exit 0; `doctor` với `CODEX_CLI_PATH` trả `sandbox.code = 0` |
+| C16 | Không có bằng chứng nào buộc phải `codex sandbox uninstall` | đọc `SANDBOX-READINESS.md` | uninstall **chưa chạy**; tài liệu nói rõ điều đó |
+| C17 | **Cách ly đọc KHÔNG có**: worker mở được `.git` common dir, `.env`, `accounts.txt`, sibling worktree, control state | đọc `CANARY-EVIDENCE.json` → `verdicts.V01_readIsolation = false` | đúng; và các tài liệu không được mô tả ngược lại |
+| C18 | Egress **chưa chứng minh** (trùng baseline host) | `verdicts.V08_egressDenied = false`, so sánh canary `host-direct` | đúng; không được tính là denial đã chứng minh |
 
 **C7 là mục quan trọng nhất.** Reviewer phải tự chạy lại probe, không tin lời tác giả. Probe an toàn, không cần credential:
 
