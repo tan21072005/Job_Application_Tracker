@@ -36,6 +36,16 @@ const flagValue = (args, flag) => {
   return index >= 0 ? args[index + 1] : undefined;
 };
 
+test('the container image argument is present and pinned in every run', () => {
+  const { projection, scratch } = fixture();
+  const probe = buildProbeArgs({ image: DEFAULT_IMAGE, runId: 'run-image', projection, scratch, config: 'Y2Zn', program: 'probe-program' });
+  assert.ok(probe.includes(DEFAULT_IMAGE), 'probe arguments must name the pinned image');
+  assert.equal(probe.indexOf(DEFAULT_IMAGE) > probe.indexOf('--mount'), true);
+  const launch = buildLaunchArgs({ image: DEFAULT_IMAGE, runId: 'run-image', projection, scratch, command: ['node', 'worker.mjs'] });
+  assert.ok(launch.includes(DEFAULT_IMAGE), 'launch arguments must name the pinned image');
+  assert.equal(launch.indexOf(DEFAULT_IMAGE) < launch.indexOf('worker.mjs'), true);
+});
+
 test('the image must be pinned to an immutable digest', () => {
   assert.equal(assertPinnedImage(DEFAULT_IMAGE), DEFAULT_IMAGE);
   for (const image of ['node:24-alpine', 'node@sha256:abc', 'node', 'node@sha256:' + 'a'.repeat(63)]) {
@@ -85,7 +95,7 @@ test('the adapter refuses arguments that expose the host', () => {
   const firstMount = args.indexOf('--mount');
   const withOneMount = [...args.slice(0, firstMount), ...args.slice(firstMount + 2)];
   assert.throws(() => assertNoHostAccess(withOneMount, forbidden, [projection, scratch]), /exactly the projection and the scratch/);
-  assert.throws(() => assertNoHostAccess(args, forbidden, [projection]), /not declared/);
+  assert.throws(() => assertNoHostAccess(args, forbidden, [projection]), /not declared|exactly the projection/);
 });
 
 test('the launch arguments carry the same containment controls and a command', () => {

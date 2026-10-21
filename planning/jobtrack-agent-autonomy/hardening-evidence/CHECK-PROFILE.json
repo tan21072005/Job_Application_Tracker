@@ -1,0 +1,60 @@
+{
+  "kind": "isolated-check-profile-not-readiness-receipt",
+  "checkId": "build:api",
+  "candidateDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
+  "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+  "observed": {
+    "candidateRead": {
+      "ok": true,
+      "bytes": 24
+    },
+    "candidateWrite": {
+      "ok": false,
+      "code": "EROFS"
+    },
+    "fixtureRead": {
+      "ok": true,
+      "bytes": 3
+    },
+    "scratchWrite": {
+      "ok": true
+    },
+    "hostWrite": {
+      "ok": false,
+      "code": "EROFS"
+    },
+    "environment": {}
+  },
+  "exitCode": 0,
+  "stdoutHash": "163523eda63d54c0bcb1c4fa5ac4375fcafc00785220765a481a7a34d9076abb",
+  "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "runId": "32113726-51de-445c-9029-ed350ebfa111",
+  "base": "D:\\Long-term\\JobTrack-check-32113726",
+  "mounts": [
+    {
+      "target": "/candidate",
+      "readOnly": true,
+      "source": "D:/Long-term/JobTrack-check-32113726/candidate"
+    },
+    {
+      "target": "/scratch",
+      "readOnly": false,
+      "source": "D:/Long-term/JobTrack-check-32113726/scratch"
+    },
+    {
+      "target": "/fixtures",
+      "readOnly": true,
+      "source": "D:/Long-term/JobTrack-check-32113726/fixtures"
+    }
+  ],
+  "forbiddenHostPaths": [
+    "D:\\Project\\Job_Application_Tracker",
+    "C:\\Users\\Admin",
+    ".git",
+    "Docker.sock",
+    "sandbox",
+    "AppData"
+  ],
+  "stdoutTail": "{\"candidateRead\":{\"ok\":true,\"bytes\":24},\"candidateWrite\":{\"ok\":false,\"code\":\"EROFS\"},\"fixtureRead\":{\"ok\":true,\"bytes\":3},\"scratchWrite\":{\"ok\":true},\"hostWrite\":{\"ok\":false,\"code\":\"EROFS\"},\"environment\":{}}",
+  "stderrTail": ""
+}

@@ -63,7 +63,7 @@ export function buildRunArgs({ image, runId, network = 'none', memory = DEFAULT_
 
 export function assertNoHostAccess(args, forbidden, allowedMountSources = []) {
   const mountValues = args.filter((value, index) => args[index - 1] === '--mount');
-  if (mountValues.length !== 2) throw Error('Adapter must mount exactly the projection and the scratch directory.');
+  if (mountValues.length !== allowedMountSources.length) throw Error('Adapter must mount exactly the projection and the scratch directory.');
   const declared = new Set(allowedMountSources.map(source => canonicalSource(source)));
   for (const mount of mountValues) {
     const match = /source=([^,]+)/.exec(mount);
@@ -94,6 +94,7 @@ export function buildProbeArgs(options) {
     ...buildRunArgs({ image, runId, network }),
     ...buildMountArgs({ projection, scratch }),
     '--env', `JT_PROBE_CONFIG=${config}`,
+    image,
     'node', '--input-type=module', '--eval', program
   ];
   return args;
@@ -106,6 +107,7 @@ export function buildLaunchArgs(options) {
   const args = [
     ...buildRunArgs({ image, runId, network }),
     ...buildMountArgs({ projection, scratch }),
+    image,
     ...command
   ];
   return args;
