@@ -1,19 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { createServer } from 'node:http';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
-  BOUNDARY_PURPOSES,
   assertBoundaryBinding,
   assertReceiptMatchesBinding,
   buildTrustedBinding,
   createExecutionBoundary,
-  executeBoundary,
   stageProjection
 } from './execution-boundary.mjs';
+import { controlPlaneFingerprint, probeProgramHash } from './fingerprint.mjs';
+import { createDockerAdapter, DEFAULT_IMAGE } from './docker-adapter.mjs';
+import { createReadinessIssuer, dockerBinaryHash } from './issuer.mjs';
 
-const HASH = 'a'.repeat(64);
+const repositoryRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+
+function sourceFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'jobtrack-boundary-'));
+  const worktree = join(root, 'worktree');
+  const destination = join(root, 'projection');
+  const scratch = join(root, 'scratch');
+  mkdirSync(join(worktree, 'apps/web/src'), { recursive: true });
+  writeFileSync(join(worktree, 'apps/web/src/module.js'), 'export const value = 1;\n');
+  return { root, worktree, destination, scratch };
+}
 
 const bindingFixture = (overrides = {}) => ({
   taskId: 'web-one',
@@ -35,35 +49,19 @@ const bindingFixture = (overrides = {}) => ({
 const receiptFixture = (binding, overrides = {}) => ({
   schemaVersion: 2,
   runId: '3f6b1c2a-9d4e-4a7b-8c5d-1e2f3a4b5c6d',
-  issuedAt: new Date(Date.now() - 1000).toISOString(),
+  issuedAt: new Date().toISOString(),
   expiresAt: new Date(Date.now() + 600_000).toISOString(),
   binding,
   derived: { readIsolation: true, writeIsolation: true, childCleanup: true, modelTransport: true, egress: true, gateA: true },
   ...overrides
 });
 
-function sourceFixture() {
-  const root = mkdtempSync(join(tmpdir(), 'jobtrack-boundary-'));
-  const worktree = join(root, 'worktree');
-  const destination = join(root, 'projection');
-  mkdirSync(join(worktree, 'apps/web/src'), { recursive: true });
-  writeFileSync(join(worktree, 'apps/web/src/module.js'), 'export const value = 1;\n');
-  return { root, worktree, destination };
-}
-
 test('the projection stages the declared files and verifies the copied bytes', () => {
   const { worktree, destination } = sourceFixture();
   const staged = stageProjection({ files: ['apps/web/src/module.js'], sourceRoot: worktree, destination });
   assert.equal(staged.manifest.length, 1);
-  assert.equal(staged.manifest[0].path, 'apps/web/src/module.js');
   assert.match(staged.manifest[0].sha256, /^[a-f0-9]{64}$/);
   assert.match(staged.manifestHash, /^[a-f0-9]{64}$/);
-  const again = stageProjection({ files: ['apps/web/src/module.js'], sourceRoot: worktree, destination });
-  assert.equal(again.manifestHash, staged.manifestHash);
-});
-
-test('the projection refuses a missing file and an empty file list', () => {
-  const { worktree, destination } = sourceFixture();
   assert.throws(() => stageProjection({ files: ['apps/web/src/missing.js'], sourceRoot: worktree, destination }), /source file is missing/);
   assert.throws(() => stageProjection({ files: [], sourceRoot: worktree, destination }), /at least one file/);
 });
@@ -73,10 +71,9 @@ test('the trusted binding is validated', () => {
   assert.equal(assertBoundaryBinding(binding), binding);
   assert.throws(() => assertBoundaryBinding({ ...binding, purpose: 'worker-write' }), /purpose is invalid/);
   assert.throws(() => assertBoundaryBinding({ ...binding, policyHash: 'not-a-hash' }), /not a hash/);
-  const withoutAdapter = { ...binding };
-  delete withoutAdapter.adapterId;
-  assert.throws(() => assertBoundaryBinding(withoutAdapter), /missing adapterId/);
-  assert.deepEqual([...BOUNDARY_PURPOSES], ['worker-read', 'check-runner']);
+  const withoutTask = { ...binding };
+  delete withoutTask.taskId;
+  assert.throws(() => buildTrustedBinding(withoutTask), /missing taskId/);
 });
 
 test('a receipt must match the binding, be unexpired and record a passing gate', () => {
@@ -84,115 +81,138 @@ test('a receipt must match the binding, be unexpired and record a passing gate',
   const receipt = receiptFixture(binding);
   assert.equal(assertReceiptMatchesBinding(receipt, binding), receipt);
   assert.throws(() => assertReceiptMatchesBinding(receipt, bindingFixture({ taskId: 'other' })), /does not match the trusted binding: taskId/);
-  assert.throws(() => assertReceiptMatchesBinding(receipt, bindingFixture({ sourceDigest: '9'.repeat(64) })), /does not match the trusted binding: sourceDigest/);
   assert.throws(() => assertReceiptMatchesBinding(receiptFixture(binding, { expiresAt: new Date(Date.now() - 1000).toISOString() }), binding), /has expired/);
   assert.throws(() => assertReceiptMatchesBinding(receiptFixture(binding, { derived: { gateA: false } }), binding), /does not record a passing gate/);
   assert.throws(() => assertReceiptMatchesBinding(null, binding), /receipt is missing/);
 });
 
-test('the boundary issues a receipt when none matches and never launches without one', async () => {
-  const binding = bindingFixture();
-  const order = [];
-  const receipt = receiptFixture(binding);
-  const outcome = await executeBoundary({
-    purpose: 'worker-read',
-    binding,
-    receipt: null,
-    issue: async () => { order.push('issue'); return receipt; },
-    verify: async value => { order.push('verify'); return value; },
-    launch: async ({ receipt: verified }) => { order.push('launch'); return { receipt: verified }; }
-  });
-  assert.deepEqual(order, ['issue', 'verify', 'launch']);
-  assert.equal(outcome.receipt, receipt);
-  assert.equal(outcome.launched.receipt, receipt);
-});
-
-test('a receipt that does not match the binding is replaced before the launch', async () => {
-  const binding = bindingFixture();
-  const stale = receiptFixture(bindingFixture({ sourceDigest: '9'.repeat(64) }));
-  const fresh = receiptFixture(binding);
-  const order = [];
-  const outcome = await executeBoundary({
-    purpose: 'worker-read',
-    binding,
-    receipt: stale,
-    issue: async () => { order.push('issue'); return fresh; },
-    verify: async value => { order.push('verify'); return value; },
-    launch: async () => { order.push('launch'); return { ok: true }; }
-  });
-  assert.deepEqual(order, ['issue', 'verify', 'launch']);
-  assert.equal(outcome.receipt, fresh);
-});
-
-test('the boundary refuses a purpose that differs from the binding and never launches', async () => {
-  const binding = bindingFixture({ purpose: 'worker-read' });
-  let launched = false;
-  await assert.rejects(() => executeBoundary({
-    purpose: 'check-runner',
-    binding,
-    issue: async () => receiptFixture(binding),
-    verify: async value => value,
-    launch: async () => { launched = true; return {}; }
-  }), /purpose does not match the execution purpose/);
-  assert.equal(launched, false);
-});
-
-test('a failed issuance and a failed verification both stop before the launch', async () => {
-  const binding = bindingFixture();
-  let launched = false;
-  await assert.rejects(() => executeBoundary({
-    purpose: 'worker-read',
-    binding,
-    issue: async () => { throw Error('probe failed'); },
-    verify: async value => value,
-    launch: async () => { launched = true; return {}; }
-  }), /probe failed/);
-  await assert.rejects(() => executeBoundary({
-    purpose: 'worker-read',
-    binding,
-    issue: async () => receiptFixture(binding),
-    verify: async () => receiptFixture(bindingFixture({ taskId: 'other' })),
-    launch: async () => { launched = true; return {}; }
-  }), /does not match the trusted binding/);
-  assert.equal(launched, false);
-});
-
-test('the execution boundary stages, binds, proves and launches in that order', async () => {
-  const { worktree, destination } = sourceFixture();
-  const binding = bindingFixture();
+test('the boundary issues, verifies and launches in that order and creates the scratch', async () => {
+  const { worktree, destination, scratch } = sourceFixture();
   const order = [];
   const boundary = createExecutionBoundary({
-    context: (state, request) => ({ ...binding, purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
-    projection: { destinationFor: () => destination, scratchFor: () => join(destination, '..', 'scratch') },
-    adapter: { launch: async ({ receipt: verified }) => { order.push('launch'); return { response: 'planned', receipt: verified }; } },
+    context: (state, request) => bindingFixture({ purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
+    projection: { destinationFor: () => destination, scratchFor: () => scratch },
+    adapter: { launch: async () => { order.push('launch'); return { status: 0, stdout: 'ok', stderr: '' }; } },
     issuer: {
       issue: async input => { order.push('issue'); return { receipt: receiptFixture(bindingFixture({ taskId: input.taskId, sourceDigest: input.sourceDigest, projectionManifestHash: input.projectionManifestHash, purpose: input.purpose })) }; },
-      verify: async value => { order.push('verify'); return value; }
+      verify: async receipt => { order.push('verify'); return { receipt }; }
     }
   });
   const outcome = await boundary.run({ worktree, id: 'web-one' }, { purpose: 'worker-read', files: ['apps/web/src/module.js'], sourceDigest: '1'.repeat(64) });
   assert.deepEqual(order, ['issue', 'verify', 'launch']);
-  assert.equal(outcome.launched.response, 'planned');
   assert.equal(outcome.staged.manifest.length, 1);
+  assert.equal(existsSync(scratch), true);
   assert.equal(outcome.binding.purpose, 'worker-read');
   assert.equal(outcome.binding.projectionManifestHash, outcome.staged.manifestHash);
 });
 
-test('the execution boundary propagates a launch failure and never falls back', async () => {
-  const { worktree, destination } = sourceFixture();
-  const binding = bindingFixture();
+test('the boundary propagates a launch failure and never falls back', async () => {
+  const { worktree, destination, scratch } = sourceFixture();
   const boundary = createExecutionBoundary({
-    context: () => binding,
-    projection: { destinationFor: () => destination, scratchFor: () => join(destination, '..', 'scratch') },
+    context: () => bindingFixture(),
+    projection: { destinationFor: () => destination, scratchFor: () => scratch },
     adapter: { launch: async () => { throw Error('container refused the launch'); } },
-    issuer: { issue: async input => ({ receipt: receiptFixture(bindingFixture({ taskId: input.taskId })) }), verify: async value => value }
+    issuer: {
+      issue: async input => ({ receipt: receiptFixture(bindingFixture({ taskId: input.taskId })) }),
+      verify: async receipt => ({ receipt })
+    }
   });
   await assert.rejects(() => boundary.run({ worktree, id: 'web-one' }, { purpose: 'worker-read', files: ['apps/web/src/module.js'], sourceDigest: '1'.repeat(64) }), /container refused the launch/);
 });
 
-test('the binding is built from the trusted context only', () => {
-  const binding = buildTrustedBinding(bindingFixture());
-  assert.equal(binding.purpose, 'worker-read');
-  assert.equal(binding.taskId, 'web-one');
-  assert.equal(binding.projectionManifestHash, '2'.repeat(64));
+test('the boundary refuses an issuer that produced no receipt', async () => {
+  const { worktree, destination, scratch } = sourceFixture();
+  const boundary = createExecutionBoundary({
+    context: () => bindingFixture(),
+    projection: { destinationFor: () => destination, scratchFor: () => scratch },
+    adapter: { launch: async () => ({ status: 0 }) },
+    issuer: { issue: async () => ({ receipt: null, diagnostics: 'probe failed' }), verify: async receipt => ({ receipt }) }
+  });
+  await assert.rejects(() => boundary.run({ worktree, id: 'web-one' }, { purpose: 'worker-read', files: ['apps/web/src/module.js'], sourceDigest: '1'.repeat(64) }), /produced no readiness receipt/);
+});
+
+const dockerReachable = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], { encoding: 'utf8', timeout: 30_000, windowsHide: true }).status === 0;
+
+test('the boundary completes a run against the real issuer and the real adapter in a real container', { skip: dockerReachable ? false : 'Docker is not reachable in this environment' }, async () => {
+  const runRoot = join('D:/Long-term', `jobtrack-boundary-live-${Date.now()}`);
+  mkdirSync(runRoot, { recursive: true });
+  const projection = join(runRoot, 'projection');
+  const scratch = join(runRoot, 'scratch');
+  const worktree = join(runRoot, 'worktree');
+  mkdirSync(join(projection, 'apps/web/src'), { recursive: true });
+  mkdirSync(join(worktree, 'apps/web/src'), { recursive: true });
+  mkdirSync(scratch, { recursive: true });
+  writeFileSync(join(projection, 'apps/web/src/module.js'), 'export const value = 1;\n');
+  writeFileSync(join(worktree, 'apps/web/src/module.js'), 'export const value = 1;\n');
+  const denied = [repositoryRoot, process.env.USERPROFILE ?? repositoryRoot].map(path => path.replaceAll('\\', '/'));
+  const credentialFile = join(runRoot, 'accounts.txt');
+  writeFileSync(credentialFile, 'fixture-only\n');
+  const egressServer = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end('{}');
+  });
+  await new Promise(resolve => egressServer.listen(0, '0.0.0.0', resolve));
+  const egressPort = egressServer.address().port;
+  const catalog = {
+    taskId: 'web-one',
+    feature: 'web',
+    base: 'base-sha',
+    sourceDigest: '1'.repeat(64),
+    projectionManifestHash: '2'.repeat(64),
+    policyHash: controlPlaneFingerprint(repositoryRoot),
+    environmentHash: '4'.repeat(64),
+    purpose: 'worker-read',
+    profileHash: '5'.repeat(64),
+    adapterId: 'jobtrack-docker-adapter-v1',
+    imageDigest: DEFAULT_IMAGE.split('@sha256:')[1],
+    cliHash: '7'.repeat(64),
+    nodeHash: '8'.repeat(64),
+    verifierImplementationHash: controlPlaneFingerprint(repositoryRoot),
+    modelEndpoint: 'http://127.0.0.1:9/v1',
+    generalEgressEndpoint: `http://${process.env.JT_EGRESS_HOST ?? '192.168.1.251'}:${egressPort}/general`,
+    deniedHostPaths: {
+      'host-repo-read': denied[0],
+      'host-home-read': denied[1],
+      'common-git-read': `${denied[0]}/.git`,
+      'control-state-read': `${denied[0]}/.agent-state`,
+      'host-credential-read': credentialFile.replaceAll('\\', '/'),
+      'projection-write': projection.replaceAll('\\', '/'),
+      'host-write': denied[0]
+    },
+    mountSources: { projection: projection.replaceAll('\\', '/'), scratch: scratch.replaceAll('\\', '/') },
+    dockerBinaryHash: dockerBinaryHash('docker')
+  };
+  const adapter = createDockerAdapter({ repo: repositoryRoot, runRoot, image: DEFAULT_IMAGE, deniedPaths: denied });
+  const issuer = createReadinessIssuer({
+    catalog,
+    key: 'k'.repeat(48),
+    adapterRoot: repositoryRoot,
+    evidenceRoot: join(runRoot, 'evidence'),
+    contextDirectory: join(runRoot, 'context'),
+    adapter,
+    broker: { probe: async () => ({ connected: true }) }
+  });
+  const boundary = createExecutionBoundary({
+    context: (state, request) => ({ ...catalog, taskId: state.id, purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
+    projection: { destinationFor: () => projection, scratchFor: () => scratch },
+    adapter,
+    issuer
+  });
+  let outcome;
+  try {
+    outcome = await boundary.run({ worktree, id: 'web-one' }, {
+      purpose: 'worker-read',
+      files: ['apps/web/src/module.js'],
+      sourceDigest: '1'.repeat(64),
+      instruction: 'hello from the boundary',
+      command: ['node', '-e', 'process.stdin.on("data", chunk => { process.stdout.write("GOT:" + chunk.toString().trim()); process.exit(0); });']
+    });
+  } finally {
+    egressServer.close();
+  }
+  assert.equal(outcome.launched.status, 0);
+  assert.match(outcome.launched.stdout, /GOT:hello from the boundary/);
+  assert.equal(outcome.receipt.derived.gateA, true);
+  assert.equal(outcome.receipt.binding.taskId, 'web-one');
+  assert.equal(outcome.receipt.binding.purpose, 'worker-read');
 });

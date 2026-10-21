@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createServer, get as httpRequest } from 'node:http';
 import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -202,7 +203,8 @@ record('the check profile guard accepted the check arguments', guardError === nu
 record('the check ran in the isolated profile and was refused the candidate write', check?.observed?.candidateRead?.ok === true && check?.observed?.candidateWrite?.ok === false, check?.observed ?? null);
 record('the check saw no database, provider or secret variable', check?.observed?.environment && Object.keys(check.observed.environment).length === 0, check?.observed?.environment ?? null);
 record('the gate stays blocked when a proof is missing', blockedProbe?.receipt === null && typeof blockedProbe?.diagnostics === 'string', blockedProbe?.diagnostics ?? null);
-record('no worker ran inside the container during this acceptance', !audit.some(entry => entry.event === 'worker-run') && reportLimitations.some(line => /No live worker ran/i.test(line)), { workerEvents: audit.filter(entry => entry.event === 'worker-run').length });
+const workerContainers = spawnSync('docker', ['ps', '-a', '--filter', 'label=jobtrack.role=worker', '--format', '{{.ID}}'], { encoding: 'utf8', timeout: 30_000, windowsHide: true }).stdout?.trim() ?? '';
+record('no worker container exists after this acceptance', workerContainers.length === 0, workerContainers);
 
 const passed = findings.every(finding => finding.passed);
 const report = {

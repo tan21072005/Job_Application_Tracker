@@ -90,12 +90,13 @@ export function buildMountArgs({ projection, scratch }) {
   return mounts.flatMap(mount => ['--mount', `type=bind,source=${mount.source},target=${mount.target}${mount.readOnly ? ',readonly' : ''}`]);
 }
 
-export function buildRunArgs({ image, runId, memory = DEFAULT_MEMORY, pids = DEFAULT_PIDS, cpus = DEFAULT_CPUS, tmpfs = DEFAULT_TMPFS }) {
+export function buildRunArgs({ image, runId, role = 'probe', memory = DEFAULT_MEMORY, pids = DEFAULT_PIDS, cpus = DEFAULT_CPUS, tmpfs = DEFAULT_TMPFS }) {
   return [
     'run',
     '--name', `jobtrack-${runId}`,
     '--label', 'jobtrack.owner=jobtrack',
     '--label', `jobtrack.run=${runId}`,
+    '--label', `jobtrack.role=${role}`,
     '--read-only',
     '--network', NETWORK_MODE,
     '--cap-drop', 'ALL',
@@ -291,7 +292,7 @@ export function buildProbeArgs(options) {
   if (!program) throw Error('Adapter probe needs the probe program.');
   const args = [
     mode,
-    ...buildRunArgs({ image, runId }).slice(1),
+    ...buildRunArgs({ image, runId, role: 'probe' }).slice(1),
     ...buildMountArgs({ projection, scratch }),
     '--env', `JT_PROBE_CONFIG=${config}`,
     image,
@@ -329,7 +330,7 @@ export function buildLaunchArgs(options) {
   const args = [
     mode,
     ...(mode === 'run' ? ['--rm'] : []),
-    ...buildRunArgs({ image, runId }).slice(1),
+    ...buildRunArgs({ image, runId, role: 'worker' }).slice(1),
     ...buildMountArgs({ projection, scratch }),
     image,
     ...command
@@ -361,6 +362,7 @@ export function parseContainerObservation(raw) {
     image: config.Image ?? null,
     imageId: container.Image ?? null,
     user: config.User ?? null,
+    labels: config.Labels && typeof config.Labels === 'object' ? config.Labels : {},
     networkMode: host.NetworkMode ?? null,
     capDrop: Array.isArray(host.CapDrop) ? host.CapDrop : [],
     securityOpt: Array.isArray(host.SecurityOpt) ? host.SecurityOpt : [],
@@ -443,6 +445,8 @@ export function createDockerAdapter(options = {}) {
     id: ADAPTER_ID,
     image,
     runRoot,
+    docker,
+    dockerPrefix: options.dockerPrefix ?? [],
     async probe(probeOptions) {
       const runId = probeOptions.runId ?? randomUUID();
       const projection = assertDirectory(probeOptions.projection);
@@ -522,7 +526,7 @@ export function createDockerAdapter(options = {}) {
           imageDigest: launchOptions.imageDigest ?? image.split('@sha256:')[1],
           expectedMounts: mounts
         });
-        const started = runDocker(['start', '-a', containerId], launchOptions.stdin ?? '', launchOptions.timeoutMs ?? 300_000);
+        const started = runDocker(['start', '-a', '-i', containerId], launchOptions.stdin ?? '', launchOptions.timeoutMs ?? 300_000);
         stdout = started.stdout ?? '';
         stderr = started.stderr ?? '';
         status = started.status;

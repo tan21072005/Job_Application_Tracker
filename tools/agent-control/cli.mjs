@@ -59,6 +59,7 @@ function buildAdapters() {
   return {
     boundary,
     workerCommand: catalog.workerCommand ?? null,
+    boundaryReceipt: (state, request) => boundary.receiptFor(state, request),
     readiness: async state => controller.readReadinessReceipt(state.id),
     readinessVerify: async receipt => issuer.verify(receipt)
   };

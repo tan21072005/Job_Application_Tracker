@@ -99,6 +99,10 @@ export function buildTrustedContext(catalog, runId, task = {}) {
 }
 
 export function assertContainerMatchesTrust(container, trusted) {
+  const labels = container?.labels ?? {};
+  if (labels['jobtrack.fixture'] === 'true' || labels['jobtrack.fixture'] === '1') {
+    throw Error('A fixture runtime cannot produce a readiness receipt.');
+  }
   return assertContainerMatchesDeclaration(container, {
     imageDigest: trusted.imageDigest,
     expectedMounts: Object.keys(trusted.mountSources).map(kind => ({
@@ -109,8 +113,23 @@ export function assertContainerMatchesTrust(container, trusted) {
   });
 }
 
+export function resolveExecutable(command) {
+  if (typeof command !== 'string' || !command) return null;
+  if (command.includes('/') || command.includes('\\')) return existsSync(command) ? command : null;
+  const separator = process.platform === 'win32' ? ';' : ':';
+  const extensions = process.platform === 'win32' ? (process.env.PATHEXT ?? '.EXE;.CMD;.BAT').split(';') : [''];
+  for (const directory of (process.env.PATH ?? '').split(separator)) {
+    if (!directory) continue;
+    for (const extension of extensions) {
+      const candidate = join(directory, command + extension);
+      if (existsSync(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
 export function dockerBinaryHash(docker, dockerPrefix = []) {
-  const resolved = spawnSync('where', [docker], { encoding: 'utf8', windowsHide: true }).stdout?.split(/\r?\n/).map(line => line.trim()).filter(Boolean)[0];
+  const resolved = resolveExecutable(docker);
   const parts = [];
   if (resolved) {
     try {
@@ -327,7 +346,9 @@ export function createReadinessIssuer(options = {}) {
       if (catalog.probeProgramHash && observedProgramHash !== catalog.probeProgramHash) {
         return fail('The probe program that would run does not match the hash in the catalog.');
       }
-      const observedDockerHash = dockerBinaryHash(docker, dockerPrefix);
+      const adapterDocker = options.adapter?.docker ?? docker;
+      const adapterPrefix = options.adapter?.dockerPrefix ?? dockerPrefix;
+      const observedDockerHash = dockerBinaryHash(adapterDocker, adapterPrefix);
       if (catalog.dockerBinaryHash && observedDockerHash !== catalog.dockerBinaryHash) {
         return fail('The container runtime that would run does not match the hash in the catalog.');
       }

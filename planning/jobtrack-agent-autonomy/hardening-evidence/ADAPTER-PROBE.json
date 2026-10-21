@@ -1,14 +1,19 @@
 {
   "kind": "adapter-probe-not-readiness-receipt",
-  "runId": "410e4706-af5f-46c9-ba91-a53adbb368f9",
+  "runId": "53aead3f-5afd-4012-a64d-f02b09d15be3",
   "adapter": "jobtrack-docker-adapter-v1",
   "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
-  "argvHash": "6129093f0395354a1851ac5c9da32678bc6ff1652f5a24f47844ac9f6a5ae2a1",
+  "argvHash": "9f12d46e895ffa81e4d15253cc1b29b3e2a4322938bdcb54f178d7b4ebd10a69",
   "container": {
-    "containerId": "81bf80c08ba6f475d6584239b9eecd3482f229f30e7601efae86028e8badb2bf",
+    "containerId": "ff7c89733af304abdf5e0d2c790e124df88f81a19bc1a2287c5bdcb13ae93917",
     "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "imageId": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "user": "65534:65534",
+    "labels": {
+      "jobtrack.owner": "jobtrack",
+      "jobtrack.role": "probe",
+      "jobtrack.run": "53aead3f-5afd-4012-a64d-f02b09d15be3"
+    },
     "networkMode": "none",
     "capDrop": [
       "ALL"
@@ -26,13 +31,13 @@
     "mounts": [
       {
         "kind": "projection",
-        "source": "D:/Long-term/JobTrack-isolation-410e4706/projection",
+        "source": "D:/Long-term/JobTrack-isolation-53aead3f/projection",
         "target": "/projection",
         "readOnly": true
       },
       {
         "kind": "scratch",
-        "source": "D:/Long-term/JobTrack-isolation-410e4706/scratch",
+        "source": "D:/Long-term/JobTrack-isolation-53aead3f/scratch",
         "target": "/scratch",
         "readOnly": false
       }
@@ -45,9 +50,9 @@
       "YARN_VERSION=1.22.22"
     ]
   },
-  "base": "D:\\Long-term\\JobTrack-isolation-410e4706",
-  "projection": "D:/Long-term/JobTrack-isolation-410e4706/projection",
-  "scratch": "D:/Long-term/JobTrack-isolation-410e4706/scratch",
+  "base": "D:\\Long-term\\JobTrack-isolation-53aead3f",
+  "projection": "D:/Long-term/JobTrack-isolation-53aead3f/projection",
+  "scratch": "D:/Long-term/JobTrack-isolation-53aead3f/scratch",
   "manifest": [
     {
       "path": "apps/web/src/module.js",
@@ -142,13 +147,13 @@
     },
     "liveness": [
       {
-        "processId": "14",
+        "processId": "15",
         "generation": "child",
         "before": true,
         "after": false
       },
       {
-        "processId": "21",
+        "processId": "22",
         "generation": "grandchild",
         "before": true,
         "after": false
@@ -166,12 +171,12 @@
     },
     "containerMounts": [
       {
-        "root": "/Long-term/JobTrack-isolation-410e4706/projection",
+        "root": "/Long-term/JobTrack-isolation-53aead3f/projection",
         "mountPoint": "/projection",
         "options": "ro,noatime"
       },
       {
-        "root": "/Long-term/JobTrack-isolation-410e4706/scratch",
+        "root": "/Long-term/JobTrack-isolation-53aead3f/scratch",
         "mountPoint": "/scratch",
         "options": "rw,noatime"
       }

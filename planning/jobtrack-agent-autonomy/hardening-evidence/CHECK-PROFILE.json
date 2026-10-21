@@ -29,15 +29,20 @@
   "exitCode": 0,
   "stdoutHash": "61d791069ba5c28d440074b9230515f99ae57a9b6e97d501708abc22f7cb40bf",
   "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "runId": "79b04179-c7ad-47d2-8d9a-4275f0496a48",
-  "base": "D:\\Long-term\\JobTrack-check-79b04179",
+  "runId": "efe0a40c-4b57-40f6-975d-3d6568175119",
+  "base": "D:\\Long-term\\JobTrack-check-efe0a40c",
   "guardError": null,
-  "containerId": "c4b32c546fbf61e961a2e0db928df20bfd26f3d6d97ee76571ad739f2b2f6cdf",
+  "containerId": "7c2649a8cef955927d7a7e7bfb0cd52b9cf84cf75c98e45264c8462b19a8a09a",
   "observedContainer": {
-    "containerId": "c4b32c546fbf61e961a2e0db928df20bfd26f3d6d97ee76571ad739f2b2f6cdf",
+    "containerId": "7c2649a8cef955927d7a7e7bfb0cd52b9cf84cf75c98e45264c8462b19a8a09a",
     "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "imageId": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "user": "65534:65534",
+    "labels": {
+      "jobtrack.owner": "jobtrack",
+      "jobtrack.role": "probe",
+      "jobtrack.run": "efe0a40c-4b57-40f6-975d-3d6568175119"
+    },
     "networkMode": "none",
     "capDrop": [
       "ALL"
@@ -54,21 +59,21 @@
     },
     "mounts": [
       {
+        "kind": "candidate",
+        "source": "D:\\Long-term\\JobTrack-check-efe0a40c\\candidate",
+        "target": "/candidate",
+        "readOnly": true
+      },
+      {
         "kind": "scratch",
-        "source": "D:\\Long-term\\JobTrack-check-79b04179\\scratch",
+        "source": "D:\\Long-term\\JobTrack-check-efe0a40c\\scratch",
         "target": "/scratch",
         "readOnly": false
       },
       {
         "kind": "fixtures",
-        "source": "D:\\Long-term\\JobTrack-check-79b04179\\fixtures",
+        "source": "D:\\Long-term\\JobTrack-check-efe0a40c\\fixtures",
         "target": "/fixtures",
-        "readOnly": true
-      },
-      {
-        "kind": "candidate",
-        "source": "D:\\Long-term\\JobTrack-check-79b04179\\candidate",
-        "target": "/candidate",
         "readOnly": true
       }
     ],
@@ -86,21 +91,21 @@
   },
   "observedMounts": [
     {
+      "kind": "candidate",
+      "source": "D:\\Long-term\\JobTrack-check-efe0a40c\\candidate",
+      "target": "/candidate",
+      "readOnly": true
+    },
+    {
       "kind": "scratch",
-      "source": "D:\\Long-term\\JobTrack-check-79b04179\\scratch",
+      "source": "D:\\Long-term\\JobTrack-check-efe0a40c\\scratch",
       "target": "/scratch",
       "readOnly": false
     },
     {
       "kind": "fixtures",
-      "source": "D:\\Long-term\\JobTrack-check-79b04179\\fixtures",
+      "source": "D:\\Long-term\\JobTrack-check-efe0a40c\\fixtures",
       "target": "/fixtures",
-      "readOnly": true
-    },
-    {
-      "kind": "candidate",
-      "source": "D:\\Long-term\\JobTrack-check-79b04179\\candidate",
-      "target": "/candidate",
       "readOnly": true
     }
   ],
@@ -108,17 +113,17 @@
     {
       "target": "/candidate",
       "readOnly": true,
-      "source": "D:/Long-term/JobTrack-check-79b04179/candidate"
+      "source": "D:/Long-term/JobTrack-check-efe0a40c/candidate"
     },
     {
       "target": "/scratch",
       "readOnly": false,
-      "source": "D:/Long-term/JobTrack-check-79b04179/scratch"
+      "source": "D:/Long-term/JobTrack-check-efe0a40c/scratch"
     },
     {
       "target": "/fixtures",
       "readOnly": true,
-      "source": "D:/Long-term/JobTrack-check-79b04179/fixtures"
+      "source": "D:/Long-term/JobTrack-check-efe0a40c/fixtures"
     }
   ],
   "forbiddenHostPaths": [

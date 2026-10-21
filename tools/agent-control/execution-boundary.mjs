@@ -55,6 +55,9 @@ export function assertReceiptMatchesBinding(receipt, binding, options = {}) {
 }
 
 export function buildTrustedBinding(context) {
+  for (const field of ['taskId', 'feature', 'base', 'sourceDigest', 'projectionManifestHash', 'policyHash', 'environmentHash', 'purpose', 'profileHash', 'adapterId', 'imageDigest', 'cliHash', 'nodeHash']) {
+    if (typeof context?.[field] !== 'string' || !context[field]) throw Error(`Trusted binding is missing ${field}.`);
+  }
   const binding = {
     taskId: context.taskId,
     feature: context.feature,
@@ -78,72 +81,68 @@ export function createExecutionBoundary(options) {
   if (!context || !projection || !adapter || !issuer) throw Error('Execution boundary needs a context, a projection, an adapter and an issuer.');
   if (typeof issuer.issue !== 'function' || typeof issuer.verify !== 'function') throw Error('Execution boundary needs an issuer that can issue and verify.');
   if (typeof adapter.launch !== 'function') throw Error('Execution boundary needs an adapter that can launch.');
+  const cache = new Map();
+
+  async function prepare(state, request) {
+    const purpose = request.purpose;
+    if (!BOUNDARY_PURPOSES.includes(purpose)) throw Error('Execution purpose is invalid.');
+    const scratchRoot = request.scratchRoot ?? projection.scratchFor(state);
+    mkdirSync(scratchRoot, { recursive: true });
+    const staged = stageProjection({
+      files: request.files,
+      sourceRoot: state.worktree,
+      destination: projection.destinationFor(state)
+    });
+    const binding = buildTrustedBinding(context(state, {
+      purpose,
+      projectionManifestHash: staged.manifestHash,
+      sourceDigest: request.sourceDigest
+    }));
+    const cacheKey = `${state.id}:${purpose}:${binding.sourceDigest}:${binding.projectionManifestHash}`;
+    let receipt = cache.get(cacheKey) ?? null;
+    if (!receipt) {
+      const issued = await issuer.issue({
+        runId: request.runId ?? randomUUID(),
+        taskId: binding.taskId,
+        feature: binding.feature,
+        base: binding.base,
+        sourceDigest: binding.sourceDigest,
+        projectionManifestHash: binding.projectionManifestHash,
+        purpose: binding.purpose,
+        projection: staged.root,
+        scratch: scratchRoot,
+        manifest: staged.manifest.map(entry => ({ path: entry.path, sha256: entry.sha256 }))
+      });
+      receipt = issued?.receipt ?? null;
+      if (!receipt) throw Error(`The issuer produced no readiness receipt: ${issued?.diagnostics ?? 'unknown reason'}`);
+      cache.set(cacheKey, receipt);
+    }
+    const verified = await issuer.verify(receipt);
+    assertReceiptMatchesBinding(verified.receipt ?? receipt, binding);
+    return { purpose, binding, receipt: verified.receipt ?? receipt, staged, scratchRoot };
+  }
+
   return {
-    async run(state, request) {
-      const purpose = request.purpose;
-      if (!BOUNDARY_PURPOSES.includes(purpose)) throw Error('Execution purpose is invalid.');
-      const scratchRoot = request.scratchRoot ?? projection.scratchFor(state);
-      const staged = stageProjection({
-        files: request.files,
-        sourceRoot: state.worktree,
-        destination: projection.destinationFor(state)
-      });
-      const binding = buildTrustedBinding(context(state, {
-        purpose,
-        projectionManifestHash: staged.manifestHash,
+    async receiptFor(state, request = {}) {
+      const prepared = await prepare(state, {
+        purpose: request.purpose ?? 'worker-read',
+        files: request.files ?? [],
         sourceDigest: request.sourceDigest
-      }));
-      const runId = request.runId ?? randomUUID();
-      const outcome = await executeBoundary({
-        purpose,
-        binding,
-        receipt: request.receipt ?? null,
-        verify: (receipt, trusted) => issuer.verify(receipt, trusted),
-        issue: ({ binding: trusted }) => issuer.issue({
-          runId,
-          taskId: trusted.taskId,
-          feature: trusted.feature,
-          base: trusted.base,
-          sourceDigest: trusted.sourceDigest,
-          projectionManifestHash: trusted.projectionManifestHash,
-          purpose: trusted.purpose,
-          projection: staged.root,
-          scratch: scratchRoot,
-          manifest: staged.manifest.map(entry => ({ path: entry.path, sha256: entry.sha256 }))
-        }).then(result => result.receipt),
-        launch: ({ binding: trusted, receipt }) => adapter.launch({
-          runId,
-          projection: staged.root,
-          scratch: scratchRoot,
-          command: request.command ?? [],
-          stdin: request.instruction ?? '',
-          binding: trusted,
-          receipt
-        })
       });
-      return { ...outcome, staged };
+      return prepared.receipt;
+    },
+    async run(state, request) {
+      const prepared = await prepare(state, request);
+      const launched = await adapter.launch({
+        runId: request.runId ?? randomUUID(),
+        projection: prepared.staged.root,
+        scratch: prepared.scratchRoot,
+        command: request.command ?? [],
+        stdin: request.instruction ?? '',
+        binding: prepared.binding,
+        receipt: prepared.receipt
+      });
+      return { ...prepared, launched };
     }
   };
-}
-
-export async function executeBoundary(options) {
-  const { purpose, binding, receipt, verify, issue, launch } = options;
-  assertBoundaryBinding(binding);
-  if (binding.purpose !== purpose) throw Error('Trusted binding purpose does not match the execution purpose.');
-  let current = receipt ?? null;
-  if (current) {
-    try {
-      assertReceiptMatchesBinding(current, binding);
-    } catch {
-      current = null;
-    }
-  }
-  if (!current) {
-    current = await issue({ purpose, binding });
-    assertReceiptMatchesBinding(current, binding);
-  }
-  const verified = (await verify(current, binding)) ?? current;
-  assertReceiptMatchesBinding(verified, binding);
-  const launched = await launch({ purpose, binding, receipt: verified });
-  return { binding, receipt: verified, launched };
 }

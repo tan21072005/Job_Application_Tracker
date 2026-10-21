@@ -134,7 +134,9 @@ export class AgentController {
   }
 
   async assertReadiness(state) {
-    const receipt = this.adapters.readiness ? await this.adapters.readiness(state) : this.readReadinessReceipt(state.id);
+    const receipt = this.adapters.boundary && typeof this.adapters.boundaryReceipt === 'function'
+      ? await this.adapters.boundaryReceipt(state, { purpose: 'worker-read', files: this.manifestFiles(state), sourceDigest: this.digest(state) })
+      : this.adapters.readiness ? await this.adapters.readiness(state) : this.readReadinessReceipt(state.id);
     if (!receipt) {
       const error = new Error('Readiness receipt is missing; no model was invoked.');
       error.code = 'readiness';
@@ -372,7 +374,7 @@ export class AgentController {
       const [command, args] = checks[name];
       let result;
       if (this.adapters.boundary) {
-        const outcome = await this.adapters.boundary.run(state, { purpose: 'check-runner', check: name, command, args, files: this.changes(state), sourceDigest: digest });
+        const outcome = await this.adapters.boundary.run(state, { purpose: 'check-runner', check: name, command: [command, ...args], files: this.changes(state), sourceDigest: digest });
         const launched = outcome.launched ?? {};
         result = {
           code: launched.status ?? 1,
@@ -395,6 +397,16 @@ export class AgentController {
 
   check(id) { return this.locked(id, () => this.checkUnlocked(this.load(id))); }
 
+  manifestFiles(state) {
+    const ownedFiles = this.git(state.worktree, ['ls-files', '-z', '--', ...FEATURES[state.feature]]).split('\0').filter(Boolean);
+    const files = [];
+    for (const file of [...new Set([...ownedFiles, ...this.changes(state)])]) {
+      try { assertOwnedPath(state.worktree, state.feature, file); } catch { continue; }
+      files.push(file);
+    }
+    return files;
+  }
+
   workerCommand() {
     if (!Array.isArray(this.workerCommandArgv) || !this.workerCommandArgv.length) {
       throw Error('The operator must configure the isolated worker command before the boundary can run a role.');
@@ -403,7 +415,14 @@ export class AgentController {
   }
 
   parseWorkerResponse(output) {
-    const messages = String(output ?? '').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)).filter(event => event.type === 'item.completed' && event.item?.type === 'agent_message');
+    const events = String(output ?? '').split(/\r?\n/).filter(Boolean).map(line => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    }).filter(event => event && typeof event === 'object');
+    const messages = events.filter(event => event.type === 'item.completed' && event.item?.type === 'agent_message');
     if (!messages.length) throw Error('Worker produced no structured result.');
     return JSON.parse(messages.at(-1).item.text);
   }
@@ -411,9 +430,7 @@ export class AgentController {
   async role(role, state, prompt) {
     await this.assertReadiness(state);
     const manifest = {};
-    const ownedFiles = this.git(state.worktree, ['ls-files', '-z', '--', ...FEATURES[state.feature]]).split('\0').filter(Boolean);
-    for (const file of [...new Set([...ownedFiles, ...this.changes(state)])]) {
-      try { assertOwnedPath(state.worktree, state.feature, file); } catch { continue; }
+    for (const file of this.manifestFiles(state)) {
       manifest[file] = existsSync(join(state.worktree, file)) ? hash(readFileSync(join(state.worktree, file))) : null;
     }
     const context = JSON.stringify({ objective: state.objective, acceptance: state.acceptance, feature: state.feature, allowedPaths: FEATURES[state.feature], checks: state.checks, baselineManifest: manifest });

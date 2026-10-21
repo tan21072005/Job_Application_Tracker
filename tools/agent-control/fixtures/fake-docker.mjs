@@ -35,7 +35,7 @@ if (verb === 'create') {
   process.stdout.write(JSON.stringify([{
     Id: id,
     Image: `sha256:${process.env.JT_FAKE_DOCKER_IMAGE_ID ?? ''}`,
-    Config: { Image: image, User: process.env.JT_FAKE_DOCKER_USER ?? '65534:65534', Env: ['HOME=/nonexistent'] },
+    Config: { Image: image, User: process.env.JT_FAKE_DOCKER_USER ?? '65534:65534', Env: ['HOME=/nonexistent'], Labels: { 'jobtrack.fixture': 'true' } },
     HostConfig: {
       NetworkMode: process.env.JT_FAKE_DOCKER_NETWORK ?? 'none',
       CapDrop: ['ALL'],

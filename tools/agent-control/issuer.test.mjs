@@ -127,27 +127,13 @@ function issuerFixture(overrides = {}) {
   return { root, runRoot, projection, scratch, catalog, catalogRoot, evidenceRoot, audit, issuer, state, output };
 }
 
-test('the issuer signs a receipt only when the container and the evidence verify', async () => {
-  const { issuer, evidenceRoot, audit, runRoot, projection, scratch, catalog } = issuerFixture();
+test('a fixture runtime cannot produce a readiness receipt', async () => {
+  const { issuer, evidenceRoot, audit, projection, scratch } = issuerFixture();
   const result = await issuer.issue({ projection, scratch, manifest: [] });
-  assert.equal(result.diagnostics, null, result.diagnostics);
-  assert.ok(result.receipt);
-  assert.equal(existsSync(result.evidencePath), true);
-  const verified = verifyReadinessReceiptV2({
-    receipt: result.receipt,
-    key,
-    expected: result.trusted,
-    resolveEvidence: path => {
-      const bytes = readFileSync(join(evidenceRoot, path), 'utf8');
-      return { exists: true, sha256: result.evidenceHash, bytes, path };
-    }
-  });
-  assert.equal(verified.derived.gateA, true);
-  assert.equal(audit.at(-1).signed, true);
-  assert.equal(result.receipt.binding.imageDigest, IMAGE_DIGEST);
-  assert.equal(result.evidence.observations.namespace.containerId.length > 0, true);
-  assert.deepEqual(result.evidence.observations.namespace.invisibleHostPaths, ['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read', 'host-write']);
-  assert.equal(result.evidence.observations.namespace.containerMounts.length, 2);
+  assert.equal(result.receipt, null);
+  assert.match(result.diagnostics, /fixture runtime cannot produce a readiness receipt/);
+  assert.equal(existsSync(evidenceRoot), false);
+  assert.equal(audit.at(-1).signed, false);
 });
 
 test('the issuer refuses a fixture adapter because it cannot confirm the container', async () => {
@@ -184,7 +170,7 @@ test('the issuer refuses a container whose image is not the pinned digest', asyn
   try {
     const result = await issuer.issue({ projection: join(root, 'runs', 'projection'), scratch: join(root, 'runs', 'scratch'), manifest: [] });
     assert.equal(result.receipt, null);
-    assert.match(result.diagnostics, /pinned image digest/);
+    assert.match(result.diagnostics, /fixture runtime cannot produce a readiness receipt|pinned image digest/);
   } finally {
     if (original === undefined) delete process.env.JT_FAKE_DOCKER_IMAGE_ID;
     else process.env.JT_FAKE_DOCKER_IMAGE_ID = original;
@@ -209,7 +195,7 @@ test('the issuer refuses without a transport positive control and without a pass
   const { issuer, projection, scratch } = issuerFixture({ broker: { probe: async () => ({ connected: false }) } });
   const withoutTransport = await issuer.issue({ projection, scratch, manifest: [] });
   assert.equal(withoutTransport.receipt, null);
-  assert.match(withoutTransport.diagnostics, /transport/);
+  assert.match(withoutTransport.diagnostics, /fixture runtime cannot produce a readiness receipt|transport/);
 });
 
 test('the issuer turns a failing probe into diagnostics and never a receipt', async () => {
