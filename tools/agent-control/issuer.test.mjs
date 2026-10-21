@@ -1,12 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createReadinessIssuer, buildTrustedContext, buildWitnessBindings, hostPathWitness } from './issuer.mjs';
+import { buildTrustedContext, buildWitnessBindings, createReadinessIssuer, hostPathWitness, isLoopbackHost, toContainerPath } from './issuer.mjs';
 import { verifyReadinessReceiptV2 } from './readiness-v2.mjs';
 
 const key = 'k'.repeat(48);
+const PUBLISHED_KEY = 'local-issuance-key-0123456789abcdef0123456789';
+const IMAGE_DIGEST = 'a'.repeat(64);
+const CATALOG_IDS = ['projection-read', 'scratch-write', 'host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read', 'projection-write', 'host-write', 'child-liveness', 'grandchild-liveness', 'transport-positive', 'transport-general-egress'];
 
 function catalogFixture(root) {
   const repo = join(root, 'repo');
@@ -22,14 +25,14 @@ function catalogFixture(root) {
     taskId: 'web-one',
     feature: 'web',
     base: 'abc123',
-    sourceDigest: 'a'.repeat(64),
-    projectionManifestHash: 'b'.repeat(64),
-    policyHash: 'c'.repeat(64),
-    environmentHash: 'd'.repeat(64),
+    sourceDigest: 'b'.repeat(64),
+    projectionManifestHash: 'c'.repeat(64),
+    policyHash: 'd'.repeat(64),
+    environmentHash: 'e'.repeat(64),
     purpose: 'worker-read',
-    profileHash: 'e'.repeat(64),
+    profileHash: 'f'.repeat(64),
     adapterId: 'jobtrack-docker-adapter-v1',
-    imageDigest: 'f'.repeat(64),
+    imageDigest: IMAGE_DIGEST,
     cliHash: '1'.repeat(64),
     nodeHash: '2'.repeat(64),
     verifierImplementationHash: '3'.repeat(64),
@@ -40,29 +43,39 @@ function catalogFixture(root) {
       'common-git-read': join(repo, '.git'),
       'control-state-read': join(repo, '.agent-state'),
       'host-credential-read': join(repo, 'accounts.txt'),
-      'projection-write': join(root, 'projection'),
+      'projection-write': projection,
       'host-write': repo
     },
-    mountSources: { projection: join(root, 'projection'), scratch }
+    mountSources: { projection, scratch }
   };
 }
 
-const passingProbe = () => ({
-  runId: 'run-1',
-  image: 'node@sha256:' + 'a'.repeat(64),
-  startedAt: '2026-10-21T10:00:00.000Z',
-  completedAt: '2026-10-21T10:00:05.000Z',
+const passingProbe = catalog => ({
+  runId: '3f6b1c2a-9d4e-4a7b-8c5d-1e2f3a4b5c6d',
+  image: `node@sha256:${IMAGE_DIGEST}`,
+  argvHash: '4'.repeat(64),
+  startedAt: new Date(Date.now() - 5000).toISOString(),
+  completedAt: new Date().toISOString(),
+  observation: {
+    imageId: `sha256:${IMAGE_DIGEST}`,
+    networkMode: 'none',
+    mounts: [
+      { kind: 'projection', source: catalog.mountSources.projection, target: '/projection', readOnly: true },
+      { kind: 'scratch', source: catalog.mountSources.scratch, target: '/scratch', readOnly: false }
+    ]
+  },
   probe: {
-    checks: { 'projection-read': { allowed: true } },
+    checks: Object.fromEntries(CATALOG_IDS.map(commandId => [commandId, { allowed: true }])),
     observations: {
       projectionRead: { outcome: 'allowed' },
       scratchWrite: { outcome: 'allowed' },
       projectionWrite: { outcome: 'denied' },
       hostPaths: [
-        { containerPath: '/mnt/d/repo', outcome: 'absent' },
-        { containerPath: '/mnt/d/repo/.git', outcome: 'absent' },
-        { containerPath: '/mnt/d/repo/.agent-state', outcome: 'absent' },
-        { containerPath: '/mnt/d/repo/accounts.txt', outcome: 'absent' }
+        { targetId: 'host-repo-read', outcome: 'absent' },
+        { targetId: 'common-git-read', outcome: 'absent' },
+        { targetId: 'control-state-read', outcome: 'absent' },
+        { targetId: 'host-credential-read', outcome: 'absent' },
+        { targetId: 'host-write', outcome: 'absent' }
       ],
       hostWrite: { outcome: 'absent' },
       liveness: [
@@ -76,14 +89,15 @@ const passingProbe = () => ({
 
 function issuerFixture(overrides = {}) {
   const root = mkdtempSync(join(tmpdir(), 'jobtrack-issuer-'));
-  const catalog = catalogFixture(root);
+  const catalog = overrides.catalog ?? catalogFixture(root);
   const evidenceRoot = join(root, 'evidence');
   const audit = [];
-  const adapter = { probe: async () => passingProbe() };
+  const adapter = { probe: async () => passingProbe(catalog) };
   const broker = { probe: async () => ({ connected: true }) };
   const issuer = createReadinessIssuer({
     catalog,
-    key,
+    key: overrides.key ?? key,
+    forbidKey: PUBLISHED_KEY,
     evidenceRoot,
     adapter: { ...adapter, ...(overrides.adapter ?? {}) },
     broker: { ...broker, ...(overrides.broker ?? {}) },
@@ -104,8 +118,7 @@ test('the issuer signs a receipt only when the evidence verifies', async () => {
     key,
     expected: result.trusted,
     resolveEvidence: path => {
-      const target = join(evidenceRoot, path);
-      const bytes = readFileSync(target, 'utf8');
+      const bytes = readFileSync(join(evidenceRoot, path), 'utf8');
       return { exists: true, sha256: result.evidenceHash, bytes, path };
     }
   });
@@ -114,13 +127,17 @@ test('the issuer signs a receipt only when the evidence verifies', async () => {
   assert.equal(audit.at(-1).event, 'readiness-issued');
 });
 
-test('the issuer refuses to sign when the isolation evidence fails', async () => {
-  const broken = passingProbe();
+test('the issuer writes no evidence file when the isolation proof fails', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'jobtrack-issuer-'));
+  const catalog = catalogFixture(root);
+  const broken = passingProbe(catalog);
   broken.probe.observations.projectionWrite = { outcome: 'allowed' };
-  const { issuer, audit } = issuerFixture({ adapter: { probe: async () => broken } });
+  const { issuer, evidenceRoot, audit } = issuerFixture({ catalog, adapter: { probe: async () => broken } });
   const result = await issuer.issue({ projection: 'C:/projection', scratch: 'C:/scratch', manifest: [], hostPaths: [] });
   assert.equal(result.receipt, null);
-  assert.match(result.diagnostics, /does not prove isolation|denial/);
+  assert.match(result.diagnostics, /does not prove isolation/);
+  assert.equal(result.evidencePath, null);
+  assert.equal(existsSync(evidenceRoot), false);
   assert.equal(audit.at(-1).signed, false);
 });
 
@@ -128,16 +145,76 @@ test('the issuer refuses to sign without a transport positive control', async ()
   const { issuer } = issuerFixture({ broker: { probe: async () => ({ connected: false }) } });
   const result = await issuer.issue({ projection: 'C:/projection', scratch: 'C:/scratch', manifest: [], hostPaths: [] });
   assert.equal(result.receipt, null);
-  assert.match(result.diagnostics, /model transport/);
+  assert.match(result.diagnostics, /transport/);
 });
 
 test('the issuer refuses to sign when the general egress was not blocked', async () => {
-  const open = passingProbe();
+  const root = mkdtempSync(join(tmpdir(), 'jobtrack-issuer-'));
+  const catalog = catalogFixture(root);
+  const open = passingProbe(catalog);
   open.probe.observations.generalEgress = { outcome: 'allowed' };
-  const { issuer } = issuerFixture({ adapter: { probe: async () => open } });
+  const { issuer } = issuerFixture({ catalog, adapter: { probe: async () => open } });
   const result = await issuer.issue({ projection: 'C:/projection', scratch: 'C:/scratch', manifest: [], hostPaths: [] });
   assert.equal(result.receipt, null);
   assert.match(result.diagnostics, /egress/);
+});
+
+test('the issuer refuses a loopback general egress control', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'jobtrack-issuer-'));
+  const catalog = { ...catalogFixture(root), generalEgressEndpoint: 'http://127.0.0.1:8098/general' };
+  const { issuer } = issuerFixture({ catalog });
+  const result = await issuer.issue({ projection: 'C:/projection', scratch: 'C:/scratch', manifest: [], hostPaths: [] });
+  assert.equal(result.receipt, null);
+  assert.match(result.diagnostics, /loopback/);
+  assert.equal(isLoopbackHost('127.0.0.1'), true);
+  assert.equal(isLoopbackHost('192.168.1.251'), false);
+});
+
+test('the issuer refuses a container whose image is not the pinned digest', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'jobtrack-issuer-'));
+  const catalog = catalogFixture(root);
+  const wrong = passingProbe(catalog);
+  wrong.observation.imageId = `sha256:${'9'.repeat(64)}`;
+  const { issuer } = issuerFixture({ catalog, adapter: { probe: async () => wrong } });
+  const result = await issuer.issue({ projection: 'C:/projection', scratch: 'C:/scratch', manifest: [], hostPaths: [] });
+  assert.equal(result.receipt, null);
+  assert.match(result.diagnostics, /pinned image digest/);
+});
+
+test('the issuer refuses a container whose mounts are not the declared ones', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'jobtrack-issuer-'));
+  const catalog = catalogFixture(root);
+  const wrong = passingProbe(catalog);
+  wrong.observation.mounts[0].source = 'D:/elsewhere/projection';
+  const { issuer } = issuerFixture({ catalog, adapter: { probe: async () => wrong } });
+  const result = await issuer.issue({ projection: 'C:/projection', scratch: 'C:/scratch', manifest: [], hostPaths: [] });
+  assert.equal(result.receipt, null);
+  assert.match(result.diagnostics, /declared source/);
+});
+
+test('the issuer turns a failing probe into diagnostics and never a receipt', async () => {
+  const { issuer, audit } = issuerFixture({ adapter: { probe: async () => { throw Error('container exited with 1'); } } });
+  const result = await issuer.issue({ projection: 'C:/projection', scratch: 'C:/scratch', manifest: [], hostPaths: [] });
+  assert.equal(result.receipt, null);
+  assert.equal(result.evidence, null);
+  assert.match(result.diagnostics, /container exited/);
+  assert.equal(audit.at(-1).signed, false);
+});
+
+test('the issuer sends the catalog host paths to the probe, never caller paths', async () => {
+  let seen = null;
+  const root = mkdtempSync(join(tmpdir(), 'jobtrack-issuer-'));
+  const catalog = catalogFixture(root);
+  const { issuer } = issuerFixture({
+    catalog,
+    adapter: { probe: async input => { seen = input.hostPaths; return passingProbe(catalog); } }
+  });
+  await issuer.issue({ projection: 'C:/projection', scratch: 'C:/scratch', manifest: [], hostPaths: [{ targetId: 'host-repo-read', hostPath: 'C:/attacker' }] });
+  assert.equal(seen.length, 5);
+  for (const entry of seen) {
+    assert.equal(entry.hostPath, catalog.deniedHostPaths[entry.targetId]);
+    assert.equal(entry.containerPath, toContainerPath(entry.hostPath));
+  }
 });
 
 test('the witness bindings are per run and the report cannot compute them', () => {
@@ -159,6 +236,7 @@ test('the issuer needs a catalog, a signing key and an evidence root', () => {
   assert.throws(() => createReadinessIssuer({ key, evidenceRoot: 'C:/e' }), /maintainer catalog/);
   assert.throws(() => createReadinessIssuer({ catalog: {}, key: 'short', evidenceRoot: 'C:/e' }), /at least 32 characters/);
   assert.throws(() => createReadinessIssuer({ catalog: {}, key }), /evidence root/);
+  assert.throws(() => createReadinessIssuer({ catalog: {}, key: PUBLISHED_KEY, evidenceRoot: 'C:/e', forbidKey: PUBLISHED_KEY }), /published development signing key/);
 });
 
 test('the receipt binds the task, the base and the catalog values', async () => {
@@ -168,29 +246,14 @@ test('the receipt binds the task, the base and the catalog values', async () => 
   assert.equal(result.receipt.binding.base, catalog.base);
   assert.equal(result.receipt.binding.purpose, 'worker-read');
   assert.equal(result.receipt.binding.adapterId, catalog.adapterId);
+  assert.equal(result.receipt.binding.imageDigest, IMAGE_DIGEST);
   assert.equal(result.receipt.schemaVersion, 2);
   assert.equal(result.receipt.evidence.rawSha256, result.evidenceHash);
 });
 
-function issuerFixtureCatalog(result) {
-  return {
-    taskId: result.receipt.binding.taskId,
-    feature: result.receipt.binding.feature,
-    base: result.receipt.binding.base,
-    sourceDigest: result.receipt.binding.sourceDigest,
-    projectionManifestHash: result.receipt.binding.projectionManifestHash,
-    policyHash: result.receipt.binding.policyHash,
-    environmentHash: result.receipt.binding.environmentHash,
-    purpose: result.receipt.binding.purpose,
-    profileHash: result.receipt.binding.profileHash,
-    adapterId: result.receipt.binding.adapterId,
-    imageDigest: result.receipt.binding.imageDigest,
-    cliHash: result.receipt.binding.cliHash,
-    nodeHash: result.receipt.binding.nodeHash,
-    verifierImplementationHash: result.receipt.verifier.implementationHash,
-    modelEndpoint: 'https://model-endpoint.invalid/v1',
-    generalEgressEndpoint: 'https://general-egress.invalid/',
-    deniedHostPaths: {},
-    mountSources: {}
-  };
-}
+test('the trusted context carries the per run witness bindings', () => {
+  const catalog = catalogFixture(mkdtempSync(join(tmpdir(), 'jobtrack-issuer-')));
+  const trusted = buildTrustedContext(catalog, 'run-1');
+  assert.equal(trusted.witnessBindings['host-repo-read'].startsWith('run-1:'), true);
+  assert.equal(trusted.imageDigest, catalog.imageDigest);
+});

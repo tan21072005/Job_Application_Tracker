@@ -1,11 +1,23 @@
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { assertNoHostAccess, assertPinnedImage, buildRunArgs, canonicalSource, forbiddenHostPaths, CONTAINER_UID, CONTAINER_GID, DEFAULT_MEMORY, DEFAULT_PIDS, DEFAULT_CPUS, DEFAULT_TMPFS } from './docker-adapter.mjs';
+import { join } from 'node:path';
+import {
+  assertNoHostAccess,
+  assertPinnedImage,
+  buildRunArgs,
+  canonicalSource,
+  forbiddenHostPaths,
+  NETWORK_MODE,
+  CANDIDATE_TARGET,
+  FIXTURE_TARGET,
+  SCRATCH_TARGET
+} from './docker-adapter.mjs';
 
-export const CHECK_PROJECTION_TARGET = '/candidate';
-export const CHECK_SCRATCH_TARGET = '/scratch';
-export const CHECK_FIXTURE_TARGET = '/fixtures';
+export const CHECK_PROJECTION_TARGET = CANDIDATE_TARGET;
+export const CHECK_SCRATCH_TARGET = SCRATCH_TARGET;
+export const CHECK_FIXTURE_TARGET = FIXTURE_TARGET;
+
+export const CHECK_ENV_KEYS = Object.freeze(['HOME', 'CHECK_ID', 'CANDIDATE_DIGEST', 'FIXTURE_ROOT', 'SCRATCH_ROOT']);
+
 export const FORBIDDEN_CHECK_ENV = Object.freeze([
   'DATABASE_URL',
   'TEST_DATABASE_URL',
@@ -23,8 +35,9 @@ export const FORBIDDEN_CHECK_ENV = Object.freeze([
 
 export function assertCheckEnvironment(env) {
   const keys = Object.keys(env ?? {});
-  for (const forbidden of FORBIDDEN_CHECK_ENV) {
-    if (keys.includes(forbidden)) throw Error(`Check environment must not carry ${forbidden}.`);
+  for (const key of keys) {
+    if (!CHECK_ENV_KEYS.includes(key)) throw Error(`Check environment may only carry ${CHECK_ENV_KEYS.join(', ')}.`);
+    if (FORBIDDEN_CHECK_ENV.includes(key)) throw Error(`Check environment must not carry ${key}.`);
   }
   return env;
 }
@@ -41,38 +54,41 @@ export function buildCheckEnvironment({ checkId, candidateDigest, fixtureRoot = 
 }
 
 export function buildCheckArgs(options) {
-  const { image, runId, candidate, scratch, fixtures, command, network = 'none', env } = options;
+  const { image, runId, candidate, scratch, fixtures, command } = options;
   assertPinnedImage(image);
   if (!Array.isArray(command) || !command.length) throw Error('Check profile needs a command.');
+  const env = buildCheckEnvironment(options.check ?? {});
   const mounts = [
-    { source: candidate, target: CHECK_PROJECTION_TARGET, readOnly: true },
-    { source: scratch, target: CHECK_SCRATCH_TARGET, readOnly: false },
-    { source: fixtures, target: CHECK_FIXTURE_TARGET, readOnly: true }
+    { kind: 'candidate', source: candidate, target: CHECK_PROJECTION_TARGET, readOnly: true },
+    { kind: 'scratch', source: scratch, target: CHECK_SCRATCH_TARGET, readOnly: false },
+    { kind: 'fixtures', source: fixtures, target: CHECK_FIXTURE_TARGET, readOnly: true }
   ];
   const args = [
-    ...buildRunArgs({ image, runId, network }),
+    ...buildRunArgs({ image, runId }),
     ...mounts.flatMap(mount => ['--mount', `type=bind,source=${mount.source},target=${mount.target}${mount.readOnly ? ',readonly' : ''}`]),
-    ...Object.entries(env ?? {}).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
+    ...Object.entries(env).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
     image,
     ...command
   ];
-  return { args, mounts };
+  return { args, mounts, env };
 }
 
-export function assertCheckProfile(args, { forbidden, allowedMountSources }) {
-  assertNoHostAccess(args, forbidden, allowedMountSources);
+export function assertCheckProfile(args, { forbidden, image, expectedMounts = [] }) {
+  assertNoHostAccess(args, forbidden, expectedMounts, { image });
   const envValues = args.filter((value, index) => args[index - 1] === '--env');
-  for (const value of envValues) {
-    const key = value.split('=')[0];
+  const envKeys = envValues.map(value => value.split('=')[0]);
+  for (const key of envKeys) {
+    if (!CHECK_ENV_KEYS.includes(key)) throw Error(`Check environment may only carry ${CHECK_ENV_KEYS.join(', ')}.`);
     if (FORBIDDEN_CHECK_ENV.includes(key)) throw Error(`Check environment must not carry ${key}.`);
   }
   if (!args.includes('--read-only')) throw Error('Check profile must run with a read only root filesystem.');
-  if (!args.includes('--network')) throw Error('Check profile must declare its network.');
+  const networkIndex = args.indexOf('--network');
+  if (networkIndex < 0 || args[networkIndex + 1] !== NETWORK_MODE) throw Error('Check profile must run without network access.');
   return true;
 }
 
 export function checkEvidence(result) {
-  const evidence = {
+  return {
     kind: 'isolated-check-profile-not-readiness-receipt',
     checkId: result.checkId,
     candidateDigest: result.candidateDigest,
@@ -82,5 +98,4 @@ export function checkEvidence(result) {
     stdoutHash: createHash('sha256').update(String(result.stdout ?? '')).digest('hex'),
     stderrHash: createHash('sha256').update(String(result.stderr ?? '')).digest('hex')
   };
-  return evidence;
 }

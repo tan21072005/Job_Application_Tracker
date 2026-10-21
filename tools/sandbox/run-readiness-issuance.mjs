@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createServer, get as httpRequest } from 'node:http';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -7,18 +7,47 @@ import { controlPlaneFingerprint } from '../agent-control/fingerprint.mjs';
 import { createTransportBroker } from '../agent-control/transport.mjs';
 import { createReadinessIssuer } from '../agent-control/issuer.mjs';
 
+const PUBLISHED_KEY = 'local-issuance-key-0123456789abcdef0123456789';
 const repo = process.argv[2] ?? process.cwd();
 const runRoot = process.argv[3] ?? 'D:/Long-term';
 const adapterRoot = process.argv[4] ?? repo;
 const modelPort = Number(process.env.JT_MODEL_PORT ?? 8099);
 const egressPort = Number(process.env.JT_EGRESS_PORT ?? 8098);
+const egressHost = process.env.JT_EGRESS_HOST ?? '';
+const signingKey = process.env.READINESS_KEY ?? '';
 
-const startServer = (port, label) => new Promise(resolve => {
+if (!signingKey) {
+  process.stderr.write('READINESS_KEY is required; the issuer never falls back to a published key.\n');
+  process.exitCode = 1;
+  process.exit(1);
+}
+if (signingKey === PUBLISHED_KEY) {
+  process.stderr.write('READINESS_KEY must not be the published development key.\n');
+  process.exitCode = 1;
+  process.exit(1);
+}
+if (!egressHost) {
+  process.stderr.write('JT_EGRESS_HOST is required and must be a non loopback address the host can reach.\n');
+  process.exitCode = 1;
+  process.exit(1);
+}
+
+const httpReach = (url, timeoutMs = 3000) => new Promise(resolve => {
+  const request = httpRequest(url, { timeout: timeoutMs }, response => {
+    response.resume();
+    resolve(response.statusCode >= 200 && response.statusCode < 500);
+  });
+  request.on('timeout', () => { request.destroy(); resolve(false); });
+  request.on('error', () => resolve(false));
+});
+
+const startServer = (port, label) => new Promise((resolve, reject) => {
   const server = createServer((request, response) => {
     response.writeHead(200, { 'content-type': 'application/json' });
     response.end(JSON.stringify({ label, path: request.url }));
   });
-  server.listen(port, '127.0.0.1', () => resolve(server));
+  server.on('error', reject);
+  server.listen(port, '0.0.0.0', () => resolve(server));
 });
 
 const runId = randomUUID();
@@ -35,7 +64,7 @@ const modelServer = await startServer(modelPort, 'model-transport');
 const egressServer = await startServer(egressPort, 'general-egress-control');
 
 const modelEndpoint = `http://127.0.0.1:${modelPort}/v1/chat`;
-const generalEgressEndpoint = `http://127.0.0.1:${egressPort}/general`;
+const generalEgressEndpoint = `http://${egressHost}:${egressPort}/general`;
 
 const catalog = {
   taskId: 'readiness-canary',
@@ -69,43 +98,28 @@ const adapter = createDockerAdapter({ repo: adapterRoot, image: DEFAULT_IMAGE, f
 const broker = createTransportBroker({
   allowlist: [{ kind: 'local-transport', host: '127.0.0.1', port: modelPort, path: '/v1' }],
   endpoint: modelEndpoint,
-  connect: async () => ({ connected: true, code: null })
+  secret: randomBytes(32).toString('hex'),
+  connect: async resolved => {
+    const reachable = await httpReach(resolved.endpoint);
+    return { connected: reachable, code: reachable ? null : 'UNREACHABLE' };
+  }
 });
-const httpGet = (url, timeoutMs = 3000) => new Promise(resolve => {
-  const request = httpRequest(url, { timeout: timeoutMs }, response => {
-    response.resume();
-    resolve(response.statusCode >= 200 && response.statusCode < 500);
-  });
-  request.on('timeout', () => { request.destroy(); resolve(false); });
-  request.on('error', () => resolve(false));
-});
-
-const evidenceRoot = join(adapterRoot, 'planning/jobtrack-agent-autonomy/hardening-evidence/readiness-evidence');
 const audit = [];
+const evidenceRoot = join(adapterRoot, 'planning/jobtrack-agent-autonomy/hardening-evidence/readiness-evidence');
 const issuer = createReadinessIssuer({
   catalog,
-  key: process.env.READINESS_KEY ?? 'local-issuance-key-0123456789abcdef0123456789',
+  key: signingKey,
+  forbidKey: PUBLISHED_KEY,
   evidenceRoot,
   adapter,
   broker,
-  connect: async endpoint => httpGet(endpoint),
+  connect: async endpoint => httpReach(endpoint),
   audit: record => audit.push(record)
 });
 
 let result = null;
 try {
-  result = await issuer.issue({
-    runId,
-    projection,
-    scratch,
-    manifest,
-    hostPaths: [
-      { hostPath: catalog.deniedHostPaths['host-repo-read'], containerPath: '/mnt/d/Project/Job_Application_Tracker' },
-      { hostPath: catalog.deniedHostPaths['common-git-read'], containerPath: '/mnt/d/Project/Job_Application_Tracker/.git' },
-      { hostPath: catalog.deniedHostPaths['control-state-read'], containerPath: '/mnt/d/Project/Job_Application_Tracker/.agent-state' },
-      { hostPath: catalog.deniedHostPaths['host-credential-read'], containerPath: '/mnt/d/Project/Job_Application_Tracker/accounts.txt' }
-    ]
-  });
+  result = await issuer.issue({ runId, projection, scratch, manifest });
 } finally {
   modelServer.close();
   egressServer.close();
@@ -115,15 +129,26 @@ const report = {
   kind: result?.receipt ? 'readiness-receipt' : 'readiness-diagnostics',
   runId,
   base,
-  catalog: { ...catalog, deniedHostPaths: undefined, mountSources: catalog.mountSources },
+  catalog: {
+    taskId: catalog.taskId,
+    feature: catalog.feature,
+    base: catalog.base,
+    purpose: catalog.purpose,
+    adapterId: catalog.adapterId,
+    imageDigest: catalog.imageDigest,
+    policyHash: catalog.policyHash,
+    modelEndpoint: catalog.modelEndpoint,
+    generalEgressEndpoint: catalog.generalEgressEndpoint,
+    mountSources: catalog.mountSources
+  },
   evidencePath: result?.evidencePath ?? null,
   evidenceHash: result?.evidenceHash ?? null,
   receipt: result?.receipt ?? null,
   diagnostics: result?.diagnostics ?? null,
   audit,
   limitations: [
-    'The general egress control is a host reachable local endpoint, not the public internet; it proves the isolated run has no path to a host reachable endpoint.',
-    'The model transport is a local broker endpoint; no provider credential was used and no paid service was called.',
+    'The model transport is a local broker endpoint on the loopback interface; no provider credential was used and no paid service was called.',
+    'The general egress control is a host reachable endpoint on the local network address; it proves the isolated run had no path to a reachable non loopback endpoint, not that the public internet was measured.',
     'The projection is synthetic; the real checkout was never mounted into the container.',
     'The receipt was verified by the schema 2 verifier inside the issuer before it was signed. A later re-verification needs the issuer run context, including the per run witness bindings, which are deliberately not stored in this artifact.'
   ]
@@ -137,3 +162,4 @@ process.stdout.write(JSON.stringify({
   receiptEvidenceHash: result?.receipt?.evidence?.rawSha256 ?? null
 }, null, 2) + '\n');
 rmSync(base, { recursive: true, force: true });
+if (!result?.receipt) process.exitCode = 1;

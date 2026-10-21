@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  CHECK_ENV_KEYS,
   CHECK_FIXTURE_TARGET,
   CHECK_PROJECTION_TARGET,
   CHECK_SCRATCH_TARGET,
@@ -33,32 +34,23 @@ const flagValue = (args, flag) => {
   return index >= 0 ? args[index + 1] : undefined;
 };
 
-test('the check profile names the pinned image before the command', () => {
+const build = (options = {}) => {
   const { candidate, scratch, fixtures } = fixture();
-  const { args } = buildCheckArgs({
-    image: DEFAULT_IMAGE,
-    runId: 'check-image',
-    candidate,
-    scratch,
-    fixtures,
-    command: ['node', 'check.mjs'],
-    env: buildCheckEnvironment({ checkId: 'build:api', candidateDigest: 'abc' })
-  });
-  assert.ok(args.includes(DEFAULT_IMAGE), 'check arguments must name the pinned image');
-  assert.equal(args.indexOf(DEFAULT_IMAGE) < args.indexOf('check.mjs'), true);
-});
-
-test('the check profile mounts the candidate read only, the scratch writable and the fixtures read only', () => {
-  const { candidate, scratch, fixtures } = fixture();
-  const { args, mounts } = buildCheckArgs({
+  const built = buildCheckArgs({
     image: DEFAULT_IMAGE,
     runId: 'check-1',
     candidate,
     scratch,
     fixtures,
     command: ['node', 'check.mjs'],
-    env: buildCheckEnvironment({ checkId: 'build:api', candidateDigest: 'abc' })
+    check: { checkId: 'build:api', candidateDigest: 'abc' },
+    ...options
   });
+  return { ...built, candidate, scratch, fixtures };
+};
+
+test('the check profile mounts the candidate read only, the scratch writable and the fixtures read only', () => {
+  const { args, mounts } = build();
   assert.equal(mounts.length, 3);
   const mountValues = args.filter((value, index) => args[index - 1] === '--mount');
   assert.equal(mountValues.length, 3);
@@ -69,16 +61,7 @@ test('the check profile mounts the candidate read only, the scratch writable and
 });
 
 test('the check profile keeps the containment controls of the worker profile', () => {
-  const { candidate, scratch, fixtures } = fixture();
-  const { args } = buildCheckArgs({
-    image: DEFAULT_IMAGE,
-    runId: 'check-2',
-    candidate,
-    scratch,
-    fixtures,
-    command: ['node', 'check.mjs'],
-    env: buildCheckEnvironment({ checkId: 'build:api', candidateDigest: 'abc' })
-  });
+  const { args } = build();
   assert.ok(args.includes('--read-only'));
   assert.equal(flagValue(args, '--network'), 'none');
   assert.equal(flagValue(args, '--cap-drop'), 'ALL');
@@ -88,34 +71,41 @@ test('the check profile keeps the containment controls of the worker profile', (
   assert.ok(args.includes('CANDIDATE_DIGEST=abc'));
 });
 
-test('the check environment never carries a database, provider or secret variable', () => {
-  assert.throws(() => assertCheckEnvironment({ DATABASE_URL: 'postgres://x' }), /must not carry DATABASE_URL/);
-  assert.throws(() => assertCheckEnvironment({ OPENAI_API_KEY: 'x' }), /must not carry OPENAI_API_KEY/);
-  assert.throws(() => assertCheckEnvironment({ READINESS_KEY: 'x' }), /must not carry READINESS_KEY/);
-  assert.throws(() => assertCheckEnvironment({ NODE_OPTIONS: '--require x' }), /must not carry NODE_OPTIONS/);
-  const env = buildCheckEnvironment({ checkId: 'build:api', candidateDigest: 'abc' });
-  for (const key of Object.keys(env)) assert.equal(FORBIDDEN_CHECK_ENV.includes(key), false, key);
+test('the check profile names the pinned image before the command', () => {
+  const { args } = build();
+  assert.ok(args.includes(DEFAULT_IMAGE), 'check arguments must name the pinned image');
+  assert.equal(args.indexOf(DEFAULT_IMAGE) < args.indexOf('check.mjs'), true);
 });
 
-test('the check profile refuses an undeclared mount and a forbidden environment variable', () => {
-  const { candidate, scratch, fixtures } = fixture();
-  const { args } = buildCheckArgs({
-    image: DEFAULT_IMAGE,
-    runId: 'check-3',
-    candidate,
-    scratch,
-    fixtures,
-    command: ['node', 'check.mjs'],
-    env: buildCheckEnvironment({ checkId: 'build:api', candidateDigest: 'abc' })
-  });
+test('the check environment never carries a database, provider or secret variable', () => {
+  assert.throws(() => assertCheckEnvironment({ DATABASE_URL: 'postgres://x' }), /may only carry|must not carry/);
+  assert.throws(() => assertCheckEnvironment({ OPENAI_API_KEY: 'x' }), /may only carry|must not carry/);
+  assert.throws(() => assertCheckEnvironment({ READINESS_KEY: 'x' }), /may only carry|must not carry/);
+  assert.throws(() => assertCheckEnvironment({ NODE_OPTIONS: '--require x' }), /may only carry|must not carry/);
+  const env = buildCheckEnvironment({ checkId: 'build:api', candidateDigest: 'abc' });
+  for (const key of Object.keys(env)) assert.equal(FORBIDDEN_CHECK_ENV.includes(key), false, key);
+  for (const key of Object.keys(env)) assert.equal(CHECK_ENV_KEYS.includes(key), true, key);
+});
+
+test('the check environment is built from the fixed allow list', () => {
+  const { env } = build();
+  assert.deepEqual(Object.keys(env).sort(), [...CHECK_ENV_KEYS].sort());
+  assert.equal(env.HOME, '/nonexistent');
+});
+
+test('the check profile refuses an undeclared mount, a network and a forbidden environment variable', () => {
+  const { args, candidate, scratch, fixtures, mounts } = build();
   const forbidden = forbiddenHostPaths('D:/Project/Job_Application_Tracker', 'C:/Users/Admin');
-  assert.equal(assertCheckProfile(args, { forbidden, allowedMountSources: [candidate, scratch, fixtures] }), true);
-  assert.throws(() => assertCheckProfile([...args, '--mount', 'type=bind,source=D:/Project/Job_Application_Tracker,target=/host'], { forbidden, allowedMountSources: [candidate, scratch, fixtures] }), /not declared|exactly the projection/);
-  assert.throws(() => assertCheckProfile([...args, '--env', 'DATABASE_URL=postgres://x'], { forbidden, allowedMountSources: [candidate, scratch, fixtures] }), /must not carry DATABASE_URL/);
+  const expectedMounts = mounts.map(mount => ({ ...mount, source: canonicalSource(mount.source) }));
+  assert.equal(assertCheckProfile(args, { forbidden, image: DEFAULT_IMAGE, expectedMounts: mounts }), true);
+  assert.throws(() => assertCheckProfile([...args, '--mount', 'type=bind,source=D:/Project/Job_Application_Tracker,target=/host'], { forbidden, image: DEFAULT_IMAGE, expectedMounts: mounts }), /exactly the expected bind set/);
+  assert.throws(() => assertCheckProfile([...args, '--env', 'DATABASE_URL=postgres://x'], { forbidden, image: DEFAULT_IMAGE, expectedMounts: mounts }), /may only carry|must not carry/);
+  const networked = args.map(value => value === 'none' ? 'host' : value);
+  assert.throws(() => assertCheckProfile(networked, { forbidden, image: DEFAULT_IMAGE, expectedMounts: mounts }), /without network access/);
 });
 
 test('the check profile needs a command and a pinned image', () => {
   const { candidate, scratch, fixtures } = fixture();
-  assert.throws(() => buildCheckArgs({ image: DEFAULT_IMAGE, runId: 'check-4', candidate, scratch, fixtures, command: [] }), /needs a command/);
-  assert.throws(() => buildCheckArgs({ image: 'node:24-alpine', runId: 'check-5', candidate, scratch, fixtures, command: ['node', 'x'] }), /immutable sha256 digest/);
+  assert.throws(() => buildCheckArgs({ image: DEFAULT_IMAGE, runId: 'check-4', candidate, scratch, fixtures, command: [], check: { checkId: 'x', candidateDigest: 'abc' } }), /needs a command/);
+  assert.throws(() => buildCheckArgs({ image: 'node:24-alpine', runId: 'check-5', candidate, scratch, fixtures, command: ['node', 'x'], check: { checkId: 'x', candidateDigest: 'abc' } }), /immutable sha256 digest/);
 });

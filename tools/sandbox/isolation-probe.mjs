@@ -2,29 +2,29 @@ import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { spawn } from 'node:child_process';
 
 const config = JSON.parse(Buffer.from(process.env.JT_PROBE_CONFIG ?? '', 'base64').toString('utf8'));
+const REQUIRED_READ_TARGETS = ['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read'];
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const output = { checks: {}, observations: {} };
 
 const record = (name, value) => { output.checks[name] = value; };
 
-const readTarget = (target, kind) => {
+const readTarget = target => {
   try {
     const content = fs.readFileSync(target);
-    return { ok: true, kind, bytes: content.length, sha256: sha256(content) };
+    return { ok: true, bytes: content.length, sha256: sha256(content) };
   } catch (error) {
-    return { ok: false, kind, code: error.code ?? 'UNKNOWN' };
+    return { ok: false, code: error.code ?? 'UNKNOWN' };
   }
 };
 
 const writeTarget = (target, text) => {
   try {
     fs.writeFileSync(target, text);
-    return { ok: true, kind: 'write' };
+    return { ok: true };
   } catch (error) {
-    return { ok: false, kind: 'write', code: error.code ?? 'UNKNOWN' };
+    return { ok: false, code: error.code ?? 'UNKNOWN' };
   }
 };
 
@@ -86,13 +86,28 @@ const runLiveness = async () => {
   return { spawnedPid: childPid, grandchildPid: grandchildPid ? Number(grandchildPid) : null, before, killRequested, after };
 };
 
+const readMounts = () => {
+  try {
+    const raw = fs.readFileSync('/proc/self/mountinfo', 'utf8');
+    return raw.split('\n').filter(Boolean).map(line => {
+      const parts = line.split(' ');
+      return { root: parts[3] ?? null, mountPoint: parts[4] ?? null, options: parts[5] ?? null };
+    }).filter(entry => ['/projection', '/scratch', '/fixtures', '/candidate'].includes(entry.mountPoint));
+  } catch {
+    return [];
+  }
+};
+
 const main = async () => {
   const manifestEntries = Array.isArray(config.manifest) ? config.manifest : [];
   const projectionRead = manifestEntries.map(entry => ({
     path: entry.path,
-    result: readTarget(path.join(config.projectionTarget, entry.path), 'read')
+    result: readTarget(path.join(config.projectionTarget, entry.path))
   }));
-  const projectionReadable = projectionRead.length > 0 && projectionRead.every(item => item.result.ok && item.result.sha256 === manifestEntries.find(entry => entry.path === item.path).sha256);
+  const projectionReadable = manifestEntries.length > 0 && projectionRead.every(item => {
+    const expected = manifestEntries.find(entry => entry.path === item.path);
+    return item.result.ok && item.result.sha256 === expected.sha256;
+  });
   record('projection-read', { allowed: projectionReadable, checked: projectionRead.length });
   output.observations.projectionRead = { outcome: projectionReadable ? 'allowed' : 'denied', files: projectionRead.length, hashMatched: projectionReadable };
 
@@ -101,17 +116,35 @@ const main = async () => {
   output.observations.scratchWrite = { outcome: scratchProbe.ok ? 'allowed' : 'denied', code: scratchProbe.code ?? null };
 
   const projectionWrite = writeTarget(path.join(config.projectionTarget, manifestEntries[0]?.path ?? '.probe'), 'x');
-  const projectionWriteDenied = !projectionWrite.ok;
   record('projection-write', { allowed: projectionWrite.ok, code: projectionWrite.code ?? null });
-  output.observations.projectionWrite = { outcome: projectionWriteDenied ? 'denied' : 'allowed', code: projectionWrite.code ?? null };
+  output.observations.projectionWrite = { outcome: projectionWrite.ok ? 'allowed' : 'denied', code: projectionWrite.code ?? null };
 
-  const hostReads = (config.hostPaths ?? []).map(hostPath => ({ hostPath, result: readTarget(hostPath.containerPath, 'read') }));
-  const hostAbsent = hostReads.length > 0 && hostReads.every(item => !item.result.ok && item.result.code === 'ENOENT');
-  record('host-repo-read', { allowed: false, code: hostAbsent ? 'ENOENT' : 'INCONSISTENT' });
-  output.observations.hostPaths = hostReads.map(item => ({ hostPath: item.hostPath.hostPath, containerPath: item.hostPath.containerPath, outcome: item.result.ok ? 'allowed' : 'absent', code: item.result.code ?? null }));
+  const hostPaths = Array.isArray(config.hostPaths) ? config.hostPaths : [];
+  const hostResults = hostPaths.map(entry => ({
+    targetId: entry.targetId ?? null,
+    hostPath: entry.hostPath ?? null,
+    containerPath: entry.containerPath ?? null,
+    result: readTarget(entry.containerPath ?? '/host-nonexistent')
+  }));
+  for (const entry of hostResults) {
+    if (!entry.targetId) continue;
+    const absent = !entry.result.ok && entry.result.code === 'ENOENT';
+    record(entry.targetId, { allowed: entry.result.ok, code: entry.result.code ?? null, absent });
+  }
+  for (const targetId of REQUIRED_READ_TARGETS) {
+    if (!output.checks[targetId]) record(targetId, { allowed: false, code: 'NOT_PROBED', absent: false });
+  }
+  output.observations.hostPaths = hostResults.map(entry => ({
+    targetId: entry.targetId,
+    hostPath: entry.hostPath,
+    containerPath: entry.containerPath,
+    outcome: entry.result.ok ? 'allowed' : 'absent',
+    code: entry.result.code ?? null
+  }));
 
-  const hostWrite = writeTarget((config.hostPaths ?? [])[0]?.containerPath ?? '/host-nonexistent', 'x');
-  record('host-write', { allowed: hostWrite.ok, code: hostWrite.code ?? null });
+  const hostWriteEntry = hostPaths.find(entry => entry.targetId === 'host-write') ?? hostPaths[hostPaths.length - 1];
+  const hostWrite = writeTarget(hostWriteEntry?.containerPath ?? '/host-nonexistent', 'x');
+  record('host-write', { allowed: hostWrite.ok, code: hostWrite.code ?? null, absent: !hostWrite.ok && hostWrite.code === 'ENOENT' });
   output.observations.hostWrite = { outcome: hostWrite.ok ? 'allowed' : 'absent', code: hostWrite.code ?? null };
 
   const liveness = await runLiveness();
@@ -122,16 +155,34 @@ const main = async () => {
     { processId: String(liveness.grandchildPid ?? ''), generation: 'grandchild', before: liveness.before.grandchild, after: liveness.after.grandchild }
   ];
 
+  if (config.modelEndpoint) {
+    const transport = await connect(config.modelEndpoint, config.timeoutMs ?? 3000);
+    record('transport-positive', {
+      allowed: transport.connected,
+      code: transport.code ?? null,
+      mediatedByBroker: transport.connected === false
+    });
+    output.observations.transport = {
+      endpoint: config.modelEndpoint,
+      directConnected: transport.connected,
+      code: transport.code ?? null,
+      mediation: 'broker-scratch-channel'
+    };
+  } else {
+    record('transport-positive', { allowed: false, code: 'NO_ENDPOINT', mediatedByBroker: true });
+    output.observations.transport = { endpoint: null, directConnected: false, code: 'NO_ENDPOINT', mediation: 'broker-scratch-channel' };
+  }
+
   if (config.generalEgressEndpoint) {
     const egress = await connect(config.generalEgressEndpoint, config.timeoutMs ?? 3000);
     record('transport-general-egress', { allowed: egress.connected, code: egress.code ?? null });
     output.observations.generalEgress = { outcome: egress.connected ? 'allowed' : 'denied', code: egress.code ?? null };
+  } else {
+    record('transport-general-egress', { allowed: false, code: 'NO_ENDPOINT' });
+    output.observations.generalEgress = { outcome: 'denied', code: 'NO_ENDPOINT' };
   }
-  if (config.modelEndpoint) {
-    const transport = await connect(config.modelEndpoint, config.timeoutMs ?? 3000);
-    record('transport-positive', { allowed: transport.connected, code: transport.code ?? null });
-    output.observations.transport = { endpoint: config.modelEndpoint, positiveConnected: transport.connected, code: transport.code ?? null };
-  }
+
+  output.observations.containerMounts = readMounts();
 
   process.stdout.write(JSON.stringify(output));
 };
