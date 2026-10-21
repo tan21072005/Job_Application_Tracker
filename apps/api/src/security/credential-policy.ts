@@ -26,15 +26,15 @@ export type CredentialDecision =
 const BEARER_PREFIX = 'Bearer ';
 const SCHEME_PATTERN = /^([A-Za-z][A-Za-z0-9._-]*)\s/;
 
-export const ORIGIN_EXEMPT_PATH_SCOPES: ReadonlyArray<{ prefix: string; scope: string }> = Object.freeze([
-  { prefix: '/mcp', scope: 'mcp' },
-  { prefix: '/profile', scope: 'jobtrack:apply' },
-  { prefix: '/subscriptions', scope: 'jobtrack:apply' },
-  { prefix: '/ai', scope: 'ai:pro' },
-  { prefix: '/pro', scope: 'ai:pro' },
-  { prefix: '/datasets', scope: 'datasets:write' },
-  { prefix: '/applications', scope: 'jobtrack:apply' },
-  { prefix: '/auth/extension', scope: 'extension:capture' }
+export const ORIGIN_EXEMPT_PATH_SCOPES: ReadonlyArray<{ prefix: string; scopes: string[] }> = Object.freeze([
+  { prefix: '/mcp', scopes: ['mcp:read', 'mcp:write'] },
+  { prefix: '/profile', scopes: ['jobtrack:apply'] },
+  { prefix: '/subscriptions', scopes: ['jobtrack:apply'] },
+  { prefix: '/ai', scopes: ['ai:pro'] },
+  { prefix: '/pro', scopes: ['ai:pro'] },
+  { prefix: '/datasets', scopes: ['datasets:write'] },
+  { prefix: '/applications', scopes: ['jobtrack:apply'] },
+  { prefix: '/auth/extension', scopes: ['extension:capture'] }
 ]);
 
 export function parseBearerToken(header?: string): { present: boolean; token: string; form: BearerHeaderForm } {
@@ -94,15 +94,19 @@ export function scopeCovers(scopes: string[] | undefined, scope: string): boolea
   return granted.includes('*') || granted.includes('full_control') || granted.includes(scope);
 }
 
-export function originExemptScope(path: string): string | null {
+export function scopeCoversAny(scopes: string[] | undefined, required: string[]): boolean {
+  return required.some(scope => scopeCovers(scopes, scope));
+}
+
+export function originExemptScopes(path: string): string[] | null {
   const target = String(path ?? '');
   const entry = ORIGIN_EXEMPT_PATH_SCOPES.find(candidate => target === candidate.prefix || target.startsWith(`${candidate.prefix}/`));
-  return entry ? entry.scope : null;
+  return entry ? [...entry.scopes] : null;
 }
 
 export function isOriginExemptGrant(input: { verifiedByGrant: boolean; scopes: string[] | undefined; path: string }): boolean {
   if (!input.verifiedByGrant) return false;
-  const scope = originExemptScope(input.path);
-  if (!scope) return false;
-  return scopeCovers(input.scopes, scope);
+  const required = originExemptScopes(input.path);
+  if (!required) return false;
+  return scopeCoversAny(input.scopes, required);
 }

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
@@ -76,10 +76,13 @@ export function buildTrustedBinding(context) {
 export function createExecutionBoundary(options) {
   const { context, projection, adapter, issuer } = options;
   if (!context || !projection || !adapter || !issuer) throw Error('Execution boundary needs a context, a projection, an adapter and an issuer.');
+  if (typeof issuer.issue !== 'function' || typeof issuer.verify !== 'function') throw Error('Execution boundary needs an issuer that can issue and verify.');
+  if (typeof adapter.launch !== 'function') throw Error('Execution boundary needs an adapter that can launch.');
   return {
     async run(state, request) {
       const purpose = request.purpose;
       if (!BOUNDARY_PURPOSES.includes(purpose)) throw Error('Execution purpose is invalid.');
+      const scratchRoot = request.scratchRoot ?? projection.scratchFor(state);
       const staged = stageProjection({
         files: request.files,
         sourceRoot: state.worktree,
@@ -90,13 +93,27 @@ export function createExecutionBoundary(options) {
         projectionManifestHash: staged.manifestHash,
         sourceDigest: request.sourceDigest
       }));
+      const runId = request.runId ?? randomUUID();
       const outcome = await executeBoundary({
         purpose,
         binding,
         receipt: request.receipt ?? null,
         verify: (receipt, trusted) => issuer.verify(receipt, trusted),
-        issue: ({ binding: trusted }) => issuer.issue(trusted, { state, staged }),
-        launch: ({ binding: trusted, receipt }) => adapter.launch({ purpose, binding: trusted, receipt, staged, state, request })
+        issue: ({ binding: trusted }) => issuer.issue({
+          runId,
+          projection: staged.root,
+          scratch: scratchRoot,
+          manifest: staged.manifest.map(entry => ({ path: entry.path, sha256: entry.sha256 })),
+          binding: trusted
+        }),
+        launch: ({ binding: trusted, receipt }) => adapter.launch({
+          runId,
+          projection: staged.root,
+          scratch: scratchRoot,
+          command: request.command ?? [],
+          binding: trusted,
+          receipt
+        })
       });
       return { ...outcome, staged };
     }

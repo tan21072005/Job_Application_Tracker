@@ -29,12 +29,12 @@
   "exitCode": 0,
   "stdoutHash": "61d791069ba5c28d440074b9230515f99ae57a9b6e97d501708abc22f7cb40bf",
   "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "runId": "43cc6847-afa5-4920-b25a-8ca1a8987eb0",
-  "base": "D:\\Long-term\\JobTrack-check-43cc6847",
+  "runId": "f020d05e-5d30-441a-8f8e-86d6f0636c1e",
+  "base": "D:\\Long-term\\JobTrack-check-f020d05e",
   "guardError": null,
-  "containerId": "fe2ee4a31009bc88c54e579348748d20a6db2df16f23e86fec73460d9863ba89",
+  "containerId": "c501ded36bea27b857218131b8de8acba30aa69325812bc5de3577878cfb07f9",
   "observedContainer": {
-    "containerId": "fe2ee4a31009bc88c54e579348748d20a6db2df16f23e86fec73460d9863ba89",
+    "containerId": "c501ded36bea27b857218131b8de8acba30aa69325812bc5de3577878cfb07f9",
     "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "imageId": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "user": "65534:65534",
@@ -54,31 +54,31 @@
     },
     "mounts": [
       {
-        "kind": "candidate",
-        "source": "D:\\Long-term\\JobTrack-check-43cc6847\\candidate",
-        "target": "/candidate",
-        "readOnly": true
-      },
-      {
         "kind": "scratch",
-        "source": "D:\\Long-term\\JobTrack-check-43cc6847\\scratch",
+        "source": "D:\\Long-term\\JobTrack-check-f020d05e\\scratch",
         "target": "/scratch",
         "readOnly": false
       },
       {
         "kind": "fixtures",
-        "source": "D:\\Long-term\\JobTrack-check-43cc6847\\fixtures",
+        "source": "D:\\Long-term\\JobTrack-check-f020d05e\\fixtures",
         "target": "/fixtures",
+        "readOnly": true
+      },
+      {
+        "kind": "candidate",
+        "source": "D:\\Long-term\\JobTrack-check-f020d05e\\candidate",
+        "target": "/candidate",
         "readOnly": true
       }
     ],
     "env": [
-      "HOME=/nonexistent",
-      "CHECK_ID=build:api",
       "CANDIDATE_DIGEST=5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
       "FIXTURE_ROOT=/fixtures",
       "SCRATCH_ROOT=/scratch",
       "HOST_PROBE_PATH=/mnt/d/Project/Job_Application_Tracker/.check-host-probe",
+      "HOME=/nonexistent",
+      "CHECK_ID=build:api",
       "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "NODE_VERSION=24.22.0",
       "YARN_VERSION=1.22.22"
@@ -86,21 +86,21 @@
   },
   "observedMounts": [
     {
-      "kind": "candidate",
-      "source": "D:\\Long-term\\JobTrack-check-43cc6847\\candidate",
-      "target": "/candidate",
-      "readOnly": true
-    },
-    {
       "kind": "scratch",
-      "source": "D:\\Long-term\\JobTrack-check-43cc6847\\scratch",
+      "source": "D:\\Long-term\\JobTrack-check-f020d05e\\scratch",
       "target": "/scratch",
       "readOnly": false
     },
     {
       "kind": "fixtures",
-      "source": "D:\\Long-term\\JobTrack-check-43cc6847\\fixtures",
+      "source": "D:\\Long-term\\JobTrack-check-f020d05e\\fixtures",
       "target": "/fixtures",
+      "readOnly": true
+    },
+    {
+      "kind": "candidate",
+      "source": "D:\\Long-term\\JobTrack-check-f020d05e\\candidate",
+      "target": "/candidate",
       "readOnly": true
     }
   ],
@@ -108,17 +108,17 @@
     {
       "target": "/candidate",
       "readOnly": true,
-      "source": "D:/Long-term/JobTrack-check-43cc6847/candidate"
+      "source": "D:/Long-term/JobTrack-check-f020d05e/candidate"
     },
     {
       "target": "/scratch",
       "readOnly": false,
-      "source": "D:/Long-term/JobTrack-check-43cc6847/scratch"
+      "source": "D:/Long-term/JobTrack-check-f020d05e/scratch"
     },
     {
       "target": "/fixtures",
       "readOnly": true,
-      "source": "D:/Long-term/JobTrack-check-43cc6847/fixtures"
+      "source": "D:/Long-term/JobTrack-check-f020d05e/fixtures"
     }
   ],
   "forbiddenHostPaths": [

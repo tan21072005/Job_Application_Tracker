@@ -3,13 +3,66 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { AgentController } from './controller.mjs';
 import { assertSafeCommand } from './policy.mjs';
+import { createDockerAdapter, DEFAULT_IMAGE } from './docker-adapter.mjs';
+import { createReadinessIssuer } from './issuer.mjs';
+import { createExecutionBoundary } from './execution-boundary.mjs';
 
 const root = realpathSync(resolve(dirname(fileURLToPath(import.meta.url)), '../..'));
 const args = process.argv.slice(2);
 const option = name => args.indexOf(name) < 0 ? undefined : args[args.indexOf(name) + 1];
 const read = path => JSON.parse(readFileSync(resolve(root, path), 'utf8'));
-const controller = new AgentController(root);
+let controller = null;
 
+function buildAdapters() {
+  const runRoot = process.env.JT_RUN_ROOT;
+  const catalogPath = process.env.JT_READINESS_CATALOG;
+  const signingKey = process.env.READINESS_KEY;
+  if (!runRoot || !catalogPath || !signingKey) return {};
+  const catalog = read(catalogPath);
+  const adapter = createDockerAdapter({
+    repo: root,
+    runRoot,
+    image: process.env.JT_CONTAINER_IMAGE || DEFAULT_IMAGE,
+    deniedPaths: [catalog.deniedHostPaths?.['host-repo-read'] ?? root]
+  });
+  const issuer = createReadinessIssuer({
+    catalog,
+    key: signingKey,
+    adapterRoot: root,
+    evidenceRoot: resolve(root, '.agent-state/readiness/evidence'),
+    adapter
+  });
+  const boundary = createExecutionBoundary({
+    context: (state, request) => ({
+      taskId: state.id,
+      feature: state.feature,
+      base: state.base ?? catalog.base,
+      sourceDigest: request.sourceDigest,
+      projectionManifestHash: request.projectionManifestHash,
+      policyHash: catalog.policyHash,
+      environmentHash: catalog.environmentHash,
+      purpose: request.purpose,
+      profileHash: catalog.profileHash,
+      adapterId: catalog.adapterId,
+      imageDigest: catalog.imageDigest,
+      cliHash: catalog.cliHash,
+      nodeHash: catalog.nodeHash
+    }),
+    projection: {
+      destinationFor: state => resolve(runRoot, state.id, 'projection'),
+      scratchFor: state => resolve(runRoot, state.id, 'scratch')
+    },
+    adapter,
+    issuer
+  });
+  return {
+    boundary,
+    readiness: async state => controller.readReadinessReceipt(state.id),
+    readinessVerify: async receipt => issuer.verify(receipt)
+  };
+}
+
+controller = new AgentController(root, buildAdapters());
 try {
   let result;
   switch (args[0]) {

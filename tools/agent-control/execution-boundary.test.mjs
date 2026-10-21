@@ -163,10 +163,10 @@ test('the execution boundary stages, binds, proves and launches in that order', 
   const order = [];
   const boundary = createExecutionBoundary({
     context: (state, request) => ({ ...binding, purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
-    projection: { destinationFor: () => destination },
-    adapter: { launch: async ({ receipt: verified, staged }) => { order.push('launch'); return { response: 'planned', manifest: staged.manifest }; } },
+    projection: { destinationFor: () => destination, scratchFor: () => join(destination, '..', 'scratch') },
+    adapter: { launch: async ({ receipt: verified }) => { order.push('launch'); return { response: 'planned', receipt: verified }; } },
     issuer: {
-      issue: async trusted => { order.push('issue'); return receiptFixture(trusted); },
+      issue: async input => { order.push('issue'); return receiptFixture(input.binding); },
       verify: async value => { order.push('verify'); return value; }
     }
   });
@@ -183,9 +183,9 @@ test('the execution boundary propagates a launch failure and never falls back', 
   const binding = bindingFixture();
   const boundary = createExecutionBoundary({
     context: () => binding,
-    projection: { destinationFor: () => destination },
+    projection: { destinationFor: () => destination, scratchFor: () => join(destination, '..', 'scratch') },
     adapter: { launch: async () => { throw Error('container refused the launch'); } },
-    issuer: { issue: async () => receiptFixture(binding), verify: async value => value }
+    issuer: { issue: async input => receiptFixture(input.binding), verify: async value => value }
   });
   await assert.rejects(() => boundary.run({ worktree, id: 'web-one' }, { purpose: 'worker-read', files: ['apps/web/src/module.js'], sourceDigest: '1'.repeat(64) }), /container refused the launch/);
 });

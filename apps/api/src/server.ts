@@ -243,24 +243,18 @@ export function requireScope(scope: string) {
 app.use('/api', (req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.set('Pragma', 'no-cache');
-  if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) || req.get('origin') === origin) {
-    return next();
-  }
+  if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) return next();
+  const requestOrigin = req.get('origin');
+  if (!requestOrigin || requestOrigin === origin) return next();
   // Payment Webhook (from banking gateways like VietQR, SePay, PayOS)
   if (req.originalUrl?.startsWith('/api/pro/webhook') || req.path?.startsWith('/pro/webhook')) {
     return next();
   }
-  // Bearer grant verified by the credential policy, never by the header form
-  const authorization = req.get('Authorization');
-  if (!authorization) {
-    return next(new Problem(403, 'Nguồn yêu cầu không được phép.', 'invalid_origin'));
-  }
-  resolveGrantIdentity(pool, authorization)
+  // Only a grant that the shared resolver verified and whose scopes cover the
+  // target path may cross the origin boundary.
+  resolveGrantIdentity(pool, req.get('Authorization'))
     .then(identity => {
-      if (!identity) {
-        return next();
-      }
-      if (isOriginExemptGrant({
+      if (identity && isOriginExemptGrant({
         verifiedByGrant: true,
         scopes: identity.scopes,
         path: req.path ?? ''

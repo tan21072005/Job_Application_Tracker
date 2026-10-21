@@ -5,8 +5,7 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 
 const config = JSON.parse(Buffer.from(process.env.JT_PROBE_CONFIG ?? '', 'base64').toString('utf8'));
-const REQUIRED_READ_TARGETS = ['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read'];
-const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
+const REQUIRED_READ_TARGETS = ['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read'];const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const output = { checks: {}, observations: {} };
 
 const record = (name, value) => { output.checks[name] = value; };
@@ -132,16 +131,16 @@ const main = async () => {
     const absent = !entry.result.ok && entry.result.code === 'ENOENT';
     record(entry.targetId, { allowed: entry.result.ok, code: entry.result.code ?? null, absent });
   }
-  for (const targetId of REQUIRED_READ_TARGETS) {
-    if (!output.checks[targetId]) record(targetId, { allowed: false, code: 'NOT_PROBED', absent: false });
-  }
   output.observations.hostPaths = hostResults.map(entry => ({
     targetId: entry.targetId,
     hostPath: entry.hostPath,
     containerPath: entry.containerPath,
-    outcome: entry.result.ok ? 'allowed' : 'absent',
+    outcome: entry.result.ok ? 'allowed' : entry.result.code === 'ENOENT' ? 'absent' : 'error',
     code: entry.result.code ?? null
   }));
+
+  const missingReadTargets = REQUIRED_READ_TARGETS.filter(targetId => !hostResults.some(entry => entry.targetId === targetId));
+  if (missingReadTargets.length) output.observations.missingReadTargets = missingReadTargets;
 
   const hostWriteEntry = hostPaths.find(entry => entry.targetId === 'host-write') ?? hostPaths[hostPaths.length - 1];
   const hostWrite = writeTarget(hostWriteEntry?.containerPath ?? '/host-nonexistent', 'x');

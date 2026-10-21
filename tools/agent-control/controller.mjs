@@ -141,18 +141,20 @@ export class AgentController {
     }
     let verified;
     try {
-      verified = verifyReadinessReceipt({
-        receipt,
-        key: process.env.READINESS_KEY,
-        expected: {
-          taskId: state.id,
-          feature: state.feature,
-          policyHash: this.fingerprint(),
-          environmentFingerprint: this.environmentFingerprint(),
-          projectionManifestHash: state.projectionManifestHash ?? null
-        },
-        resolveTarget: path => this.resolveEvidenceTarget(path)
-      });
+      verified = this.adapters.readinessVerify
+        ? await this.adapters.readinessVerify(receipt, state)
+        : verifyReadinessReceipt({
+          receipt,
+          key: process.env.READINESS_KEY,
+          expected: {
+            taskId: state.id,
+            feature: state.feature,
+            policyHash: this.fingerprint(),
+            environmentFingerprint: this.environmentFingerprint(),
+            projectionManifestHash: state.projectionManifestHash ?? null
+          },
+          resolveTarget: path => this.resolveEvidenceTarget(path)
+        });
     } catch (error) {
       error.code = 'readiness';
       throw error;

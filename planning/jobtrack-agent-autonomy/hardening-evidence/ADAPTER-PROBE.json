@@ -1,11 +1,11 @@
 {
   "kind": "adapter-probe-not-readiness-receipt",
-  "runId": "9947d70a-ca72-478e-81c5-d288665ac7fb",
+  "runId": "83d696a5-f28f-4746-aae7-bcd9f658c582",
   "adapter": "jobtrack-docker-adapter-v1",
   "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
-  "argvHash": "ac7ec83001b4b3a516e0fed08a7eb12716e67a2732c79665e6b444f0d90b4a23",
+  "argvHash": "b876c57253f2056704ef3ece859e6392fe2fc6fb89362560e4538dc0c8c5cafe",
   "container": {
-    "containerId": "148cddcb620f1b6f3a81884275c7e38a50397237ca9257f9f3b6c5401f2766b8",
+    "containerId": "67b2c0210996ed13fcf5c87b4298f52fe6076ca8b8075c0c2657f1b0b98d9a58",
     "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "imageId": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "user": "65534:65534",
@@ -26,28 +26,28 @@
     "mounts": [
       {
         "kind": "projection",
-        "source": "D:/Long-term/JobTrack-isolation-9947d70a/projection",
+        "source": "D:/Long-term/JobTrack-isolation-83d696a5/projection",
         "target": "/projection",
         "readOnly": true
       },
       {
         "kind": "scratch",
-        "source": "D:/Long-term/JobTrack-isolation-9947d70a/scratch",
+        "source": "D:/Long-term/JobTrack-isolation-83d696a5/scratch",
         "target": "/scratch",
         "readOnly": false
       }
     ],
     "env": [
-      "HOME=/nonexistent",
       "JT_PROBE_CONFIG=eyJtYW5pZmVzdCI6W3sicGF0aCI6ImFwcHMvd2ViL3NyYy9tb2R1bGUuanMiLCJzaGEyNTYiOiI1ZDhmNjVkMjc3NGUyMDZiYzlmN2E3YTRhZDM5Y2EyZGM1NjNiNWMzMWU0NmFiNTdlZjQ4NzQ5NjEyMzdjZTI5In0seyJwYXRoIjoiYXBwcy93ZWIvc3JjL3BhbmVsLnRzeCIsInNoYTI1NiI6ImZlMzYyNTFlM2JjODJkOGRhZjAzNjhjNTkyMDFkZmEzZWRlZWE2NTNiNjFjYjRhZTQ5ZWJlYWY2ZWJhOGUwNWEifSx7InBhdGgiOiJwYWNrYWdlcy9qb2J0cmFjay1jb250cmFjdC9zcmMvaW5kZXgudHMiLCJzaGEyNTYiOiI4MGY2YjdlZTM1M2FlMWI3MzcwMWIxNzRhYjBhYTdkZWVmZGJjOTQ2YjcwMDVjODNmY2Q3OTc3NDkzMjM0NzA4In1dLCJwcm9qZWN0aW9uVGFyZ2V0IjoiL3Byb2plY3Rpb24iLCJzY3JhdGNoVGFyZ2V0IjoiL3NjcmF0Y2giLCJob3N0UGF0aHMiOlt7InRhcmdldElkIjoiaG9zdC1yZXBvLXJlYWQiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIifSx7InRhcmdldElkIjoiY29tbW9uLWdpdC1yZWFkIiwiaG9zdFBhdGgiOiJEOi9Qcm9qZWN0L0pvYl9BcHBsaWNhdGlvbl9UcmFja2VyLy5naXQiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvLmdpdCJ9LHsidGFyZ2V0SWQiOiJjb250cm9sLXN0YXRlLXJlYWQiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvLmFnZW50LXN0YXRlIiwiY29udGFpbmVyUGF0aCI6Ii9tbnQvZC9Qcm9qZWN0L0pvYl9BcHBsaWNhdGlvbl9UcmFja2VyLy5hZ2VudC1zdGF0ZSJ9LHsidGFyZ2V0SWQiOiJob3N0LWNyZWRlbnRpYWwtcmVhZCIsImhvc3RQYXRoIjoiRDovUHJvamVjdC9Kb2JfQXBwbGljYXRpb25fVHJhY2tlci9hY2NvdW50cy50eHQiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvYWNjb3VudHMudHh0In0seyJ0YXJnZXRJZCI6Imhvc3Qtd3JpdGUiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIifV0sIm1vZGVsRW5kcG9pbnQiOiIiLCJnZW5lcmFsRWdyZXNzRW5kcG9pbnQiOiIiLCJ0aW1lb3V0TXMiOjEyMDAwMH0=",
+      "HOME=/nonexistent",
       "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "NODE_VERSION=24.22.0",
       "YARN_VERSION=1.22.22"
     ]
   },
-  "base": "D:\\Long-term\\JobTrack-isolation-9947d70a",
-  "projection": "D:/Long-term/JobTrack-isolation-9947d70a/projection",
-  "scratch": "D:/Long-term/JobTrack-isolation-9947d70a/scratch",
+  "base": "D:\\Long-term\\JobTrack-isolation-83d696a5",
+  "projection": "D:/Long-term/JobTrack-isolation-83d696a5/projection",
+  "scratch": "D:/Long-term/JobTrack-isolation-83d696a5/scratch",
   "manifest": [
     {
       "path": "apps/web/src/module.js",
@@ -166,12 +166,12 @@
     },
     "containerMounts": [
       {
-        "root": "/Long-term/JobTrack-isolation-9947d70a/projection",
+        "root": "/Long-term/JobTrack-isolation-83d696a5/projection",
         "mountPoint": "/projection",
         "options": "ro,noatime"
       },
       {
-        "root": "/Long-term/JobTrack-isolation-9947d70a/scratch",
+        "root": "/Long-term/JobTrack-isolation-83d696a5/scratch",
         "mountPoint": "/scratch",
         "options": "rw,noatime"
       }

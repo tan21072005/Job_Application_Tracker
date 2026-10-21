@@ -57,13 +57,20 @@ export function assertTransportRootInsideScratch(transportRoot, scratchRoot) {
   return realRoot;
 }
 
+export function transportRequestDirectory(root) {
+  return join(root, 'transport');
+}
+
+export function responseToken(secret, requestHash, runId) {
+  return createHmac('sha256', secret).update(JSON.stringify({ requestHash, runId })).digest('hex');
+}
+
 export function createTransportBroker(options = {}) {
   const allowlist = options.allowlist ?? [];
   const timeoutMs = options.timeoutMs ?? 120_000;
   const pollMs = options.pollMs ?? 100;
   const secret = options.secret;
   if (typeof secret !== 'string' || secret.length < 32) throw Error('Transport broker needs a response authentication secret of at least 32 characters.');
-  const requestDir = root => join(root, 'transport');
 
   const writeAtomic = (path, content) => {
     const temporary = `${path}.${randomUUID()}.tmp`;
@@ -73,8 +80,7 @@ export function createTransportBroker(options = {}) {
 
   const signRequest = payload => createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
 
-  return {
-    id: options.id ?? 'jobtrack-transport-broker-v1',
+  return {    id: options.id ?? 'jobtrack-transport-broker-v1',
     allowlist,
     endpoint: options.endpoint ?? null,
     async probe() {
@@ -84,6 +90,10 @@ export function createTransportBroker(options = {}) {
         ? await options.connect(resolved)
         : { connected: false, code: 'NO_TRANSPORT' };
       return { ...resolved, ...result };
+    },
+    async roundTrip(input) {
+      const result = await this.request(input);
+      return { connected: true, endpoint: this.endpoint, requestHash: result.request.requestHash, response: result.response };
     },
     async request(input) {
       if (!this.endpoint) throw Error('Transport broker has no endpoint.');
@@ -95,8 +105,8 @@ export function createTransportBroker(options = {}) {
       const validatedRoot = assertTransportRootInsideScratch(requestedRoot, scratchRoot);
       mkdirSync(validatedRoot, { recursive: true });
       const transportRoot = assertTransportRootInsideScratch(validatedRoot, scratchRoot);
-      mkdirSync(requestDir(transportRoot), { recursive: true });
-      const runDirectory = join(requestDir(transportRoot), runId);
+      mkdirSync(transportRequestDirectory(transportRoot), { recursive: true });
+      const runDirectory = join(transportRequestDirectory(transportRoot), runId);
       mkdirSync(runDirectory, { recursive: true });
       const requestPath = join(runDirectory, 'request.json');
       const responsePath = join(runDirectory, 'response.json');
@@ -122,7 +132,7 @@ export function createTransportBroker(options = {}) {
             throw Error('Transport response is not valid JSON.');
           }
           if (!parsed || parsed.requestHash !== requestHash) throw Error('Transport response does not belong to this request.');
-          const expected = signRequest({ requestHash, runId });
+          const expected = responseToken(secret, requestHash, runId);
           if (typeof parsed.token !== 'string' || parsed.token.length !== expected.length || !timingSafeEqual(Buffer.from(parsed.token, 'utf8'), Buffer.from(expected, 'utf8'))) {
             throw Error('Transport response is not authenticated.');
           }
@@ -132,6 +142,35 @@ export function createTransportBroker(options = {}) {
         await new Promise(done => setTimeout(done, pollMs));
       }
       throw Error('Transport request timed out with no response.');
+    }
+  };
+}
+
+export function createTransportResponder(options = {}) {
+  const secret = options.secret;
+  if (typeof secret !== 'string' || secret.length < 32) throw Error('Transport responder needs the response authentication secret.');
+  const allowlist = options.allowlist ?? [];
+  const call = options.call;
+  if (typeof call !== 'function') throw Error('Transport responder needs the allow-listed call.');
+  return {
+    id: 'jobtrack-transport-responder-v1',
+    async respond(input) {
+      const { scratchRoot, runId, transportRoot } = input;
+      const root = assertTransportRootInsideScratch(transportRoot ?? join(scratchRoot, 'transport'), scratchRoot);
+      const runDirectory = join(transportRequestDirectory(root), assertRunId(runId));
+      const requestPath = join(runDirectory, 'request.json');
+      if (!existsSync(requestPath)) throw Error('Transport request file is missing.');
+      const written = JSON.parse(readFileSync(requestPath, 'utf8'));
+      const request = written.request;
+      const requestHash = written.requestHash;
+      const resolved = assertAllowlistedEndpoint(request.endpoint, allowlist);
+      const body = await call({ request, endpoint: resolved, role: request.role });
+      writeFileSync(join(runDirectory, 'response.json'), JSON.stringify({
+        requestHash,
+        token: responseToken(secret, requestHash, runId),
+        body
+      }) + '\n', { flag: 'w' });
+      return { requestHash, body };
     }
   };
 }

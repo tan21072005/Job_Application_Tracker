@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   decideCredential,
   isOriginExemptGrant,
-  originExemptScope,
+  originExemptScopes,
   parseBearerToken,
   scopeCovers
 } from './security/credential-policy.ts';
@@ -90,14 +90,15 @@ test('Credential policy: a full control grant covers every scope', () => {
 });
 
 test('Credential policy: the origin exemption follows the verified grant and its scope', () => {
-  assert.equal(originExemptScope('/mcp'), 'mcp');
-  assert.equal(originExemptScope('/ai/chat'), 'ai:pro');
-  assert.equal(originExemptScope('/applications'), 'jobtrack:apply');
-  assert.equal(originExemptScope('/auth/extension/pair'), 'extension:capture');
-  assert.equal(originExemptScope('/auth/login'), null);
+  assert.deepEqual(originExemptScopes('/mcp'), ['mcp:read', 'mcp:write']);
+  assert.deepEqual(originExemptScopes('/ai/chat'), ['ai:pro']);
+  assert.deepEqual(originExemptScopes('/applications'), ['jobtrack:apply']);
+  assert.deepEqual(originExemptScopes('/auth/extension/pair'), ['extension:capture']);
+  assert.equal(originExemptScopes('/auth/login'), null);
 
   assert.equal(isOriginExemptGrant({ verifiedByGrant: true, scopes: ['full_control'], path: '/mcp' }), true);
-  assert.equal(isOriginExemptGrant({ verifiedByGrant: true, scopes: ['mcp'], path: '/mcp' }), true);
+  assert.equal(isOriginExemptGrant({ verifiedByGrant: true, scopes: ['mcp:read'], path: '/mcp' }), true);
+  assert.equal(isOriginExemptGrant({ verifiedByGrant: true, scopes: ['mcp:write'], path: '/mcp' }), true);
   assert.equal(isOriginExemptGrant({ verifiedByGrant: true, scopes: ['extension:capture'], path: '/mcp' }), false);
   assert.equal(isOriginExemptGrant({ verifiedByGrant: false, scopes: ['full_control'], path: '/mcp' }), false);
   assert.equal(isOriginExemptGrant({ verifiedByGrant: true, scopes: ['full_control'], path: '/auth/login' }), false);

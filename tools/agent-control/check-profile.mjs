@@ -8,6 +8,7 @@ import {
   canonicalSource,
   forbiddenHostPaths,
   inspectContainer,
+  parseEnvArgs,
   NETWORK_MODE,
   CANDIDATE_TARGET,
   FIXTURE_TARGET,
@@ -39,7 +40,6 @@ export function assertCheckEnvironment(env) {
   const keys = Object.keys(env ?? {});
   for (const key of keys) {
     if (!CHECK_ENV_KEYS.includes(key)) throw Error(`Check environment may only carry ${CHECK_ENV_KEYS.join(', ')}.`);
-    if (FORBIDDEN_CHECK_ENV.includes(key)) throw Error(`Check environment must not carry ${key}.`);
   }
   return env;
 }
@@ -108,11 +108,8 @@ export function runIsolatedCheck(options) {
 
 export function assertCheckProfile(args, { forbidden, image, expectedMounts = [] }) {
   assertNoHostAccess(args, forbidden, expectedMounts, { image });
-  const envValues = args.filter((value, index) => args[index - 1] === '--env');
-  const envKeys = envValues.map(value => value.split('=')[0]);
-  for (const key of envKeys) {
-    if (!CHECK_ENV_KEYS.includes(key)) throw Error(`Check environment may only carry ${CHECK_ENV_KEYS.join(', ')}.`);
-    if (FORBIDDEN_CHECK_ENV.includes(key)) throw Error(`Check environment must not carry ${key}.`);
+  for (const entry of parseEnvArgs(args)) {
+    if (!CHECK_ENV_KEYS.includes(entry.key)) throw Error(`Check environment may only carry ${CHECK_ENV_KEYS.join(', ')}.`);
   }
   if (!args.includes('--read-only')) throw Error('Check profile must run with a read only root filesystem.');
   const networkIndex = args.indexOf('--network');

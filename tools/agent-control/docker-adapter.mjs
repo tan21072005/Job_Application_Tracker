@@ -2,7 +2,6 @@ import { spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
-import { READINESS_V2_PROBE_CATALOG, probeCatalogHash } from './readiness-v2.mjs';
 
 export const ADAPTER_ID = 'jobtrack-docker-adapter-v1';
 export const DEFAULT_IMAGE = 'node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f';
@@ -166,6 +165,43 @@ export function assertBinds(args, { allowedMounts, deniedPaths }) {
   return true;
 }
 
+export const DOCKER_FLAGS_WITH_VALUE = Object.freeze([
+  '--name',
+  '--label',
+  '--network',
+  '--net',
+  '--cap-drop',
+  '--security-opt',
+  '--user',
+  '--memory',
+  '--pids-limit',
+  '--cpus',
+  '--tmpfs',
+  '--env',
+  '-e',
+  '--workdir',
+  '--mount',
+  '--eval'
+]);
+
+export function dockerFlagValueCount(flag) {
+  return DOCKER_FLAGS_WITH_VALUE.includes(flag) ? 1 : 0;
+}
+
+export function firstPositional(args) {
+  const start = args[0] === 'run' || args[0] === 'create' ? 1 : 0;
+  for (let index = start; index < args.length; index++) {
+    const value = args[index];
+    if (typeof value !== 'string') continue;
+    if (value.startsWith('-')) {
+      if (!value.includes('=')) index += dockerFlagValueCount(value);
+      continue;
+    }
+    return { index, value };
+  }
+  return null;
+}
+
 export function looksLikeImageToken(value) {
   if (typeof value !== 'string' || value.length === 0) return false;
   if (value.startsWith('-')) return false;
@@ -177,14 +213,36 @@ export function looksLikeImageToken(value) {
 }
 
 export function assertSingleImage(args, image) {
-  const tokens = args.filter(value => looksLikeImageToken(value));
-  if (tokens.length !== 1 || tokens[0] !== image) throw Error('Container arguments must name exactly the pinned image.');
+  const positional = firstPositional(args);
+  if (!positional || positional.value !== image) throw Error('Container arguments must name exactly the pinned image.');
+  const extra = args.slice(positional.index + 1).filter(value => looksLikeImageToken(value));
+  if (extra.length) throw Error('Container arguments must name exactly the pinned image.');
   return true;
 }
 
+export function parseEnvArgs(args) {
+  const values = [];
+  for (let index = 0; index < args.length; index++) {
+    const value = args[index];
+    if (value === '--env' || value === '-e') {
+      const next = args[index + 1];
+      if (typeof next === 'string') values.push(next);
+      index += 1;
+      continue;
+    }
+    if (typeof value === 'string' && (value.startsWith('--env=') || value.startsWith('-e='))) {
+      values.push(value.slice(value.indexOf('=') + 1));
+    }
+  }
+  return values.map(entry => {
+    const separator = entry.indexOf('=');
+    return separator < 0 ? { key: entry, value: '' } : { key: entry.slice(0, separator), value: entry.slice(separator + 1) };
+  });
+}
+
 export function assertAllowedFlags(args) {
-  const imageIndex = args.findIndex(value => looksLikeImageToken(value));
-  const dockerArgs = imageIndex < 0 ? args : args.slice(0, imageIndex);
+  const positional = firstPositional(args);
+  const dockerArgs = positional ? args.slice(0, positional.index) : args;
   for (const value of dockerArgs) {
     if (typeof value !== 'string' || !value.startsWith('-')) continue;
     const flag = value.split('=')[0];
@@ -244,12 +302,35 @@ export function buildProbeArgs(options) {
   return args;
 }
 
+export function assertContainerMatchesDeclaration(observation, { imageDigest, expectedMounts = [] }) {
+  if (!observation || typeof observation !== 'object') throw Error('The container was not inspected.');
+  const observedImageId = String(observation.imageId ?? '').replace('sha256:', '');
+  if (imageDigest && observedImageId !== imageDigest) throw Error('The container image content is not the pinned image digest.');
+  if (observation.networkMode !== NETWORK_MODE) throw Error('The container did not run without network access.');
+  if (observation.readonlyRootfs !== true) throw Error('The container root filesystem was not read only.');
+  if (String(observation.user ?? '') !== `${CONTAINER_UID}:${CONTAINER_GID}`) throw Error('The container did not run with the unprivileged identity.');
+  const mounts = Array.isArray(observation.mounts) ? observation.mounts : [];
+  if (expectedMounts.length) {
+    for (const expected of expectedMounts) {
+      const mount = mounts.find(candidate => candidate.kind === expected.kind);
+      if (!mount) throw Error(`The container did not carry the declared ${expected.kind} mount.`);
+      const source = String(mount.source).replaceAll('\\', '/').toLowerCase();
+      const wanted = String(expected.source).replaceAll('\\', '/').toLowerCase();
+      if (source !== wanted) throw Error(`The container mount source is not the declared source: ${expected.kind}`);
+      if (mount.readOnly !== expected.readOnly) throw Error(`The container mount has the wrong read only flag: ${expected.kind}.`);
+    }
+    if (mounts.length !== expectedMounts.length) throw Error('The container carried a mount that was not declared.');
+  }
+  return true;
+}
+
 export function buildLaunchArgs(options) {
-  const { image, runId, projection, scratch, command } = options;
+  const { image, runId, projection, scratch, command, mode = 'run' } = options;
   assertPinnedImage(image);
   if (!Array.isArray(command) || !command.length) throw Error('Adapter launch needs a command.');
   const args = [
-    'run', '--rm',
+    mode,
+    ...(mode === 'run' ? ['--rm'] : []),
     ...buildRunArgs({ image, runId }).slice(1),
     ...buildMountArgs({ projection, scratch }),
     image,
@@ -321,42 +402,6 @@ export function parseProbeOutput(raw) {
   const parsed = JSON.parse(text.slice(start, end + 1));
   if (parsed && parsed.error) throw Error(`Isolation probe failed: ${parsed.error}`);
   return parsed;
-}
-
-export function buildEvidence(options) {
-  const { runId, binding, probe, startedAt, completedAt, transport } = options;
-  const commands = Object.keys(READINESS_V2_PROBE_CATALOG);
-  const executions = commands.map(commandId => {
-    const recorded = probe.checks?.[commandId];
-    if (!recorded) throw new Error(`Isolation probe did not record ${commandId}.`);
-    return {
-      commandId,
-      exitCode: 0,
-      timedOut: false,
-      stdoutSha256: createHash('sha256').update(JSON.stringify(recorded)).digest('hex'),
-      stderrSha256: createHash('sha256').update('').digest('hex'),
-      error: null
-    };
-  });
-  const observations = {
-    hostPositive: options.hostPositive ?? [],
-    namespace: options.namespace,
-    readTargets: options.readTargets,
-    writeTargets: options.writeTargets,
-    liveness: options.liveness,
-    transport: options.transport
-  };
-  return {
-    schemaVersion: 2,
-    runId,
-    startedAt,
-    completedAt,
-    binding,
-    catalog: { probeCatalogHash: probeCatalogHash(), commandIds: commands },
-    executions,
-    observations,
-    gateA: false
-  };
 }
 
 export function createDockerAdapter(options = {}) {
@@ -438,7 +483,7 @@ export function createDockerAdapter(options = {}) {
       } catch (error) {
         failure = String(error && error.message ? error.message : error);
       } finally {
-        if (probeOptions.keepContainer !== true) runDocker(['rm', '-f', containerId], '', 60_000);
+        if (probeOptions.keepContainer !== true || failure) runDocker(['rm', '-f', containerId], '', 60_000);
       }
       const completedAt = new Date().toISOString();
       if (failure) throw Error(failure);
@@ -459,9 +504,37 @@ export function createDockerAdapter(options = {}) {
       const projection = assertDirectory(launchOptions.projection);
       const scratch = assertDirectory(launchOptions.scratch);
       resolveRunPaths(projection, scratch);
-      const args = buildLaunchArgs({ image, runId, projection, scratch, command: launchOptions.command });
-      assertNoHostAccess(args, forbidden, declaredMounts(projection, scratch), { image });
-      return { runId, image, args, argvHash: createHash('sha256').update(args.join(' ')).digest('hex'), projection, scratch };
+      const args = buildLaunchArgs({ image, runId, projection, scratch, command: launchOptions.command, mode: 'create' });
+      const mounts = declaredMounts(projection, scratch);
+      assertNoHostAccess(args, forbidden, mounts, { image });
+      const created = runDocker(args, '', launchOptions.timeoutMs ?? 120_000);
+      const containerId = String(created.stdout ?? '').trim().split(/\s+/)[0] ?? '';
+      if (created.status !== 0 || !containerId) {
+        throw Error(`Worker container could not be created: ${String(created.stderr).slice(-500)}`);
+      }
+      let observation = null;
+      try {
+        observation = inspectContainer(docker, containerId, options.dockerPrefix ?? []);
+        assertContainerMatchesDeclaration(observation, {
+          imageDigest: launchOptions.imageDigest ?? image.split('@sha256:')[1],
+          expectedMounts: mounts
+        });
+        const started = runDocker(['start', containerId], '', 60_000);
+        if (started.status !== 0) throw Error(`Worker container could not be started: ${String(started.stderr).slice(-300)}`);
+      } catch (error) {
+        runDocker(['rm', '-f', containerId], '', 60_000);
+        throw Error(String(error && error.message ? error.message : error));
+      }
+      return {
+        runId,
+        image,
+        containerId,
+        args,
+        argvHash: createHash('sha256').update(args.join(' ')).digest('hex'),
+        projection,
+        scratch,
+        observation
+      };
     }
   };
 }

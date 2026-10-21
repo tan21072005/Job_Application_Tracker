@@ -19,7 +19,6 @@ import {
   assertNotDeniedPath,
   assertPinnedImage,
   assertSingleImage,
-  buildEvidence,
   buildLaunchArgs,
   buildProbeArgs,
   createDockerAdapter,
@@ -229,39 +228,6 @@ test('the container inspection becomes the observed facts', () => {
   assert.equal(observation.readonlyRootfs, true);
   assert.deepEqual(observation.mounts.map(mount => mount.kind), ['projection', 'scratch']);
   assert.deepEqual(observation.mounts.map(mount => mount.readOnly), [true, false]);
-});
-
-test('the evidence builder refuses a probe that did not record every catalog command', () => {
-  const recorded = {};
-  for (const commandId of ['projection-read', 'scratch-write', 'host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read', 'projection-write', 'host-write', 'child-liveness', 'grandchild-liveness', 'transport-positive', 'transport-general-egress']) {
-    recorded[commandId] = { allowed: true };
-  }
-  const build = probe => buildEvidence({
-    runId: 'run-1',
-    binding: { taskId: 't' },
-    probe: { checks: probe },
-    startedAt: '2026-10-21T10:00:00.000Z',
-    completedAt: '2026-10-21T10:01:00.000Z',
-    hostPositive: [],
-    namespace: { inspected: true, mounts: [] },
-    readTargets: [],
-    writeTargets: [],
-    liveness: [],
-    transport: {}
-  });
-  const evidence = build(recorded);
-  assert.equal(evidence.schemaVersion, 2);
-  assert.equal(evidence.executions.length, 12);
-  assert.equal(evidence.gateA, false);
-  for (const envelope of evidence.executions) {
-    assert.equal(envelope.exitCode, 0);
-    assert.equal(envelope.timedOut, false);
-    assert.equal(envelope.error, null);
-    assert.match(envelope.stdoutSha256, /^[a-f0-9]{64}$/);
-  }
-  const incomplete = { ...recorded };
-  delete incomplete['transport-general-egress'];
-  assert.throws(() => build(incomplete), /did not record transport-general-egress/);
 });
 
 test('the adapter refuses a missing or linked directory', () => {

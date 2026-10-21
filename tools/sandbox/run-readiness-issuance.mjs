@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createDockerAdapter, DEFAULT_IMAGE, canonicalSource } from '../agent-control/docker-adapter.mjs';
 import { controlPlaneFingerprint } from '../agent-control/fingerprint.mjs';
-import { createTransportBroker } from '../agent-control/transport.mjs';
+import { createTransportBroker, createTransportResponder } from '../agent-control/transport.mjs';
 import { createReadinessIssuer } from '../agent-control/issuer.mjs';
 
 const repo = process.argv[2] ?? process.cwd();
@@ -89,15 +89,38 @@ const catalog = {
 };
 
 const adapter = createDockerAdapter({ repo: adapterRoot, image: DEFAULT_IMAGE, runRoot, deniedPaths: [canonicalSource(repo)] });
+const transportSecret = randomBytes(32).toString('hex');
+const transportAllowlist = [{ kind: 'local-transport', host: '127.0.0.1', port: modelPort, path: '/v1' }];
 const broker = createTransportBroker({
-  allowlist: [{ kind: 'local-transport', host: '127.0.0.1', port: modelPort, path: '/v1' }],
+  allowlist: transportAllowlist,
   endpoint: modelEndpoint,
-  secret: randomBytes(32).toString('hex'),
+  secret: transportSecret,
   connect: async resolved => {
     const reachable = await httpReach(resolved.endpoint);
     return { connected: reachable, code: reachable ? null : 'UNREACHABLE' };
   }
 });
+const responder = createTransportResponder({
+  secret: transportSecret,
+  allowlist: transportAllowlist,
+  call: async ({ request, endpoint }) => {
+    const reachable = await httpReach(endpoint.endpoint);
+    return { acknowledged: reachable, role: request.role, promptLength: String(request.prompt ?? '').length };
+  }
+});
+const brokerWithResponder = {
+  id: broker.id,
+  allowlist: broker.allowlist,
+  endpoint: broker.endpoint,
+  probe: () => broker.probe(),
+  request: input => broker.request(input),
+  async roundTrip(input) {
+    const pending = broker.request(input);
+    await new Promise(done => setTimeout(done, 50));
+    await responder.respond({ scratchRoot: input.scratchRoot, runId: input.runId });
+    return pending.then(result => ({ connected: true, endpoint: broker.endpoint, requestHash: result.request.requestHash, response: result.response }));
+  }
+};
 const audit = [];
 const evidenceRoot = join(adapterRoot, 'planning/jobtrack-agent-autonomy/hardening-evidence/readiness-evidence');
 const issuer = createReadinessIssuer({
@@ -106,7 +129,7 @@ const issuer = createReadinessIssuer({
   adapterRoot,
   evidenceRoot,
   adapter,
-  broker,
+  broker: brokerWithResponder,
   connect: async endpoint => httpReach(endpoint),
   audit: record => audit.push(record)
 });

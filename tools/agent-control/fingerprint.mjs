@@ -10,10 +10,16 @@ export const CONTROL_PLANE_FILES = Object.freeze([
   'apps/api/package.json',
   'apps/web/package.json',
   'packages/jobtrack-contract/package.json',
-  'packages/jobtrack-mcp/package.json'
+  'packages/jobtrack-mcp/package.json',
+  'tools/sandbox/isolation-probe.mjs',
+  'tools/sandbox/isolated-check.mjs',
+  'tools/sandbox/run-isolation-probe.mjs',
+  'tools/sandbox/run-isolated-check.mjs',
+  'tools/sandbox/run-readiness-issuance.mjs',
+  'tools/sandbox/run-readiness-acceptance.mjs'
 ]);
 
-export function controlPlaneFingerprint(root) {
+export function controlPlaneFiles(root) {
   const files = [...CONTROL_PLANE_FILES];
   const controlPlane = join(root, 'tools/agent-control');
   if (existsSync(controlPlane)) {
@@ -21,7 +27,17 @@ export function controlPlaneFingerprint(root) {
       if (/\.(mjs|json)$/.test(name)) files.push(`tools/agent-control/${name}`);
     }
   }
+  return files;
+}
+
+export function controlPlaneFingerprint(root) {
+  const files = controlPlaneFiles(root);
   return createHash('sha256')
     .update(files.map(file => `${file}:${existsSync(join(root, file)) ? configurationHash(join(root, file)) : 'missing'}`).join('\n'))
     .digest('hex');
+}
+
+export function probeProgramHash(root) {
+  const program = join(root, 'tools/sandbox/isolation-probe.mjs');
+  return existsSync(program) ? configurationHash(program) : null;
 }
