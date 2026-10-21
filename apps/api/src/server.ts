@@ -29,10 +29,12 @@ import {
 import { createMcpRouter } from './routes/mcp.ts';
 import {
   decideCredential,
+  isOriginExemptGrant,
   parseBearerToken,
   type BearerGrant,
   type SessionIdentity
 } from './security/credential-policy.ts';
+import { resolveBearerGrant, resolveGrantIdentity } from './security/grant-resolver.ts';
 import { fetchPageContent, extractJobDetails } from './services/url-fetcher.ts';
 import { SubscriptionCrawlerService } from './services/subscription-crawler.ts';
 import { CandidateProfileService } from './services/candidate-profile.ts';
@@ -186,20 +188,10 @@ async function auth(req: Request, _res: Response, next: NextFunction) {
     let grant: BearerGrant | null = null;
     let session: SessionIdentity | null = null;
 
-    if (bearer.present) {
-      const tokenHash = createHash('sha256').update(bearer.token).digest('hex');
-      const grantRes = await pool.query(
-        'SELECT user_id, scopes, client FROM ai_grants WHERE token_hash=$1 AND revoked_at IS NULL AND expires_at>CURRENT_TIMESTAMP',
-        [tokenHash]
-      );
-      if (grantRes.rowCount) {
-        grant = {
-          userId: grantRes.rows[0].user_id,
-          scopes: grantRes.rows[0].scopes || ['full_control'],
-          client: grantRes.rows[0].client
-        };
-      }
-    } else {
+    if (bearer.form === 'canonical') {
+      const resolved = await resolveBearerGrant(pool, req.get('Authorization'));
+      grant = resolved.grant;
+    } else if (bearer.form === 'absent') {
       const token = cookies(req.headers.cookie).jobtrack_session;
       if (token) {
         const verified = await jwtVerify(token, key, { algorithms: ['HS256'] }).catch(() => null);
@@ -216,7 +208,7 @@ async function auth(req: Request, _res: Response, next: NextFunction) {
       }
     }
 
-    const decision = decideCredential({ bearerPresent: bearer.present, grant, session });
+    const decision = decideCredential({ bearerForm: bearer.form, grant, session });
     if (decision.kind === 'rejected') fail(401, 'Phiên đăng nhập đã hết hạn.', 'unauthorized');
     if (decision.kind === 'grant') {
       Object.assign(req, {
@@ -251,27 +243,33 @@ export function requireScope(scope: string) {
 app.use('/api', (req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.set('Pragma', 'no-cache');
-  if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) && req.get('origin') !== origin) {
-    // Payment Webhook (from banking gateways like VietQR, SePay, PayOS)
-    if (req.originalUrl?.startsWith('/api/pro/webhook') || req.path?.startsWith('/pro/webhook')) {
-      return next();
-    }
-    // Bearer token from Extension / MCP / API clients
-    if (req.get('authorization')?.startsWith('Bearer ') && (
-      req.path === '/mcp' || req.originalUrl?.startsWith('/api/mcp') ||
-      req.path === '/profile' || req.originalUrl?.startsWith('/api/profile') ||
-      req.path === '/subscriptions' || req.originalUrl?.startsWith('/api/subscriptions') ||
-      req.path?.startsWith('/ai') || req.originalUrl?.startsWith('/api/ai') ||
-      req.path?.startsWith('/pro') || req.originalUrl?.startsWith('/api/pro') ||
-      req.path?.startsWith('/datasets') || req.originalUrl?.startsWith('/api/datasets') ||
-      req.path?.startsWith('/applications') || req.originalUrl?.startsWith('/api/applications') ||
-      req.path?.startsWith('/auth/extension') || req.originalUrl?.startsWith('/api/auth/extension')
-    )) {
-      return next();
-    }
+  if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) || req.get('origin') === origin) {
+    return next();
+  }
+  // Payment Webhook (from banking gateways like VietQR, SePay, PayOS)
+  if (req.originalUrl?.startsWith('/api/pro/webhook') || req.path?.startsWith('/pro/webhook')) {
+    return next();
+  }
+  // Bearer grant verified by the credential policy, never by the header form
+  const authorization = req.get('Authorization');
+  if (!authorization) {
     return next(new Problem(403, 'Nguồn yêu cầu không được phép.', 'invalid_origin'));
   }
-  next();
+  resolveGrantIdentity(pool, authorization)
+    .then(identity => {
+      if (!identity) {
+        return next();
+      }
+      if (isOriginExemptGrant({
+        verifiedByGrant: true,
+        scopes: identity.scopes,
+        path: req.path ?? ''
+      })) {
+        return next();
+      }
+      return next(new Problem(403, 'Nguồn yêu cầu không được phép.', 'invalid_origin'));
+    })
+    .catch(error => next(error));
 });
 
 app.use('/api/mcp', createMcpRouter(pool));

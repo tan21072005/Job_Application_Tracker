@@ -26,12 +26,18 @@ export class McpServer {
   private pool: Pool;
   private userId: string;
   private clientName: string;
+  private scopes: string[];
 
-  constructor(pool: Pool, userId: string, clientName = 'mcp') {
+  constructor(pool: Pool, userId: string, clientName = 'mcp', scopes: string[] = ['*']) {
     this.pool = pool;
     this.userId = userId;
     this.clientName = clientName;
+    this.scopes = scopes;
     this.service = new JobTrackService(pool);
+  }
+
+  private allows(scope: string): boolean {
+    return this.scopes.includes('*') || this.scopes.includes('full_control') || this.scopes.includes(scope);
   }
 
   public async handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | null> {
@@ -97,6 +103,31 @@ export class McpServer {
             jsonrpc: '2.0',
             id,
             error: { code: -32602, message: 'Invalid params: tool name required' }
+          };
+        }
+
+        const tool = TOOLS.find(candidate => candidate.name === toolName);
+        if (!tool) {
+          return {
+            jsonrpc: '2.0',
+            id,
+            error: { code: -32602, message: 'Invalid params: unknown tool' }
+          };
+        }
+
+        if (!this.allows(tool.scope)) {
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              isError: true,
+              content: [
+                {
+                  type: 'text',
+                  text: `Không có quyền gọi công cụ này: cần phạm vi ${tool.scope}.`
+                }
+              ]
+            }
           };
         }
 

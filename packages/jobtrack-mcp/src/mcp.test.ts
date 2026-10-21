@@ -251,3 +251,36 @@ test('MCP: create_application normalizes URL, workMode Onsite -> On-site, and sa
   assert.equal(created.status, 'Saved');
 });
 
+test('MCP: a tool call outside the granted scope is refused and no audit row is written', async () => {
+  const userId = await createTestUser();
+  const server = new McpServer(pool, userId, 'narrow-client', ['mcp:read']);
+
+  const refused = await server.handleRequest({
+    jsonrpc: '2.0',
+    id: 200,
+    method: 'tools/call',
+    params: {
+      name: 'create_application',
+      arguments: { company: 'Scope Check Co', position: 'Engineer', status: 'Saved' }
+    }
+  });
+  assert.ok(refused);
+  assert.equal(refused.error, undefined);
+  const result = refused.result as { isError?: boolean; content: Array<{ text: string }> };
+  assert.equal(result.isError, true);
+  assert.match(result.content[0].text, /mcp:write/);
+
+  const readAllowed = await server.handleRequest({
+    jsonrpc: '2.0',
+    id: 201,
+    method: 'tools/call',
+    params: { name: 'list_applications', arguments: {} }
+  });
+  const listed = JSON.parse((readAllowed?.result as { content: Array<{ text: string }> }).content[0].text);
+  assert.equal(Array.isArray(listed), true);
+
+  const auditRows = (
+    await pool.query('SELECT command FROM ai_commands WHERE user_id=$1', [userId])
+  ).rows;
+  assert.equal(auditRows.length, 0);
+});

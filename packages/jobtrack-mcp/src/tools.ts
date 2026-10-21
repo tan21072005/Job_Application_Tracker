@@ -14,9 +14,12 @@ import {
   type InterviewStatus
 } from '../../jobtrack-contract/src/index.ts';
 
+export type McpToolScope = 'mcp:read' | 'mcp:write';
+
 export interface ToolDefinition {
   name: string;
   description: string;
+  scope: McpToolScope;
   inputSchema: {
     type: 'object';
     properties: Record<string, unknown>;
@@ -27,6 +30,7 @@ export interface ToolDefinition {
 export const TOOLS: ToolDefinition[] = [
   {
     name: 'list_applications',
+    scope: 'mcp:read',
     description: 'Liệt kê danh sách hồ sơ ứng tuyển của người dùng. Hỗ trợ lọc theo trạng thái, tìm kiếm theo tên công ty hoặc vị trí, sắp xếp, và xem thùng rác.',
     inputSchema: {
       type: 'object',
@@ -51,6 +55,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'get_application',
+    scope: 'mcp:read',
     description: 'Lấy chi tiết một hồ sơ ứng tuyển theo ID (kèm danh sách các vòng phỏng vấn, trạng thái, ETag/version hiện tại).',
     inputSchema: {
       type: 'object',
@@ -62,6 +67,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'create_application',
+    scope: 'mcp:write',
     description: 'Tạo một hồ sơ ứng tuyển mới với quyền Full control. Trả về thông tin hồ sơ vừa tạo kèm version/ETag.',
     inputSchema: {
       type: 'object',
@@ -90,6 +96,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'update_application',
+    scope: 'mcp:write',
     description: 'Cập nhật thông tin một hồ sơ ứng tuyển (chuyển trạng thái, cập nhật ghi chú, hành động tiếp theo, hạn chót). Hỗ trợ cập nhật từng phần.',
     inputSchema: {
       type: 'object',
@@ -118,6 +125,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'delete_application',
+    scope: 'mcp:write',
     description: 'Xóa hồ sơ ứng tuyển. Mặc định chuyển vào thùng rác (soft-delete, có thể phục hồi). Để xóa vĩnh viễn, đặt purge: true.',
     inputSchema: {
       type: 'object',
@@ -131,6 +139,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'restore_application',
+    scope: 'mcp:write',
     description: 'Khôi phục một hồ sơ ứng tuyển từ thùng rác về lại trạng thái hoạt động bình thường.',
     inputSchema: {
       type: 'object',
@@ -142,6 +151,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'schedule_interview',
+    scope: 'mcp:write',
     description: 'Lên lịch một vòng phỏng vấn mới cho hồ sơ ứng tuyển. Tự động đồng bộ trạng thái hồ sơ sang Interview.',
     inputSchema: {
       type: 'object',
@@ -162,6 +172,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'update_interview',
+    scope: 'mcp:write',
     description: 'Dời lịch, đổi múi giờ hoặc cập nhật ghi chú của một vòng phỏng vấn đã lên lịch.',
     inputSchema: {
       type: 'object',
@@ -182,6 +193,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'delete_interview',
+    scope: 'mcp:write',
     description: 'Xóa một vòng phỏng vấn khỏi hồ sơ ứng tuyển.',
     inputSchema: {
       type: 'object',
@@ -194,6 +206,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'get_dashboard_summary',
+    scope: 'mcp:read',
     description: 'Lấy số liệu tổng quan công việc ứng tuyển hôm nay: tổng số hồ sơ, số offer, phỏng vấn sắp tới, tỷ lệ phản hồi.',
     inputSchema: {
       type: 'object',
@@ -202,6 +215,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'get_candidate_profile',
+    scope: 'mcp:read',
     description: 'Lấy thông tin hồ sơ ứng viên của người dùng (họ và tên, email, số điện thoại, link CV, portfolio, kỹ năng, ghi chú giới thiệu). Hỗ trợ AI tự động điền đơn xin việc hoặc tư vấn nghề nghiệp.',
     inputSchema: {
       type: 'object',
@@ -210,6 +224,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'list_job_subscriptions',
+    scope: 'mcp:read',
     description: 'Liệt kê các bộ lọc đăng ký cào tin tuyển dụng định kỳ theo từ khóa và địa điểm của người dùng.',
     inputSchema: {
       type: 'object',
