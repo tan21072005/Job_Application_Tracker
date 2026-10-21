@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "verdict", "prompt", "changes"],
+  "properties": {
+    "summary": {"type": "string"},
+    "verdict": {"type": "string", "enum": ["plan", "changes", "repair", "pass", "fail"]},
+    "prompt": {"type": "string"},
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "beforeSha256", "content"],
+        "properties": {
+          "path": {"type": "string"},
+          "beforeSha256": {"type": ["string", "null"]},
+          "content": {"type": ["string", "null"]}
+        }
+      }
+    }
+  }
+}

@@ -128,6 +128,7 @@ function signatureOf(result) {
   return createHash('sha256').update(material.replace(/\x1b\[[0-9;]*m/g, '')).digest('hex').slice(0, 16);
 }
 async function main() {
+  throw Error('Legacy same-checkout execution is disabled. Use npm run agents:run -- --task <feature-task.json>.');
   const index = process.argv.indexOf('--task');
   if (index < 0 || !process.argv[index + 1]) throw Error('Cách dùng: npm run agent:loop -- --task tools/agent-loop/task.example.json');
   const taskPath = resolve(project, process.argv[index + 1]);
