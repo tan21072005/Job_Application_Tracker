@@ -1,274 +1,299 @@
-﻿{
-    "capturedAt":  "2026-10-21T06:23:31.8710465Z",
-    "host":  {
-                 "user":  "PC\\Admin",
-                 "isElevated":  false,
-                 "os":  "Microsoft Windows NT 10.0.26100.0",
-                 "node":  "v24.18.0"
-             },
-    "repo":  "D:\\Project\\Job_Application_Tracker",
-    "canaryRoot":  "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary",
-    "codex":  {
-                  "appCli":  "C:\\Users\\Admin\\AppData\\Local\\OpenAI\\Codex\\bin\\896a0166b774037a\\codex.exe",
-                  "appVersion":  "codex-cli 0.163.0-alpha.10.2",
-                  "pathCli":  "C:\\Users\\Admin\\AppData\\Roaming\\npm\\codex.ps1",
-                  "pathVersion":  "codex-cli 0.162.0",
-                  "pathCliProbe":  "node.exe : windows sandbox failed: helper_unknown_error: setup refresh had errors\r\nAt C:\\Users\\Admin\\AppData\\Roaming\\npm\\codex.ps1:24 char:5\r\n+     \u0026 \"node$exe\"  \"$basedir/node_modules/@openai/codex/bin/codex.js\"  ...\r\n+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : NotSpecified: (windows sandbox...resh had errors:String) [], RemoteException\r\n    + FullyQualifiedErrorId : NativeCommandError"
-              },
-    "note":  "Fake canary data only. No real secret, credential value, production DB or sibling worktree content was read. Credential files were only opened, never read into the report.",
-    "doctor":  {
-                   "repository":  "D:/Project/Job_Application_Tracker",
-                   "head":  "2d926d9d4306513402630b7873caec828732c255",
-                   "features":  [
-                                    "web",
-                                    "api",
-                                    "extension",
-                                    "mcp",
-                                    "contracts"
-                                ],
-                   "sandbox":  {
-                                   "code":  0,
-                                   "timedOut":  false,
-                                   "output":  "v24.18.0\r\n",
-                                   "error":  "[rtk] /!\\ No hook installed ΓÇö run `rtk init -g` for automatic token savings\n"
-                               },
-                   "liveWorkersVerified":  false,
-                   "safety":  "Read-only workers, scoped patch broker, local commits only. Hostile actors require OS/container isolation."
-               },
-    "canaries":  [
-                     {
-                         "capturedAt":  "2026-10-21T06:23:15.997Z",
-                         "workspace":  "D:\\Project\\Job_Application_Tracker",
-                         "canaryRoot":  "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary",
-                         "platform":  "win32 10.0.26100",
-                         "node":  "v24.18.0",
-                         "identity":  {
-                                          "user":  "CodexSandboxOffline",
-                                          "uid":  -1
-                                      },
-                         "checks":  {
-                                        "writeOutsideWorkspace":  {
-                                                                      "allowed":  false,
-                                                                      "code":  "DENIED"
-                                                                  },
-                                        "writeInsideWorkspace":  {
-                                                                     "allowed":  false,
-                                                                     "code":  "DENIED"
-                                                                 },
-                                        "readOutsideWorkspace":  {
-                                                                     "allowed":  true,
-                                                                     "code":  null,
-                                                                     "length":  46,
-                                                                     "leaked":  "jobtrack-sandbox-canary-fake-marker-do-not-use"
-                                                                 },
-                                        "egressTcp80":  {
-                                                            "allowed":  false,
-                                                            "code":  "TIMEOUT"
-                                                        },
-                                        "childProcessTree":  {
-                                                                 "spawnedPid":  10972,
-                                                                 "killRequested":  true,
-                                                                 "stillAliveAfterKill":  false
-                                                             },
-                                        "sandboxMarkerPresent":  true,
-                                        "gitCommonDirHead":  {
-                                                                 "opened":  true,
-                                                                 "code":  null,
-                                                                 "size":  21
-                                                             },
-                                        "gitCommonDirConfig":  {
-                                                                   "opened":  true,
-                                                                   "code":  null,
-                                                                   "size":  130
-                                                               },
-                                        "siblingWorktreeList":  {
-                                                                    "listed":  true,
-                                                                    "code":  null,
-                                                                    "entries":  6
-                                                                },
-                                        "credentialFileOpen":  {
-                                                                   "opened":  true,
-                                                                   "code":  null,
-                                                                   "size":  315
-                                                               },
-                                        "accountsFileOpen":  {
-                                                                 "opened":  true,
-                                                                 "code":  null,
-                                                                 "size":  525
-                                                             },
-                                        "homeCredentialList":  {
-                                                                   "listed":  false,
-                                                                   "code":  "DENIED"
-                                                               },
-                                        "controlStateList":  {
-                                                                 "listed":  true,
-                                                                 "code":  null,
-                                                                 "entries":  3
-                                                             }
-                                    },
-                         "profile":  ":read-only"
-                     },
-                     {
-                         "capturedAt":  "2026-10-21T06:23:21.679Z",
-                         "workspace":  "D:\\Project\\Job_Application_Tracker",
-                         "canaryRoot":  "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary",
-                         "platform":  "win32 10.0.26100",
-                         "node":  "v24.18.0",
-                         "identity":  {
-                                          "user":  "CodexSandboxOffline",
-                                          "uid":  -1
-                                      },
-                         "checks":  {
-                                        "writeOutsideWorkspace":  {
-                                                                      "allowed":  true,
-                                                                      "code":  null
-                                                                  },
-                                        "writeInsideWorkspace":  {
-                                                                     "allowed":  true,
-                                                                     "code":  null
-                                                                 },
-                                        "readOutsideWorkspace":  {
-                                                                     "allowed":  true,
-                                                                     "code":  null,
-                                                                     "length":  46,
-                                                                     "leaked":  "jobtrack-sandbox-canary-fake-marker-do-not-use"
-                                                                 },
-                                        "egressTcp80":  {
-                                                            "allowed":  false,
-                                                            "code":  "TIMEOUT"
-                                                        },
-                                        "childProcessTree":  {
-                                                                 "spawnedPid":  29016,
-                                                                 "killRequested":  true,
-                                                                 "stillAliveAfterKill":  false
-                                                             },
-                                        "sandboxMarkerPresent":  true,
-                                        "gitCommonDirHead":  {
-                                                                 "opened":  true,
-                                                                 "code":  null,
-                                                                 "size":  21
-                                                             },
-                                        "gitCommonDirConfig":  {
-                                                                   "opened":  true,
-                                                                   "code":  null,
-                                                                   "size":  130
-                                                               },
-                                        "siblingWorktreeList":  {
-                                                                    "listed":  true,
-                                                                    "code":  null,
-                                                                    "entries":  6
-                                                                },
-                                        "credentialFileOpen":  {
-                                                                   "opened":  true,
-                                                                   "code":  null,
-                                                                   "size":  315
-                                                               },
-                                        "accountsFileOpen":  {
-                                                                 "opened":  true,
-                                                                 "code":  null,
-                                                                 "size":  525
-                                                             },
-                                        "homeCredentialList":  {
-                                                                   "listed":  false,
-                                                                   "code":  "DENIED"
-                                                               },
-                                        "controlStateList":  {
-                                                                 "listed":  true,
-                                                                 "code":  null,
-                                                                 "entries":  3
-                                                             }
-                                    },
-                         "profile":  ":workspace"
-                     },
-                     {
-                         "capturedAt":  "2026-10-21T06:23:26.780Z",
-                         "workspace":  "D:\\Project\\Job_Application_Tracker",
-                         "canaryRoot":  "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary",
-                         "profile":  "host-direct",
-                         "platform":  "win32 10.0.26100",
-                         "node":  "v24.18.0",
-                         "identity":  {
-                                          "user":  "Admin",
-                                          "uid":  -1
-                                      },
-                         "checks":  {
-                                        "writeOutsideWorkspace":  {
-                                                                      "allowed":  true,
-                                                                      "code":  null
-                                                                  },
-                                        "writeInsideWorkspace":  {
-                                                                     "allowed":  true,
-                                                                     "code":  null
-                                                                 },
-                                        "readOutsideWorkspace":  {
-                                                                     "allowed":  true,
-                                                                     "code":  null,
-                                                                     "length":  46,
-                                                                     "leaked":  "jobtrack-sandbox-canary-fake-marker-do-not-use"
-                                                                 },
-                                        "egressTcp80":  {
-                                                            "allowed":  false,
-                                                            "code":  "TIMEOUT"
-                                                        },
-                                        "childProcessTree":  {
-                                                                 "spawnedPid":  27376,
-                                                                 "killRequested":  true,
-                                                                 "stillAliveAfterKill":  false
-                                                             },
-                                        "sandboxMarkerPresent":  true,
-                                        "gitCommonDirHead":  {
-                                                                 "opened":  true,
-                                                                 "code":  null,
-                                                                 "size":  21
-                                                             },
-                                        "gitCommonDirConfig":  {
-                                                                   "opened":  true,
-                                                                   "code":  null,
-                                                                   "size":  130
-                                                               },
-                                        "siblingWorktreeList":  {
-                                                                    "listed":  true,
-                                                                    "code":  null,
-                                                                    "entries":  6
-                                                                },
-                                        "credentialFileOpen":  {
-                                                                   "opened":  true,
-                                                                   "code":  null,
-                                                                   "size":  315
-                                                               },
-                                        "accountsFileOpen":  {
-                                                                 "opened":  true,
-                                                                 "code":  null,
-                                                                 "size":  525
-                                                             },
-                                        "homeCredentialList":  {
-                                                                   "listed":  true,
-                                                                   "code":  null,
-                                                                   "entries":  2
-                                                               },
-                                        "controlStateList":  {
-                                                                 "listed":  true,
-                                                                 "code":  null,
-                                                                 "entries":  3
-                                                             }
-                                    }
-                     }
-                 ],
-    "verdicts":  {
-                     "sandboxProbePass":  true,
-                     "V02_writeInsideCheckoutDenied":  true,
-                     "V02_writeOutsideCheckoutDenied":  true,
-                     "V15_childProcessTreeCleaned":  true,
-                     "V01_readIsolation":  false,
-                     "V01_homeSshDenied":  true,
-                     "V08_egressDenied":  false
-                 },
-    "gateA":  {
-                  "passed":  false,
-                  "blockedBy":  [
-                                    "V01 read isolation: worker can open .git common dir, .env, accounts.txt and list sibling worktrees under the read-only profile",
-                                    "V08 egress: host baseline and sandbox produced the same egress result, so denial is not proven on this host"
-                                ]
-              },
-    "liveWorkersVerified":  false
+{
+  "capturedAt": "2026-10-21T08:50:08.0042164Z",
+  "host": {
+    "user": "PC\\Admin",
+    "isElevated": false,
+    "os": "Microsoft Windows NT 10.0.26100.0",
+    "node": "v24.18.0"
+  },
+  "repo": "D:\\Project\\Job_Application_Tracker",
+  "canaryRoot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary",
+  "canaryFixture": "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary\\fixture",
+  "codex": {
+    "appCli": "C:\\Users\\Admin\\AppData\\Local\\OpenAI\\Codex\\bin\\896a0166b774037a\\codex.exe",
+    "appVersion": "codex-cli 0.163.0-alpha.10.2"
+  },
+  "note": "Fake canary data only. The real dotenv and account files of the repository are never opened; the credential checks use a fake fixture tree. Git metadata, sibling worktree and control state checks record only existence and size, never content.",
+  "doctor": {
+    "repository": "D:/Project/Job_Application_Tracker",
+    "head": "be2f8f2d64effa204072d72b39c2a5fec4eef426",
+    "features": [
+      "web",
+      "api",
+      "extension",
+      "mcp",
+      "contracts"
+    ],
+    "sandbox": {
+      "code": 0,
+      "timedOut": false,
+      "output": "v24.18.0\r\n",
+      "error": "[rtk] /!\\ No hook installed ΓÇö run `rtk init -g` for automatic token savings\n"
+    },
+    "liveWorkersVerified": false,
+    "safety": "Read-only workers, scoped patch broker, local commits only. Hostile actors require OS/container isolation."
+  },
+  "canaries": [
+    {
+      "capturedAt": "2026-10-21T08:49:52.140Z",
+      "workspace": "D:\\Project\\Job_Application_Tracker",
+      "canaryRoot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary",
+      "fixtureRoot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary\\fixture",
+      "platform": "win32 10.0.26100",
+      "node": "v24.18.0",
+      "identity": {
+        "user": "CodexSandboxOffline",
+        "uid": -1
+      },
+      "checks": {
+        "writeOutsideWorkspace": {
+          "allowed": false,
+          "code": "DENIED"
+        },
+        "writeInsideWorkspace": {
+          "allowed": false,
+          "code": "DENIED"
+        },
+        "readOutsideWorkspace": {
+          "allowed": true,
+          "code": null,
+          "length": 46,
+          "leaked": "jobtrack-sandbox-canary-fake-marker-do-not-use"
+        },
+        "egressTcp80": {
+          "allowed": false,
+          "code": "TIMEOUT"
+        },
+        "childProcessTree": {
+          "spawnedPid": 48220,
+          "killRequested": true,
+          "stillAliveAfterKill": false
+        },
+        "sandboxMarkerPresent": true,
+        "gitCommonDirHead": {
+          "opened": true,
+          "code": null,
+          "size": 21
+        },
+        "gitCommonDirConfig": {
+          "opened": true,
+          "code": null,
+          "size": 130
+        },
+        "siblingWorktreeList": {
+          "listed": true,
+          "code": null,
+          "entries": 10
+        },
+        "credentialFileOpen": {
+          "opened": true,
+          "code": null,
+          "size": 36
+        },
+        "accountsFileOpen": {
+          "opened": true,
+          "code": null,
+          "size": 33
+        },
+        "homeCredentialList": {
+          "listed": false,
+          "code": "DENIED"
+        },
+        "controlStateList": {
+          "listed": true,
+          "code": null,
+          "entries": 3
+        },
+        "credentialFixture": {
+          "opened": true,
+          "path": "fixture/host-repo/.env"
+        },
+        "accountsFixture": {
+          "opened": true,
+          "path": "fixture/host-repo/accounts.txt"
+        }
+      },
+      "profile": ":read-only"
+    },
+    {
+      "capturedAt": "2026-10-21T08:49:57.850Z",
+      "workspace": "D:\\Project\\Job_Application_Tracker",
+      "canaryRoot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary",
+      "fixtureRoot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary\\fixture",
+      "platform": "win32 10.0.26100",
+      "node": "v24.18.0",
+      "identity": {
+        "user": "CodexSandboxOffline",
+        "uid": -1
+      },
+      "checks": {
+        "writeOutsideWorkspace": {
+          "allowed": true,
+          "code": null
+        },
+        "writeInsideWorkspace": {
+          "allowed": true,
+          "code": null
+        },
+        "readOutsideWorkspace": {
+          "allowed": true,
+          "code": null,
+          "length": 46,
+          "leaked": "jobtrack-sandbox-canary-fake-marker-do-not-use"
+        },
+        "egressTcp80": {
+          "allowed": false,
+          "code": "TIMEOUT"
+        },
+        "childProcessTree": {
+          "spawnedPid": 43340,
+          "killRequested": true,
+          "stillAliveAfterKill": false
+        },
+        "sandboxMarkerPresent": true,
+        "gitCommonDirHead": {
+          "opened": true,
+          "code": null,
+          "size": 21
+        },
+        "gitCommonDirConfig": {
+          "opened": true,
+          "code": null,
+          "size": 130
+        },
+        "siblingWorktreeList": {
+          "listed": true,
+          "code": null,
+          "entries": 10
+        },
+        "credentialFileOpen": {
+          "opened": true,
+          "code": null,
+          "size": 36
+        },
+        "accountsFileOpen": {
+          "opened": true,
+          "code": null,
+          "size": 33
+        },
+        "homeCredentialList": {
+          "listed": false,
+          "code": "DENIED"
+        },
+        "controlStateList": {
+          "listed": true,
+          "code": null,
+          "entries": 3
+        },
+        "credentialFixture": {
+          "opened": true,
+          "path": "fixture/host-repo/.env"
+        },
+        "accountsFixture": {
+          "opened": true,
+          "path": "fixture/host-repo/accounts.txt"
+        }
+      },
+      "profile": ":workspace"
+    },
+    {
+      "capturedAt": "2026-10-21T08:50:02.943Z",
+      "workspace": "D:\\Project\\Job_Application_Tracker",
+      "canaryRoot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary",
+      "fixtureRoot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\jobtrack-sandbox-canary\\fixture",
+      "profile": "host-direct",
+      "platform": "win32 10.0.26100",
+      "node": "v24.18.0",
+      "identity": {
+        "user": "Admin",
+        "uid": -1
+      },
+      "checks": {
+        "writeOutsideWorkspace": {
+          "allowed": true,
+          "code": null
+        },
+        "writeInsideWorkspace": {
+          "allowed": true,
+          "code": null
+        },
+        "readOutsideWorkspace": {
+          "allowed": true,
+          "code": null,
+          "length": 46,
+          "leaked": "jobtrack-sandbox-canary-fake-marker-do-not-use"
+        },
+        "egressTcp80": {
+          "allowed": false,
+          "code": "TIMEOUT"
+        },
+        "childProcessTree": {
+          "spawnedPid": 21016,
+          "killRequested": true,
+          "stillAliveAfterKill": false
+        },
+        "sandboxMarkerPresent": true,
+        "gitCommonDirHead": {
+          "opened": true,
+          "code": null,
+          "size": 21
+        },
+        "gitCommonDirConfig": {
+          "opened": true,
+          "code": null,
+          "size": 130
+        },
+        "siblingWorktreeList": {
+          "listed": true,
+          "code": null,
+          "entries": 10
+        },
+        "credentialFileOpen": {
+          "opened": true,
+          "code": null,
+          "size": 36
+        },
+        "accountsFileOpen": {
+          "opened": true,
+          "code": null,
+          "size": 33
+        },
+        "homeCredentialList": {
+          "listed": true,
+          "code": null,
+          "entries": 2
+        },
+        "controlStateList": {
+          "listed": true,
+          "code": null,
+          "entries": 3
+        },
+        "credentialFixture": {
+          "opened": true,
+          "path": "fixture/host-repo/.env"
+        },
+        "accountsFixture": {
+          "opened": true,
+          "path": "fixture/host-repo/accounts.txt"
+        }
+      }
+    }
+  ],
+  "verdicts": {
+    "sandboxProbePass": true,
+    "V01_readIsolation": false,
+    "V02_writeIsolation": true,
+    "V15_childProcessTreeCleaned": true,
+    "V08_egressDenied": false,
+    "V02_checkProfileConfined": false
+  },
+  "gateA": {
+    "passed": false,
+    "blockedBy": [
+      "read isolation is not proven: readOutsideWorkspace: expected denied, observed allowed; gitCommonDirHead: expected denied, observed allowed; gitCommonDirConfig: expected denied, observed allowed; credentialFileOpen: expected denied, observed allowed; accountsFileOpen: expected denied, observed allowed; siblingWorktreeList: expected denied, observed allowed; controlStateList: expected denied, observed allowed",
+      "egress positive control did not connect, denial cannot be distinguished",
+      "the check runner profile can write outside the checkout"
+    ]
+  },
+  "liveWorkersVerified": false
 }
