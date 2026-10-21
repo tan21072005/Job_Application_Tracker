@@ -177,10 +177,12 @@ test('the execution boundary owns the worker run and the host worker is never us
   const c = setup({
     check: okCheck,
     worker: async role => { calls.push(`host:${role}`); return boundaryResponse(role); },
+    workerCommand: ['node', 'worker.mjs'],
     boundary: { run: async (state, request) => {
       calls.push(request.purpose === 'check-runner' ? `boundary:check-runner:${request.check}` : `boundary:worker-read:${request.role}`);
-      if (request.purpose === 'check-runner') return { launched: { result: await okCheck() } };
-      return { launched: { response: boundaryResponse(request.role) } };
+      if (request.purpose === 'check-runner') return { launched: { status: 0, stdout: 'passed', stderr: '' } };
+      const payload = boundaryResponse(request.role);
+      return { launched: { status: 0, stdout: JSON.stringify({ type: 'item.completed', item: { type: 'agent_message', text: JSON.stringify(payload) } }), stderr: '' } };
     } }
   });
   const result = await c.run(task());
@@ -195,6 +197,7 @@ test('a failing execution boundary blocks the task and never falls back to the h
   const c = setup({
     check: okCheck,
     worker: async role => { calls.push(`host:${role}`); return response('plan'); },
+    workerCommand: ['node', 'worker.mjs'],
     boundary: { run: async () => { throw Error('container refused the launch'); } }
   });
   const result = await c.run(task());

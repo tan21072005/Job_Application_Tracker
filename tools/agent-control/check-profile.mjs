@@ -21,20 +21,6 @@ export const CHECK_FIXTURE_TARGET = FIXTURE_TARGET;
 
 export const CHECK_ENV_KEYS = Object.freeze(['HOME', 'CHECK_ID', 'CANDIDATE_DIGEST', 'FIXTURE_ROOT', 'SCRATCH_ROOT', 'HOST_PROBE_PATH']);
 
-export const FORBIDDEN_CHECK_ENV = Object.freeze([
-  'DATABASE_URL',
-  'TEST_DATABASE_URL',
-  'PGHOST',
-  'PGPASSWORD',
-  'PGUSER',
-  'POSTGRES_PASSWORD',
-  'OPENAI_API_KEY',
-  'ANTHROPIC_API_KEY',
-  'N8N_API_KEY',
-  'JWT_SECRET',
-  'READINESS_KEY',
-  'NODE_OPTIONS'
-]);
 
 export function assertCheckEnvironment(env) {
   const keys = Object.keys(env ?? {});

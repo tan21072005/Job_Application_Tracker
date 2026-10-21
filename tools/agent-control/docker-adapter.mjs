@@ -83,12 +83,10 @@ export function assertNotDeniedPath(deniedPaths, candidate) {
   return true;
 }
 
-export function buildMountArgs({ projection, scratch, fixtures, candidate }) {
+export function buildMountArgs({ projection, scratch }) {
   const mounts = [];
   if (projection) mounts.push({ kind: 'projection', source: projection, target: PROJECTION_TARGET, readOnly: true });
-  if (candidate) mounts.push({ kind: 'candidate', source: candidate, target: CANDIDATE_TARGET, readOnly: true });
   if (scratch) mounts.push({ kind: 'scratch', source: scratch, target: SCRATCH_TARGET, readOnly: false });
-  if (fixtures) mounts.push({ kind: 'fixtures', source: fixtures, target: FIXTURE_TARGET, readOnly: true });
   return mounts.flatMap(mount => ['--mount', `type=bind,source=${mount.source},target=${mount.target}${mount.readOnly ? ',readonly' : ''}`]);
 }
 
@@ -270,7 +268,7 @@ export function assertNoForbiddenReference(args, forbidden) {
     if (!needle) continue;
     if (haystack.includes(String(needle).replaceAll('\\', '/').toLowerCase())) throw Error(`Adapter arguments reference a forbidden host path: ${needle}`);
   }
-  if (haystack.includes('docker.sock')) throw Error('Adapter arguments must never reference the Docker socket.');
+  if (haystack.includes('docker.sock') || haystack.includes('docker_engine') || haystack.includes('pipe/docker') || haystack.includes('dockerdesktop')) throw Error('Adapter arguments must never reference the Docker socket.');
   if (/(^|[\\/=\s])\.env(\.|$|[\s])/i.test(haystack)) throw Error('Adapter arguments must never reference a dotenv file.');
   if (/(^|[\\/=\s])accounts/i.test(haystack)) throw Error('Adapter arguments must never reference an account file.');
   return true;
@@ -504,27 +502,35 @@ export function createDockerAdapter(options = {}) {
       const projection = assertDirectory(launchOptions.projection);
       const scratch = assertDirectory(launchOptions.scratch);
       resolveRunPaths(projection, scratch);
-      const args = buildLaunchArgs({ image, runId, projection, scratch, command: launchOptions.command, mode: 'create' });
+      const command = Array.isArray(launchOptions.command) ? launchOptions.command : [];
+      if (!command.length) throw Error('Adapter launch needs a command.');
+      const args = buildLaunchArgs({ image, runId, projection, scratch, command, mode: 'create' });
       const mounts = declaredMounts(projection, scratch);
       assertNoHostAccess(args, forbidden, mounts, { image });
-      const created = runDocker(args, '', launchOptions.timeoutMs ?? 120_000);
+      const created = runDocker(['create', '-i', ...args.slice(1)], '', launchOptions.timeoutMs ?? 120_000);
       const containerId = String(created.stdout ?? '').trim().split(/\s+/)[0] ?? '';
       if (created.status !== 0 || !containerId) {
         throw Error(`Worker container could not be created: ${String(created.stderr).slice(-500)}`);
       }
       let observation = null;
+      let stdout = '';
+      let stderr = '';
+      let status = null;
       try {
         observation = inspectContainer(docker, containerId, options.dockerPrefix ?? []);
         assertContainerMatchesDeclaration(observation, {
           imageDigest: launchOptions.imageDigest ?? image.split('@sha256:')[1],
           expectedMounts: mounts
         });
-        const started = runDocker(['start', containerId], '', 60_000);
-        if (started.status !== 0) throw Error(`Worker container could not be started: ${String(started.stderr).slice(-300)}`);
+        const started = runDocker(['start', '-a', containerId], launchOptions.stdin ?? '', launchOptions.timeoutMs ?? 300_000);
+        stdout = started.stdout ?? '';
+        stderr = started.stderr ?? '';
+        status = started.status;
       } catch (error) {
         runDocker(['rm', '-f', containerId], '', 60_000);
         throw Error(String(error && error.message ? error.message : error));
       }
+      runDocker(['rm', '-f', containerId], '', 60_000);
       return {
         runId,
         image,
@@ -533,7 +539,10 @@ export function createDockerAdapter(options = {}) {
         argvHash: createHash('sha256').update(args.join(' ')).digest('hex'),
         projection,
         scratch,
-        observation
+        observation,
+        status,
+        stdout,
+        stderr
       };
     }
   };

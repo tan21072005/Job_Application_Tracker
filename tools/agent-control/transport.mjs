@@ -2,11 +2,6 @@ import { createHmac, createHash, randomUUID, timingSafeEqual } from 'node:crypto
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 
-export const TRANSPORT_ALLOWLIST_KIND = Object.freeze({
-  'https-endpoint': 'https-endpoint',
-  'local-transport': 'local-transport'
-});
-
 const RUN_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function assertRunId(runId) {
@@ -61,8 +56,9 @@ export function transportRequestDirectory(root) {
   return join(root, 'transport');
 }
 
-export function responseToken(secret, requestHash, runId) {
-  return createHmac('sha256', secret).update(JSON.stringify({ requestHash, runId })).digest('hex');
+export function responseToken(secret, requestHash, runId, body) {
+  const bodyHash = createHash('sha256').update(JSON.stringify(body ?? null)).digest('hex');
+  return createHmac('sha256', secret).update(JSON.stringify({ requestHash, runId, bodyHash })).digest('hex');
 }
 
 export function createTransportBroker(options = {}) {
@@ -77,8 +73,6 @@ export function createTransportBroker(options = {}) {
     writeFileSync(temporary, content, { flag: 'wx' });
     renameSync(temporary, path);
   };
-
-  const signRequest = payload => createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
 
   return {    id: options.id ?? 'jobtrack-transport-broker-v1',
     allowlist,
@@ -132,7 +126,7 @@ export function createTransportBroker(options = {}) {
             throw Error('Transport response is not valid JSON.');
           }
           if (!parsed || parsed.requestHash !== requestHash) throw Error('Transport response does not belong to this request.');
-          const expected = responseToken(secret, requestHash, runId);
+          const expected = responseToken(secret, requestHash, runId, parsed.body ?? null);
           if (typeof parsed.token !== 'string' || parsed.token.length !== expected.length || !timingSafeEqual(Buffer.from(parsed.token, 'utf8'), Buffer.from(expected, 'utf8'))) {
             throw Error('Transport response is not authenticated.');
           }
@@ -167,7 +161,7 @@ export function createTransportResponder(options = {}) {
       const body = await call({ request, endpoint: resolved, role: request.role });
       writeFileSync(join(runDirectory, 'response.json'), JSON.stringify({
         requestHash,
-        token: responseToken(secret, requestHash, runId),
+        token: responseToken(secret, requestHash, runId, body),
         body
       }) + '\n', { flag: 'w' });
       return { requestHash, body };

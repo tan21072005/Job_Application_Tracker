@@ -8,7 +8,6 @@ import {
   CHECK_FIXTURE_TARGET,
   CHECK_PROJECTION_TARGET,
   CHECK_SCRATCH_TARGET,
-  FORBIDDEN_CHECK_ENV,
   assertCheckEnvironment,
   assertCheckProfile,
   buildCheckArgs,
@@ -93,7 +92,6 @@ test('the check environment never carries a database, provider or secret variabl
   assert.throws(() => assertCheckEnvironment({ READINESS_KEY: 'x' }), /may only carry/);
   assert.throws(() => assertCheckEnvironment({ NODE_OPTIONS: '--require x' }), /may only carry/);
   const env = buildCheckEnvironment({ checkId: 'build:api', candidateDigest: 'abc' });
-  for (const key of Object.keys(env)) assert.equal(FORBIDDEN_CHECK_ENV.includes(key), false, key);
   for (const key of Object.keys(env)) assert.equal(CHECK_ENV_KEYS.includes(key), true, key);
 });
 

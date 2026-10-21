@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Pool } from 'pg';
 import { randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { McpServer, type JsonRpcRequest, type JsonRpcResponse } from './mcp-server.ts';
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -283,4 +285,18 @@ test('MCP: a tool call outside the granted scope is refused and no audit row is 
     await pool.query('SELECT command FROM ai_commands WHERE user_id=$1', [userId])
   ).rows;
   assert.equal(auditRows.length, 0);
+});
+test('MCP: the shipped stdio binary starts only with an explicit identity', async () => {
+  const binary = fileURLToPath(new URL('../bin/jobtrack-mcp.mjs', import.meta.url));
+  const withoutIdentity = spawnSync(process.execPath, [binary], { encoding: 'utf8', timeout: 30_000, windowsHide: true });
+  assert.equal(withoutIdentity.status, 1);
+  assert.match(withoutIdentity.stderr, /No JobTrack identity/);
+  const withInvalidToken = spawnSync(process.execPath, [binary], {
+    encoding: 'utf8',
+    timeout: 30_000,
+    windowsHide: true,
+    env: { ...process.env, JOBTRACK_AUTH_TOKEN: 'not-a-real-token' }
+  });
+  assert.equal(withInvalidToken.status, 1);
+  assert.match(withInvalidToken.stderr, /invalid or expired/);
 });

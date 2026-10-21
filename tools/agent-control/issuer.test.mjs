@@ -8,6 +8,7 @@ import {
   buildTrustedContext,
   buildWitnessBindings,
   createReadinessIssuer,
+  dockerBinaryHash,
   hostPathWitness,
   isLoopbackHost,
   isPublishedKey
@@ -84,6 +85,7 @@ function issuerFixture(overrides = {}) {
     profileHash: 'e'.repeat(64),
     adapterId: 'jobtrack-docker-adapter-v1',
     imageDigest: IMAGE_DIGEST,
+    dockerBinaryHash: dockerBinaryHash(process.execPath, [FAKE_DOCKER]),
     cliHash: '1'.repeat(64),
     nodeHash: '2'.repeat(64),
     verifierImplementationHash: '3'.repeat(64),
@@ -91,6 +93,7 @@ function issuerFixture(overrides = {}) {
     generalEgressEndpoint: 'https://general-egress.invalid/',
     deniedHostPaths: {
       'host-repo-read': repo,
+      'control-plane-root': catalogRoot,
       'common-git-read': git,
       'control-state-read': stateDir,
       'host-credential-read': join(repo, 'accounts.txt'),

@@ -101,16 +101,22 @@ export function createExecutionBoundary(options) {
         verify: (receipt, trusted) => issuer.verify(receipt, trusted),
         issue: ({ binding: trusted }) => issuer.issue({
           runId,
+          taskId: trusted.taskId,
+          feature: trusted.feature,
+          base: trusted.base,
+          sourceDigest: trusted.sourceDigest,
+          projectionManifestHash: trusted.projectionManifestHash,
+          purpose: trusted.purpose,
           projection: staged.root,
           scratch: scratchRoot,
-          manifest: staged.manifest.map(entry => ({ path: entry.path, sha256: entry.sha256 })),
-          binding: trusted
-        }),
+          manifest: staged.manifest.map(entry => ({ path: entry.path, sha256: entry.sha256 }))
+        }).then(result => result.receipt),
         launch: ({ binding: trusted, receipt }) => adapter.launch({
           runId,
           projection: staged.root,
           scratch: scratchRoot,
           command: request.command ?? [],
+          stdin: request.instruction ?? '',
           binding: trusted,
           receipt
         })

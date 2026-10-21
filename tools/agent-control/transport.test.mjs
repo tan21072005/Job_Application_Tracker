@@ -19,7 +19,7 @@ function scratchFixture() {
   return { root, scratch: join(root, 'scratch') };
 }
 
-const sign = payload => createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+const sign = (requestHash, runId, body) => createHmac('sha256', secret).update(JSON.stringify({ requestHash, runId, bodyHash: createHash('sha256').update(JSON.stringify(body ?? null)).digest('hex') })).digest('hex');
 
 test('only an allowlisted endpoint is accepted', () => {
   const resolved = assertAllowlistedEndpoint('https://model-endpoint.invalid/v1/chat', allowlist);
@@ -79,7 +79,7 @@ test('the broker round trip travels over the scratch channel and never trusts a 
   assert.equal(Object.hasOwn(written, 'token'), false, 'the request file must never carry the response token');
   writeFileSync(join(runDirectory, 'response.json'), JSON.stringify({
     requestHash: written.requestHash,
-    token: sign({ requestHash: written.requestHash, runId }),
+    token: sign(written.requestHash, runId, { verdict: 'plan' }),
     body: { verdict: 'plan' }
   }));
   const result = await pending;
@@ -142,4 +142,19 @@ test('a request never writes outside the transport directory of its run', async 
   const { scratch } = scratchFixture();
   const broker = createTransportBroker({ allowlist, endpoint: 'https://model-endpoint.invalid/v1/chat', secret, pollMs: 10, timeoutMs: 200 });
   await assert.rejects(() => broker.request({ scratchRoot: scratch, runId: '../../escape' }), /uuid/);
+});
+test('a response body that was changed after signing is refused', async () => {
+  const { scratch } = scratchFixture();
+  const broker = createTransportBroker({ allowlist, endpoint: 'https://model-endpoint.invalid/v1/chat', secret, pollMs: 10, timeoutMs: 3000 });
+  const pending = broker.request({ scratchRoot: scratch, runId, role: 'planner' });
+  await new Promise(done => setTimeout(done, 60));
+  const runDirectory = join(scratch, 'transport', 'transport', runId);
+  const request = JSON.parse(readFileSync(join(runDirectory, 'request.json'), 'utf8'));
+  const body = { verdict: 'plan' };
+  writeFileSync(join(runDirectory, 'response.json'), JSON.stringify({
+    requestHash: request.requestHash,
+    token: sign(request.requestHash, runId, { verdict: 'plan' }),
+    body: { verdict: 'tampered by the worker' }
+  }));
+  await assert.rejects(() => pending, /not authenticated/);
 });

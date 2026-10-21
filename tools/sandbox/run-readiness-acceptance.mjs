@@ -6,7 +6,7 @@ import { createDockerAdapter, DEFAULT_IMAGE, canonicalSource, forbiddenHostPaths
 import { assertCheckProfile, buildCheckArgs, buildCheckEnvironment, checkEvidence, runIsolatedCheck } from '../agent-control/check-profile.mjs';
 import { controlPlaneFingerprint } from '../agent-control/fingerprint.mjs';
 import { createTransportBroker, createTransportResponder } from '../agent-control/transport.mjs';
-import { createReadinessIssuer } from '../agent-control/issuer.mjs';
+import { createReadinessIssuer, dockerBinaryHash } from '../agent-control/issuer.mjs';
 
 const repo = process.argv[2] ?? process.cwd();
 const runRoot = process.argv[3] ?? 'D:/Long-term';
@@ -74,6 +74,7 @@ const catalog = {
   profileHash: createHash('sha256').update('profile-read-only').digest('hex'),
   adapterId: 'jobtrack-docker-adapter-v1',
   imageDigest: DEFAULT_IMAGE.split('@sha256:')[1],
+  dockerBinaryHash: dockerBinaryHash('docker'),
   cliHash: createHash('sha256').update('codex-cli-0.163.0-alpha.10.2').digest('hex'),
   nodeHash: createHash('sha256').update(process.version).digest('hex'),
   verifierImplementationHash: createHash('sha256').update(readFileSync(join(adapterRoot, 'tools/agent-control/readiness-v2.mjs'), 'utf8')).digest('hex'),
@@ -81,6 +82,7 @@ const catalog = {
   generalEgressEndpoint,
   deniedHostPaths: {
     'host-repo-read': canonicalSource(repo),
+    'host-home-read': canonicalSource(process.env.USERPROFILE ?? ''),
     'common-git-read': canonicalSource(join(repo, '.git')),
     'control-state-read': canonicalSource(join(repo, '.agent-state')),
     'host-credential-read': canonicalSource(join(repo, 'accounts.txt')),
@@ -127,6 +129,7 @@ const issuer = createReadinessIssuer({
   catalog,
   key: signingKey || randomBytes(48).toString('hex'),
   evidenceRoot,
+  contextDirectory: join(adapterRoot, '.agent-state/readiness/context'),
   adapterRoot,
   adapter,
   broker: brokerWithResponder,
@@ -199,7 +202,7 @@ record('the check profile guard accepted the check arguments', guardError === nu
 record('the check ran in the isolated profile and was refused the candidate write', check?.observed?.candidateRead?.ok === true && check?.observed?.candidateWrite?.ok === false, check?.observed ?? null);
 record('the check saw no database, provider or secret variable', check?.observed?.environment && Object.keys(check.observed.environment).length === 0, check?.observed?.environment ?? null);
 record('the gate stays blocked when a proof is missing', blockedProbe?.receipt === null && typeof blockedProbe?.diagnostics === 'string', blockedProbe?.diagnostics ?? null);
-record('the artifacts state that no live worker ran', reportLimitations.some(line => /No live worker ran/i.test(line)), reportLimitations);
+record('no worker ran inside the container during this acceptance', !audit.some(entry => entry.event === 'worker-run') && reportLimitations.some(line => /No live worker ran/i.test(line)), { workerEvents: audit.filter(entry => entry.event === 'worker-run').length });
 
 const passed = findings.every(finding => finding.passed);
 const report = {

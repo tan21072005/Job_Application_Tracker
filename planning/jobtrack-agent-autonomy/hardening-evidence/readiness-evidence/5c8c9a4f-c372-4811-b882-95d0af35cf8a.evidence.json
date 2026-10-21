@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
-  "runId": "d87e75af-ac01-4ebc-8ac0-e0b6d078307a",
-  "startedAt": "2026-10-21T17:09:46.723Z",
-  "completedAt": "2026-10-21T17:09:48.064Z",
+  "runId": "5c8c9a4f-c372-4811-b882-95d0af35cf8a",
+  "startedAt": "2026-10-21T17:53:13.627Z",
+  "completedAt": "2026-10-21T17:53:14.927Z",
   "binding": {
     "taskId": "readiness-canary",
     "feature": "web",
     "base": "main",
     "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
     "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
-    "policyHash": "5bbde864c96b2c4620c66a88e78b2e4940a7aa219f466e21a09b4985fe44dbb6",
+    "policyHash": "07cfab73bd595ee008e91074b90760b12c8772baecafd80181a6b0d6e8f4deaa",
     "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
     "purpose": "worker-read",
     "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
@@ -138,53 +138,53 @@
       {
         "targetId": "host-repo-read",
         "connected": true,
-        "witnessSha256": "f418a05b2d5fb275641f0002ec5981ab3d0cbfc8e9a2358512950724b7c15d5f"
+        "witnessSha256": "ad0f90492c4fefc62d3c6901d33a8350a342dc2b07a2f648f245d60dfecad4e4"
       },
       {
         "targetId": "common-git-read",
         "connected": true,
-        "witnessSha256": "671910c3a5460265ad02eadac369f9ae01687dd700cdd732e3a791a33a76372f"
+        "witnessSha256": "1d85d8b04b2e048fc9a81930265a168a6ee7a6850d2c01647a5bf95f44c0dfe1"
       },
       {
         "targetId": "control-state-read",
         "connected": true,
-        "witnessSha256": "fba4aa86f140776bcd784a4045e915d458b419a52cf417d9977859b2925427b2"
+        "witnessSha256": "0185338b53db6d9b3265960d73b2a9bcd6ba7956a5be7116a606aefe4166bf23"
       },
       {
         "targetId": "host-credential-read",
         "connected": true,
-        "witnessSha256": "abc188552dd6db2ef8c8511065368865247c8ac5cd3ddf7e1cb1ba41e4abcfbb"
+        "witnessSha256": "215db51bd9e51c97a248c50260a53a503795ef5c0184a7696727f228ade88dc7"
       },
       {
         "targetId": "host-write",
         "connected": true,
-        "witnessSha256": "b4d06e369e552949a3ff495219b7219a37f7fc980f94e6ec7d85348ff429d8ce"
+        "witnessSha256": "ad6530b462d71764d6b75ec922f38ad560e655c845a95a3e3057e0237bbd1bae"
       },
       {
         "targetId": "projection-write",
         "connected": true,
-        "witnessSha256": "515e03513149560c5e7dfa3e64e93d31463ed88c120177416992208d6df1fc67"
+        "witnessSha256": "64f64c410a867ddfc9ad0bc093632fce7580428e3ab09a906b9beebf054df14a"
       },
       {
         "targetId": "transport-general-egress",
         "connected": true,
-        "witnessSha256": "02b6476367374a9b4c598690ad0afe036ab64b04c438df8f150ceb2baa0c61b8"
+        "witnessSha256": "a7f0694eb826ca5cf8d99d17c8dabdeaa64d0c91931f238398e4c128501e1ea1"
       }
     ],
     "namespace": {
       "inspected": true,
       "mounts": [
         {
-          "kind": "projection",
-          "source": "D:/Long-term/JobTrack-acceptance-d87e75af/projection",
-          "target": "/projection",
-          "readOnly": true
-        },
-        {
           "kind": "scratch",
-          "source": "D:/Long-term/JobTrack-acceptance-d87e75af/scratch",
+          "source": "D:/Long-term/JobTrack-acceptance-5c8c9a4f/scratch",
           "target": "/scratch",
           "readOnly": false
+        },
+        {
+          "kind": "projection",
+          "source": "D:/Long-term/JobTrack-acceptance-5c8c9a4f/projection",
+          "target": "/projection",
+          "readOnly": true
         }
       ],
       "invisibleHostPaths": [
@@ -196,25 +196,25 @@
       ],
       "containerMounts": [
         {
-          "root": "/Long-term/JobTrack-acceptance-d87e75af/projection",
+          "root": "/Long-term/JobTrack-acceptance-5c8c9a4f/projection",
           "mountPoint": "/projection",
           "options": "ro,noatime"
         },
         {
-          "root": "/Long-term/JobTrack-acceptance-d87e75af/scratch",
+          "root": "/Long-term/JobTrack-acceptance-5c8c9a4f/scratch",
           "mountPoint": "/scratch",
           "options": "rw,noatime"
         }
       ],
-      "containerId": "1157316ec1e54636d214b32b1073944c3f5e6f338280d3d8c9fab33d148cbaeb",
-      "probeProgramHash": "f7585ca19ef613f162f20e091313244b8114a25cebe301ec0f5d328fc89bc1ff",
+      "containerId": "4ce0ba1f944417ed59ac440385eeb3786042acaa3bcd43e612126dddd5bbd739",
+      "probeProgramHash": "ad2a798a5c9fd4701b7df12f4011f0d18be49e46965c2d6416b0d4c195edf195",
       "dockerBinaryHash": "7bb6b61b46aaa8c44ef3a8efd4870c474e5bf25a1aecce54c334277702401eb2"
     },
     "readTargets": [
       {
         "targetId": "projection-read",
         "requirement": "allowed",
-        "hostPath": "D:/Long-term/JobTrack-acceptance-d87e75af/projection",
+        "hostPath": "D:/Long-term/JobTrack-acceptance-5c8c9a4f/projection",
         "outcome": "allowed"
       },
       {
@@ -246,13 +246,13 @@
       {
         "targetId": "scratch-write",
         "requirement": "allowed",
-        "hostPath": "D:/Long-term/JobTrack-acceptance-d87e75af/scratch",
+        "hostPath": "D:/Long-term/JobTrack-acceptance-5c8c9a4f/scratch",
         "outcome": "allowed"
       },
       {
         "targetId": "projection-write",
         "requirement": "denied",
-        "hostPath": "D:/Long-term/JobTrack-acceptance-d87e75af/projection",
+        "hostPath": "D:/Long-term/JobTrack-acceptance-5c8c9a4f/projection",
         "outcome": "denied"
       },
       {

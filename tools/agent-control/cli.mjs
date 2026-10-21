@@ -30,6 +30,7 @@ function buildAdapters() {
     key: signingKey,
     adapterRoot: root,
     evidenceRoot: resolve(root, '.agent-state/readiness/evidence'),
+    receiptDirectory: resolve(root, '.agent-state/readiness'),
     adapter
   });
   const boundary = createExecutionBoundary({
@@ -57,6 +58,7 @@ function buildAdapters() {
   });
   return {
     boundary,
+    workerCommand: catalog.workerCommand ?? null,
     readiness: async state => controller.readReadinessReceipt(state.id),
     readinessVerify: async receipt => issuer.verify(receipt)
   };

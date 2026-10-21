@@ -6,7 +6,7 @@ import { McpServer } from '../src/mcp-server.ts';
 const databaseUrl = process.env.DATABASE_URL || 'postgres://jobtrack:jobtrack_local_dev@127.0.0.1:5432/jobtrack';
 const pool = new Pool({ connectionString: databaseUrl, max: 4 });
 
-async function resolveUserId(): Promise<{ userId: string; clientName: string; scopes: string[] }> {
+async function resolveUserId() {
   // 1. Direct explicit environment variable
   if (process.env.JOBTRACK_USER_ID) {
     return {

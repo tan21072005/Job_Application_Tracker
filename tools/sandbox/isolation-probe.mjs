@@ -5,7 +5,8 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 
 const config = JSON.parse(Buffer.from(process.env.JT_PROBE_CONFIG ?? '', 'base64').toString('utf8'));
-const REQUIRED_READ_TARGETS = ['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read'];const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
+const REQUIRED_READ_TARGETS = ['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read'];
+const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const output = { checks: {}, observations: {} };
 
 const record = (name, value) => { output.checks[name] = value; };
@@ -144,8 +145,9 @@ const main = async () => {
 
   const hostWriteEntry = hostPaths.find(entry => entry.targetId === 'host-write') ?? hostPaths[hostPaths.length - 1];
   const hostWrite = writeTarget(hostWriteEntry?.containerPath ?? '/host-nonexistent', 'x');
-  record('host-write', { allowed: hostWrite.ok, code: hostWrite.code ?? null, absent: !hostWrite.ok && hostWrite.code === 'ENOENT' });
-  output.observations.hostWrite = { outcome: hostWrite.ok ? 'allowed' : 'absent', code: hostWrite.code ?? null };
+  const hostWriteAbsent = !hostWrite.ok && hostWrite.code === 'ENOENT';
+  record('host-write', { allowed: hostWrite.ok, code: hostWrite.code ?? null, absent: hostWriteAbsent });
+  output.observations.hostWrite = { outcome: hostWrite.ok ? 'allowed' : hostWriteAbsent ? 'absent' : 'error', code: hostWrite.code ?? null };
 
   const liveness = await runLiveness();
   record('child-liveness', { stillAliveAfterKill: liveness.after.child });

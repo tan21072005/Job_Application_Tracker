@@ -1,16 +1,16 @@
 {
   "kind": "fixture-check-record-not-readiness-receipt",
-  "capturedAt": "2026-10-21T17:11:25.435Z",
+  "capturedAt": "2026-10-21T17:51:56.007Z",
   "note": "The control plane fixture record of this increment. The digest of every source file below is the file that was executed. The recorded counts are the counts of the run that produced the archived logs. A fixture record is never a readiness receipt and no live worker ran.",
   "sourceSha256": {
-    "tools/agent-control/controller.mjs": "e04f654d76eb27117d15406950c59b7f4f25cef5a3e314e7a6f39ffd49c38c12",
-    "tools/agent-control/controller.test.mjs": "9bf828d50ce19c472f955502d5335f2c170a456506a0a6c4c3a6569c8b066afe",
-    "tools/agent-control/docker-adapter.mjs": "f7350a411636dc961ca06233f551132d8fc55af9edfca70d7d346e32af85e5eb",
-    "tools/agent-control/issuer.mjs": "30816b53620c2c79d5baed61741b61270ccd7795905c7412cd1d60587aaa31f1",
-    "tools/agent-control/execution-boundary.mjs": "bd7b3145337247f304b42b5aa2834cc7532408650b156df4cb33340717f29918",
+    "tools/agent-control/controller.mjs": "3ae681b9d27dba82202f9d930b51800f8c8a454c20eebf88a8e3aeeb36c9b506",
+    "tools/agent-control/controller.test.mjs": "48f9d622605aef6d97b2e3e17c8b3706ff20f8ae099da6fb753f6c86e892fd82",
+    "tools/agent-control/docker-adapter.mjs": "c43e34140ae8f6529ea0d59825a83118ca09ab4f6e83ccba70ab946df1346903",
+    "tools/agent-control/issuer.mjs": "48d8418a2004dc8253a37eeb3bdb2e322f93b866815db03537fad77d65475b57",
+    "tools/agent-control/execution-boundary.mjs": "367fdaf03dda338315368f47ba2865182f6b45628ac247c0860875895e31f29a",
     "tools/agent-control/projection.mjs": "8fe3d1f305f6c14a367fdec66f5ea3a1eaa8214011077231a8455cfe92f631b4",
     "tools/agent-control/projection.test.mjs": "96a6225b6803b34c217bb1ae1a9efbed30e84b13df22679fdd22633fb1332bfa",
-    "tools/sandbox/isolation-probe.mjs": "f7585ca19ef613f162f20e091313244b8114a25cebe301ec0f5d328fc89bc1ff",
+    "tools/sandbox/isolation-probe.mjs": "ad2a798a5c9fd4701b7df12f4011f0d18be49e46965c2d6416b0d4c195edf195",
     "tools/sandbox/verdict.mjs": "2093c5db0fc14ad385954542229e94f9db1b1ba140214e48c2f9726d9d00e859",
     "tools/sandbox/verdict.test.mjs": "9f464fbd6dc92289c33404e6a77ca87774aca1112e869eb78835d35b8a4fe7bd"
   },
@@ -33,7 +33,7 @@
         "skipped": 0
       },
       "log": "agents-fixture-tests.txt",
-      "logSha256": "164a26213370b87618bfe503c10fac6c823a94d17f69b160d24bf29bee2d1a07"
+      "logSha256": "157d0b3db794a749e9acaaba15eb9b61182570360929aca5843de237360fae5d"
     },
     {
       "command": [
@@ -52,7 +52,7 @@
         "skipped": 0
       },
       "log": "verdict-fixture-tests.txt",
-      "logSha256": "158cacf4ec25372fe07e39490da9b7ead359c61648a5298eecb1b67466fcbe98"
+      "logSha256": "e4cd5ee38897e80eb6ad36fccd0b7a34c42437720d27d020b4848c783d087355"
     }
   ],
   "readinessReceiptIssued": false,

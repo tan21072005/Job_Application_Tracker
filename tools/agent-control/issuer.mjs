@@ -74,16 +74,16 @@ export function isLoopbackHost(host) {
   return value === 'localhost' || value === '127.0.0.1' || value === '::1' || value.startsWith('127.');
 }
 
-export function buildTrustedContext(catalog, runId) {
+export function buildTrustedContext(catalog, runId, task = {}) {
   return {
-    taskId: catalog.taskId,
-    feature: catalog.feature,
-    base: catalog.base,
-    sourceDigest: catalog.sourceDigest,
-    projectionManifestHash: catalog.projectionManifestHash,
+    taskId: task.taskId ?? catalog.taskId,
+    feature: task.feature ?? catalog.feature,
+    base: task.base ?? catalog.base,
+    sourceDigest: task.sourceDigest ?? catalog.sourceDigest,
+    projectionManifestHash: task.projectionManifestHash ?? catalog.projectionManifestHash,
     policyHash: catalog.policyHash,
     environmentHash: catalog.environmentHash,
-    purpose: catalog.purpose ?? 'worker-read',
+    purpose: task.purpose ?? catalog.purpose ?? 'worker-read',
     profileHash: catalog.profileHash,
     adapterId: catalog.adapterId,
     imageDigest: catalog.imageDigest,
@@ -109,14 +109,25 @@ export function assertContainerMatchesTrust(container, trusted) {
   });
 }
 
-export function dockerBinaryHash(docker) {
+export function dockerBinaryHash(docker, dockerPrefix = []) {
   const resolved = spawnSync('where', [docker], { encoding: 'utf8', windowsHide: true }).stdout?.split(/\r?\n/).map(line => line.trim()).filter(Boolean)[0];
-  if (!resolved) return null;
-  try {
-    return createHash('sha256').update(readFileSync(resolved)).digest('hex');
-  } catch {
-    return null;
+  const parts = [];
+  if (resolved) {
+    try {
+      parts.push(readFileSync(resolved));
+    } catch {
+      return null;
+    }
   }
+  for (const prefix of dockerPrefix) {
+    try {
+      parts.push(readFileSync(prefix));
+    } catch {
+      return null;
+    }
+  }
+  if (!parts.length) return null;
+  return createHash('sha256').update(Buffer.concat(parts)).digest('hex');
 }
 
 export function assertContainerSideMounts(containerMounts, trusted) {
@@ -224,9 +235,33 @@ export function buildEvidenceFromProbe(input) {
   };
 }
 
+export function loadRunContext(evidenceRoot, runId) {
+  if (!runId) return null;
+  const path = join(evidenceRoot, `${runId}.context.json`);
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
 export function removeContainer(docker, containerId, dockerPrefix = []) {
   if (!containerId) return false;
   spawnSync(docker, [...dockerPrefix, 'rm', '-f', containerId], { encoding: 'utf8', timeout: 60_000, windowsHide: true });
+  return true;
+}
+
+export function assertCatalogCoversHost(catalog, adapterRoot) {
+  const denied = Object.values(catalog.deniedHostPaths ?? {}).map(path => String(path).replaceAll('\\', '/').toLowerCase());
+  if (!denied.length) throw Error('The maintainer catalog must deny the host paths that the isolated run must not see.');
+  const covered = target => {
+    const value = String(target).replaceAll('\\', '/').toLowerCase();
+    return denied.some(path => value.startsWith(path) || path.startsWith(value));
+  };
+  if (!covered(adapterRoot)) throw Error('The maintainer catalog must deny the control plane root.');
+  const home = process.env.USERPROFILE ?? '';
+  if (home && !covered(home)) throw Error('The maintainer catalog must deny the home directory.');
   return true;
 }
 
@@ -240,6 +275,10 @@ export function createReadinessIssuer(options = {}) {
   if (!evidenceRoot) throw Error('Issuer needs an evidence root.');
   const adapterRoot = options.adapterRoot;
   if (!adapterRoot) throw Error('Issuer needs the control plane root that executes the probe.');
+  if (!catalog.dockerBinaryHash) throw Error('Issuer needs the maintainer catalog to pin the container runtime hash.');
+  assertCatalogCoversHost(catalog, adapterRoot);
+  const receiptDirectory = options.receiptDirectory ?? null;
+  const contextDirectory = options.contextDirectory ?? evidenceRoot;
   const docker = options.docker ?? 'docker';
   const dockerPrefix = options.dockerPrefix ?? [];
   const connect = options.connect ?? defaultConnect;
@@ -252,7 +291,7 @@ export function createReadinessIssuer(options = {}) {
   return {
     id: ISSUER_ID,
     verify(receipt, trusted) {
-      const context = trusted ?? runContexts.get(receipt?.runId);
+      const context = trusted ?? runContexts.get(receipt?.runId) ?? loadRunContext(contextDirectory, receipt?.runId);
       if (!context) throw Error('The issuer has no trusted context for this receipt.');
       return verifyReadinessReceiptV2({
         receipt,
@@ -268,7 +307,14 @@ export function createReadinessIssuer(options = {}) {
     },
     async issue(input) {
       const runId = input.runId ?? randomUUID();
-      const trusted = buildTrustedContext(catalog, runId);
+      const trusted = buildTrustedContext(catalog, runId, {
+        taskId: input.taskId,
+        feature: input.feature,
+        base: input.base,
+        sourceDigest: input.sourceDigest,
+        projectionManifestHash: input.projectionManifestHash,
+        purpose: input.purpose
+      });
       const fail = diagnostics => {
         auditRecord({ at: new Date().toISOString(), event: 'readiness-issued', runId, taskId: catalog.taskId, signed: false, diagnostics });
         return { runId, evidence: null, evidencePath: null, evidenceHash: null, receipt: null, diagnostics, trusted };
@@ -281,7 +327,7 @@ export function createReadinessIssuer(options = {}) {
       if (catalog.probeProgramHash && observedProgramHash !== catalog.probeProgramHash) {
         return fail('The probe program that would run does not match the hash in the catalog.');
       }
-      const observedDockerHash = dockerBinaryHash(docker);
+      const observedDockerHash = dockerBinaryHash(docker, dockerPrefix);
       if (catalog.dockerBinaryHash && observedDockerHash !== catalog.dockerBinaryHash) {
         return fail('The container runtime that would run does not match the hash in the catalog.');
       }
@@ -390,6 +436,12 @@ export function createReadinessIssuer(options = {}) {
         });
         mkdirSync(evidenceRoot, { recursive: true });
         writeFileSync(evidencePath, evidenceBytes, { flag: 'wx' });
+        mkdirSync(contextDirectory, { recursive: true });
+        writeFileSync(join(contextDirectory, `${runId}.context.json`), JSON.stringify(trusted, null, 2) + '\n', { flag: 'wx' });
+        if (receiptDirectory) {
+          mkdirSync(receiptDirectory, { recursive: true });
+          writeFileSync(join(receiptDirectory, `${trusted.taskId}.json`), JSON.stringify(signed, null, 2) + '\n');
+        }
         receipt = signed;
         payloadHash = verified.payloadHash;
       } catch (error) {
