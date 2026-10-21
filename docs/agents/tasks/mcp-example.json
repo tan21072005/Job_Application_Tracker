@@ -7,6 +7,6 @@
     "Không thay quyền tool, gọi dịch vụ thật hoặc sửa contract dùng chung.",
     "Không ghi credential hoặc thêm comment vào code."
   ],
-  "checks": ["check:contract"],
+  "checks": ["build:mcp"],
   "dependencies": []
 }

@@ -27,6 +27,8 @@
 
 CLI controller cung cấp các thao tác `prepare`, `status`, `apply`, `check`, `commit`, `run`. Dùng trợ giúp của phiên bản đang checkout để lấy cú pháp và các điều kiện đầu vào; không tự suy diễn flag. `run` điều phối các subprocess Codex ở chế độ chỉ đọc. Những subprocess này trả đề xuất có cấu trúc, không ghi trực tiếp source, không tự chạy shell tùy ý. Controller mới là nơi kiểm tra lane, hash nền, loại file, secret, comment và bằng chứng check/review trước khi ghi hoặc commit.
 
+Controller ghi trạng thái vòng đời task và audit các thao tác. Lệnh `agent:loop` cũ chuyển sang controller mới; raw runner cũ từ chối chạy trực tiếp, chỉ giữ các export phục vụ kiểm thử. Không dùng raw runner để tránh policy hoặc gate.
+
 Các lệnh ở checkout gốc, đều đi qua RTK:
 
 ```powershell
@@ -58,6 +60,8 @@ Tối đa ba lần thử sửa cho một task. Cùng một lỗi lặp lại hai
 ## Giới hạn bảo vệ
 
 README và Git hooks giúp ghi nhớ hoặc chặn nhầm thao tác; chúng không phải ranh giới bảo mật của hệ điều hành và có thể bị bỏ qua. Cơ chế bảo vệ vận hành ở đây dựa vào subprocess chỉ đọc cùng patch broker kiểm soát đường ghi. Agent có shell không giới hạn dưới cùng tài khoản vẫn có thể vượt các quy ước đó. Nếu cần đối phó agent không tin cậy, dùng tài khoản OS hoặc container riêng, giới hạn mạng và bảo vệ Git common directory từ bên ngoài agent.
+
+Các check chạy trong worktree với biến môi trường credential đã loại bỏ, không sao chép dotenv; controller bảo vệ fingerprint lệnh và package manifest. Tuy vậy test có thể thực thi code vừa sửa. Những gate này không phải sandbox dành cho tiến trình thù địch; không đưa secret, dữ liệu hoặc quyền hệ thống vào môi trường kiểm tra.
 
 Không coi test pass cũ là kết quả mới. Không đọc `.env`, file tài khoản, credential store hoặc nội dung DB thật để làm context. Không đưa dự án vệ tinh AutoProfile Vault vào task JobTrack nếu chưa có yêu cầu và quyền truy cập riêng.
 
