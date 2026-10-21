@@ -1,0 +1,101 @@
+{
+  "kind": "adapter-probe-not-readiness-receipt",
+  "runId": "45c276be-5194-4f62-835d-af3fda0623c4",
+  "adapter": "jobtrack-docker-adapter-v1",
+  "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+  "base": "D:\\Long-term\\JobTrack-isolation-45c276be",
+  "projection": "D:/Long-term/JobTrack-isolation-45c276be/projection",
+  "scratch": "D:/Long-term/JobTrack-isolation-45c276be/scratch",
+  "manifest": [
+    {
+      "path": "apps/web/src/module.js",
+      "sha256": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29"
+    },
+    {
+      "path": "apps/web/src/panel.tsx",
+      "sha256": "fe36251e3bc82d8daf0368c59201dfa3edeea653b61cb4ae49ebeaf6eba8e05a"
+    },
+    {
+      "path": "packages/jobtrack-contract/src/index.ts",
+      "sha256": "80f6b7ee353ae1b73701b174ab0aa7deefdbc946b7005c83fcd7977493234708"
+    }
+  ],
+  "hostPaths": [
+    {
+      "hostPath": "D:/Project/Job_Application_Tracker",
+      "containerPath": "/mnt/d/Project/Job_Application_Tracker"
+    },
+    {
+      "hostPath": "D:/Project/Job_Application_Tracker/.git",
+      "containerPath": "/mnt/d/Project/Job_Application_Tracker/.git"
+    },
+    {
+      "hostPath": "D:/Project/Job_Application_Tracker/.agent-state",
+      "containerPath": "/mnt/d/Project/Job_Application_Tracker/.agent-state"
+    },
+    {
+      "hostPath": "D:/Project/Job_Application_Tracker/accounts.txt",
+      "containerPath": "/mnt/d/Project/Job_Application_Tracker/accounts.txt"
+    }
+  ],
+  "failure": null,
+  "observed": {
+    "projectionRead": {
+      "outcome": "allowed",
+      "files": 3,
+      "hashMatched": true
+    },
+    "scratchWrite": {
+      "outcome": "allowed",
+      "code": null
+    },
+    "projectionWrite": {
+      "outcome": "denied",
+      "code": "EROFS"
+    },
+    "hostPaths": [
+      {
+        "hostPath": "D:/Project/Job_Application_Tracker",
+        "containerPath": "/mnt/d/Project/Job_Application_Tracker",
+        "outcome": "absent",
+        "code": "ENOENT"
+      },
+      {
+        "hostPath": "D:/Project/Job_Application_Tracker/.git",
+        "containerPath": "/mnt/d/Project/Job_Application_Tracker/.git",
+        "outcome": "absent",
+        "code": "ENOENT"
+      },
+      {
+        "hostPath": "D:/Project/Job_Application_Tracker/.agent-state",
+        "containerPath": "/mnt/d/Project/Job_Application_Tracker/.agent-state",
+        "outcome": "absent",
+        "code": "ENOENT"
+      },
+      {
+        "hostPath": "D:/Project/Job_Application_Tracker/accounts.txt",
+        "containerPath": "/mnt/d/Project/Job_Application_Tracker/accounts.txt",
+        "outcome": "absent",
+        "code": "ENOENT"
+      }
+    ],
+    "hostWrite": {
+      "outcome": "absent",
+      "code": "ENOENT"
+    },
+    "liveness": [
+      {
+        "processId": "13",
+        "generation": "child",
+        "before": true,
+        "after": false
+      },
+      {
+        "processId": "20",
+        "generation": "grandchild",
+        "before": true,
+        "after": false
+      }
+    ]
+  }
+}
