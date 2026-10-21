@@ -66,6 +66,7 @@ test('the projection stages the declared files and verifies the copied bytes', (
   assert.match(staged.manifestHash, /^[a-f0-9]{64}$/);
   assert.throws(() => stageProjection({ files: ['apps/web/src/missing.js'], sourceRoot: worktree, destination, allowedRoot: root }), /source file is missing/);
   assert.throws(() => stageProjection({ files: [], sourceRoot: worktree, destination, allowedRoot: root }), /at least one file/);
+  assert.throws(() => stageProjection({ files: ['../outside.js'], sourceRoot: worktree, destination, allowedRoot: root }), /must live inside the worktree/);
 });
 
 test('the trusted binding is validated', () => {

@@ -26,6 +26,10 @@ export function stageProjection({ files, sourceRoot, destination, allowedRoot })
   const manifest = [];
   for (const file of files) {
     const source = join(resolve(sourceRoot), file);
+    const inside = relative(resolve(sourceRoot), source);
+    if (!inside || isAbsolute(inside) || inside.startsWith('..') || inside.includes(`..${sep}`)) {
+      throw Error(`Projection file must live inside the worktree: ${file}`);
+    }
     if (!existsSync(source)) throw Error(`Projection source file is missing: ${file}`);
     const target = join(root, file);
     mkdirSync(dirname(target), { recursive: true });

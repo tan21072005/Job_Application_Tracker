@@ -26,6 +26,12 @@ export function controlPlaneFiles(root) {
     for (const name of readdirSync(controlPlane).sort()) {
       if (/\.(mjs|json)$/.test(name)) files.push(`tools/agent-control/${name}`);
     }
+    const fixtures = join(controlPlane, 'fixtures');
+    if (existsSync(fixtures)) {
+      for (const name of readdirSync(fixtures).sort()) {
+        if (/\.(mjs|json)$/.test(name)) files.push(`tools/agent-control/fixtures/${name}`);
+      }
+    }
   }
   return files;
 }

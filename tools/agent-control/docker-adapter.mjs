@@ -338,6 +338,7 @@ export function buildLaunchArgs(options) {
   const { image, runId, projection, scratch, fixtures, candidate, command, mode = 'run', workdir = SCRATCH_TARGET, role = 'worker', env = {} } = options;
   assertPinnedImage(image);
   if (!Array.isArray(command) || !command.length) throw Error('Adapter launch needs a command.');
+  assertAllowedLaunchEnv(env);
   const args = [
     mode,
     ...(mode === 'run' ? ['--rm'] : []),
