@@ -18,6 +18,15 @@ const checks = {
   'test:web': ['npm', ['--prefix', 'apps/web', 'run', 'test']],
   'test:extension': ['node', ['--test', 'packages/jobtrack-extension/extension.test.mjs']]
 };
+const checkWorkspaces = {
+  'build:api': ['apps/api'],
+  'build:web': ['apps/web'],
+  'build:mcp': ['packages/jobtrack-mcp'],
+  'check:contract': ['packages/jobtrack-contract', 'packages/jobtrack-contract/package.json'],
+  'test:web': ['apps/web'],
+  'test:extension': ['packages/jobtrack-extension']
+};
+const repositoryManifests = ['package.json', 'package-lock.json'];
 const identity = /^[a-z][a-z0-9-]{1,47}$/;
 
 export class AgentController {
@@ -374,7 +383,7 @@ export class AgentController {
       const [command, args] = checks[name];
       let result;
       if (this.adapters.boundary) {
-        const outcome = await this.adapters.boundary.run(state, { purpose: 'check-runner', check: name, command: [command, ...args], files: this.changes(state), sourceDigest: digest });
+        const outcome = await this.adapters.boundary.run(state, { purpose: 'check-runner', check: name, command: [command, ...args], files: this.checkScope(state, name), sourceDigest: digest });
         const launched = outcome.launched ?? {};
         result = {
           code: launched.status ?? 1,
@@ -396,6 +405,15 @@ export class AgentController {
   }
 
   check(id) { return this.locked(id, () => this.checkUnlocked(this.load(id))); }
+
+  checkScope(state, name) {
+    const roots = checkWorkspaces[name] ?? [];
+    const tracked = roots.length
+      ? this.git(state.worktree, ['ls-files', '-z', '--', ...roots]).split('\0').filter(Boolean)
+      : [];
+    const manifests = this.git(state.worktree, ['ls-files', '-z', '--', ...repositoryManifests]).split('\0').filter(Boolean);
+    return [...new Set([...this.manifestFiles(state), ...tracked, ...manifests])];
+  }
 
   manifestFiles(state) {
     const ownedFiles = this.git(state.worktree, ['ls-files', '-z', '--', ...FEATURES[state.feature]]).split('\0').filter(Boolean);

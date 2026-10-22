@@ -188,7 +188,7 @@ test('a fixed check runs against the staged projection and passes', { skip: dock
       'host-repo-read': denied[0],
       'host-home-read': denied[1],
       'common-git-read': `${denied[0]}/.git`,
-      'control-state-read': `${denied[0]}/.agent-state`,
+      'control-state-read': `${repositoryRoot.replaceAll('\\', '/')}/tools`,
       'host-credential-read': credentialFile.replaceAll('\\', '/'),
       'projection-write': projection.replaceAll('\\', '/'),
       'host-write': denied[0]
@@ -272,7 +272,7 @@ test('the boundary completes a run against the real issuer and the real adapter 
       'host-repo-read': denied[0],
       'host-home-read': denied[1],
       'common-git-read': `${denied[0]}/.git`,
-      'control-state-read': `${denied[0]}/.agent-state`,
+      'control-state-read': `${repositoryRoot.replaceAll('\\', '/')}/tools`,
       'host-credential-read': credentialFile.replaceAll('\\', '/'),
       'projection-write': projection.replaceAll('\\', '/'),
       'host-write': denied[0]

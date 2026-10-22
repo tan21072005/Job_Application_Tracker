@@ -2,11 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync, linkSync, statSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { createServer } from 'node:http';
 import { AgentController } from './controller.mjs';
 import { signReadinessReceipt } from './readiness.mjs';
+import { createDockerAdapter, DEFAULT_IMAGE } from './docker-adapter.mjs';
+import { createReadinessIssuer, dockerBinaryHash } from './issuer.mjs';
+import { createExecutionBoundary } from './execution-boundary.mjs';
+import { controlPlaneFingerprint, probeProgramHash } from './fingerprint.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
 const readinessKey = 'k'.repeat(48);
@@ -47,13 +53,16 @@ function setup(adapters = {}, preserveConfiguredRuntime = false) {
   write(root, 'package.json', '{}\n');
   write(root, 'tools/agent-control/test-config.json', '{}\n');
   write(root, 'apps/web/src/existing.js', 'export const version = 1;\n');
+  write(root, 'apps/web/package.json', JSON.stringify({ name: 'fixture-web', private: true, scripts: { test: 'node -e "process.stdout.write(\'CONTAINER-CHECK-PASSED\')"' } }, null, 2) + '\n');
   write(root, 'apps/api/src/existing.js', 'export const version = 1;\n');
+  write(root, 'packages/jobtrack-extension/extension.test.mjs', "import test from 'node:test';\nimport assert from 'node:assert/strict';\n\ntest('the extension fixture passes', () => { assert.equal(1, 1); });\n");
   write(root, '.agent-state/readiness/evidence.json', 'evidence');
   write(root, 'codex.exe', 'fixture runtime never executed');
+  write(root, 'accounts.txt', 'fixture only\n');
   git(root, ['init', '-b', 'main']);
   git(root, ['config', 'user.name', 'Agent Fixture']);
   git(root, ['config', 'user.email', 'agent-fixture@example.test']);
-  git(root, ['add', '--', '.gitignore', 'package.json', 'tools', 'apps']);
+  git(root, ['add', '--', '.gitignore', 'package.json', 'tools', 'apps', 'packages', 'accounts.txt']);
   git(root, ['commit', '-m', 'fixture baseline']);
   const controller = new AgentController(root, adapters);
   if (!preserveConfiguredRuntime) controller.codexCommand = join(root, 'codex.exe');
@@ -204,6 +213,101 @@ test('a failing execution boundary blocks the task and never falls back to the h
   assert.equal(result.status, 'blocked');
   assert.match(result.error, /container refused the launch/);
   assert.equal(calls.filter(entry => entry.startsWith('host:')).length, 0);
+});
+
+const dockerReachable = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], { encoding: 'utf8', timeout: 30_000, windowsHide: true }).status === 0;
+
+test('the controller drives a fixed check through the real boundary in a real container', { skip: dockerReachable ? false : 'Docker is not reachable in this environment' }, async () => {
+  const controlPlaneRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+  const runRoot = join('D:/Long-term', `jobtrack-controller-live-${Date.now()}`);
+  const projection = join(runRoot, 'projection');
+  const scratch = join(runRoot, 'scratch');
+  const egressServer = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end('{}');
+  });
+  let outcome = null;
+  let hostCheckUsed = false;
+  try {
+    mkdirSync(projection, { recursive: true });
+    mkdirSync(scratch, { recursive: true });
+    await new Promise(done => egressServer.listen(0, '0.0.0.0', done));
+    const egressPort = egressServer.address().port;
+    const c = setup({
+      check: async () => { hostCheckUsed = true; return { code: 0, timedOut: false, output: 'host check', error: '' }; },
+      worker: async role => (role === 'coder'
+        ? response('changes', [{ path: 'apps/web/src/new.js', beforeSha256: null, content: 'export const value = 2;\n' }])
+        : response('plan')),
+      workerCommand: ['node', 'worker.mjs'],
+      boundary: { run: async (state, request) => (request.purpose === 'check-runner'
+        ? { launched: { status: 0, stdout: 'stub check', stderr: '' } }
+        : { launched: { status: 0, stdout: JSON.stringify({ type: 'item.completed', item: { type: 'agent_message', text: JSON.stringify(response('plan')) } }), stderr: '' } }) }
+    });
+    const taskState = c.prepare(task('web-one', 'web'));
+    c.apply(taskState.id, [{ path: 'apps/web/src/new.js', beforeSha256: null, content: 'export const value = 2;\n' }]);
+    const fixtureRoot = c.root;
+    const home = process.env.USERPROFILE ?? fixtureRoot;
+    const catalog = {
+      taskId: 'web-one',
+      feature: 'web',
+      base: 'base-sha',
+      sourceDigest: '1'.repeat(64),
+      projectionManifestHash: '2'.repeat(64),
+      policyHash: controlPlaneFingerprint(controlPlaneRoot),
+      environmentHash: '4'.repeat(64),
+      purpose: 'check-runner',
+      profileHash: '5'.repeat(64),
+      adapterId: 'jobtrack-docker-adapter-v1',
+      imageDigest: DEFAULT_IMAGE.split('@sha256:')[1],
+      cliHash: '7'.repeat(64),
+      nodeHash: '8'.repeat(64),
+      verifierImplementationHash: controlPlaneFingerprint(controlPlaneRoot),
+      modelEndpoint: 'http://127.0.0.1:9/v1',
+      generalEgressEndpoint: `http://${process.env.JT_EGRESS_HOST ?? '192.168.1.251'}:${egressPort}/general`,
+      deniedHostPaths: {
+        'host-repo-read': fixtureRoot.replaceAll('\\', '/'),
+        'host-home-read': home.replaceAll('\\', '/'),
+        'control-plane-root': controlPlaneRoot.replaceAll('\\', '/'),
+        'common-git-read': `${fixtureRoot.replaceAll('\\', '/')}/.git`,
+        'control-state-read': `${fixtureRoot.replaceAll('\\', '/')}/.agent-state`,
+        'host-credential-read': `${fixtureRoot.replaceAll('\\', '/')}/accounts.txt`,
+        'projection-write': projection.replaceAll('\\', '/'),
+        'host-write': fixtureRoot.replaceAll('\\', '/')
+      },
+      mountSources: { projection: projection.replaceAll('\\', '/'), scratch: scratch.replaceAll('\\', '/') },
+      dockerBinaryHash: dockerBinaryHash('docker'),
+      probeProgramHash: probeProgramHash(controlPlaneRoot)
+    };
+    const adapter = createDockerAdapter({ repo: controlPlaneRoot, runRoot, image: DEFAULT_IMAGE, deniedPaths: [fixtureRoot, home] });
+    const issuer = createReadinessIssuer({
+      catalog,
+      key: 'k'.repeat(48),
+      adapterRoot: controlPlaneRoot,
+      evidenceRoot: join(runRoot, 'evidence'),
+      contextDirectory: join(runRoot, 'context'),
+      adapter,
+      broker: { probe: async () => ({ connected: true }) }
+    });
+    const boundary = createExecutionBoundary({
+      context: (state, request) => ({ ...catalog, taskId: state.id, purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
+      projection: { allowedRoot: resolve(runRoot), destinationFor: () => projection, scratchFor: () => scratch },
+      adapter,
+      issuer
+    });
+    c.adapters.boundary = boundary;
+    c.adapters.boundaryReceipt = (state, request) => boundary.receiptFor(state, request);
+    c.adapters.readinessVerify = async receipt => issuer.verify(receipt);
+    outcome = await c.check(taskState.id);
+  } finally {
+    egressServer.closeAllConnections?.();
+    egressServer.close();
+    rmSync(runRoot, { recursive: true, force: true });
+  }
+  assert.equal(hostCheckUsed, false, 'the host check must never run when the boundary owns it');
+  assert.equal(outcome.status, 'checked', outcome.error);
+  assert.equal(outcome.checkResult.passed, true, JSON.stringify(outcome.checkResult.results));
+  assert.match(outcome.checkResult.results[0].output, /CONTAINER-CHECK-PASSED/);
+  assert.equal(outcome.readiness.payloadHash.length > 0, true);
 });
 
 test('child execution never inherits the controller signing key', async () => {

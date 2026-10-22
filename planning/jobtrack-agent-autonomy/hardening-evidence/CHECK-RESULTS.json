@@ -1,6 +1,6 @@
 {
   "kind": "fixture-check-record-not-readiness-receipt",
-  "capturedAt": "2026-10-21T21:15:32.015Z",
+  "capturedAt": "2026-10-22T06:16:48.049Z",
   "note": "The control plane fixture record of this increment. Every digest below is the executed file with the line endings normalized to LF, exactly as the control plane fingerprint hashes them, and every count is parsed from the archived log that the record hashes. A fixture record is never a readiness receipt and no live worker ran.",
   "sourceSha256": {
     "apps/api/package.json": "3414f33697196d5c408bb998b6c0b74dc5b08ee1fe5bca264ec8d4171f55fe40",
@@ -13,12 +13,12 @@
     "tools/agent-control/check-profile.test.mjs": "e2a6210944b346684f40f5155251f298bd777021df01f126d30ca7a59fcc1a0d",
     "tools/agent-control/claude-hook.mjs": "6ed5af70c9c8e94608b89201fa8cd9040a5725d09a3886886d094531618381d5",
     "tools/agent-control/cli.mjs": "593645ca8c3270efaab2dea6d3c84393b3e980af9825189529854e9172c2e844",
-    "tools/agent-control/controller.mjs": "3c586d33a6cba34e085cd170847a32ea4b5a1b494eced5d70f99366aca89b42f",
-    "tools/agent-control/controller.test.mjs": "48f9d622605aef6d97b2e3e17c8b3706ff20f8ae099da6fb753f6c86e892fd82",
+    "tools/agent-control/controller.mjs": "c183c236595026ce7e5249a2f1ad7e93d4b3945b668ecc087c18d4d6e79a2a4c",
+    "tools/agent-control/controller.test.mjs": "f1dec9e0c3dba203196e8f1513fc42a4020a8c6d1d40428de7aed0315e606afa",
     "tools/agent-control/docker-adapter.mjs": "60762f20ed86b8367e4d2396bedef97401fe76cac0632220fa0f7baf752e07ce",
     "tools/agent-control/docker-adapter.test.mjs": "faef6b3719366a964298ca4f44be7355b0c0b3cfff0bbeb5fd726bb886fbed7c",
     "tools/agent-control/execution-boundary.mjs": "484fed8cd68090f91363ce4ba6f21944032f0d8f0b40ba375ffc4b8751a9aa72",
-    "tools/agent-control/execution-boundary.test.mjs": "3f7af81357d3fc4f2b6ce4114c6a909463daabdadf66bbeeac3360a6e5058bae",
+    "tools/agent-control/execution-boundary.test.mjs": "bcdfd1a2bfacd203e7efb8ce6c0f108d83547af571d67359b33ad97202704499",
     "tools/agent-control/fingerprint.mjs": "c914efb7c06796487eddaf0ce74da69de9054d1d9d46e839743e52101fb1090d",
     "tools/agent-control/fixtures/fake-docker.mjs": "2646470370f7dc767015ad749d28882e7a4ae38a8770b5d4a7505cac8d36abeb",
     "tools/agent-control/hooks.test.mjs": "03110d6c935d79819717b98dd0e1feae369bde8b2fcdb16a6479e9acf7c2a92b",
@@ -58,16 +58,16 @@
       ],
       "exitCode": 0,
       "counts": {
-        "tests": 209,
-        "pass": 209,
+        "tests": 210,
+        "pass": 210,
         "fail": 0,
         "cancelled": 0,
         "skipped": 0,
         "todo": 0
       },
       "log": "agents-fixture-tests.txt",
-      "logSha256": "90e1601032956101fc11077a06501593842e316bb349b7b7691023480dbc4669",
-      "logBytes": 15851
+      "logSha256": "ad9756c37e36f503bd80870cf483a5932654d82713c768914bf7033030f80e65",
+      "logBytes": 15951
     },
     {
       "command": [
@@ -87,8 +87,8 @@
         "todo": 0
       },
       "log": "verdict-fixture-tests.txt",
-      "logSha256": "332a26fe1416000c9f40842794f1639c419cd4b9ee87543ed530b0fe7dace563",
-      "logBytes": 1233
+      "logSha256": "c2ab253ef8b86fb89c6115b17e4d0da3f7bf01ec79faf549cf3d230b04aca60a",
+      "logBytes": 1235
     }
   ],
   "readinessReceiptIssued": false,
