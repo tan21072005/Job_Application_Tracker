@@ -3,11 +3,32 @@ import assert from 'node:assert/strict';
 import { Pool } from 'pg';
 import { app } from './server.ts';
 import { createServer, type Server } from 'node:http';
+import { signPaymentPayload } from './security/payment-signature.ts';
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 if (!testDatabaseUrl) throw new Error('TEST_DATABASE_URL required for test environment.');
 
 const pool = new Pool({ connectionString: testDatabaseUrl, max: 5 });
+
+const previousWebhookSecret = process.env.PAYMENT_WEBHOOK_SECRET;
+const webhookSecret = previousWebhookSecret ?? 'c13_universal_datasets_webhook_secret_0123456789';
+process.env.PAYMENT_WEBHOOK_SECRET = webhookSecret;
+
+const previousPaymentMode = process.env.PAYMENT_MODE;
+process.env.PAYMENT_MODE = 'test';
+
+function signedWebhook(payload: unknown) {
+  const body = JSON.stringify(payload);
+  const timestamp = Date.now();
+  return {
+    body,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-JobTrack-Timestamp': String(timestamp),
+      'X-JobTrack-Signature': signPaymentPayload({ secret: webhookSecret, timestamp, rawBody: body })
+    }
+  };
+}
 
 test('Universal Datasets, Extension Pairing & Payment Webhook Flow', async () => {
   let server!: Server;
@@ -178,33 +199,37 @@ test('Universal Datasets, Extension Pairing & Payment Webhook Flow', async () =>
     const transferCode = checkoutData.transferCode;
 
     // Simulate external bank webhook to /api/pro/webhook
+    const webhookRequest = signedWebhook({
+      transferCode,
+      amount: 249000,
+      content: `Thanh toan don hang ${transferCode} tai Napas`
+    });
     const webhookRes = await fetch(`${base}/api/pro/webhook`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transferCode,
-        amount: 249000,
-        content: `Thanh toan don hang ${transferCode} tai Napas`
-      })
+      headers: webhookRequest.headers,
+      body: webhookRequest.body
     });
     assert.equal(webhookRes.status, 200);
     const webhookData = await webhookRes.json();
     assert.equal(webhookData.success, true);
     assert.equal(webhookData.plan, 'quarterly');
+    assert.equal(webhookData.replayed, false);
 
     // Repeated webhook should be idempotent
+    const repeatRequest = signedWebhook({
+      transferCode,
+      amount: 249000,
+      content: `Thanh toan ${transferCode}`
+    });
     const repeatWebhook = await fetch(`${base}/api/pro/webhook`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transferCode,
-        amount: 249000,
-        content: `Thanh toan ${transferCode}`
-      })
+      headers: repeatRequest.headers,
+      body: repeatRequest.body
     });
     assert.equal(repeatWebhook.status, 200);
     const repeatData = await repeatWebhook.json();
     assert.equal(repeatData.success, true);
+    assert.equal(repeatData.replayed, true);
 
     // Verify user is now Pro
     const proCheck = await fetch(`${base}/api/auth/extension/status`, {
@@ -231,5 +256,9 @@ test('Universal Datasets, Extension Pairing & Payment Webhook Flow', async () =>
 });
 
 test.after(async () => {
+  if (previousWebhookSecret === undefined) delete process.env.PAYMENT_WEBHOOK_SECRET;
+  else process.env.PAYMENT_WEBHOOK_SECRET = previousWebhookSecret;
+  if (previousPaymentMode === undefined) delete process.env.PAYMENT_MODE;
+  else process.env.PAYMENT_MODE = previousPaymentMode;
   await pool.end();
 });

@@ -1,6 +1,8 @@
-import { Pool } from 'pg';
-import { randomUUID } from 'node:crypto';
+import { Pool, type PoolClient } from 'pg';
+import { randomBytes, randomUUID } from 'node:crypto';
 import type { CandidateProfile } from './candidate-profile.ts';
+import { fail } from './jobtrack-service.ts';
+import { verifyPaymentSignature } from '../security/payment-signature.ts';
 
 export interface AtsMatchResult {
   score: number;
@@ -27,18 +29,99 @@ export interface ProStatus {
   expiresAt: string | null;
 }
 
+export type ProPlan = 'monthly' | 'quarterly' | 'yearly';
+
+export const PLAN_PRICES: Readonly<Record<ProPlan, number>> = Object.freeze({
+  monthly: 99000,
+  quarterly: 249000,
+  yearly: 799000
+});
+
+export const PLAN_DURATION_DAYS: Readonly<Record<ProPlan, number>> = Object.freeze({
+  monthly: 30,
+  quarterly: 90,
+  yearly: 365
+});
+
+export const PAYMENT_MODE_ENV = 'PAYMENT_MODE';
+export const PAYMENT_TEST_MODE = 'test';
+const PAYMENT_TEST_NOTICE =
+  'Thanh toán đang ở chế độ thử nghiệm: hệ thống chưa kết nối cổng thanh toán và chưa có thông tin nhận tiền. Gói Pro chỉ được kích hoạt bởi webhook thanh toán đã ký.';
+const TRANSFER_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const TRANSFER_CODE_PATTERN = /^JTPRO[A-Z0-9]{6}$/;
+const TRANSFER_CODE_SEARCH = /\bJTPRO[A-Z0-9]{6}\b/;
+const AMOUNT_PATTERN = /^(\d{1,9}|\d{1,3}[.,]\d{3}|\d+[.,]\d{1,2})$/;
+const GROUPED_AMOUNT_PATTERN = /^\d{1,3}[.,]\d{3}$/;
+const DECIMAL_AMOUNT_PATTERN = /^\d+[.,]\d{1,2}$/;
+
+export function normalizeProPlan(value: unknown): ProPlan {
+  return value === 'quarterly' || value === 'yearly' ? value : 'monthly';
+}
+
+export function isPaymentTestMode(value: string | undefined = process.env[PAYMENT_MODE_ENV]): boolean {
+  return value === PAYMENT_TEST_MODE;
+}
+
+function createTransferCode(): string {
+  const bytes = randomBytes(6);
+  let suffix = '';
+  for (const byte of bytes) {
+    suffix += TRANSFER_ALPHABET[byte % TRANSFER_ALPHABET.length];
+  }
+  return `JTPRO${suffix}`;
+}
+
+function readTransferCode(payload: Record<string, unknown>): string {
+  const direct = typeof payload.transferCode === 'string' ? payload.transferCode.trim().toUpperCase() : '';
+  if (TRANSFER_CODE_PATTERN.test(direct)) return direct;
+  const content = typeof payload.content === 'string'
+    ? payload.content
+    : typeof payload.description === 'string'
+      ? payload.description
+      : '';
+  const match = content.toUpperCase().match(TRANSFER_CODE_SEARCH);
+  return match ? match[0] : '';
+}
+
+function readWebhookAmount(value: unknown): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? Math.trunc(value) : NaN;
+  if (typeof value === 'string') {
+    const text = value.trim();
+    if (!AMOUNT_PATTERN.test(text)) return NaN;
+    const normalized = GROUPED_AMOUNT_PATTERN.test(text)
+      ? text.replace(/[.,]/g, '')
+      : DECIMAL_AMOUNT_PATTERN.test(text)
+        ? text.replace(/[.,]/, '.')
+        : text;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? Math.trunc(parsed) : NaN;
+  }
+  return NaN;
+}
+
+
 export interface CheckoutResult {
   orderId: string;
-  plan: 'monthly' | 'quarterly' | 'yearly';
+  plan: ProPlan;
   amount: number;
   currency: string;
   transferCode: string;
-  vietQrUrl: string;
-  bankName: string;
-  accountNo: string;
-  accountName: string;
+  mode: 'test';
+  testNotice: string;
+  bankName: null;
+  accountNo: null;
+  accountName: null;
+  vietQrUrl: null;
   instructions: string;
 }
+
+export interface PaymentWebhookResult {
+  success: true;
+  replayed: boolean;
+  orderId: string;
+  plan: ProPlan;
+}
+
 
 // Từ điển kỹ năng đa ngành (Công nghệ, Tài chính - Kế toán, Quản lý, Kỹ thuật - Môi trường)
 const COMMON_SKILL_KEYWORDS = [
@@ -234,124 +317,143 @@ export class AiProService {
     };
   }
 
-  async createCheckout(
-    userId: string,
-    plan: 'monthly' | 'quarterly' | 'yearly' = 'monthly'
-  ): Promise<CheckoutResult> {
-    const prices: Record<string, number> = {
-      monthly: 99000,
-      quarterly: 249000,
-      yearly: 799000
-    };
+  async createCheckout(userId: string, plan: ProPlan = 'monthly'): Promise<CheckoutResult> {
+    if (!isPaymentTestMode()) {
+      fail(
+        503,
+        'Thanh toán thật chưa được mở trong phiên bản này. Vui lòng thử lại khi cổng thanh toán được bật.',
+        'live_payments_unavailable'
+      );
+    }
 
-    const amount = prices[plan] || 99000;
-    const transferCode = `JTPRO${randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase()}`;
+    const resolvedPlan = normalizeProPlan(plan);
+    const amount = PLAN_PRICES[resolvedPlan];
+    const transferCode = createTransferCode();
     const orderId = randomUUID();
 
     await this.pool.query(
       `INSERT INTO payment_orders (id, user_id, plan, amount, currency, transfer_code, status, payment_method)
        VALUES ($1, $2, $3, $4, 'VND', $5, 'pending', 'vietqr')`,
-      [orderId, userId, plan, amount, transferCode]
+      [orderId, userId, resolvedPlan, amount, transferCode]
     );
-
-    // Chuẩn VietQR tĩnh (Ngân hàng MB Bank / Vietcombank)
-    const bankBin = 'MB'; // MB Bank
-    const accountNo = '0987654321';
-    const accountName = 'JOBTRACK PRO';
-    const vietQrUrl = `https://img.vietqr.io/image/${bankBin}-${accountNo}-compact2.png?amount=${amount}&addInfo=${transferCode}&accountName=${encodeURIComponent(accountName)}`;
 
     return {
       orderId,
-      plan,
+      plan: resolvedPlan,
       amount,
       currency: 'VND',
       transferCode,
-      vietQrUrl,
-      bankName: 'Ngân hàng Quân Đội (MB Bank)',
-      accountNo,
-      accountName,
-      instructions: `Quét mã QR bằng ứng dụng ngân hàng bất kỳ. Vui lòng giữ nguyên nội dung chuyển khoản là "${transferCode}" để hệ thống tự động kích hoạt gói Pro.`
+      mode: 'test',
+      testNotice: PAYMENT_TEST_NOTICE,
+      bankName: null,
+      accountNo: null,
+      accountName: null,
+      vietQrUrl: null,
+      instructions: `Đơn hàng ${transferCode} đã được tạo ở chế độ thử nghiệm với số tiền ${amount} VND. Gói Pro chỉ được kích hoạt sau khi máy chủ nhận một webhook thanh toán hợp lệ có chữ ký.`
     };
   }
 
-  async activatePro(userId: string, durationDays = 30, tier: 'pro' | 'elite' = 'pro'): Promise<ProStatus> {
-    const res = await this.pool.query(
-      `INSERT INTO user_memberships (user_id, tier, pro_expires_at, updated_at)
-       VALUES ($1, $3, CURRENT_TIMESTAMP + ($2 || ' days')::interval, CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id) DO UPDATE SET
-         tier = EXCLUDED.tier,
-         pro_expires_at = GREATEST(CURRENT_TIMESTAMP, COALESCE(user_memberships.pro_expires_at, CURRENT_TIMESTAMP)) + ($2 || ' days')::interval,
-         updated_at = CURRENT_TIMESTAMP
-       RETURNING pro_expires_at`,
-      [userId, durationDays, tier]
-    );
-
-    const expiresAt = res.rows[0]?.pro_expires_at ? new Date(res.rows[0].pro_expires_at).toISOString() : null;
-
-    return {
-      tier,
-      isPro: true,
-      expiresAt
-    };
+  private async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await fn(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
-  async handlePaymentWebhook(payload: {
-    transferCode?: string;
-    content?: string;
-    amount: number;
-    gateway?: string;
-  }): Promise<{ success: boolean; message: string; orderId?: string; plan?: string }> {
-    let code = (payload.transferCode || '').trim().toUpperCase();
-    if (!code && payload.content) {
-      const match = payload.content.toUpperCase().match(/JTPRO[A-Z0-9]{6}/);
-      if (match) code = match[0];
+  async handlePaymentWebhook(input: {
+    rawBody: Buffer;
+    signature?: string;
+    timestamp?: string;
+    payload: Record<string, unknown>;
+  }): Promise<PaymentWebhookResult> {
+    const verification = verifyPaymentSignature({
+      secret: process.env.PAYMENT_WEBHOOK_SECRET,
+      signature: input.signature,
+      timestamp: input.timestamp,
+      rawBody: input.rawBody
+    });
+
+    if (!verification.ok) {
+      if (verification.reason === 'secret_not_configured' || verification.reason === 'secret_too_short') {
+        fail(503, 'Webhook thanh toán chưa được cấu hình trên máy chủ.', 'payment_webhook_not_configured');
+      }
+      if (verification.reason === 'stale_timestamp') {
+        fail(400, 'Dấu thời gian của webhook đã quá cũ.', 'stale_webhook');
+      }
+      fail(401, 'Chữ ký webhook thanh toán không hợp lệ.', 'invalid_webhook_signature');
     }
 
-    if (!code) {
-      return { success: false, message: 'Không tìm thấy mã chuyển khoản JTPRO trong nội dung giao dịch.' };
+    const transferCode = readTransferCode(input.payload);
+    if (!transferCode) {
+      fail(404, 'Không tìm thấy đơn hàng cho giao dịch này.', 'order_not_found');
     }
+    const paidAmount = readWebhookAmount(input.payload.amount);
 
-    const orderRes = await this.pool.query(
-      'SELECT id, user_id, plan, amount, status FROM payment_orders WHERE transfer_code = $1',
-      [code]
-    );
+    return this.transaction(async client => {
+      const orderRes = await client.query<{
+        id: string;
+        user_id: string;
+        plan: string;
+        amount: number;
+        status: string;
+      }>(
+        'SELECT id, user_id, plan, amount, status FROM payment_orders WHERE transfer_code = $1 FOR UPDATE',
+        [transferCode]
+      );
 
-    if (orderRes.rowCount === 0) {
-      return { success: false, message: `Không tìm thấy đơn hàng với mã chuyển khoản ${code}.` };
-    }
+      if (!orderRes.rowCount) {
+        fail(404, 'Không tìm thấy đơn hàng cho giao dịch này.', 'order_not_found');
+      }
 
-    const order = orderRes.rows[0];
+      const order = orderRes.rows[0];
+      if (order.status === 'cancelled') {
+        fail(409, 'Đơn hàng này đã bị hủy nên không thể kích hoạt gói Pro.', 'order_cancelled');
+      }
 
-    // Idempotency: if already completed, do not double-activate
-    if (order.status === 'completed') {
+      if (!Number.isFinite(paidAmount) || paidAmount < Number(order.amount)) {
+        fail(400, `Số tiền thanh toán (${paidAmount} VND) chưa đủ cho gói (${order.amount} VND).`, 'amount_mismatch');
+      }
+
+      const plan = normalizeProPlan(order.plan);
+
+      if (order.status !== 'pending') {
+        return {
+          success: true,
+          replayed: true,
+          orderId: order.id,
+          plan
+        };
+      }
+
+      await client.query(
+        'UPDATE payment_orders SET status = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2',
+        ['completed', order.id]
+      );
+
+      await client.query(
+        `INSERT INTO user_memberships (user_id, tier, pro_expires_at, updated_at)
+         VALUES ($1, 'pro', CURRENT_TIMESTAMP + ($2 || ' days')::interval, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id) DO UPDATE SET
+           tier = 'pro',
+           pro_expires_at = GREATEST(CURRENT_TIMESTAMP, COALESCE(user_memberships.pro_expires_at, CURRENT_TIMESTAMP)) + ($2 || ' days')::interval,
+           updated_at = CURRENT_TIMESTAMP`,
+        [order.user_id, String(PLAN_DURATION_DAYS[plan])]
+      );
+
       return {
         success: true,
-        message: 'Giao dịch đã được ghi nhận trước đó.',
+        replayed: false,
         orderId: order.id,
-        plan: order.plan
+        plan
       };
-    }
-
-    if (payload.amount < order.amount) {
-      return {
-        success: false,
-        message: `Số tiền thanh toán (${payload.amount} VND) chưa đủ cho gói (${order.amount} VND).`
-      };
-    }
-
-    await this.pool.query(
-      'UPDATE payment_orders SET status = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2',
-      ['completed', order.id]
-    );
-
-    const durationDays = order.plan === 'yearly' ? 365 : order.plan === 'quarterly' ? 90 : 30;
-    await this.activatePro(order.user_id, durationDays, 'pro');
-
-    return {
-      success: true,
-      message: `Đã tự động kích hoạt gói ${order.plan} cho người dùng.`,
-      orderId: order.id,
-      plan: order.plan
-    };
+    });
   }
 }

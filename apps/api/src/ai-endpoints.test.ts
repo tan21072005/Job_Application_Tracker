@@ -11,10 +11,15 @@ if (!testDatabaseUrl) throw new Error('TEST_DATABASE_URL required for test envir
 const pool = new Pool({ connectionString: testDatabaseUrl, max: 4 });
 const testUsers: string[] = [];
 
+const previousPaymentMode = process.env.PAYMENT_MODE;
+process.env.PAYMENT_MODE = 'test';
+
 test.after(async () => {
   for (const id of testUsers) {
     await pool.query('DELETE FROM users WHERE id=$1', [id]);
   }
+  if (previousPaymentMode === undefined) delete process.env.PAYMENT_MODE;
+  else process.env.PAYMENT_MODE = previousPaymentMode;
   await pool.end();
 });
 
@@ -193,19 +198,38 @@ test('AI Endpoints: grants management, MCP over HTTP, import-url, and chat BFF',
     assert.equal(checkoutRes.status, 200);
     const checkoutData = await checkoutRes.json();
     assert.equal(checkoutData.amount, 99000);
-    assert.ok(checkoutData.vietQrUrl.includes('img.vietqr.io'));
-    assert.ok(checkoutData.transferCode.startsWith('JTPRO'));
+    assert.equal(checkoutData.plan, 'monthly');
+    assert.equal(checkoutData.currency, 'VND');
+    assert.equal(checkoutData.mode, 'test');
+    assert.match(checkoutData.transferCode, /^JTPRO[A-Z0-9]{6}$/);
+    assert.equal(typeof checkoutData.testNotice, 'string');
+    assert.ok(checkoutData.testNotice.length > 20);
+    assert.equal(checkoutData.bankName, null);
+    assert.equal(checkoutData.accountNo, null);
+    assert.equal(checkoutData.accountName, null);
+    assert.equal(checkoutData.vietQrUrl, null);
+    assert.ok(checkoutData.instructions.includes(checkoutData.transferCode));
+    const serializedCheckout = JSON.stringify(checkoutData);
+    assert.equal(serializedCheckout.includes('img.vietqr.io'), false);
+    assert.equal(/MB Bank|Vietcombank|Ngân hàng|0987654321/i.test(serializedCheckout), false);
 
-    // 7e. Activate Pro
     const actRes = await fetch(`${base}/api/pro/activate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${grant.token}` },
       body: JSON.stringify({ plan: 'monthly' })
     });
-    assert.equal(actRes.status, 200);
+    assert.equal(actRes.status, 403);
     const actData = await actRes.json();
-    assert.equal(actData.tier, 'pro');
-    assert.equal(actData.isPro, true);
+    assert.equal(actData.code, 'activation_requires_payment');
+
+    const statusAfterActivate = await fetch(`${base}/api/pro/status`, {
+      headers: { 'Cookie': cookie }
+    });
+    assert.equal(statusAfterActivate.status, 200);
+    const proStatus = await statusAfterActivate.json();
+    assert.equal(proStatus.tier, 'free');
+    assert.equal(proStatus.isPro, false);
+    assert.equal(proStatus.expiresAt, null);
 
     // 8. Revoke grant
     const revokeRes = await fetch(`${base}/api/ai/grants/${grant.id}`, {

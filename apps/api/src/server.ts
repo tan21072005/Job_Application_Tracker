@@ -38,7 +38,7 @@ import { resolveBearerGrant, resolveGrantIdentity } from './security/grant-resol
 import { fetchPageContent, extractJobDetails } from './services/url-fetcher.ts';
 import { SubscriptionCrawlerService } from './services/subscription-crawler.ts';
 import { CandidateProfileService } from './services/candidate-profile.ts';
-import { AiProService } from './services/ai-pro-service.ts';
+import { AiProService, normalizeProPlan } from './services/ai-pro-service.ts';
 import { DatasetService } from './services/dataset-service.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -102,7 +102,12 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '32kb' }));
+app.use(express.json({
+  limit: '32kb',
+  verify: (req, _res, buffer) => {
+    (req as RawBodyRequest).rawBody = Buffer.from(buffer);
+  }
+}));
 
 const str = (value: unknown, max: number, field: string, required = false): string => {
   if (typeof value !== 'string' || value.length > max || (required && !value.trim())) {
@@ -120,6 +125,7 @@ const bodyObject = (body: unknown): Record<string, unknown> =>
     : fail(422, 'Nội dung yêu cầu chưa hợp lệ.');
 
 type SessionRequest = Request & { userId: string; sessionId: string; requestId: string };
+type RawBodyRequest = Request & { rawBody?: Buffer };
 
 async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
@@ -925,28 +931,15 @@ app.post('/api/pro/checkout', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
     const b = bodyObject(req.body);
-    const plan = (b.plan === 'quarterly' || b.plan === 'yearly') ? b.plan : 'monthly';
-    const checkout = await aiProService.createCheckout(userId, plan);
+    const checkout = await aiProService.createCheckout(userId, normalizeProPlan(b.plan));
     res.json(checkout);
   } catch (error) {
     next(error);
   }
 });
 
-app.post('/api/pro/activate', auth, async (req, res, next) => {
-  try {
-    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_ACTIVATE !== 'true') {
-      throw new Problem(403, 'Kích hoạt thử nghiệm không khả dụng trên môi trường production. Vui lòng thanh toán qua cổng thanh toán.', 'forbidden');
-    }
-    const userId = (req as SessionRequest).userId;
-    const b = (req.body && typeof req.body === 'object') ? req.body as Record<string, unknown> : {};
-    const plan = (b.plan === 'quarterly' || b.plan === 'yearly') ? b.plan : 'monthly';
-    const days = plan === 'yearly' ? 365 : plan === 'quarterly' ? 90 : 30;
-    const status = await aiProService.activatePro(userId, days, 'pro');
-    res.json(status);
-  } catch (error) {
-    next(error);
-  }
+app.post('/api/pro/activate', (_req, _res, next) => {
+  next(new Problem(403, 'Gói Pro chỉ được kích hoạt bằng webhook thanh toán đã ký.', 'activation_requires_payment'));
 });
 
 // ==========================================
@@ -954,21 +947,17 @@ app.post('/api/pro/activate', auth, async (req, res, next) => {
 // ==========================================
 app.post('/api/pro/webhook', async (req, res, next) => {
   try {
-    const b = (req.body && typeof req.body === 'object') ? req.body as Record<string, unknown> : {};
-    const amount = typeof b.amount === 'number' ? b.amount : parseInt(String(b.amount || '0'), 10);
-    const transferCode = typeof b.transferCode === 'string' ? b.transferCode : undefined;
-    const content = typeof b.content === 'string' ? b.content : typeof b.description === 'string' ? b.description : undefined;
+    const b = (req.body && typeof req.body === 'object' && !Array.isArray(req.body))
+      ? req.body as Record<string, unknown>
+      : {};
 
     const result = await aiProService.handlePaymentWebhook({
-      transferCode,
-      content,
-      amount,
-      gateway: typeof b.gateway === 'string' ? b.gateway : 'vietqr'
+      rawBody: (req as RawBodyRequest).rawBody ?? Buffer.alloc(0),
+      signature: req.get('X-JobTrack-Signature') ?? undefined,
+      timestamp: req.get('X-JobTrack-Timestamp') ?? undefined,
+      payload: b
     });
 
-    if (!result.success) {
-      return res.status(400).json(result);
-    }
     res.json(result);
   } catch (error) {
     next(error);
