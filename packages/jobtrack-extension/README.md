@@ -29,7 +29,7 @@ Tiện ích mở rộng Manifest V3 biến đổi dữ liệu trên web thành b
 ### 4. Giao diện Side Panel & Ghép nối an toàn
 - **Hỗ trợ Side Panel (Chrome & Cốc Cốc)**: Tiện ích bám cạnh trình duyệt, không bị tự đóng khi chuyển tab hoặc bôi đen văn bản.
 - **Ghép nối 1-click (Extension Pairing)**: Đăng nhập Web App và bấm kết nối tự động, token được lưu an toàn trong `chrome.storage.local` với phạm vi quyền (scopes) tối thiểu, không rò rỉ qua cloud sync.
-- **Thanh toán VietQR Napas 24/7**: Tự động sinh mã VietQR theo chuẩn Napas với mã chuyển khoản định danh và kích hoạt tức thì qua Webhook.
+- **Thanh toán Pro ở chế độ thử nghiệm**: Tiện ích hiển thị mã đơn và thông báo thanh toán do máy chủ trả về. Gói Pro chỉ được kích hoạt khi máy chủ nhận webhook thanh toán có chữ ký hợp lệ, nên bản cài này không hiển thị mã QR ngân hàng và không tự kích hoạt Pro.
 
 ---
 
