@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
-import { CANDIDATE_TARGET, FIXTURE_TARGET, PROJECTION_TARGET, SCRATCH_TARGET } from './docker-adapter.mjs';
+import { CANDIDATE_TARGET, DEPENDENCY_TARGET, FIXTURE_TARGET, PROJECTION_TARGET, SCRATCH_TARGET } from './docker-adapter.mjs';
 import { buildCheckEnvironment } from './check-profile.mjs';
 
 export const BOUNDARY_PURPOSES = Object.freeze(['worker-read', 'check-runner']);
@@ -148,6 +148,8 @@ export function createExecutionBoundary(options) {
     },
     async run(state, request) {
       const prepared = await prepare(state, request);
+      const dependencyRoots = (prepared.purpose === 'check-runner' ? (projection.dependencyRoots ?? []) : [])
+        .map(root => ({ name: root.name, source: root.path ?? root.source }));
       const launched = await adapter.launch({
         runId: request.runId ?? randomUUID(),
         projection: prepared.staged.root,
@@ -155,11 +157,13 @@ export function createExecutionBoundary(options) {
         command: request.command ?? [],
         profile: prepared.purpose === 'check-runner' ? 'check' : 'worker',
         fixtures: request.fixtures ?? null,
+        dependencyRoots,
         env: prepared.purpose === 'check-runner' ? buildCheckEnvironment({
           checkId: request.check ?? 'fixed-check',
           candidateDigest: prepared.binding.projectionManifestHash,
           fixtureRoot: FIXTURE_TARGET,
-          scratchRoot: SCRATCH_TARGET
+          scratchRoot: SCRATCH_TARGET,
+          nodePath: dependencyRoots.map(root => `${DEPENDENCY_TARGET}/${root.name}`).join(':')
         }) : {},
         stdin: request.instruction ?? '',
         binding: prepared.binding,

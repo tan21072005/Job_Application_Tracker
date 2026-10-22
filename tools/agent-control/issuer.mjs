@@ -12,7 +12,7 @@ import {
   probeCatalogHash
 } from './readiness-v2.mjs';
 import { controlPlaneFingerprint, probeProgramHash } from './fingerprint.mjs';
-import { assertContainerMatchesDeclaration, inspectContainer, toContainerPath } from './docker-adapter.mjs';
+import { assertContainerMatchesDeclaration, CANDIDATE_TARGET, DEPENDENCY_TARGET, FIXTURE_TARGET, inspectContainer, PROJECTION_TARGET, SCRATCH_TARGET, toContainerPath } from './docker-adapter.mjs';
 
 export const ISSUER_ID = 'jobtrack-trusted-issuer-v2';
 export const READ_ONLY_TARGETS = Object.freeze(['host-repo-read', 'common-git-read', 'control-state-read', 'host-credential-read']);
@@ -110,6 +110,7 @@ export function assertContainerMatchesTrust(container, trusted) {
     expectedMounts: Object.keys(trusted.mountSources).map(kind => ({
       kind,
       source: trusted.mountSources[kind],
+      target: kind === 'projection' ? PROJECTION_TARGET : kind === 'scratch' ? SCRATCH_TARGET : kind === 'candidate' ? CANDIDATE_TARGET : kind === 'fixtures' ? FIXTURE_TARGET : `${DEPENDENCY_TARGET}/${kind}`,
       readOnly: kind === 'projection' || kind === 'candidate' || kind === 'fixtures'
     }))
   });

@@ -1,6 +1,6 @@
 import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, basename } from 'node:path';
 import { AgentController } from './controller.mjs';
 import { assertSafeCommand } from './policy.mjs';
 import { createDockerAdapter, DEFAULT_IMAGE } from './docker-adapter.mjs';
@@ -52,7 +52,12 @@ function buildAdapters() {
     projection: {
       allowedRoot: resolve(runRoot),
       destinationFor: state => resolve(runRoot, state.id, 'projection'),
-      scratchFor: state => resolve(runRoot, state.id, 'scratch')
+      scratchFor: state => resolve(runRoot, state.id, 'scratch'),
+      dependencyRoots: (process.env.JT_CHECK_DEPENDENCY_ROOTS ?? '')
+        .split(';')
+        .map(entry => entry.trim())
+        .filter(Boolean)
+        .map(path => ({ name: basename(path), path: resolve(path) }))
     },
     adapter,
     issuer

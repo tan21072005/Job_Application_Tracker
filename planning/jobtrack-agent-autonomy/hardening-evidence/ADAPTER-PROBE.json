@@ -1,18 +1,18 @@
 {
   "kind": "adapter-probe-not-readiness-receipt",
-  "runId": "aef0fb1a-d465-41d3-9916-14a0a5794d66",
+  "runId": "62d5ae68-ac51-4422-85a7-df2f31da7fc6",
   "adapter": "jobtrack-docker-adapter-v1",
   "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
-  "argvHash": "e8f3b7c5351a92543f6f849b181bf5fd8665290e7efa7df8f6373356f0d9d81b",
+  "argvHash": "317846deebc0fb1df6cc1890a630576c50b2c053fef07f935027fa876b8b88f2",
   "container": {
-    "containerId": "75bb6e7e41cd15f5e458b78aae2d20a78b01bc291f17d29dfbb7110fa33686c3",
+    "containerId": "95758c643de1962bbb0128816ed9381fbb79d86d38f8763681925e3d2c644911",
     "image": "node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "imageId": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
     "user": "65534:65534",
     "labels": {
       "jobtrack.owner": "jobtrack",
       "jobtrack.role": "probe",
-      "jobtrack.run": "aef0fb1a-d465-41d3-9916-14a0a5794d66"
+      "jobtrack.run": "62d5ae68-ac51-4422-85a7-df2f31da7fc6"
     },
     "networkMode": "none",
     "capDrop": [
@@ -30,29 +30,29 @@
     },
     "mounts": [
       {
-        "kind": "scratch",
-        "source": "D:/Long-term/JobTrack-isolation-aef0fb1a/scratch",
-        "target": "/scratch",
-        "readOnly": false
-      },
-      {
         "kind": "projection",
-        "source": "D:/Long-term/JobTrack-isolation-aef0fb1a/projection",
+        "source": "D:/Long-term/JobTrack-isolation-62d5ae68/projection",
         "target": "/projection",
         "readOnly": true
+      },
+      {
+        "kind": "scratch",
+        "source": "D:/Long-term/JobTrack-isolation-62d5ae68/scratch",
+        "target": "/scratch",
+        "readOnly": false
       }
     ],
     "env": [
-      "HOME=/nonexistent",
       "JT_PROBE_CONFIG=eyJtYW5pZmVzdCI6W3sicGF0aCI6ImFwcHMvd2ViL3NyYy9tb2R1bGUuanMiLCJzaGEyNTYiOiI1ZDhmNjVkMjc3NGUyMDZiYzlmN2E3YTRhZDM5Y2EyZGM1NjNiNWMzMWU0NmFiNTdlZjQ4NzQ5NjEyMzdjZTI5In0seyJwYXRoIjoiYXBwcy93ZWIvc3JjL3BhbmVsLnRzeCIsInNoYTI1NiI6ImZlMzYyNTFlM2JjODJkOGRhZjAzNjhjNTkyMDFkZmEzZWRlZWE2NTNiNjFjYjRhZTQ5ZWJlYWY2ZWJhOGUwNWEifSx7InBhdGgiOiJwYWNrYWdlcy9qb2J0cmFjay1jb250cmFjdC9zcmMvaW5kZXgudHMiLCJzaGEyNTYiOiI4MGY2YjdlZTM1M2FlMWI3MzcwMWIxNzRhYjBhYTdkZWVmZGJjOTQ2YjcwMDVjODNmY2Q3OTc3NDkzMjM0NzA4In1dLCJwcm9qZWN0aW9uVGFyZ2V0IjoiL3Byb2plY3Rpb24iLCJzY3JhdGNoVGFyZ2V0IjoiL3NjcmF0Y2giLCJob3N0UGF0aHMiOlt7InRhcmdldElkIjoiaG9zdC1yZXBvLXJlYWQiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIifSx7InRhcmdldElkIjoiY29tbW9uLWdpdC1yZWFkIiwiaG9zdFBhdGgiOiJEOi9Qcm9qZWN0L0pvYl9BcHBsaWNhdGlvbl9UcmFja2VyLy5naXQiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvLmdpdCJ9LHsidGFyZ2V0SWQiOiJjb250cm9sLXN0YXRlLXJlYWQiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvLmFnZW50LXN0YXRlIiwiY29udGFpbmVyUGF0aCI6Ii9tbnQvZC9Qcm9qZWN0L0pvYl9BcHBsaWNhdGlvbl9UcmFja2VyLy5hZ2VudC1zdGF0ZSJ9LHsidGFyZ2V0SWQiOiJob3N0LWNyZWRlbnRpYWwtcmVhZCIsImhvc3RQYXRoIjoiRDovUHJvamVjdC9Kb2JfQXBwbGljYXRpb25fVHJhY2tlci9hY2NvdW50cy50eHQiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIvYWNjb3VudHMudHh0In0seyJ0YXJnZXRJZCI6Imhvc3Qtd3JpdGUiLCJob3N0UGF0aCI6IkQ6L1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIiLCJjb250YWluZXJQYXRoIjoiL21udC9kL1Byb2plY3QvSm9iX0FwcGxpY2F0aW9uX1RyYWNrZXIifV0sIm1vZGVsRW5kcG9pbnQiOiIiLCJnZW5lcmFsRWdyZXNzRW5kcG9pbnQiOiIiLCJ0aW1lb3V0TXMiOjEyMDAwMH0=",
+      "HOME=/nonexistent",
       "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "NODE_VERSION=24.22.0",
       "YARN_VERSION=1.22.22"
     ]
   },
-  "base": "D:\\Long-term\\JobTrack-isolation-aef0fb1a",
-  "projection": "D:/Long-term/JobTrack-isolation-aef0fb1a/projection",
-  "scratch": "D:/Long-term/JobTrack-isolation-aef0fb1a/scratch",
+  "base": "D:\\Long-term\\JobTrack-isolation-62d5ae68",
+  "projection": "D:/Long-term/JobTrack-isolation-62d5ae68/projection",
+  "scratch": "D:/Long-term/JobTrack-isolation-62d5ae68/scratch",
   "manifest": [
     {
       "path": "apps/web/src/module.js",
@@ -171,14 +171,14 @@
     },
     "containerMounts": [
       {
-        "root": "/Long-term/JobTrack-isolation-aef0fb1a/scratch",
-        "mountPoint": "/scratch",
-        "options": "rw,noatime"
-      },
-      {
-        "root": "/Long-term/JobTrack-isolation-aef0fb1a/projection",
+        "root": "/Long-term/JobTrack-isolation-62d5ae68/projection",
         "mountPoint": "/projection",
         "options": "ro,noatime"
+      },
+      {
+        "root": "/Long-term/JobTrack-isolation-62d5ae68/scratch",
+        "mountPoint": "/scratch",
+        "options": "rw,noatime"
       }
     ]
   }
