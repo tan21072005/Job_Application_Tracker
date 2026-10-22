@@ -179,7 +179,11 @@ test('a real repository fixed check runs and passes in the isolated profile', { 
     rmSync(runRoot, { recursive: true, force: true });
   }
   assert.equal(outcome.launched.status, 0, outcome.launched.stderr);
-  assert.match(outcome.launched.stdout, /pass 7/);
+  const reportedTests = outcome.launched.stdout.match(/tests (\d+)/);
+  const reportedPassed = outcome.launched.stdout.match(/pass (\d+)/);
+  assert.ok(reportedTests, 'the check must report how many tests it ran');
+  assert.ok(reportedPassed, 'the check must report how many tests passed');
+  assert.equal(reportedPassed[1], reportedTests[1], 'every extension check test must pass in the isolated profile');
   assert.match(outcome.launched.stdout, /fail 0/);
   assert.equal(outcome.receipt.derived.gateA, true);
 });
