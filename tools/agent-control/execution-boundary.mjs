@@ -148,9 +148,8 @@ export function createExecutionBoundary(options) {
     },
     async run(state, request) {
       const prepared = await prepare(state, request);
-      const dependencyRoots = (prepared.purpose === 'check-runner'
-        ? (request.dependencyRoots ?? projection.dependencyRoots ?? [])
-        : []).map(root => ({ name: root.name, source: root.path ?? root.source }));
+      const dependencyRoots = (prepared.purpose === 'check-runner' ? (projection.dependencyRoots ?? []) : [])
+        .map(root => ({ name: root.name, source: root.path ?? root.source }));
       const launched = await adapter.launch({
         runId: request.runId ?? randomUUID(),
         projection: prepared.staged.root,

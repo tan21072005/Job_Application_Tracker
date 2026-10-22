@@ -184,6 +184,98 @@ test('a real repository fixed check runs and passes in the isolated profile', { 
   assert.equal(outcome.receipt.derived.gateA, true);
 });
 
+test('a check resolves an installed dependency from an approved dependency root', { skip: dockerReachable ? false : 'Docker is not reachable in this environment' }, async () => {
+  const runRoot = join('D:/Long-term', `jobtrack-boundary-deps-${Date.now()}`);
+  const projection = join(runRoot, 'projection');
+  const scratch = join(runRoot, 'scratch');
+  const source = join(runRoot, 'source');
+  const dependencyRoot = join(runRoot, 'deps');
+  mkdirSync(join(projection, 'apps/web/src'), { recursive: true });
+  mkdirSync(join(source, 'apps/web/src'), { recursive: true });
+  mkdirSync(join(dependencyRoot, 'fixture-dep'), { recursive: true });
+  mkdirSync(scratch, { recursive: true });
+  writeFileSync(join(source, 'apps/web/src/module.cjs'), "const { value } = require('fixture-dep');\nprocess.stdout.write('DEP-' + value);\n");
+  writeFileSync(join(dependencyRoot, 'fixture-dep', 'package.json'), JSON.stringify({ name: 'fixture-dep', version: '1.0.0', main: 'index.js' }, null, 2) + '\n');
+  writeFileSync(join(dependencyRoot, 'fixture-dep', 'index.js'), "module.exports = { value: 'FROM-APPROVED-ROOT' };\n");
+  const denied = [repositoryRoot, process.env.USERPROFILE ?? repositoryRoot].map(path => path.replaceAll('\\', '/'));
+  const credentialFile = join(runRoot, 'accounts.txt');
+  writeFileSync(credentialFile, 'fixture-only\n');
+  const egressServer = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end('{}');
+  });
+  let outcome = null;
+  try {
+    await new Promise(done => egressServer.listen(0, '0.0.0.0', done));
+    const egressPort = egressServer.address().port;
+    const catalog = {
+      taskId: 'deps-check',
+      feature: 'web',
+      base: 'base-sha',
+      sourceDigest: '1'.repeat(64),
+      projectionManifestHash: '2'.repeat(64),
+      policyHash: controlPlaneFingerprint(repositoryRoot),
+      environmentHash: '4'.repeat(64),
+      purpose: 'check-runner',
+      profileHash: '5'.repeat(64),
+      adapterId: 'jobtrack-docker-adapter-v1',
+      imageDigest: DEFAULT_IMAGE.split('@sha256:')[1],
+      cliHash: '7'.repeat(64),
+      nodeHash: '8'.repeat(64),
+      verifierImplementationHash: controlPlaneFingerprint(repositoryRoot),
+      modelEndpoint: 'http://127.0.0.1:9/v1',
+      generalEgressEndpoint: `http://${process.env.JT_EGRESS_HOST ?? '192.168.1.251'}:${egressPort}/general`,
+      deniedHostPaths: {
+        'host-repo-read': denied[0],
+        'host-home-read': denied[1],
+        'control-plane-root': denied[0],
+        'common-git-read': `${denied[0]}/.git`,
+        'control-state-read': `${repositoryRoot.replaceAll('\\', '/')}/tools`,
+        'host-credential-read': credentialFile.replaceAll('\\', '/'),
+        'projection-write': projection.replaceAll('\\', '/'),
+        'host-write': denied[0]
+      },
+      mountSources: { projection: projection.replaceAll('\\', '/'), scratch: scratch.replaceAll('\\', '/') },
+      dockerBinaryHash: dockerBinaryHash('docker'),
+      probeProgramHash: probeProgramHash(repositoryRoot)
+    };
+    const adapter = createDockerAdapter({ repo: repositoryRoot, runRoot, image: DEFAULT_IMAGE, deniedPaths: denied });
+    const issuer = createReadinessIssuer({
+      catalog,
+      key: 'k'.repeat(48),
+      adapterRoot: repositoryRoot,
+      evidenceRoot: join(runRoot, 'evidence'),
+      contextDirectory: join(runRoot, 'context'),
+      adapter,
+      broker: { probe: async () => ({ connected: true }) }
+    });
+    const boundary = createExecutionBoundary({
+      context: (state, request) => ({ ...catalog, taskId: state.id, purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
+      projection: {
+        allowedRoot: resolve(runRoot),
+        destinationFor: () => projection,
+        scratchFor: () => scratch,
+        dependencyRoots: [{ name: 'deps', path: dependencyRoot }]
+      },
+      adapter,
+      issuer
+    });
+    outcome = await boundary.run({ worktree: source, id: 'deps-check' }, {
+      purpose: 'check-runner',
+      check: 'test:web',
+      files: ['apps/web/src/module.cjs'],
+      sourceDigest: '1'.repeat(64),
+      command: ['node', 'apps/web/src/module.cjs']
+    });
+  } finally {
+    egressServer.closeAllConnections?.();
+    egressServer.close();
+    rmSync(runRoot, { recursive: true, force: true });
+  }
+  assert.equal(outcome.launched.status, 0, outcome.launched.stderr);
+  assert.match(outcome.launched.stdout, /DEP-FROM-APPROVED-ROOT/);
+});
+
 test('a receipt must match the binding, be unexpired and record a passing gate', () => {
   const binding = bindingFixture();
   const receipt = receiptFixture(binding);

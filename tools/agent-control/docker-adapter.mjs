@@ -90,7 +90,21 @@ export function assertAllowedLaunchEnv(env) {
   for (const key of keys) {
     if (!ALLOWED_LAUNCH_ENV_KEYS.includes(key)) throw Error(`Container environment may only carry ${ALLOWED_LAUNCH_ENV_KEYS.join(', ')}.`);
   }
+  const nodePath = String((env ?? {}).NODE_PATH ?? '');
+  const allowedModulePaths = [`${DEPENDENCY_TARGET}/`];
+  for (const entry of nodePath.split(':').filter(Boolean)) {
+    if (!allowedModulePaths.some(prefix => entry.startsWith(prefix)) || entry.includes('..')) {
+      throw Error(`The module path may only name ${allowedModulePaths.join(' or ')}.`);
+    }
+  }
   return true;
+}
+
+export function assertDependencyRootName(name) {
+  if (typeof name !== 'string' || !/^[A-Za-z0-9._-]+$/.test(name) || name === '.' || name === '..') {
+    throw Error('A dependency root name must be one safe path segment.');
+  }
+  return name;
 }
 
 export function buildMountArgs({ projection, scratch, fixtures, candidate, dependencyRoots = [] }) {
@@ -326,8 +340,9 @@ export function assertContainerMatchesDeclaration(observation, { imageDigest, ex
   const mounts = Array.isArray(observation.mounts) ? observation.mounts : [];
   if (expectedMounts.length) {
     for (const expected of expectedMounts) {
-      const mount = mounts.find(candidate => candidate.kind === expected.kind);
+      const mount = mounts.find(candidate => candidate.target === expected.target);
       if (!mount) throw Error(`The container did not carry the declared ${expected.kind} mount.`);
+      if (mount.kind !== expected.kind) throw Error(`The container mount is not the declared kind: ${expected.kind}.`);
       const source = String(mount.source).replaceAll('\\', '/').toLowerCase();
       const wanted = String(expected.source).replaceAll('\\', '/').toLowerCase();
       if (source !== wanted) throw Error(`The container mount source is not the declared source: ${expected.kind}`);
@@ -369,7 +384,7 @@ export function parseContainerObservation(raw) {
   const config = container.Config ?? {};
   const host = container.HostConfig ?? {};
   const mounts = (container.Mounts ?? []).map(mount => ({
-    kind: MOUNT_KIND_BY_TARGET[mount.Destination] ?? 'unknown',
+    kind: MOUNT_KIND_BY_TARGET[mount.Destination] ?? (String(mount.Destination).startsWith(`${DEPENDENCY_TARGET}/`) ? 'dependency' : 'unknown'),
     source: mount.Source,
     target: mount.Destination,
     readOnly: mount.RW === false
@@ -532,11 +547,15 @@ export function createDockerAdapter(options = {}) {
         assertNotDeniedPath(denied, canonicalSource(fixtures));
       }
       const dependencyRoots = (launchOptions.dependencyRoots ?? []).map(root => {
+        const name = assertDependencyRootName(root.name);
         const source = assertDirectory(root.source);
-        assertInsideRoot(runRoot, source, `Dependency root ${root.name}`);
+        assertInsideRoot(runRoot, source, `Dependency root ${name}`);
         assertNotDeniedPath(denied, canonicalSource(source));
-        return { name: root.name, source };
+        return { name, source };
       });
+      if (new Set(dependencyRoots.map(root => root.name)).size !== dependencyRoots.length) {
+        throw Error('Dependency root names must be unique.');
+      }
       assertAllowedLaunchEnv(launchOptions.env ?? {});
       const target = profile === 'check' ? CANDIDATE_TARGET : PROJECTION_TARGET;
       const args = buildLaunchArgs({
