@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const pairAccountBtn = document.getElementById('pairAccountBtn');
   const openSettingsBtn = document.getElementById('openSettingsBtn');
   const proPlanSelect = document.getElementById('proPlanSelect');
-  const vietQrImg = document.getElementById('vietQrImg');
+  const checkoutNotice = document.getElementById('checkoutNotice');
   const qrAmount = document.getElementById('qrAmount');
   const qrTransferCode = document.getElementById('qrTransferCode');
   const checkPaymentStatusBtn = document.getElementById('checkPaymentStatusBtn');
@@ -784,7 +784,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     showAlert(alertSuccess, '✓ Đã sao chép tin nhắn HR vào clipboard!');
   });
 
-  // 10. Account, Quota & VietQR Checkout
+  // 10. Account, Quota & Checkout
   async function loadAccountAndCheckout() {
     if (!serverConfig.apiToken) return;
 
@@ -800,14 +800,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         quotaDatasets.textContent = `Bộ dữ liệu: ${u.datasetsCount} / ${u.datasetsLimit} bảng`;
       }
 
-      // 2. Checkout QR
-      refreshCheckoutQr();
+      // 2. Checkout
+      refreshCheckout();
     } catch (err) {
       console.warn('Lỗi tải quota:', err);
     }
   }
 
-  async function refreshCheckoutQr() {
+  const CHECKOUT_UNAVAILABLE_NOTICE = 'Không tạo được đơn thanh toán. Vui lòng thử lại sau.';
+
+  function resetCheckoutSummary() {
+    qrAmount.textContent = '—';
+    qrTransferCode.textContent = '—';
+  }
+
+  function checkoutNoticeText(checkout) {
+    const serverNotice = typeof checkout.testNotice === 'string' ? checkout.testNotice.trim() : '';
+    if (serverNotice) return serverNotice;
+    const mode = typeof checkout.mode === 'string' ? checkout.mode.trim() : '';
+    if (mode === 'test') return 'Máy chủ báo chế độ thử nghiệm.';
+    if (mode) return `Máy chủ báo chế độ thanh toán: ${mode}.`;
+    return 'Máy chủ chưa trả về thông tin chế độ thanh toán.';
+  }
+
+  async function refreshCheckout() {
     try {
       const plan = proPlanSelect.value;
       const res = await fetch(`${serverConfig.serverUrl}/api/pro/checkout`, {
@@ -819,18 +835,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: JSON.stringify({ plan })
       });
 
-      if (res.ok) {
-        const checkout = await res.json();
-        vietQrImg.src = checkout.vietQrUrl;
-        qrAmount.textContent = `${checkout.amount.toLocaleString('vi-VN')} đ`;
-        qrTransferCode.textContent = checkout.transferCode;
+      if (!res.ok) {
+        resetCheckoutSummary();
+        checkoutNotice.textContent = CHECKOUT_UNAVAILABLE_NOTICE;
+        return;
       }
+
+      const checkout = await res.json();
+      checkoutNotice.textContent = checkoutNoticeText(checkout);
+      const amount = Number(checkout.amount);
+      qrAmount.textContent = Number.isFinite(amount) ? `${amount.toLocaleString('vi-VN')} đ` : '—';
+      qrTransferCode.textContent = checkout.transferCode ? String(checkout.transferCode) : '—';
     } catch (err) {
       console.warn('Lỗi checkout:', err);
+      resetCheckoutSummary();
+      checkoutNotice.textContent = CHECKOUT_UNAVAILABLE_NOTICE;
     }
   }
 
-  proPlanSelect.addEventListener('change', refreshCheckoutQr);
+  proPlanSelect.addEventListener('change', refreshCheckout);
 
   // 1-Click Extension Pairing
   pairAccountBtn.addEventListener('click', async () => {

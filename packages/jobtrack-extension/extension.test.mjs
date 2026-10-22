@@ -87,6 +87,69 @@ test('Extension: Dual interface provides both Universal Data Capture and JobTrac
   assert.ok(popupJs.includes('pairAccountBtn'), 'Must include pair account action');
 });
 
+test('Extension: Pro checkout renders the server notice and never a bank QR image', () => {
+  const popupHtml = readFileSync(join(__dirname, 'popup.html'), 'utf8');
+  const popupJs = readFileSync(join(__dirname, 'popup.js'), 'utf8');
+
+  const checkoutFunction = popupJs.slice(
+    popupJs.indexOf('async function refreshCheckout()'),
+    popupJs.indexOf('proPlanSelect.addEventListener')
+  );
+  const resetFunction = popupJs.slice(
+    popupJs.indexOf('function resetCheckoutSummary()'),
+    popupJs.indexOf('function checkoutNoticeText(')
+  );
+
+  assert.notEqual(checkoutFunction.length, 0, 'popup.js must define refreshCheckout');
+  assert.notEqual(resetFunction.length, 0, 'popup.js must define resetCheckoutSummary');
+
+  assert.ok(popupHtml.includes('id="checkoutNotice"'), 'popup.html must render the checkout notice element');
+  assert.equal(popupHtml.includes('vietQrImg'), false, 'popup.html must not render a VietQR image element');
+  assert.equal(popupHtml.includes('qr-img'), false, 'popup.html must not keep the removed QR image style');
+  assert.equal(popupJs.includes('checkout.vietQrUrl'), false, 'popup.js must not read the removed VietQR url field');
+  assert.ok(popupJs.includes('checkout.testNotice'), 'popup.js must render the notice the server sends');
+  assert.ok(popupJs.includes('checkout.mode'), 'popup.js must derive the notice from the mode the server reports');
+  assert.ok(/mode === 'test'/.test(popupJs), 'popup.js must select the notice by comparing the reported mode');
+  assert.ok(
+    popupJs.includes('Máy chủ chưa trả về thông tin chế độ thanh toán.'),
+    'popup.js must have a neutral notice for a mode the server did not report'
+  );
+  assert.equal(popupJs.includes('chế độ thật'), false, 'popup.js must not claim a live payment mode it was not told about');
+  assert.ok(popupJs.includes('checkout.transferCode'), 'popup.js must render the order code the server sends');
+
+  assert.match(
+    checkoutFunction,
+    /if \(!res\.ok\) \{[^}]*resetCheckoutSummary\(\);/,
+    'popup.js must clear the order summary when the server refuses the checkout'
+  );
+  assert.match(
+    checkoutFunction,
+    /catch \(err\) \{[^}]*resetCheckoutSummary\(\);/,
+    'popup.js must clear the order summary when the checkout request fails'
+  );
+  assert.match(
+    checkoutFunction,
+    /checkoutNotice\.textContent = checkoutNoticeText\(checkout\);/,
+    'popup.js must derive the notice from the checkout payload'
+  );
+  assert.match(
+    resetFunction,
+    /qrAmount\.textContent = '—'/,
+    'popup.js must clear the amount when the summary is reset'
+  );
+  assert.match(
+    resetFunction,
+    /qrTransferCode\.textContent = '—'/,
+    'popup.js must clear the order code when the summary is reset'
+  );
+  assert.equal(popupHtml.includes('JTPRO...'), false, 'popup.html must not show a placeholder that looks like an order code');
+  assert.equal(
+    popupHtml.includes('Hệ thống tự động kích hoạt ngay sau khi nhận tiền.'),
+    false,
+    'popup.html must not claim that a payment activates Pro without a signed webhook'
+  );
+});
+
 test('Extension: Multi-layer extraction engine supports tables, repeating cards, and schema metadata', () => {
   const contentJs = readFileSync(join(__dirname, 'content.js'), 'utf8');
 
