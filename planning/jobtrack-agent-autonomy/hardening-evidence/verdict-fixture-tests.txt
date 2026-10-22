@@ -1,20 +1,20 @@
-✔ canary reports are resolved by profile when only the list is given (1.9888ms)
-✔ a complete evidence set passes the gate (1.2225ms)
-✔ a missing check is treated as no evidence and never as a pass (0.4519ms)
-✔ a check present without the expected field is no evidence (0.2008ms)
-✔ every read target must be denied (0.2958ms)
-✔ a missing canary report fails closed (0.1553ms)
-✔ egress needs a host positive control (0.1353ms)
-✔ egress that stays open in the isolated run is a failure (0.1102ms)
-✔ a failing sandbox probe blocks the gate (0.1113ms)
-✔ the check runner profile must not write outside the checkout (0.1558ms)
-✔ a surviving child process is a failure (0.1025ms)
-✔ a target that does not exist is no evidence and never a pass (0.1336ms)
-✔ every failing verdict is reported (0.1611ms)
-✔ operational errors cannot stand in for denied read or write evidence (1.0231ms)
-✔ a timed out probe cannot pass even with code zero (0.2122ms)
-✔ cleanup requires child and grandchild to have run before termination (0.2749ms)
-✔ home credential visibility is part of read isolation (0.1927ms)
+✔ canary reports are resolved by profile when only the list is given (1.1756ms)
+✔ a complete evidence set passes the gate (0.6008ms)
+✔ a missing check is treated as no evidence and never as a pass (0.2119ms)
+✔ a check present without the expected field is no evidence (0.1448ms)
+✔ every read target must be denied (0.2796ms)
+✔ a missing canary report fails closed (0.1525ms)
+✔ egress needs a host positive control (0.1383ms)
+✔ egress that stays open in the isolated run is a failure (0.1128ms)
+✔ a failing sandbox probe blocks the gate (0.1075ms)
+✔ the check runner profile must not write outside the checkout (0.1593ms)
+✔ a surviving child process is a failure (0.1271ms)
+✔ a target that does not exist is no evidence and never a pass (0.1165ms)
+✔ every failing verdict is reported (0.1456ms)
+✔ operational errors cannot stand in for denied read or write evidence (0.0869ms)
+✔ a timed out probe cannot pass even with code zero (0.2027ms)
+✔ cleanup requires child and grandchild to have run before termination (0.1726ms)
+✔ home credential visibility is part of read isolation (0.0958ms)
 ℹ tests 17
 ℹ suites 0
 ℹ pass 17
@@ -22,4 +22,4 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 83.5416
+ℹ duration_ms 83.0523

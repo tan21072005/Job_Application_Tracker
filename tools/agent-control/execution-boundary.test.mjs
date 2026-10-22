@@ -159,6 +159,7 @@ test('a fixed check runs against the staged projection and passes', { skip: dock
   writeFileSync(join(projection, 'apps/web/src/module.js'), 'export const value = 1;\n');
   writeFileSync(join(worktree, 'apps/web/src/module.js'), 'export const value = 1;\n');
   const denied = [repositoryRoot, process.env.USERPROFILE ?? repositoryRoot].map(path => path.replaceAll('\\', '/'));
+  const controlStatePath = existsSync(join(repositoryRoot, '.agent-state')) ? join(repositoryRoot, '.agent-state') : join(repositoryRoot, 'tools');
   const credentialFile = join(runRoot, 'accounts.txt');
   writeFileSync(credentialFile, 'fixture-only\n');
   const egressServer = createServer((request, response) => {
@@ -188,7 +189,7 @@ test('a fixed check runs against the staged projection and passes', { skip: dock
       'host-repo-read': denied[0],
       'host-home-read': denied[1],
       'common-git-read': `${denied[0]}/.git`,
-      'control-state-read': `${repositoryRoot.replaceAll('\\', '/')}/tools`,
+      'control-state-read': controlStatePath.replaceAll('\\', '/'),
       'host-credential-read': credentialFile.replaceAll('\\', '/'),
       'projection-write': projection.replaceAll('\\', '/'),
       'host-write': denied[0]
@@ -243,6 +244,7 @@ test('the boundary completes a run against the real issuer and the real adapter 
   writeFileSync(join(projection, 'apps/web/src/module.js'), 'export const value = 1;\n');
   writeFileSync(join(worktree, 'apps/web/src/module.js'), 'export const value = 1;\n');
   const denied = [repositoryRoot, process.env.USERPROFILE ?? repositoryRoot].map(path => path.replaceAll('\\', '/'));
+  const controlStatePath = existsSync(join(repositoryRoot, '.agent-state')) ? join(repositoryRoot, '.agent-state') : join(repositoryRoot, 'tools');
   const credentialFile = join(runRoot, 'accounts.txt');
   writeFileSync(credentialFile, 'fixture-only\n');
   const egressServer = createServer((request, response) => {
@@ -272,7 +274,7 @@ test('the boundary completes a run against the real issuer and the real adapter 
       'host-repo-read': denied[0],
       'host-home-read': denied[1],
       'common-git-read': `${denied[0]}/.git`,
-      'control-state-read': `${repositoryRoot.replaceAll('\\', '/')}/tools`,
+      'control-state-read': controlStatePath.replaceAll('\\', '/'),
       'host-credential-read': credentialFile.replaceAll('\\', '/'),
       'projection-write': projection.replaceAll('\\', '/'),
       'host-write': denied[0]

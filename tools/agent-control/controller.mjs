@@ -407,12 +407,25 @@ export class AgentController {
   check(id) { return this.locked(id, () => this.checkUnlocked(this.load(id))); }
 
   checkScope(state, name) {
-    const roots = checkWorkspaces[name] ?? [];
-    const tracked = roots.length
-      ? this.git(state.worktree, ['ls-files', '-z', '--', ...roots]).split('\0').filter(Boolean)
-      : [];
+    const roots = checkWorkspaces[name];
+    if (!roots) throw Error(`No staged workspace is defined for the check ${name}.`);
+    const tracked = this.git(state.worktree, ['ls-files', '-z', '--', ...roots]).split('\0').filter(Boolean);
     const manifests = this.git(state.worktree, ['ls-files', '-z', '--', ...repositoryManifests]).split('\0').filter(Boolean);
-    return [...new Set([...this.manifestFiles(state), ...tracked, ...manifests])];
+    const files = new Set(this.manifestFiles(state));
+    for (const file of [...tracked, ...manifests]) {
+      const name_ = file.split('/').at(-1);
+      const workspaceManifest = repositoryManifests.includes(name_) && roots.some(root => file === `${root}/${name_}`);
+      if (file === name_ || workspaceManifest) {
+        files.add(file);
+        continue;
+      }
+      try {
+        files.add(assertReadableSourcePath(file));
+      } catch {
+        continue;
+      }
+    }
+    return [...files];
   }
 
   manifestFiles(state) {

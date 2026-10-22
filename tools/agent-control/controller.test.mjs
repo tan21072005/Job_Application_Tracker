@@ -310,6 +310,22 @@ test('the controller drives a fixed check through the real boundary in a real co
   assert.equal(outcome.readiness.payloadHash.length > 0, true);
 });
 
+test('the staged check scope excludes protected paths and refuses a check without a workspace', () => {
+  const c = setup();
+  write(c.root, 'apps/api/package.json', JSON.stringify({ name: 'fixture-api', private: true }, null, 2) + '\n');
+  write(c.root, 'apps/api/migrations/001_initial.sql', 'select 1;\n');
+  write(c.root, 'apps/api/.env', 'SECRET=fixture\n');
+  git(c.root, ['add', '--', 'apps/api/package.json', 'apps/api/migrations/001_initial.sql', 'apps/api/.env']);
+  git(c.root, ['commit', '-m', 'fixture protected files']);
+  const state = c.prepare(task('api-one', 'api'));
+  const scope = c.checkScope(state, 'build:api');
+  assert.equal(scope.includes('apps/api/migrations/001_initial.sql'), false, 'a protected path part must not be staged');
+  assert.equal(scope.includes('apps/api/.env'), false, 'a protected name must not be staged');
+  assert.equal(scope.includes('apps/api/package.json'), true, 'a manifest a check needs must be staged');
+  assert.equal(scope.includes('package.json'), true, 'the repository manifest must be staged');
+  assert.throws(() => c.checkScope(state, 'check:unknown'), /No staged workspace is defined/);
+});
+
 test('child execution never inherits the controller signing key', async () => {
   const c = setup();
   const result = await c.execute(process.execPath, ['-e', 'process.stdout.write(String(Object.hasOwn(process.env,"READINESS_KEY")))'], c.root);
