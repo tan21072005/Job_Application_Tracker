@@ -1,7 +1,7 @@
 {
   "kind": "readiness-acceptance-report",
-  "at": "2026-10-22T06:48:43.656Z",
-  "runId": "dbf93db7-b515-46be-b021-e82ecf04015d",
+  "at": "2026-10-22T07:53:08.396Z",
+  "runId": "db1526d5-bd35-4318-9c9a-53e2f2b3eb20",
   "passed": true,
   "findings": [
     {
@@ -87,16 +87,16 @@
   ],
   "receipt": {
     "schemaVersion": 2,
-    "runId": "dbf93db7-b515-46be-b021-e82ecf04015d",
-    "issuedAt": "2026-10-22T06:48:41.421Z",
-    "expiresAt": "2026-10-22T07:03:41.421Z",
+    "runId": "db1526d5-bd35-4318-9c9a-53e2f2b3eb20",
+    "issuedAt": "2026-10-22T07:53:04.846Z",
+    "expiresAt": "2026-10-22T08:08:04.846Z",
     "binding": {
       "taskId": "readiness-canary",
       "feature": "web",
       "base": "main",
       "sourceDigest": "5d8f65d2774e206bc9f7a7a4ad39ca2dc563b5c31e46ab57ef4874961237ce29",
       "projectionManifestHash": "db407a3cf46618291436f401b1e16657be17ec64222f5ca0c55e5c293d74811c",
-      "policyHash": "5cd156522a1daf2a9b6d108303ae87e60214a2b0885c55143fee51687e7a31d8",
+      "policyHash": "75a18d466e7fc53002e6c256b98ef0f5962c5ac6450affcf40087f72a0b88541",
       "environmentHash": "caa07ddb6ad4d78177f2f9d2f6f3df2146bfc9866ed84ef7a42da3b2e0c00e70",
       "purpose": "worker-read",
       "profileHash": "0a45317b4ee2b5214c15403decd559f3b7ee09a04887317b1c226c2bb8bc6c17",
@@ -108,9 +108,9 @@
       "probeProgramHash": "ad2a798a5c9fd4701b7df12f4011f0d18be49e46965c2d6416b0d4c195edf195"
     },
     "evidence": {
-      "path": "dbf93db7-b515-46be-b021-e82ecf04015d.evidence.json",
-      "rawSha256": "454d5be462a9ec89f337f7bba4f2fbfa05f65e1a6a08220b95f547c2944d28b3",
-      "completedAt": "2026-10-22T06:48:41.242Z",
+      "path": "db1526d5-bd35-4318-9c9a-53e2f2b3eb20.evidence.json",
+      "rawSha256": "7e65b5547f538bda8cf84973cb02cb25b8a08fae117724d13902a28ef3141c26",
+      "completedAt": "2026-10-22T07:53:04.612Z",
       "bytes": 9876
     },
     "verifier": {
@@ -125,9 +125,9 @@
       "egress": true,
       "gateA": true
     },
-    "signature": "d5b90d6a2c96e21478ec27d2ba415d46a025695e56b72e5ae185da6fdcc69a39"
+    "signature": "f949ab48737c447cf910fd723063134c9888ba0b0a6fc0906f4b8f8bb138200e"
   },
-  "signingKeyFingerprint": "3f1fa09a664335d9cb31ea61110d408e30d5222f9a0d528c13611deeafe9fe69",
+  "signingKeyFingerprint": "2cd321f40322a5e557ac1f8bfeee7ccf527ed5a7907b1291e18ae6675419d7a9",
   "check": {
     "kind": "isolated-check-profile-not-readiness-receipt",
     "checkId": "build:api",
@@ -162,19 +162,19 @@
     "observedMounts": [
       {
         "kind": "candidate",
-        "source": "D:\\Long-term\\JobTrack-acceptance-dbf93db7\\candidate",
+        "source": "D:\\Long-term\\JobTrack-acceptance-db1526d5\\candidate",
         "target": "/candidate",
         "readOnly": true
       },
       {
         "kind": "scratch",
-        "source": "D:\\Long-term\\JobTrack-acceptance-dbf93db7\\scratch",
+        "source": "D:\\Long-term\\JobTrack-acceptance-db1526d5\\scratch",
         "target": "/scratch",
         "readOnly": false
       },
       {
         "kind": "fixtures",
-        "source": "D:\\Long-term\\JobTrack-acceptance-dbf93db7\\fixtures",
+        "source": "D:\\Long-term\\JobTrack-acceptance-db1526d5\\fixtures",
         "target": "/fixtures",
         "readOnly": true
       }
@@ -183,17 +183,17 @@
       {
         "target": "/candidate",
         "readOnly": true,
-        "source": "D:/Long-term/JobTrack-acceptance-dbf93db7/candidate"
+        "source": "D:/Long-term/JobTrack-acceptance-db1526d5/candidate"
       },
       {
         "target": "/scratch",
         "readOnly": false,
-        "source": "D:/Long-term/JobTrack-acceptance-dbf93db7/scratch"
+        "source": "D:/Long-term/JobTrack-acceptance-db1526d5/scratch"
       },
       {
         "target": "/fixtures",
         "readOnly": true,
-        "source": "D:/Long-term/JobTrack-acceptance-dbf93db7/fixtures"
+        "source": "D:/Long-term/JobTrack-acceptance-db1526d5/fixtures"
       }
     ]
   },

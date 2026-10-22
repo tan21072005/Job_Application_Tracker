@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -274,6 +274,14 @@ test('the probe program is shipped and reads its configuration from the environm
     assert.ok(program.includes(`'${commandId}'`), commandId);
   }
 });
+test('an approved dependency root outside the operator run root is refused', async () => {
+  const { runRoot, projection, scratch } = fixture();
+  const outside = mkdtempSync(join(tmpdir(), 'jobtrack-deps-'));
+  const adapter = createDockerAdapter({ repo: process.cwd(), runRoot, home: '' });
+  await assert.rejects(() => adapter.launch({ projection, scratch, command: ['node', 'worker.mjs'], dependencyRoots: [{ name: 'deps', source: outside }] }), /must live inside the operator run root/);
+  assert.equal(existsSync(outside), true);
+});
+
 test('the launch refuses an environment variable outside the allow list', async () => {
   const { runRoot, projection, scratch } = fixture();
   const adapter = createDockerAdapter({ repo: process.cwd(), runRoot, home: '' });

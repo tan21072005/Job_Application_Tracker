@@ -31,14 +31,15 @@ export function assertCheckEnvironment(env) {
   return env;
 }
 
-export function buildCheckEnvironment({ checkId, candidateDigest, fixtureRoot = CHECK_FIXTURE_TARGET, scratchRoot = CHECK_SCRATCH_TARGET, hostProbePath = '' }) {
+export function buildCheckEnvironment({ checkId, candidateDigest, fixtureRoot = CHECK_FIXTURE_TARGET, scratchRoot = CHECK_SCRATCH_TARGET, hostProbePath = '', nodePath = '' }) {
   const env = {
     HOME: '/nonexistent',
     CHECK_ID: checkId,
     CANDIDATE_DIGEST: candidateDigest,
     FIXTURE_ROOT: fixtureRoot,
     SCRATCH_ROOT: scratchRoot,
-    HOST_PROBE_PATH: hostProbePath
+    HOST_PROBE_PATH: hostProbePath,
+    NODE_PATH: nodePath
   };
   return assertCheckEnvironment(env);
 }

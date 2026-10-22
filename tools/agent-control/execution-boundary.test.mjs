@@ -92,6 +92,98 @@ test('a projection destination outside the operator run root is refused and noth
   assert.equal(existsSync(join(victim, 'keep.txt')), true);
 });
 
+test('a real repository fixed check runs and passes in the isolated profile', { skip: dockerReachable ? false : 'Docker is not reachable in this environment' }, async () => {
+  const runRoot = join('D:/Long-term', `jobtrack-boundary-repo-${Date.now()}`);
+  mkdirSync(runRoot, { recursive: true });
+  const projection = join(runRoot, 'projection');
+  const scratch = join(runRoot, 'scratch');
+  mkdirSync(projection, { recursive: true });
+  mkdirSync(scratch, { recursive: true });
+  const denied = [repositoryRoot, process.env.USERPROFILE ?? repositoryRoot].map(path => path.replaceAll('\\', '/'));
+  const credentialFile = join(runRoot, 'accounts.txt');
+  writeFileSync(credentialFile, 'fixture-only\n');
+  const egressServer = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end('{}');
+  });
+  let outcome = null;
+  try {
+    await new Promise(done => egressServer.listen(0, '0.0.0.0', done));
+    const egressPort = egressServer.address().port;
+    const catalog = {
+      taskId: 'repo-check',
+      feature: 'extension',
+      base: 'base-sha',
+      sourceDigest: '1'.repeat(64),
+      projectionManifestHash: '2'.repeat(64),
+      policyHash: controlPlaneFingerprint(repositoryRoot),
+      environmentHash: '4'.repeat(64),
+      purpose: 'check-runner',
+      profileHash: '5'.repeat(64),
+      adapterId: 'jobtrack-docker-adapter-v1',
+      imageDigest: DEFAULT_IMAGE.split('@sha256:')[1],
+      cliHash: '7'.repeat(64),
+      nodeHash: '8'.repeat(64),
+      verifierImplementationHash: controlPlaneFingerprint(repositoryRoot),
+      modelEndpoint: 'http://127.0.0.1:9/v1',
+      generalEgressEndpoint: `http://${process.env.JT_EGRESS_HOST ?? '192.168.1.251'}:${egressPort}/general`,
+      deniedHostPaths: {
+        'host-repo-read': denied[0],
+        'host-home-read': denied[1],
+        'control-plane-root': denied[0],
+        'common-git-read': `${denied[0]}/.git`,
+        'control-state-read': `${repositoryRoot.replaceAll('\\', '/')}/tools`,
+        'host-credential-read': credentialFile.replaceAll('\\', '/'),
+        'projection-write': projection.replaceAll('\\', '/'),
+        'host-write': denied[0]
+      },
+      mountSources: { projection: projection.replaceAll('\\', '/'), scratch: scratch.replaceAll('\\', '/') },
+      dockerBinaryHash: dockerBinaryHash('docker'),
+      probeProgramHash: probeProgramHash(repositoryRoot)
+    };
+    const adapter = createDockerAdapter({ repo: repositoryRoot, runRoot, image: DEFAULT_IMAGE, deniedPaths: denied });
+    const issuer = createReadinessIssuer({
+      catalog,
+      key: 'k'.repeat(48),
+      adapterRoot: repositoryRoot,
+      evidenceRoot: join(runRoot, 'evidence'),
+      contextDirectory: join(runRoot, 'context'),
+      adapter,
+      broker: { probe: async () => ({ connected: true }) }
+    });
+    const boundary = createExecutionBoundary({
+      context: (state, request) => ({ ...catalog, taskId: state.id, purpose: request.purpose, projectionManifestHash: request.projectionManifestHash, sourceDigest: request.sourceDigest }),
+      projection: { allowedRoot: resolve(runRoot), destinationFor: () => projection, scratchFor: () => scratch },
+      adapter,
+      issuer
+    });
+    outcome = await boundary.run({ worktree: repositoryRoot, id: 'repo-check' }, {
+      purpose: 'check-runner',
+      check: 'test:extension',
+      files: [
+        'packages/jobtrack-extension/extension.test.mjs',
+        'packages/jobtrack-extension/manifest.json',
+        'packages/jobtrack-extension/content.js',
+        'packages/jobtrack-extension/options.js',
+        'packages/jobtrack-extension/popup.js',
+        'packages/jobtrack-extension/options.html',
+        'packages/jobtrack-extension/popup.html',
+        'packages/jobtrack-extension/README.md'
+      ],
+      sourceDigest: '1'.repeat(64),
+      command: ['node', '--test', 'packages/jobtrack-extension/extension.test.mjs']
+    });
+  } finally {
+    egressServer.closeAllConnections?.();
+    egressServer.close();
+    rmSync(runRoot, { recursive: true, force: true });
+  }
+  assert.equal(outcome.launched.status, 0, outcome.launched.stderr);
+  assert.match(outcome.launched.stdout, /pass 7/);
+  assert.match(outcome.launched.stdout, /fail 0/);
+  assert.equal(outcome.receipt.derived.gateA, true);
+});
+
 test('a receipt must match the binding, be unexpired and record a passing gate', () => {
   const binding = bindingFixture();
   const receipt = receiptFixture(binding);

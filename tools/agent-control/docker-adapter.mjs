@@ -9,8 +9,9 @@ export const PROJECTION_TARGET = '/projection';
 export const SCRATCH_TARGET = '/scratch';
 export const FIXTURE_TARGET = '/fixtures';
 export const CANDIDATE_TARGET = '/candidate';
+export const DEPENDENCY_TARGET = '/deps';
 export const CONTAINER_UID = 65534;
-export const ALLOWED_LAUNCH_ENV_KEYS = Object.freeze(['HOME', 'CHECK_ID', 'CANDIDATE_DIGEST', 'FIXTURE_ROOT', 'SCRATCH_ROOT', 'HOST_PROBE_PATH']);
+export const ALLOWED_LAUNCH_ENV_KEYS = Object.freeze(['HOME', 'CHECK_ID', 'CANDIDATE_DIGEST', 'FIXTURE_ROOT', 'SCRATCH_ROOT', 'HOST_PROBE_PATH', 'NODE_PATH']);
 export const CONTAINER_GID = 65534;
 export const DEFAULT_MEMORY = '512m';
 export const DEFAULT_PIDS = '256';
@@ -92,8 +93,11 @@ export function assertAllowedLaunchEnv(env) {
   return true;
 }
 
-export function buildMountArgs({ projection, scratch, fixtures, candidate }) {
+export function buildMountArgs({ projection, scratch, fixtures, candidate, dependencyRoots = [] }) {
   const mounts = [];
+  for (const root of dependencyRoots) {
+    mounts.push({ kind: 'dependency', source: root.source, target: `${DEPENDENCY_TARGET}/${root.name}`, readOnly: true });
+  }
   if (projection) mounts.push({ kind: 'projection', source: projection, target: PROJECTION_TARGET, readOnly: true });
   if (candidate) mounts.push({ kind: 'candidate', source: candidate, target: CANDIDATE_TARGET, readOnly: true });
   if (scratch) mounts.push({ kind: 'scratch', source: scratch, target: SCRATCH_TARGET, readOnly: false });
@@ -335,7 +339,7 @@ export function assertContainerMatchesDeclaration(observation, { imageDigest, ex
 }
 
 export function buildLaunchArgs(options) {
-  const { image, runId, projection, scratch, fixtures, candidate, command, mode = 'run', workdir = SCRATCH_TARGET, role = 'worker', env = {} } = options;
+  const { image, runId, projection, scratch, fixtures, candidate, dependencyRoots = [], command, mode = 'run', workdir = SCRATCH_TARGET, role = 'worker', env = {} } = options;
   assertPinnedImage(image);
   if (!Array.isArray(command) || !command.length) throw Error('Adapter launch needs a command.');
   assertAllowedLaunchEnv(env);
@@ -343,7 +347,7 @@ export function buildLaunchArgs(options) {
     mode,
     ...(mode === 'run' ? ['--rm'] : []),
     ...buildRunArgs({ image, runId, role, workdir }).slice(1),
-    ...buildMountArgs({ projection: candidate ? null : projection, scratch, fixtures, candidate }),
+    ...buildMountArgs({ projection: candidate ? null : projection, scratch, fixtures, candidate, dependencyRoots }),
     ...Object.entries(env).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
     image,
     ...command
@@ -527,6 +531,12 @@ export function createDockerAdapter(options = {}) {
         assertInsideRoot(runRoot, fixtures, 'Fixtures');
         assertNotDeniedPath(denied, canonicalSource(fixtures));
       }
+      const dependencyRoots = (launchOptions.dependencyRoots ?? []).map(root => {
+        const source = assertDirectory(root.source);
+        assertInsideRoot(runRoot, source, `Dependency root ${root.name}`);
+        assertNotDeniedPath(denied, canonicalSource(source));
+        return { name: root.name, source };
+      });
       assertAllowedLaunchEnv(launchOptions.env ?? {});
       const target = profile === 'check' ? CANDIDATE_TARGET : PROJECTION_TARGET;
       const args = buildLaunchArgs({
@@ -536,6 +546,7 @@ export function createDockerAdapter(options = {}) {
         scratch,
         fixtures,
         candidate: profile === 'check' ? projection : null,
+        dependencyRoots,
         command,
         mode: 'create',
         role: profile,
@@ -545,6 +556,7 @@ export function createDockerAdapter(options = {}) {
       const mounts = declaredMounts(profile === 'check' ? null : projection, scratch);
       if (profile === 'check') mounts.push({ kind: 'candidate', source: projection, target: CANDIDATE_TARGET, readOnly: true });
       if (fixtures) mounts.push({ kind: 'fixtures', source: fixtures, target: FIXTURE_TARGET, readOnly: true });
+      for (const root of dependencyRoots) mounts.push({ kind: 'dependency', source: root.source, target: `${DEPENDENCY_TARGET}/${root.name}`, readOnly: true });
       assertNoHostAccess(args, forbidden, mounts, { image });
       const created = runDocker(['create', '-i', ...args.slice(1)], '', launchOptions.timeoutMs ?? 120_000);
       const containerId = String(created.stdout ?? '').trim().split(/\s+/)[0] ?? '';
