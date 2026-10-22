@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PageWeave — Web Data Assistant & JobTrack Pro",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Trợ lý dữ liệu web đa ngành: Bóc tách bảng, danh sách, so sánh sản phẩm, tài liệu nghiên cứu & quản lý tuyển dụng JobTrack.",
   "permissions": [
     "activeTab",
