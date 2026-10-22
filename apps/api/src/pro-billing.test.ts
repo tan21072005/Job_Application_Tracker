@@ -499,3 +499,91 @@ test('Webhook: a cancelled order is refused and creates no membership', async ()
   assert.equal(await readMembership(userId), null);
   assert.equal((await readOrder(orderId))?.status, 'cancelled');
 });
+
+test('Webhook: a cancelled order is refused before the amount is compared', async () => {
+  const { userId } = await registerUser();
+  const orderId = randomUUID();
+  const transferCode = `JTPRO${randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase()}`;
+
+  await pool.query(
+    `INSERT INTO payment_orders (id, user_id, plan, amount, currency, transfer_code, status, payment_method)
+     VALUES ($1, $2, 'monthly', 99000, 'VND', $3, 'cancelled', 'test')`,
+    [orderId, userId, transferCode]
+  );
+
+  const result = await deliverWebhook({ transferCode, amount: 1 });
+
+  assert.equal(result.status, 409);
+  assert.equal(result.body.code, 'order_cancelled');
+  assert.equal(await readMembership(userId), null);
+});
+
+test('Webhook: an amount that mixes a grouping separator with decimals is refused', async () => {
+  const { cookie, userId } = await registerUser();
+  const checkout = await createOrder(cookie, 'monthly');
+
+  for (const amount of ['99,000.000', '99000.000', '249.000.000', '1.234.567', 'abc', '-99000']) {
+    const result = await deliverWebhook({
+      transferCode: checkout.body.transferCode,
+      amount
+    });
+
+    assert.equal(result.status, 400, `amount ${JSON.stringify(amount)} must be refused`);
+    assert.equal(result.body.code, 'amount_mismatch');
+    await expectPending(checkout.body.orderId, userId);
+  }
+});
+
+test('Webhook: an amount written with one grouping separator is accepted', async () => {
+  const { cookie, userId } = await registerUser();
+  const checkout = await createOrder(cookie, 'monthly');
+
+  for (const amount of ['99.000', '99,000']) {
+    const result = await deliverWebhook({
+      transferCode: checkout.body.transferCode,
+      amount
+    });
+
+    assert.equal(result.status, 200, `amount ${JSON.stringify(amount)} must be accepted`);
+    assert.equal(result.body.success, true);
+  }
+
+  const membership = await readMembership(userId);
+  assert.equal(membership?.tier, 'pro');
+});
+
+test('Webhook: an order code embedded in a longer token is not honoured', async () => {
+  const { cookie, userId } = await registerUser();
+  const checkout = await createOrder(cookie, 'monthly');
+
+  const result = await deliverWebhook({
+    amount: 99000,
+    content: `Chuyen khoan don hang ${checkout.body.transferCode}456`
+  });
+
+  assert.equal(result.status, 404);
+  assert.equal(result.body.code, 'order_not_found');
+  await expectPending(checkout.body.orderId, userId);
+});
+
+test('Checkout: a payment mode that differs from the exact value fails closed', async () => {
+  const { cookie, userId } = await registerUser();
+  const before = await pool.query<{ count: number }>(
+    'SELECT count(*)::int AS count FROM payment_orders WHERE user_id = $1',
+    [userId]
+  );
+
+  for (const mode of ['Test', 'TEST ', 'test ', 'live']) {
+    process.env.PAYMENT_MODE = mode;
+    const checkout = await createOrder(cookie, 'monthly');
+    assert.equal(checkout.status, 503, `PAYMENT_MODE=${JSON.stringify(mode)} must fail closed`);
+    assert.equal(checkout.body.code, 'live_payments_unavailable');
+  }
+  process.env.PAYMENT_MODE = 'test';
+
+  const after = await pool.query<{ count: number }>(
+    'SELECT count(*)::int AS count FROM payment_orders WHERE user_id = $1',
+    [userId]
+  );
+  assert.equal(after.rows[0].count, before.rows[0].count);
+});

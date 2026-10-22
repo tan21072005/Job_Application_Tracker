@@ -31,10 +31,22 @@ Gói Pro chỉ được kích hoạt bởi webhook thanh toán đã ký. `POST /
 
 | Biến môi trường | Giá trị | Ý nghĩa |
 | --- | --- | --- |
-| `PAYMENT_MODE` | `test` | Bật checkout ở chế độ thử nghiệm: đơn hàng được giá ở máy chủ và không có thông tin tài khoản ngân hàng. Giá trị khác, kể cả không đặt, tắt checkout với `503 live_payments_unavailable` và không tạo đơn hàng nào. |
+| `PAYMENT_MODE` | `test` | Bật checkout ở chế độ thử nghiệm: đơn hàng được giá ở máy chủ và không có thông tin tài khoản ngân hàng. Giá trị khác, kể cả không đặt, tắt checkout với `503 live_payments_unavailable` và không tạo đơn hàng nào. So sánh là tuyệt đối: `Test` hay `test ` cũng tắt checkout. |
 | `PAYMENT_WEBHOOK_SECRET` | chuỗi bí mật tối thiểu 16 ký tự | Khoá HMAC-SHA256 dùng ký webhook. Webhook không có khoá này trả `503 payment_webhook_not_configured`. |
 
+Hai biến này chỉ được mô tả ở mục này, vì repository không có tệp `.env.example` được theo dõi.
+
 Webhook nhận hai header: `X-JobTrack-Timestamp` (mili giây kể từ epoch) và `X-JobTrack-Signature` gồm `v1=` theo sau là HMAC-SHA256 hex của chuỗi `<timestamp>.<raw body>`. Cửa sổ chấp nhận là 5 phút; chữ ký sai hoặc cũ trả `401 invalid_webhook_signature` hoặc `400 stale_webhook` và không đổi dữ liệu nào.
+
+Các kết cục còn lại của webhook:
+
+| Mã lỗi | HTTP | Ý nghĩa |
+| --- | --- | --- |
+| `order_not_found` | 404 | Không có đơn hàng nào khớp mã đơn trong giao dịch. |
+| `amount_mismatch` | 400 | Số tiền trong giao dịch không đủ số tiền của đơn hàng, hoặc không đúng định dạng số mà máy chủ chấp nhận. |
+
+Định dạng số tiền được chấp nhận: số nguyên không dấu phân cách, số nguyên có đúng một dấu phân cách nghìn (`249.000` hoặc `249,000`), hoặc số có tối đa hai chữ số thập phân. Mọi định dạng khác, kể cả số trộn dấu phân cách nghìn với phần thập phân, bị từ chối và đơn hàng vẫn ở trạng thái `pending`.
+| `order_cancelled` | 409 | Đơn hàng đã bị hủy nên không thể kích hoạt gói Pro. Không nên gửi lại giao dịch này. |
 
 Giá và thời hạn gói Pro lấy từ dòng đơn hàng, không lấy từ nội dung webhook; người được kích hoạt là chủ đơn hàng. Giao dịch hoàn tất trong một transaction có `SELECT ... FOR UPDATE`, nên giao dịch lặp hoặc giao dịch chạy song song chỉ cộng Pro đúng một lần.
 

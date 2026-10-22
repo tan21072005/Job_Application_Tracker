@@ -49,14 +49,17 @@ const PAYMENT_TEST_NOTICE =
   'Thanh toán đang ở chế độ thử nghiệm: hệ thống chưa kết nối cổng thanh toán và chưa có thông tin nhận tiền. Gói Pro chỉ được kích hoạt bởi webhook thanh toán đã ký.';
 const TRANSFER_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const TRANSFER_CODE_PATTERN = /^JTPRO[A-Z0-9]{6}$/;
-const TRANSFER_CODE_SEARCH = /JTPRO[A-Z0-9]{6}/;
+const TRANSFER_CODE_SEARCH = /\bJTPRO[A-Z0-9]{6}\b/;
+const AMOUNT_PATTERN = /^(\d{1,9}|\d{1,3}[.,]\d{3}|\d+[.,]\d{1,2})$/;
+const GROUPED_AMOUNT_PATTERN = /^\d{1,3}[.,]\d{3}$/;
+const DECIMAL_AMOUNT_PATTERN = /^\d+[.,]\d{1,2}$/;
 
 export function normalizeProPlan(value: unknown): ProPlan {
   return value === 'quarterly' || value === 'yearly' ? value : 'monthly';
 }
 
 export function isPaymentTestMode(value: string | undefined = process.env[PAYMENT_MODE_ENV]): boolean {
-  return typeof value === 'string' && value.trim().toLowerCase() === PAYMENT_TEST_MODE;
+  return value === PAYMENT_TEST_MODE;
 }
 
 function createTransferCode(): string {
@@ -83,12 +86,14 @@ function readTransferCode(payload: Record<string, unknown>): string {
 function readWebhookAmount(value: unknown): number {
   if (typeof value === 'number') return Number.isFinite(value) ? Math.trunc(value) : NaN;
   if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (!trimmed) return NaN;
-    const withoutGrouping = trimmed
-      .replace(/[.,](?=\d{3}(?:\D|$))/g, '')
-      .replace(/[^\d.-]/g, '');
-    const parsed = Number(withoutGrouping);
+    const text = value.trim();
+    if (!AMOUNT_PATTERN.test(text)) return NaN;
+    const normalized = GROUPED_AMOUNT_PATTERN.test(text)
+      ? text.replace(/[.,]/g, '')
+      : DECIMAL_AMOUNT_PATTERN.test(text)
+        ? text.replace(/[.,]/, '.')
+        : text;
+    const parsed = Number(normalized);
     return Number.isFinite(parsed) ? Math.trunc(parsed) : NaN;
   }
   return NaN;
@@ -409,15 +414,15 @@ export class AiProService {
       }
 
       const order = orderRes.rows[0];
+      if (order.status === 'cancelled') {
+        fail(409, 'Đơn hàng này đã bị hủy nên không thể kích hoạt gói Pro.', 'order_cancelled');
+      }
+
       if (!Number.isFinite(paidAmount) || paidAmount < Number(order.amount)) {
         fail(400, `Số tiền thanh toán (${paidAmount} VND) chưa đủ cho gói (${order.amount} VND).`, 'amount_mismatch');
       }
 
       const plan = normalizeProPlan(order.plan);
-
-      if (order.status === 'cancelled') {
-        fail(409, 'Đơn hàng này đã bị hủy nên không thể kích hoạt gói Pro.', 'order_cancelled');
-      }
 
       if (order.status !== 'pending') {
         return {
