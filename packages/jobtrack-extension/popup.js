@@ -817,9 +817,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   function checkoutNoticeText(checkout) {
     const serverNotice = typeof checkout.testNotice === 'string' ? checkout.testNotice.trim() : '';
     if (serverNotice) return serverNotice;
-    return checkout.mode === 'test'
-      ? 'Thanh toán đang ở chế độ thử nghiệm, hệ thống chưa kết nối cổng thanh toán.'
-      : 'Thanh toán đang ở chế độ thật.';
+    const mode = typeof checkout.mode === 'string' ? checkout.mode.trim() : '';
+    if (mode === 'test') return 'Máy chủ báo chế độ thử nghiệm.';
+    if (mode) return `Máy chủ báo chế độ thanh toán: ${mode}.`;
+    return 'Máy chủ chưa trả về thông tin chế độ thanh toán.';
   }
 
   async function refreshCheckout() {
@@ -842,8 +843,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const checkout = await res.json();
       checkoutNotice.textContent = checkoutNoticeText(checkout);
-      qrAmount.textContent = `${checkout.amount.toLocaleString('vi-VN')} đ`;
-      qrTransferCode.textContent = checkout.transferCode;
+      const amount = Number(checkout.amount);
+      qrAmount.textContent = Number.isFinite(amount) ? `${amount.toLocaleString('vi-VN')} đ` : '—';
+      qrTransferCode.textContent = checkout.transferCode ? String(checkout.transferCode) : '—';
     } catch (err) {
       console.warn('Lỗi checkout:', err);
       resetCheckoutSummary();
