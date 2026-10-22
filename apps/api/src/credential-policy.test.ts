@@ -60,7 +60,7 @@ test('Credential policy: a missing credential is rejected', () => {
 });
 
 test('Credential policy: a malformed or unsupported authorization header never falls back to the session', () => {
-  for (const [form, reason] of [['empty', 'empty-token'], ['malformed', 'malformed-authorization'], ['unsupported-scheme', 'unsupported-scheme']]) {
+  for (const [form, reason] of [['empty', 'empty-token'], ['malformed', 'malformed-authorization'], ['unsupported-scheme', 'unsupported-scheme']] as const) {
     const decision = decideCredential({ bearerForm: form, grant: validGrant, session: validSession });
     assert.equal(decision.kind, 'rejected', form);
     assert.equal(decision.kind === 'rejected' ? decision.reason : null, reason);
