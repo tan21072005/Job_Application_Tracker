@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -179,12 +179,19 @@ test('a real repository fixed check runs and passes in the isolated profile', { 
     rmSync(runRoot, { recursive: true, force: true });
   }
   assert.equal(outcome.launched.status, 0, outcome.launched.stderr);
-  const reportedTests = outcome.launched.stdout.match(/tests (\d+)/);
-  const reportedPassed = outcome.launched.stdout.match(/pass (\d+)/);
+  const extensionTestSource = readFileSync(
+    join(repositoryRoot, 'packages/jobtrack-extension/extension.test.mjs'),
+    'utf8'
+  );
+  const expectedTestCount = (extensionTestSource.match(/^test\(/gm) ?? []).length;
+  assert.ok(expectedTestCount >= 2, 'the extension suite must declare more than one test');
+  const reportedTests = outcome.launched.stdout.match(/^\s*[ℹ#]\s*tests (\d+)/m);
+  const reportedPassed = outcome.launched.stdout.match(/^\s*[ℹ#]\s*pass (\d+)/m);
   assert.ok(reportedTests, 'the check must report how many tests it ran');
   assert.ok(reportedPassed, 'the check must report how many tests passed');
-  assert.equal(reportedPassed[1], reportedTests[1], 'every extension check test must pass in the isolated profile');
-  assert.match(outcome.launched.stdout, /fail 0/);
+  assert.equal(Number(reportedTests[1]), expectedTestCount, 'the check must run every declared extension test');
+  assert.equal(Number(reportedPassed[1]), Number(reportedTests[1]), 'every extension check test must pass in the isolated profile');
+  assert.match(outcome.launched.stdout, /^\s*[ℹ#]\s*fail 0$/m);
   assert.equal(outcome.receipt.derived.gateA, true);
 });
 
