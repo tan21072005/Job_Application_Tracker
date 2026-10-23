@@ -17,6 +17,9 @@ import {
   type CandidateProfileMutationInput,
   type AtsMatchResultDTO,
   type CoverLetterResultDTO,
+  type JobSubscriptionDTO,
+  type SubscriptionMutationInput,
+  type CrawlRunResultDTO,
   formatAsCsv
 } from '@jobtrack/contract';
 
@@ -523,5 +526,143 @@ export const aiRepository = {
     });
   }
 };
+
+export const subscriptionRepository = {
+  async list(): Promise<JobSubscriptionDTO[]> {
+    if (demoMode) {
+      if (typeof localStorage === 'undefined') return [];
+      const stored = localStorage.getItem('jobtrack.subscriptions.v1');
+      if (!stored) return [];
+      try {
+        return JSON.parse(stored) as JobSubscriptionDTO[];
+      } catch {
+        return [];
+      }
+    }
+    return request<JobSubscriptionDTO[]>('/subscriptions');
+  },
+
+  async create(input: SubscriptionMutationInput): Promise<JobSubscriptionDTO> {
+    if (demoMode) {
+      const sub: JobSubscriptionDTO = {
+        id: `demo-sub-${Date.now()}`,
+        userId: 'demo-user',
+        title: input.title,
+        keywords: input.keywords || [],
+        location: input.location || null,
+        minSalary: input.minSalary || null,
+        sources: input.sources || ['TopCV', 'ITViec'],
+        isActive: input.isActive ?? true,
+        lastCheckedAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (typeof localStorage !== 'undefined') {
+        const existing = await this.list();
+        localStorage.setItem('jobtrack.subscriptions.v1', JSON.stringify([...existing, sub]));
+      }
+      return sub;
+    }
+    return request<JobSubscriptionDTO>('/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async toggle(id: string, isActive?: boolean): Promise<JobSubscriptionDTO> {
+    if (demoMode) {
+      const items = await this.list();
+      let updated: JobSubscriptionDTO | null = null;
+      const next = items.map(s => {
+        if (s.id === id) {
+          updated = {
+            ...s,
+            isActive: typeof isActive === 'boolean' ? isActive : !s.isActive,
+            updatedAt: new Date().toISOString()
+          };
+          return updated;
+        }
+        return s;
+      });
+      if (typeof localStorage !== 'undefined' && updated) {
+        localStorage.setItem('jobtrack.subscriptions.v1', JSON.stringify(next));
+      }
+      if (!updated) throw new ApiError('Không tìm thấy bộ lọc đăng ký.', 404);
+      return updated;
+    }
+    return request<JobSubscriptionDTO>(`/subscriptions/${encodeURIComponent(id)}/toggle`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive })
+    });
+  },
+
+  async remove(id: string): Promise<void> {
+    if (demoMode) {
+      const items = await this.list();
+      const next = items.filter(s => s.id !== id);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('jobtrack.subscriptions.v1', JSON.stringify(next));
+      }
+      return;
+    }
+    return request<void>(`/subscriptions/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+  },
+
+  async runScan(id: string): Promise<CrawlRunResultDTO> {
+    if (demoMode) {
+      const subs = await this.list();
+      const sub = subs.find(s => s.id === id);
+      if (!sub) throw new ApiError('Không tìm thấy bộ lọc đăng ký.', 404);
+      if (!sub.isActive) throw new ApiError('Bộ lọc đăng ký đang bị tạm dừng.', 400);
+
+      const kw = sub.keywords[0] || 'Software';
+      const itemsResult: CrawlRunResultDTO['items'] = [
+        { company: 'FPT Software', position: `${kw} Engineer`, status: 'saved' },
+        { company: 'VNG Corporation', position: `Senior ${kw} Lead`, status: 'saved' }
+      ];
+
+      sub.lastCheckedAt = new Date().toISOString();
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('jobtrack.subscriptions.v1', JSON.stringify(subs));
+      }
+
+      for (const item of itemsResult) {
+        try {
+          await repository.save({
+            company: item.company,
+            position: item.position,
+            location: sub.location || 'Hà Nội',
+            salary: sub.minSalary ? `${sub.minSalary.toLocaleString('vi-VN')} VND+` : 'Thương lượng',
+            status: 'Saved',
+            source: 'radar',
+            jobCode: '',
+            workMode: 'Hybrid',
+            url: '',
+            notes: '',
+            appliedAt: '',
+            nextAction: '',
+            deadline: ''
+          });
+        } catch {}
+      }
+
+      return {
+        subscriptionId: sub.id,
+        subscriptionTitle: sub.title,
+        found: 2,
+        matched: 2,
+        saved: 2,
+        skippedDuplicates: 0,
+        items: itemsResult
+      };
+    }
+    return request<CrawlRunResultDTO>(`/subscriptions/${encodeURIComponent(id)}/run`, {
+      method: 'POST'
+    });
+  }
+};
+
 
 

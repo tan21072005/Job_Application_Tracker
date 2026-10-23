@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { repository, aiRepository, profileRepository } from './data';
+import { repository, aiRepository, profileRepository, subscriptionRepository } from './data';
 import { emptyDraft, type Application } from './domain';
 
 afterEach(() => {
@@ -182,6 +182,43 @@ describe('repository Trash & Restore lifecycle', () => {
     const trashAfterPurge = await repository.listTrash();
     expect(trashAfterPurge.some(a => a.id === created.id)).toBe(false);
   });
+
+  it('subscriptionRepository creates, lists, toggles, runs scan, and deletes subscriptions in demo mode', async () => {
+    vi.stubGlobal('localStorage', mockStorage);
+    const sub = await subscriptionRepository.create({
+      title: 'Senior Node.js Developer',
+      keywords: ['Node.js', 'PostgreSQL'],
+      location: 'Hà Nội',
+      minSalary: 35000000,
+      sources: ['TopCV', 'ITViec'],
+      isActive: true
+    });
+
+    expect(sub.id).toBeTruthy();
+    expect(sub.title).toBe('Senior Node.js Developer');
+    expect(sub.isActive).toBe(true);
+
+    const list = await subscriptionRepository.list();
+    expect(list.some(s => s.id === sub.id)).toBe(true);
+
+    const toggled = await subscriptionRepository.toggle(sub.id, false);
+    expect(toggled.isActive).toBe(false);
+
+    await expect(subscriptionRepository.runScan(sub.id)).rejects.toThrow();
+
+    await subscriptionRepository.toggle(sub.id, true);
+    const scan = await subscriptionRepository.runScan(sub.id);
+    expect(scan.subscriptionId).toBe(sub.id);
+    expect(scan.saved).toBeGreaterThan(0);
+
+    const apps = await repository.list();
+    expect(apps.some(a => a.source === 'radar')).toBe(true);
+
+    await subscriptionRepository.remove(sub.id);
+    const afterDelete = await subscriptionRepository.list();
+    expect(afterDelete.some(s => s.id === sub.id)).toBe(false);
+  });
 });
+
 
 
