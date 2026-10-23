@@ -1,4 +1,4 @@
-import { request } from './transport';
+import { request, ApiError } from './transport';
 import { validApplications } from './validation';
 import { emptyDraft, resolveLocalTime, deviceTimezone, type Application, type Draft, type Interview } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
@@ -13,6 +13,8 @@ import {
   type DatasetWireDTO,
   type DatasetRecordWireDTO,
   type DatasetMutationInput,
+  type CandidateProfileWireDTO,
+  type CandidateProfileMutationInput,
   formatAsCsv
 } from '@jobtrack/contract';
 
@@ -313,6 +315,51 @@ export const datasetRepository = {
     }
     const res = await fetch(`/api/datasets/${encodeURIComponent(id)}/export`, { credentials: 'include' });
     return res.text();
+  }
+};
+
+export const profileRepository = {
+  async get(): Promise<CandidateProfileWireDTO | null> {
+    if (demoMode) {
+      const stored = localStorage.getItem('jobtrack.candidate.profile.v1');
+      if (!stored) return null;
+      try {
+        return JSON.parse(stored) as CandidateProfileWireDTO;
+      } catch {
+        return null;
+      }
+    }
+    try {
+      return await request<CandidateProfileWireDTO>('/profile');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    }
+  },
+
+  async save(input: CandidateProfileMutationInput): Promise<CandidateProfileWireDTO> {
+    if (demoMode) {
+      const profile: CandidateProfileWireDTO = {
+        userId: 'demo-user',
+        fullName: input.fullName,
+        email: input.email,
+        phone: input.phone || null,
+        cvUrl: input.cvUrl || null,
+        portfolioUrl: input.portfolioUrl || null,
+        skills: input.skills || [],
+        bio: input.bio || null,
+        customAnswers: input.customAnswers || {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem('jobtrack.candidate.profile.v1', JSON.stringify(profile));
+      return profile;
+    }
+    return request<CandidateProfileWireDTO>('/profile', {
+      method: 'PUT',
+      headers: input.expectedUpdatedAt ? { 'If-Match': input.expectedUpdatedAt } : {},
+      body: JSON.stringify(input)
+    });
   }
 };
 

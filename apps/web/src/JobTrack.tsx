@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Check, CircleAlert, LayoutDashboard, LoaderCircle, LogOut, Plus, RotateCcw, Trash2, X, KeyRound, Sparkles, Database } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Check, CircleAlert, LayoutDashboard, LoaderCircle, LogOut, Plus, RotateCcw, Trash2, X, KeyRound, Sparkles, Database, UserCheck } from 'lucide-react';
 import { demoMode, repository } from './data';
 import { ApiError } from './transport';
 import { duplicate, type Application, type Interview, type Status } from './domain';
@@ -14,6 +14,7 @@ import QuickAction from './components/QuickAction';
 import ImportLinkModal from './components/ImportLinkModal';
 import ChatWidget from './components/ChatWidget';
 import AiGrantsModal from './components/AiGrantsModal';
+import CandidateProfileModal from './components/CandidateProfileModal';
 
 function readRoute() {
   const [page, id, tab] = location.hash.slice(1).split('/');
@@ -38,6 +39,7 @@ export default function JobTrack() {
   const [reset, setReset] = useState(false);
   const [importModal, setImportModal] = useState(false);
   const [grantsModal, setGrantsModal] = useState(false);
+  const [profileModal, setProfileModal] = useState(false);
   const [toast, setToast] = useState<{ message: string; error: boolean } | null>(null);
   const request = useRef(0);
   const headingRef = useRef<HTMLElement>(null);
@@ -249,9 +251,10 @@ export default function JobTrack() {
   {form && <ApplicationForm app={form === 'edit' ? selected : undefined} apps={apps} onClose={() => setForm(null)} onSaved={id => void saved(id)} onOpenExisting={id => { setForm(null); navigate(`application/${id}`); }} onReload={() => { setForm(null); void refresh(); notify('Đã tải bản mới nhất.'); }} />}
   {interview !== undefined && selected && <InterviewForm app={selected} interview={interview || undefined} onClose={() => setInterview(undefined)} onSaved={() => { setInterview(undefined); void refresh(); notify('Đã lưu lịch phỏng vấn.'); }} />}
   {deletion && <Dialog title={deletion.round ? 'Xóa vòng phỏng vấn?' : 'Xóa vĩnh viễn hồ sơ?'} onClose={() => setDeletion(null)} busy={busy}><div className="dialog-body"><span className="delete-icon"><Trash2 size={27} /></span><h3>{deletion.round?.title || deletion.app.position}</h3><p className="delete-description">{deletion.round ? 'Chỉ xóa vòng phỏng vấn này. Hồ sơ ứng tuyển vẫn được giữ lại.' : `Xóa hồ sơ tại ${deletion.app.company} và ${deletion.app.interviews.length} vòng phỏng vấn liên quan.`}</p><p className="danger-text">Không thể khôi phục sau khi xóa.</p></div><footer className="dialog-actions"><Button kind="secondary" disabled={busy} onClick={() => setDeletion(null)}>Giữ lại</Button><Button kind="danger" disabled={busy} onClick={() => void remove()}>{busy ? 'Đang xóa…' : deletion.round ? 'Xóa phỏng vấn' : 'Xóa vĩnh viễn'}</Button></footer></Dialog>}
-  {account && <Dialog title="Không gian của bạn" onClose={() => setAccount(false)}><div className="dialog-body"><div className="account-summary"><span className="avatar">{demoMode ? 'NT' : 'TK'}</span><div><h3>{demoMode ? 'Nhật Tân' : 'Tài khoản'}</h3><p>{demoMode ? 'Đang khám phá với dữ liệu mẫu.' : accountEmail || 'Không gian ứng tuyển cá nhân.'}</p></div></div><Button kind="secondary" onClick={() => { setAccount(false); setGrantsModal(true); }}><KeyRound size={16} />Kết nối AI & MCP</Button>{demoMode && <Button kind="secondary" onClick={() => { setAccount(false); setReset(true); }}><RotateCcw size={16} />Khôi phục dữ liệu mẫu</Button>}<Button kind="ghost" onClick={() => void logout()}><LogOut size={17} />Đăng xuất</Button></div></Dialog>}
+  {account && <Dialog title="Không gian của bạn" onClose={() => setAccount(false)}><div className="dialog-body"><div className="account-summary"><span className="avatar">{demoMode ? 'NT' : 'TK'}</span><div><h3>{demoMode ? 'Nhật Tân' : 'Tài khoản'}</h3><p>{demoMode ? 'Đang khám phá với dữ liệu mẫu.' : accountEmail || 'Không gian ứng tuyển cá nhân.'}</p></div></div><Button kind="secondary" onClick={() => { setAccount(false); setProfileModal(true); }}><UserCheck size={16} />Hồ sơ ứng viên cá nhân</Button><Button kind="secondary" onClick={() => { setAccount(false); setGrantsModal(true); }}><KeyRound size={16} />Kết nối AI & MCP</Button>{demoMode && <Button kind="secondary" onClick={() => { setAccount(false); setReset(true); }}><RotateCcw size={16} />Khôi phục dữ liệu mẫu</Button>}<Button kind="ghost" onClick={() => void logout()}><LogOut size={17} />Đăng xuất</Button></div></Dialog>}
   {importModal && <ImportLinkModal apps={apps} onClose={() => setImportModal(false)} onSaved={id => void saved(id)} onOpenExisting={id => { setImportModal(false); navigate(`application/${id}`); }} />}
   {grantsModal && <AiGrantsModal onClose={() => setGrantsModal(false)} />}
+  {profileModal && <CandidateProfileModal onClose={() => setProfileModal(false)} onSaved={p => { setProfileModal(false); notify(`Đã lưu hồ sơ ứng viên: ${p.fullName}`); }} />}
   {authState === 'authenticated' && <ChatWidget onRefreshApps={() => void refresh()} onNavigate={navigate} />}
   {reset && <Dialog title="Khôi phục dữ liệu mẫu?" busy={busy} onClose={() => setReset(false)}><div className="dialog-body"><p>Các thay đổi trong bản dùng thử này sẽ được thay bằng dữ liệu mẫu ban đầu. Không thể hoàn tác.</p></div><footer className="dialog-actions"><Button kind="secondary" disabled={busy} onClick={() => setReset(false)}>Hủy</Button><Button disabled={busy} onClick={async () => { setBusy(true); try { await repository.reset(); setReset(false); await refresh(); navigate('dashboard'); notify('Đã khôi phục dữ liệu mẫu.'); } catch (error) { notify((error as Error).message, true); } finally { setBusy(false); } }}>Khôi phục</Button></footer></Dialog>}
   {authState === 'expired' && (

@@ -24,4 +24,44 @@ describe('live API adapter', () => {
     await repository.save({ ...emptyDraft, company: 'B', position: 'Role' }, undefined, { key: crypto.randomUUID() });
     expect(JSON.parse(fetcher.mock.calls[3][1].body as string).deadline).toBeNull();
   });
+
+  it('retrieves and updates candidate profile via profileRepository', async () => {
+    vi.stubEnv('VITE_DATA_MODE', 'api'); vi.resetModules();
+    const { profileRepository } = await import('./data');
+    const profileMock = {
+      userId: 'user-1',
+      fullName: 'Test User',
+      email: 'test@example.com',
+      phone: '+84 900 000 000',
+      cvUrl: 'https://example.com/cv.pdf',
+      portfolioUrl: 'https://github.com/test',
+      skills: ['TypeScript', 'React'],
+      bio: 'Bio text',
+      customAnswers: {},
+      createdAt: '2026-10-24T00:00:00Z',
+      updatedAt: '2026-10-24T00:00:00Z'
+    };
+    const fetcher = vi.fn().mockImplementation(async (url: string) => {
+      if (url === '/api/profile') {
+        return new Response(JSON.stringify(profileMock), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal('fetch', fetcher);
+
+    const fetched = await profileRepository.get();
+    expect(fetched).toEqual(profileMock);
+    expect(fetcher).toHaveBeenCalledWith('/api/profile', expect.objectContaining({ credentials: 'include' }));
+
+    await profileRepository.save({
+      fullName: 'Test User',
+      email: 'test@example.com',
+      expectedUpdatedAt: '2026-10-24T00:00:00Z'
+    });
+    const putCall = fetcher.mock.calls[1];
+    expect(putCall[0]).toBe('/api/profile');
+    const putOpts = putCall[1] as RequestInit;
+    expect(putOpts.method).toBe('PUT');
+    expect((putOpts.headers as Record<string, string>)['If-Match']).toBe('2026-10-24T00:00:00Z');
+  });
 });

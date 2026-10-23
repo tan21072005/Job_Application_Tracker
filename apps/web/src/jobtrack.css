@@ -62,3 +62,38 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 }
 
 
+
+.profile-dialog-layout{padding:20px 24px}
+.profile-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr);gap:24px;align-items:start}
+.profile-form-column{display:flex;flex-direction:column}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.input-with-icon{position:relative;display:flex;align-items:center}
+.input-with-icon svg{position:absolute;left:12px;color:var(--muted);pointer-events:none}
+.input-with-icon input{padding-left:36px!important}
+.skills-input-wrapper{display:flex;gap:8px}
+.skills-input-wrapper .input-with-icon{flex:1}
+.skills-chips-container{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.skill-chip{display:inline-flex;align-items:center;gap:6px;background:var(--soft);color:var(--primary);font-size:11px;font-weight:600;padding:4px 10px;border-radius:12px}
+.skill-chip button{background:transparent;color:var(--primary);padding:0;display:grid;place-items:center}
+.profile-preview-column{position:sticky;top:0}
+.preview-card{background:#fbfcfd;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.preview-header{display:flex;align-items:center;gap:8px;background:#f1f4f9;padding:10px 14px;font-size:11px;font-weight:600;color:var(--muted)}
+.preview-body{padding:16px;display:flex;flex-direction:column;gap:8px}
+.preview-avatar{width:48px;height:48px;background:var(--primary);color:white;border-radius:50%;font-size:16px;font-weight:700;display:grid;place-items:center;margin-bottom:4px}
+.preview-body h4{margin:0;font-size:15px;font-weight:700}
+.preview-email{font-size:11px;color:var(--muted);margin:0}
+.preview-meta{font-size:11px;color:var(--muted);margin:0}
+.preview-links{display:flex;flex-direction:column;gap:4px;margin:6px 0}
+.preview-links a{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--primary);text-decoration:none}
+.preview-links a:hover{text-decoration:underline}
+.preview-section{border-top:1px solid var(--line);padding-top:8px;margin-top:4px}
+.preview-section h5{margin:0 0 6px 0;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+.preview-skills{display:flex;flex-wrap:wrap;gap:4px}
+.preview-badge{background:#eef2f8;color:#3b506c;font-size:10px;padding:2px 7px;border-radius:4px}
+.preview-bio{font-size:11px;line-height:1.5;color:#4b586e;margin:0;white-space:pre-wrap}
+.preview-footer-notice{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);color:var(--success);font-size:10px;line-height:1.4}
+@media(max-width:768px){
+  .profile-grid{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .profile-preview-column{position:static}
+}
