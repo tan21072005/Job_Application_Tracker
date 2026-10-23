@@ -471,6 +471,17 @@ app.get('/api/applications', auth, async (req, res, next) => {
   }
 });
 
+app.get('/api/applications/trash', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const all = await jobTrackService.listApplications(userId, { includeDeleted: true });
+    const trash = all.filter(a => a.deletedAt !== null);
+    res.json(trash);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/api/applications/:id', auth, async (req, res, next) => {
   try {
     const record = await jobTrackService.getApplication((req as SessionRequest).userId, String(req.params.id));
@@ -534,13 +545,47 @@ app.delete('/api/applications/:id', auth, async (req, res, next) => {
     const userId = (req as SessionRequest).userId;
     const id = String(req.params.id);
     const ifMatch = req.get('If-Match');
+    const purge = req.query.soft !== 'true';
 
     await jobTrackService.deleteApplication(userId, id, {
       ifMatch,
       sessionId: (req as SessionRequest).sessionId,
-      purge: true
+      purge
     });
     res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/applications/:id/trash', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const id = String(req.params.id);
+    const ifMatch = req.get('If-Match');
+
+    await jobTrackService.deleteApplication(userId, id, {
+      ifMatch,
+      sessionId: (req as SessionRequest).sessionId,
+      purge: false
+    });
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/applications/:id/restore', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const id = String(req.params.id);
+    const ifMatch = req.get('If-Match');
+
+    const restored = await jobTrackService.restoreApplication(userId, id, {
+      ifMatch,
+      sessionId: (req as SessionRequest).sessionId
+    });
+    res.set('ETag', etag(id, restored.version)).json(restored);
   } catch (error) {
     next(error);
   }
