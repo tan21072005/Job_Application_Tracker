@@ -10,6 +10,7 @@ import {
   validateApplicationInput,
   validateInterviewInput,
   validateListQuery,
+  validateCandidateProfileInput,
   canonicalIntentHash,
   type StructuredErrorDTO,
   type ApplicationWireDTO,
@@ -821,7 +822,6 @@ app.delete('/api/ai/grants/:id', auth, async (req, res, next) => {
   }
 });
 
-// Candidate Profile Endpoints (Phase 5: Assisted Auto-Apply)
 app.get('/api/profile', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -838,19 +838,16 @@ app.get('/api/profile', auth, async (req, res, next) => {
 app.put('/api/profile', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const b = bodyObject(req.body);
-    const fullName = str(b.fullName, 120, 'fullName', true);
-    const email = str(b.email, 254, 'email', true);
-    const profile = await candidateProfileService.upsertProfile(userId, {
-      fullName,
-      email,
-      phone: typeof b.phone === 'string' ? b.phone.trim() : null,
-      cvUrl: typeof b.cvUrl === 'string' ? b.cvUrl.trim() : null,
-      portfolioUrl: typeof b.portfolioUrl === 'string' ? b.portfolioUrl.trim() : null,
-      skills: Array.isArray(b.skills) ? b.skills.map(String) : [],
-      bio: typeof b.bio === 'string' ? b.bio.trim() : null,
-      customAnswers: (b.customAnswers && typeof b.customAnswers === 'object') ? b.customAnswers as Record<string, string> : {}
-    });
+    const validation = validateCandidateProfileInput(req.body);
+    if (!validation.ok) {
+      throw new Problem(422, validation.message, 'invalid_request', validation.errors);
+    }
+    const input = { ...validation.data };
+    const ifMatch = req.headers['if-match'];
+    if (typeof ifMatch === 'string' && ifMatch.trim()) {
+      input.expectedUpdatedAt = ifMatch.replace(/^"|"$/g, '').trim();
+    }
+    const profile = await candidateProfileService.upsertProfile(userId, input);
     res.json(profile);
   } catch (error) {
     next(error);
