@@ -15,6 +15,8 @@ import {
   type DatasetMutationInput,
   type CandidateProfileWireDTO,
   type CandidateProfileMutationInput,
+  type AtsMatchResultDTO,
+  type CoverLetterResultDTO,
   formatAsCsv
 } from '@jobtrack/contract';
 
@@ -321,6 +323,7 @@ export const datasetRepository = {
 export const profileRepository = {
   async get(): Promise<CandidateProfileWireDTO | null> {
     if (demoMode) {
+      if (typeof localStorage === 'undefined') return null;
       const stored = localStorage.getItem('jobtrack.candidate.profile.v1');
       if (!stored) return null;
       try {
@@ -352,7 +355,9 @@ export const profileRepository = {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      localStorage.setItem('jobtrack.candidate.profile.v1', JSON.stringify(profile));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('jobtrack.candidate.profile.v1', JSON.stringify(profile));
+      }
       return profile;
     }
     return request<CandidateProfileWireDTO>('/profile', {
@@ -362,4 +367,87 @@ export const profileRepository = {
     });
   }
 };
+
+export const aiRepository = {
+  async analyzeAtsMatch(input: {
+    company: string;
+    position: string;
+    notes?: string | null;
+  }): Promise<AtsMatchResultDTO> {
+    if (demoMode) {
+      const profile = await profileRepository.get();
+      const candidateSkills = profile?.skills || ['TypeScript', 'React', 'Node.js', 'PostgreSQL'];
+      const text = `${input.position} ${input.company} ${input.notes || ''}`.toLowerCase();
+      const matchedSkills = candidateSkills.filter(skill => text.includes(skill.toLowerCase()));
+      const commonKeywords = ['TypeScript', 'React', 'Node.js', 'Docker', 'Kubernetes', 'AWS', 'CI/CD'];
+      const detectedJdSkills = commonKeywords.filter(k => text.includes(k.toLowerCase()));
+      if (!detectedJdSkills.length) {
+        detectedJdSkills.push(...input.position.split(/\s+/).filter(w => w.length > 2).slice(0, 4));
+      }
+      const missingSkills = detectedJdSkills.filter(k => !matchedSkills.some(m => m.toLowerCase().includes(k.toLowerCase())));
+      const score = Math.min(95, Math.max(35, Math.round((matchedSkills.length / Math.max(1, detectedJdSkills.length)) * 50 + 40)));
+      const overallFit = score >= 80 ? 'Xuất sắc' : score >= 65 ? 'Phù hợp' : score >= 50 ? 'Tiềm năng' : 'Cần bổ sung kỹ năng';
+      return {
+        score,
+        overallFit,
+        matchedSkills,
+        missingSkills,
+        recommendations: [
+          `Tối ưu hóa tiêu đề và kinh nghiệm liên quan đến "${input.position}".`,
+          missingSkills.length ? `Bổ sung các kỹ năng sau vào CV nếu có kinh nghiệm: ${missingSkills.join(', ')}.` : 'Hồ sơ đã khớp rất tốt các từ khóa công nghệ chính.'
+        ],
+        keywordBreakdown: detectedJdSkills.map((skill, idx) => ({
+          skill,
+          foundInCv: matchedSkills.some(m => m.toLowerCase().includes(skill.toLowerCase())),
+          importance: idx < 2 ? 'high' : idx < 4 ? 'medium' : 'bonus'
+        }))
+      };
+    }
+    return request<AtsMatchResultDTO>('/ai/pro/ats-match', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async generateCoverLetter(input: {
+    company: string;
+    position: string;
+    notes?: string | null;
+    language?: 'vi' | 'en';
+  }): Promise<CoverLetterResultDTO> {
+    if (demoMode) {
+      const profile = await profileRepository.get();
+      const isEn = input.language === 'en';
+      const name = profile?.fullName || (isEn ? 'Applicant' : 'Ứng viên');
+      const email = profile?.email || 'email@example.com';
+      const phone = profile?.phone || '(+84) 9xx xxx xxx';
+      const skills = profile?.skills?.length ? profile.skills.join(', ') : (isEn ? 'relevant technologies' : 'các công nghệ liên quan');
+      const company = input.company || (isEn ? 'Your Company' : 'Quý công ty');
+      const position = input.position || (isEn ? 'the open position' : 'vị trí tuyển dụng');
+
+      const coverLetter = isEn
+        ? `Dear Hiring Team at ${company},\n\nI am writing to express my enthusiasm for the ${position} role. With my background in ${skills}, I am eager to contribute to your team's success.\n\nSincerely,\n${name}\n${phone} | ${email}`
+        : `Kính gửi Bộ phận Tuyển dụng ${company},\n\nTôi là ${name}, viết thư này để ứng tuyển vào vị trí ${position}. Với chuyên môn về ${skills}, tôi tự tin có thể đóng góp hiệu quả vào các dự án của quý công ty.\n\nTrân trọng,\n${name}\nSĐT: ${phone} | Email: ${email}`;
+
+      const shortPitch = isEn
+        ? `Hi Hiring Team, I noticed your opening for ${position} at ${company}. Having strong experience in ${skills}, I would love to connect and share more about how I can add value!`
+        : `Chào anh/chị tuyển dụng tại ${company}, em là ${name}. Em có kinh nghiệm thực chiến về ${skills} và rất mong muốn được trao đổi thêm về cơ hội ${position}!`;
+
+      return {
+        coverLetter,
+        shortPitch,
+        highlights: [
+          `Tùy chỉnh riêng cho vị trí ${position} tại ${company}`,
+          `Nhấn mạnh kỹ năng: ${skills}`,
+          `Định dạng chuẩn ATS, sẵn sàng gửi ngay`
+        ]
+      };
+    }
+    return request<CoverLetterResultDTO>('/ai/pro/cover-letter', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  }
+};
+
 

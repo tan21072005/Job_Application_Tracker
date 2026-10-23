@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { repository } from './data';
+import { repository, aiRepository, profileRepository } from './data';
 import { emptyDraft, type Application } from './domain';
 
 afterEach(() => {
@@ -63,3 +63,69 @@ describe('AI URL import domain logic', () => {
     expect(draft.url).toBe('https://example.com/jobs/staff');
   });
 });
+
+describe('aiRepository ATS match and Cover letter generation', () => {
+  const store = new Map<string, string>();
+  const mockStorage = {
+    getItem: (key: string) => store.get(key) || null,
+    setItem: (key: string, val: string) => store.set(key, val),
+    removeItem: (key: string) => store.delete(key),
+    clear: () => store.clear()
+  };
+
+  it('analyzeAtsMatch computes match score, breakdown and recommendations in demo mode', async () => {
+    vi.stubGlobal('localStorage', mockStorage);
+    await profileRepository.save({
+      fullName: 'Le Minh Khoa',
+      email: 'khoa.le@example.com',
+      skills: ['TypeScript', 'React', 'Node.js', 'PostgreSQL'],
+      bio: 'Fullstack developer 5 years'
+    });
+
+    const res = await aiRepository.analyzeAtsMatch({
+      company: 'VNG Corporation',
+      position: 'Senior React Developer',
+      notes: 'Yêu cầu TypeScript, React, Docker, Kubernetes'
+    });
+
+    expect(res).toBeDefined();
+    expect(res.score).toBeGreaterThanOrEqual(40);
+    expect(res.overallFit).toBeTruthy();
+    expect(res.matchedSkills).toContain('React');
+    expect(res.recommendations.length).toBeGreaterThan(0);
+    expect(res.keywordBreakdown.length).toBeGreaterThan(0);
+  });
+
+  it('generateCoverLetter creates bilingual tailored cover letters and pitches', async () => {
+    vi.stubGlobal('localStorage', mockStorage);
+    await profileRepository.save({
+      fullName: 'Pham Thu Thao',
+      email: 'thao.pham@example.com',
+      phone: '0912345678',
+      skills: ['Product Management', 'Agile', 'Data Analysis'],
+      bio: 'Experienced PM in fintech products'
+    });
+
+    const viLetter = await aiRepository.generateCoverLetter({
+      company: 'MoMo',
+      position: 'Senior Product Manager',
+      language: 'vi'
+    });
+    expect(viLetter.coverLetter).toContain('Pham Thu Thao');
+    expect(viLetter.coverLetter).toContain('MoMo');
+    expect(viLetter.coverLetter).toContain('Senior Product Manager');
+    expect(viLetter.shortPitch).toContain('Pham Thu Thao');
+    expect(viLetter.highlights.length).toBeGreaterThan(0);
+
+    const enLetter = await aiRepository.generateCoverLetter({
+      company: 'Shopee',
+      position: 'Lead Technical PM',
+      language: 'en'
+    });
+    expect(enLetter.coverLetter).toContain('Dear Hiring Team at Shopee');
+    expect(enLetter.coverLetter).toContain('Pham Thu Thao');
+    expect(enLetter.shortPitch).toContain('Lead Technical PM');
+    expect(enLetter.highlights.length).toBeGreaterThan(0);
+  });
+});
+
