@@ -256,3 +256,29 @@ export interface ExtractedPagePayload {
   };
   jobPosting?: UrlImportExtractResult | null;
 }
+
+export interface CandidateProfileWireDTO {
+  userId: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  cvUrl: string | null;
+  portfolioUrl: string | null;
+  skills: string[];
+  bio: string | null;
+  customAnswers: Record<string, string>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CandidateProfileMutationInput {
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  cvUrl?: string | null;
+  portfolioUrl?: string | null;
+  skills?: string[];
+  bio?: string | null;
+  customAnswers?: Record<string, string>;
+  expectedUpdatedAt?: string | null;
+}

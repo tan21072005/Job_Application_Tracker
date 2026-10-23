@@ -8,7 +8,8 @@ import {
   type WorkMode,
   type InterviewFormat,
   type InterviewStatus,
-  type SortOption
+  type SortOption,
+  type CandidateProfileMutationInput
 } from './types.ts';
 import { isValidCalendarDate, isValidIsoInstant, isValidIanaTimezone } from './time.ts';
 import { normalizeIdentityKey, normalizeUrl } from './normalization.ts';
@@ -515,5 +516,186 @@ export function validateListQuery(query: Record<string, unknown>): ValidationRes
   return {
     ok: true,
     data: { q, status, sort, includeDeleted }
+  };
+}
+
+const PROFILE_ALLOWED_FIELDS = new Set([
+  'fullName',
+  'email',
+  'phone',
+  'cvUrl',
+  'portfolioUrl',
+  'skills',
+  'bio',
+  'customAnswers',
+  'expectedUpdatedAt'
+]);
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[+0-9()\s.-]+$/;
+
+function isValidHttpUrl(str: string): boolean {
+  try {
+    const parsed = new URL(str);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export function validateCandidateProfileInput(rawBody: unknown): ValidationResult<CandidateProfileMutationInput> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu hồ sơ ứng viên không hợp lệ.',
+      errors: { _root: 'Nội dung yêu cầu phải là JSON object.' }
+    };
+  }
+
+  const body = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  const unknown = Object.keys(body).filter(k => !PROFILE_ALLOWED_FIELDS.has(k));
+  if (unknown.length > 0) {
+    for (const u of unknown) {
+      errors[u] = 'Trường không được hỗ trợ.';
+    }
+  }
+
+  let fullName = '';
+  if (typeof body.fullName !== 'string' || !body.fullName.trim()) {
+    errors.fullName = 'Họ và tên không được để trống.';
+  } else if (body.fullName.trim().length > 120) {
+    errors.fullName = 'Họ và tên không được vượt quá 120 ký tự.';
+  } else {
+    fullName = body.fullName.trim();
+  }
+
+  let email = '';
+  if (typeof body.email !== 'string' || !body.email.trim()) {
+    errors.email = 'Email không được để trống.';
+  } else if (body.email.trim().length > 254 || !EMAIL_REGEX.test(body.email.trim())) {
+    errors.email = 'Email không đúng định dạng hợp lệ.';
+  } else {
+    email = body.email.trim().toLowerCase();
+  }
+
+  let phone: string | null = null;
+  if ('phone' in body && body.phone !== null && body.phone !== undefined && body.phone !== '') {
+    if (typeof body.phone !== 'string') {
+      errors.phone = 'Số điện thoại phải là chuỗi ký tự.';
+    } else if (body.phone.trim().length > 30 || !PHONE_REGEX.test(body.phone.trim())) {
+      errors.phone = 'Số điện thoại không đúng định dạng hợp lệ.';
+    } else {
+      phone = body.phone.trim();
+    }
+  }
+
+  let cvUrl: string | null = null;
+  if ('cvUrl' in body && body.cvUrl !== null && body.cvUrl !== undefined && body.cvUrl !== '') {
+    if (typeof body.cvUrl !== 'string') {
+      errors.cvUrl = 'Đường dẫn CV phải là chuỗi ký tự.';
+    } else if (body.cvUrl.trim().length > 2048 || !isValidHttpUrl(body.cvUrl.trim())) {
+      errors.cvUrl = 'Đường dẫn CV phải là liên kết web hợp lệ (http hoặc https).';
+    } else {
+      cvUrl = body.cvUrl.trim();
+    }
+  }
+
+  let portfolioUrl: string | null = null;
+  if ('portfolioUrl' in body && body.portfolioUrl !== null && body.portfolioUrl !== undefined && body.portfolioUrl !== '') {
+    if (typeof body.portfolioUrl !== 'string') {
+      errors.portfolioUrl = 'Đường dẫn Portfolio phải là chuỗi ký tự.';
+    } else if (body.portfolioUrl.trim().length > 2048 || !isValidHttpUrl(body.portfolioUrl.trim())) {
+      errors.portfolioUrl = 'Đường dẫn Portfolio phải là liên kết web hợp lệ (http hoặc https).';
+    } else {
+      portfolioUrl = body.portfolioUrl.trim();
+    }
+  }
+
+  let skills: string[] = [];
+  if ('skills' in body && body.skills !== null && body.skills !== undefined) {
+    if (!Array.isArray(body.skills)) {
+      errors.skills = 'Danh sách kỹ năng phải là mảng chuỗi ký tự.';
+    } else if (body.skills.length > 50) {
+      errors.skills = 'Danh sách kỹ năng không được vượt quá 50 phần tử.';
+    } else {
+      for (let i = 0; i < body.skills.length; i++) {
+        const item = body.skills[i];
+        if (typeof item !== 'string') {
+          errors.skills = 'Từng kỹ năng trong danh sách phải là chuỗi ký tự.';
+          break;
+        } else if (item.trim().length > 50) {
+          errors.skills = 'Tên kỹ năng không được vượt quá 50 ký tự.';
+          break;
+        } else if (item.trim()) {
+          skills.push(item.trim());
+        }
+      }
+    }
+  }
+
+  let bio: string | null = null;
+  if ('bio' in body && body.bio !== null && body.bio !== undefined && body.bio !== '') {
+    if (typeof body.bio !== 'string') {
+      errors.bio = 'Mô tả bản thân phải là chuỗi ký tự.';
+    } else if (body.bio.trim().length > 2000) {
+      errors.bio = 'Mô tả bản thân không được vượt quá 2000 ký tự.';
+    } else {
+      bio = body.bio.trim();
+    }
+  }
+
+  let customAnswers: Record<string, string> | undefined = undefined;
+  if ('customAnswers' in body && body.customAnswers !== null && body.customAnswers !== undefined) {
+    customAnswers = {};
+    if (typeof body.customAnswers !== 'object' || Array.isArray(body.customAnswers)) {
+      errors.customAnswers = 'Câu trả lời tùy chỉnh phải là đối tượng JSON.';
+    } else {
+      const entries = Object.entries(body.customAnswers as Record<string, unknown>);
+      if (entries.length > 50) {
+        errors.customAnswers = 'Số lượng câu trả lời tùy chỉnh không được vượt quá 50.';
+      } else {
+        for (const [k, v] of entries) {
+          if (typeof v !== 'string' || v.length > 1000) {
+            errors.customAnswers = `Giá trị của '${k}' phải là chuỗi ký tự không quá 1000 ký tự.`;
+            break;
+          }
+          customAnswers[k] = v;
+        }
+      }
+    }
+  }
+
+  let expectedUpdatedAt: string | null = null;
+  if ('expectedUpdatedAt' in body && body.expectedUpdatedAt !== null && body.expectedUpdatedAt !== undefined) {
+    if (typeof body.expectedUpdatedAt !== 'string') {
+      errors.expectedUpdatedAt = 'expectedUpdatedAt phải là chuỗi thời gian hợp lệ.';
+    } else {
+      expectedUpdatedAt = body.expectedUpdatedAt.trim();
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Dữ liệu hồ sơ ứng viên chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      fullName,
+      email,
+      phone,
+      cvUrl,
+      portfolioUrl,
+      skills,
+      bio,
+      customAnswers,
+      expectedUpdatedAt
+    }
   };
 }

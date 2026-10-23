@@ -22,7 +22,10 @@ import {
   type ApplicationWireDTO,
   type ProPlan,
   type ProOrderDTO,
-  type ProPlanDTO
+  type ProPlanDTO,
+  type CandidateProfileWireDTO,
+  type CandidateProfileMutationInput,
+  validateCandidateProfileInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -368,4 +371,76 @@ test('contract: pro order and plan DTOs carry server-owned amounts and user-faci
 
   const plans: ProPlan[] = ['monthly', 'quarterly', 'yearly'];
   assert.equal(plans.length, 3);
+});
+
+test('contract: candidate profile input validation enforces strict types, URLs, and field bounds', () => {
+  const valid = validateCandidateProfileInput({
+    fullName: 'Nguyen Van A',
+    email: 'nguyen.a@example.com',
+    phone: '+84 912 345 678',
+    cvUrl: 'https://storage.example.com/cv.pdf',
+    portfolioUrl: 'https://github.com/nguyena',
+    skills: ['TypeScript', 'Node.js', 'React'],
+    bio: 'Experienced fullstack engineer with passion for resilient systems.',
+    customAnswers: {
+      noticePeriod: '1 month'
+    }
+  });
+
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.fullName, 'Nguyen Van A');
+    assert.equal(valid.data.email, 'nguyen.a@example.com');
+    assert.equal(valid.data.phone, '+84 912 345 678');
+    assert.equal(valid.data.cvUrl, 'https://storage.example.com/cv.pdf');
+    assert.equal(valid.data.portfolioUrl, 'https://github.com/nguyena');
+    assert.deepEqual(valid.data.skills, ['TypeScript', 'Node.js', 'React']);
+    assert.equal(valid.data.bio, 'Experienced fullstack engineer with passion for resilient systems.');
+    assert.deepEqual(valid.data.customAnswers, { noticePeriod: '1 month' });
+  }
+
+  const emptyResult = validateCandidateProfileInput({});
+  assert.equal(emptyResult.ok, false);
+  if (!emptyResult.ok) {
+    assert.ok(emptyResult.errors.fullName);
+    assert.ok(emptyResult.errors.email);
+  }
+
+  const malformed = validateCandidateProfileInput({
+    fullName: '',
+    email: 'invalid-email',
+    phone: 'not a phone number!@#$',
+    cvUrl: 'ftp://insecure.example.com/cv.pdf',
+    portfolioUrl: 'javascript:alert(1)',
+    skills: 'not-an-array',
+    bio: 'a'.repeat(2500),
+    unknownProperty: 'illegal'
+  });
+
+  assert.equal(malformed.ok, false);
+  if (!malformed.ok) {
+    assert.ok(malformed.errors.fullName);
+    assert.ok(malformed.errors.email);
+    assert.ok(malformed.errors.phone);
+    assert.ok(malformed.errors.cvUrl);
+    assert.ok(malformed.errors.portfolioUrl);
+    assert.ok(malformed.errors.skills);
+    assert.ok(malformed.errors.bio);
+    assert.ok(malformed.errors.unknownProperty);
+  }
+
+  const profileDto: CandidateProfileWireDTO = {
+    userId: 'user-123',
+    fullName: 'Le Thi B',
+    email: 'le.b@example.com',
+    phone: null,
+    cvUrl: null,
+    portfolioUrl: null,
+    skills: [],
+    bio: null,
+    customAnswers: {},
+    createdAt: '2026-10-24T00:00:00Z',
+    updatedAt: '2026-10-24T00:00:00Z'
+  };
+  assert.equal(profileDto.fullName, 'Le Thi B');
 });
