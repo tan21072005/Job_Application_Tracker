@@ -25,6 +25,8 @@ import {
   type ProPlanDTO,
   type CandidateProfileWireDTO,
   type CandidateProfileMutationInput,
+  type AtsMatchResultDTO,
+  type CoverLetterResultDTO,
   validateCandidateProfileInput
 } from './index.ts';
 
@@ -443,4 +445,29 @@ test('contract: candidate profile input validation enforces strict types, URLs, 
     updatedAt: '2026-10-24T00:00:00Z'
   };
   assert.equal(profileDto.fullName, 'Le Thi B');
+});
+
+test('contract: ATS match and cover letter DTO structures adhere to contract specification', () => {
+  const match: AtsMatchResultDTO = {
+    score: 85,
+    overallFit: 'Xuất sắc',
+    matchedSkills: ['TypeScript', 'React'],
+    missingSkills: ['Kubernetes'],
+    recommendations: ['Bổ sung Kubernetes vào CV.'],
+    keywordBreakdown: [
+      { skill: 'TypeScript', foundInCv: true, importance: 'high' },
+      { skill: 'Kubernetes', foundInCv: false, importance: 'medium' }
+    ]
+  };
+  assert.equal(match.score, 85);
+  assert.equal(match.overallFit, 'Xuất sắc');
+  assert.equal(match.matchedSkills.length, 2);
+
+  const letter: CoverLetterResultDTO = {
+    coverLetter: 'Dear Hiring Manager...',
+    shortPitch: 'Hi, I am interested in this role...',
+    highlights: ['Tailored to position']
+  };
+  assert.ok(letter.coverLetter.includes('Dear Hiring Manager'));
+  assert.equal(letter.highlights.length, 1);
 });

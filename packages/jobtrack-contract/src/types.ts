@@ -282,3 +282,37 @@ export interface CandidateProfileMutationInput {
   customAnswers?: Record<string, string>;
   expectedUpdatedAt?: string | null;
 }
+
+export interface AtsKeywordBreakdown {
+  skill: string;
+  foundInCv: boolean;
+  importance: 'high' | 'medium' | 'bonus';
+}
+
+export interface AtsMatchResultDTO {
+  score: number;
+  overallFit: 'Xuất sắc' | 'Phù hợp' | 'Tiềm năng' | 'Cần bổ sung kỹ năng';
+  matchedSkills: string[];
+  missingSkills: string[];
+  recommendations: string[];
+  keywordBreakdown: AtsKeywordBreakdown[];
+}
+
+export interface AtsMatchInput {
+  company: string;
+  position: string;
+  notes?: string | null;
+}
+
+export interface CoverLetterResultDTO {
+  coverLetter: string;
+  shortPitch: string;
+  highlights: string[];
+}
+
+export interface CoverLetterInput {
+  company: string;
+  position: string;
+  notes?: string | null;
+  language?: 'vi' | 'en';
+}
