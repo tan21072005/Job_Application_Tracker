@@ -316,3 +316,40 @@ export interface CoverLetterInput {
   notes?: string | null;
   language?: 'vi' | 'en';
 }
+
+export interface JobSubscriptionDTO {
+  id: string;
+  userId: string;
+  title: string;
+  keywords: string[];
+  location: string | null;
+  minSalary: number | null;
+  sources: string[];
+  isActive: boolean;
+  lastCheckedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionMutationInput {
+  title: string;
+  keywords?: string[];
+  location?: string | null;
+  minSalary?: number | null;
+  sources?: string[];
+  isActive?: boolean;
+}
+
+export interface CrawlRunResultDTO {
+  subscriptionId: string;
+  subscriptionTitle: string;
+  found: number;
+  matched: number;
+  saved: number;
+  skippedDuplicates: number;
+  items: Array<{
+    company: string;
+    position: string;
+    status: 'saved' | 'duplicate_url' | 'duplicate_identity';
+  }>;
+}

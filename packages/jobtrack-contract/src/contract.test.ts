@@ -27,6 +27,8 @@ import {
   type CandidateProfileMutationInput,
   type AtsMatchResultDTO,
   type CoverLetterResultDTO,
+  type JobSubscriptionDTO,
+  type CrawlRunResultDTO,
   validateCandidateProfileInput
 } from './index.ts';
 
@@ -470,4 +472,40 @@ test('contract: ATS match and cover letter DTO structures adhere to contract spe
   };
   assert.ok(letter.coverLetter.includes('Dear Hiring Manager'));
   assert.equal(letter.highlights.length, 1);
+});
+
+test('contract: job subscription and crawl run DTO structures match contract requirements', () => {
+  const sub: JobSubscriptionDTO = {
+    id: 'sub-1',
+    userId: 'user-1',
+    title: 'Senior Node.js Developer',
+    keywords: ['Node.js', 'PostgreSQL'],
+    location: 'Hà Nội',
+    minSalary: 40000000,
+    sources: ['topcv', 'itviec'],
+    isActive: true,
+    lastCheckedAt: null,
+    createdAt: '2026-10-24T00:00:00Z',
+    updatedAt: '2026-10-24T00:00:00Z'
+  };
+  assert.equal(sub.title, 'Senior Node.js Developer');
+  assert.equal(sub.isActive, true);
+  assert.equal(sub.keywords.length, 2);
+
+  const crawl: CrawlRunResultDTO = {
+    subscriptionId: sub.id,
+    subscriptionTitle: sub.title,
+    found: 5,
+    matched: 3,
+    saved: 2,
+    skippedDuplicates: 1,
+    items: [
+      { company: 'Tech Corp', position: 'Node.js Lead', status: 'saved' },
+      { company: 'VNG', position: 'Senior Backend', status: 'saved' },
+      { company: 'Shopee', position: 'Node.js Dev', status: 'duplicate_url' }
+    ]
+  };
+  assert.equal(crawl.found, 5);
+  assert.equal(crawl.saved, 2);
+  assert.equal(crawl.items.length, 3);
 });
