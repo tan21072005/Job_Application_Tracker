@@ -929,6 +929,22 @@ app.post('/api/subscriptions', auth, async (req, res, next) => {
   }
 });
 
+app.patch('/api/subscriptions/:id/toggle', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const id = String(req.params.id);
+    const b = (req.body && typeof req.body === 'object') ? req.body as Record<string, unknown> : {};
+    const isActive = typeof b.isActive === 'boolean' ? b.isActive : undefined;
+    const updated = await subscriptionCrawlerService.toggleSubscription(userId, id, isActive);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy bộ lọc đăng ký.' });
+    }
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.delete('/api/subscriptions/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
