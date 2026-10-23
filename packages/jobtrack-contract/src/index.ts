@@ -5,3 +5,4 @@ export * from './hasher.ts';
 export * from './validators.ts';
 export * from './adapter.ts';
 export * from './templates.ts';
+export * from './payment.ts';

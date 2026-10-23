@@ -17,7 +17,12 @@ import {
   formatAsCsv,
   parseVietnameseCurrency,
   BUILT_IN_TEMPLATES,
-  type ApplicationWireDTO
+  PRO_ORDER_STATUSES,
+  isProOrderStatus,
+  type ApplicationWireDTO,
+  type ProPlan,
+  type ProOrderDTO,
+  type ProPlanDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -297,4 +302,70 @@ test('contract: built-in templates provide production schemas for e-commerce, re
   assert.ok(keys.includes('company'));
   assert.ok(keys.includes('position'));
   assert.ok(keys.includes('salary'));
+});
+
+test('contract: pro order status accepts exactly pending, paid, failed, expired, cancelled', () => {
+  assert.deepEqual(PRO_ORDER_STATUSES, ['pending', 'paid', 'failed', 'expired', 'cancelled']);
+  assert.equal(PRO_ORDER_STATUSES.length, 5);
+
+  for (const status of ['pending', 'paid', 'failed', 'expired', 'cancelled'] as const) {
+    assert.equal(isProOrderStatus(status), true, `${status} must be a valid user-facing order status`);
+  }
+
+  assert.equal(isProOrderStatus('completed'), false, 'database status completed is not a user-facing status');
+  assert.equal(isProOrderStatus('PENDING'), false);
+  assert.equal(isProOrderStatus(''), false);
+  assert.equal(isProOrderStatus(null), false);
+  assert.equal(isProOrderStatus(undefined), false);
+  assert.equal(isProOrderStatus(42), false);
+  assert.equal(isProOrderStatus({ status: 'pending' }), false);
+});
+
+test('contract: pro order and plan DTOs carry server-owned amounts and user-facing status', () => {
+  const order: ProOrderDTO = {
+    orderId: '8f14e45f-ceea-467a-9b0d-1f2c3d4e5f60',
+    plan: 'quarterly',
+    amount: 249000,
+    currency: 'VND',
+    transferCode: 'JTPROA1B2C3',
+    status: 'pending',
+    createdAt: '2026-10-22T03:00:00Z',
+    expiresAt: '2026-10-22T03:30:00Z',
+    completedAt: null,
+    failureReason: null
+  };
+
+  assert.equal(order.status, 'pending');
+  assert.equal(isProOrderStatus(order.status), true);
+  assert.equal(order.amount, 249000);
+  assert.equal(order.currency, 'VND');
+  assert.equal(order.expiresAt, '2026-10-22T03:30:00Z');
+  assert.equal(order.completedAt, null);
+  assert.equal(order.failureReason, null);
+
+  const paid: ProOrderDTO = { ...order, status: 'paid', expiresAt: null, completedAt: '2026-10-22T03:10:00Z' };
+  assert.equal(paid.status, 'paid');
+  assert.equal(isProOrderStatus(paid.status), true);
+  assert.equal(paid.completedAt, '2026-10-22T03:10:00Z');
+
+  const failed: ProOrderDTO = { ...order, status: 'failed', failureReason: 'amount_mismatch' };
+  assert.equal(failed.status, 'failed');
+  assert.equal(failed.failureReason, 'amount_mismatch');
+
+  const expired: ProOrderDTO = { ...order, status: 'expired' };
+  assert.equal(expired.status, 'expired');
+  assert.equal(isProOrderStatus(expired.status), true);
+
+  const cancelled: ProOrderDTO = { ...order, status: 'cancelled' };
+  assert.equal(cancelled.status, 'cancelled');
+  assert.equal(isProOrderStatus(cancelled.status), true);
+
+  const plan: ProPlanDTO = { plan: 'yearly', amount: 799000, currency: 'VND', durationDays: 365 };
+  assert.equal(plan.plan, 'yearly');
+  assert.equal(plan.amount, 799000);
+  assert.equal(plan.currency, 'VND');
+  assert.equal(plan.durationDays, 365);
+
+  const plans: ProPlan[] = ['monthly', 'quarterly', 'yearly'];
+  assert.equal(plans.length, 3);
 });
