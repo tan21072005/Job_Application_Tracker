@@ -3,26 +3,17 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import type { CandidateProfile } from './candidate-profile.ts';
 import { fail } from './jobtrack-service.ts';
 import { verifyPaymentSignature } from '../security/payment-signature.ts';
-import type { ProOrderDTO, ProPlanDTO, ProOrderStatus } from '@jobtrack/contract';
+import type {
+  ProOrderDTO,
+  ProPlanDTO,
+  ProOrderStatus,
+  AtsMatchResultDTO,
+  CoverLetterResultDTO,
+  AtsKeywordBreakdown
+} from '@jobtrack/contract';
 
-export interface AtsMatchResult {
-  score: number;
-  overallFit: 'Xuất sắc' | 'Phù hợp' | 'Tiềm năng' | 'Cần bổ sung kỹ năng';
-  matchedSkills: string[];
-  missingSkills: string[];
-  recommendations: string[];
-  keywordBreakdown: {
-    skill: string;
-    foundInCv: boolean;
-    importance: 'high' | 'medium' | 'bonus';
-  }[];
-}
-
-export interface CoverLetterResult {
-  coverLetter: string;
-  shortPitch: string;
-  highlights: string[];
-}
+export type AtsMatchResult = AtsMatchResultDTO;
+export type CoverLetterResult = CoverLetterResultDTO;
 
 export interface ProStatus {
   tier: 'free' | 'pro' | 'elite';
