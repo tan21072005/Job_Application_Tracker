@@ -26,10 +26,15 @@ test('Origin policy: a foreign origin with an unusable credential is refused', a
   const base = `http://127.0.0.1:${address.port}`;
 
   try {
+    const testIp = `127.0.9.${Math.floor(Math.random() * 200) + 1}`;
     const email = `origin_policy_${randomUUID().slice(0, 8)}@example.com`;
     const registerRes = await fetch(`${base}/api/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Origin': 'http://127.0.0.1:64364' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'http://127.0.0.1:64364',
+        'X-Forwarded-For': testIp
+      },
       body: JSON.stringify({ email, password: 'StrongPassword123!' })
     });
     assert.equal(registerRes.status, 201);
@@ -64,7 +69,11 @@ test('Origin policy: a foreign origin with an unusable credential is refused', a
 
     const sameOrigin = await fetch(`${base}/api/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Origin: 'http://127.0.0.1:64364' },
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: 'http://127.0.0.1:64364',
+        'X-Forwarded-For': testIp
+      },
       body: JSON.stringify({ email, password: 'StrongPassword123!' })
     });
     assert.equal(sameOrigin.status, 200);

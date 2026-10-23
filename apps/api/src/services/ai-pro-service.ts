@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import type { CandidateProfile } from './candidate-profile.ts';
 import { fail } from './jobtrack-service.ts';
 import { verifyPaymentSignature } from '../security/payment-signature.ts';
+import type { ProOrderDTO, ProPlanDTO, ProOrderStatus } from '@jobtrack/contract';
 
 export interface AtsMatchResult {
   score: number;
@@ -332,8 +333,8 @@ export class AiProService {
     const orderId = randomUUID();
 
     await this.pool.query(
-      `INSERT INTO payment_orders (id, user_id, plan, amount, currency, transfer_code, status, payment_method)
-       VALUES ($1, $2, $3, $4, 'VND', $5, 'pending', 'vietqr')`,
+      `INSERT INTO payment_orders (id, user_id, plan, amount, currency, transfer_code, status, payment_method, expires_at)
+       VALUES ($1, $2, $3, $4, 'VND', $5, 'pending', 'vietqr', CURRENT_TIMESTAMP + interval '30 minutes')`,
       [orderId, userId, resolvedPlan, amount, transferCode]
     );
 
@@ -350,6 +351,70 @@ export class AiProService {
       accountName: null,
       vietQrUrl: null,
       instructions: `Đơn hàng ${transferCode} đã được tạo ở chế độ thử nghiệm với số tiền ${amount} VND. Gói Pro chỉ được kích hoạt sau khi máy chủ nhận một webhook thanh toán hợp lệ có chữ ký.`
+    };
+  }
+
+  getPlans(): ProPlanDTO[] {
+    const plans: ProPlan[] = ['monthly', 'quarterly', 'yearly'];
+    return plans.map(plan => ({
+      plan,
+      amount: PLAN_PRICES[plan],
+      currency: 'VND',
+      durationDays: PLAN_DURATION_DAYS[plan]
+    }));
+  }
+
+  async getOrder(userId: string, orderId: string): Promise<ProOrderDTO> {
+    const result = await this.pool.query<{
+      id: string;
+      user_id: string;
+      plan: string;
+      amount: number;
+      currency: string;
+      transfer_code: string;
+      status: string;
+      failed_reason: string | null;
+      expires_at: Date | null;
+      created_at: Date;
+      completed_at: Date | null;
+    }>(
+      `SELECT id, user_id, plan, amount, currency, transfer_code, status, failed_reason, expires_at, created_at, completed_at
+       FROM payment_orders
+       WHERE id = $1 AND user_id = $2`,
+      [orderId, userId]
+    );
+
+    if (result.rowCount === 0) {
+      fail(404, 'Không tìm thấy đơn hàng.', 'order_not_found');
+    }
+
+    const row = result.rows[0];
+    let status: ProOrderStatus;
+
+    if (row.status === 'cancelled') {
+      status = 'cancelled';
+    } else if (row.status === 'completed') {
+      status = 'paid';
+    } else if (row.failed_reason) {
+      status = 'failed';
+    } else {
+      const isExpired = row.expires_at
+        ? new Date(row.expires_at).getTime() <= Date.now()
+        : Date.now() - new Date(row.created_at).getTime() > 30 * 60 * 1000;
+      status = isExpired ? 'expired' : 'pending';
+    }
+
+    return {
+      orderId: row.id,
+      plan: normalizeProPlan(row.plan),
+      amount: Number(row.amount),
+      currency: row.currency || 'VND',
+      transferCode: row.transfer_code,
+      status,
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+      expiresAt: row.expires_at ? (row.expires_at instanceof Date ? row.expires_at.toISOString() : String(row.expires_at)) : null,
+      completedAt: row.completed_at ? (row.completed_at instanceof Date ? row.completed_at.toISOString() : String(row.completed_at)) : null,
+      failureReason: row.failed_reason || null
     };
   }
 
@@ -397,7 +462,7 @@ export class AiProService {
     }
     const paidAmount = readWebhookAmount(input.payload.amount);
 
-    return this.transaction(async client => {
+    const tx = await this.transaction(async client => {
       const orderRes = await client.query<{
         id: string;
         user_id: string;
@@ -410,31 +475,34 @@ export class AiProService {
       );
 
       if (!orderRes.rowCount) {
-        fail(404, 'Không tìm thấy đơn hàng cho giao dịch này.', 'order_not_found');
+        return { kind: 'not_found' as const };
       }
 
       const order = orderRes.rows[0];
       if (order.status === 'cancelled') {
-        fail(409, 'Đơn hàng này đã bị hủy nên không thể kích hoạt gói Pro.', 'order_cancelled');
+        return { kind: 'cancelled' as const };
       }
 
       if (!Number.isFinite(paidAmount) || paidAmount < Number(order.amount)) {
-        fail(400, `Số tiền thanh toán (${paidAmount} VND) chưa đủ cho gói (${order.amount} VND).`, 'amount_mismatch');
+        await client.query(
+          'UPDATE payment_orders SET failed_reason = $1 WHERE id = $2',
+          ['amount_mismatch', order.id]
+        );
+        return { kind: 'amount_mismatch' as const, paidAmount, expectedAmount: Number(order.amount) };
       }
 
       const plan = normalizeProPlan(order.plan);
 
-      if (order.status !== 'pending') {
+      if (order.status !== 'pending' && order.status !== 'failed') {
         return {
-          success: true,
-          replayed: true,
+          kind: 'replayed' as const,
           orderId: order.id,
           plan
         };
       }
 
       await client.query(
-        'UPDATE payment_orders SET status = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2',
+        'UPDATE payment_orders SET status = $1, failed_reason = NULL, completed_at = CURRENT_TIMESTAMP WHERE id = $2',
         ['completed', order.id]
       );
 
@@ -449,11 +517,34 @@ export class AiProService {
       );
 
       return {
-        success: true,
-        replayed: false,
+        kind: 'completed' as const,
         orderId: order.id,
         plan
       };
     });
+
+    if (tx.kind === 'not_found') {
+      fail(404, 'Không tìm thấy đơn hàng cho giao dịch này.', 'order_not_found');
+    }
+    if (tx.kind === 'cancelled') {
+      fail(409, 'Đơn hàng này đã bị hủy nên không thể kích hoạt gói Pro.', 'order_cancelled');
+    }
+    if (tx.kind === 'amount_mismatch') {
+      fail(400, `Số tiền thanh toán (${tx.paidAmount} VND) chưa đủ cho gói (${tx.expectedAmount} VND).`, 'amount_mismatch');
+    }
+    if (tx.kind === 'replayed') {
+      return {
+        success: true,
+        replayed: true,
+        orderId: tx.orderId,
+        plan: tx.plan
+      };
+    }
+    return {
+      success: true,
+      replayed: false,
+      orderId: tx.orderId,
+      plan: tx.plan
+    };
   }
 }

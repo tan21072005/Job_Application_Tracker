@@ -178,7 +178,7 @@ test('auth, ownership, CRUD, duplicate, idempotency, ETag, interviews and logout
     'POST',
     {
       title: 'Technical',
-      at: '2026-10-23T02:00:00Z',
+      at: new Date(Date.now() + 86400000).toISOString(),
       timezone: 'Asia/Ho_Chi_Minh',
       format: 'Online',
       location: 'https://meet.example.com',

@@ -35,7 +35,11 @@ test('AI Endpoints: grants management, MCP over HTTP, import-url, and chat BFF',
     const email = `ai_endpoint_${randomUUID().slice(0, 8)}@example.com`;
     const regRes = await fetch(`${base}/api/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Origin': 'http://127.0.0.1:64364' },
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: 'http://127.0.0.1:64364',
+        'X-Forwarded-For': `127.0.12.${Math.floor(Math.random() * 200) + 1}`
+      },
       body: JSON.stringify({ email, password: 'StrongPassword123!' })
     });
     assert.equal(regRes.status, 201);

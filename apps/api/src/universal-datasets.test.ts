@@ -54,7 +54,11 @@ test('Universal Datasets, Extension Pairing & Payment Webhook Flow', async () =>
     // 1. Register & login to get session cookie
     const regRes = await fetch(`${base}/api/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Origin': 'http://127.0.0.1:64364' },
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: 'http://127.0.0.1:64364',
+        'X-Forwarded-For': `127.0.13.${Math.floor(Math.random() * 200) + 1}`
+      },
       body: JSON.stringify({ email: userEmail, password: userPass })
     });
     assert.equal(regRes.status, 201);

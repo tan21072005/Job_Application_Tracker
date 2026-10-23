@@ -927,6 +927,26 @@ app.get('/api/pro/status', auth, async (req, res, next) => {
   }
 });
 
+app.get('/api/pro/plans', auth, async (_req, res, next) => {
+  try {
+    const plans = aiProService.getPlans();
+    res.json({ plans });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/pro/orders/:orderId', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const orderId = Array.isArray(req.params.orderId) ? req.params.orderId[0] : req.params.orderId;
+    const order = await aiProService.getOrder(userId, orderId);
+    res.json(order);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/pro/checkout', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
