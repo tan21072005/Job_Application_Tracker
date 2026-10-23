@@ -185,4 +185,23 @@ test('Extension: Dynamic content script injection fallback and reliable scan fee
   assert.ok(popupJs.includes('jobPosting'), 'renderMetaSource must format jobPosting fields when present');
 });
 
+test('Extension: Order lifecycle tracking, dynamic plan loading, and non-duplicating payment check', () => {
+  const popupHtml = readFileSync(join(__dirname, 'popup.html'), 'utf8');
+  const popupJs = readFileSync(join(__dirname, 'popup.js'), 'utf8');
+
+  assert.ok(popupHtml.includes('orderStatusBadge'));
+  assert.ok(popupJs.includes('/api/pro/plans'));
+  assert.ok(popupJs.includes('/api/pro/orders/'));
+  assert.ok(popupJs.includes('currentOrderId'));
+
+  const checkPaymentHandler = popupJs.slice(
+    popupJs.indexOf("checkPaymentStatusBtn.addEventListener('click'"),
+    popupJs.indexOf("srcBtnTable.addEventListener")
+  );
+  assert.ok(!checkPaymentHandler.includes('POST'));
+  assert.ok(!checkPaymentHandler.includes('/api/pro/checkout'));
+  assert.ok(!checkPaymentHandler.includes('refreshCheckout()'));
+});
+
+
 

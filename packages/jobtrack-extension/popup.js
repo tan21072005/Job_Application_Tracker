@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const openSettingsBtn = document.getElementById('openSettingsBtn');
   const proPlanSelect = document.getElementById('proPlanSelect');
   const checkoutNotice = document.getElementById('checkoutNotice');
+  const orderStatusBadge = document.getElementById('orderStatusBadge');
   const qrAmount = document.getElementById('qrAmount');
   const qrTransferCode = document.getElementById('qrTransferCode');
   const checkPaymentStatusBtn = document.getElementById('checkPaymentStatusBtn');
@@ -784,24 +785,103 @@ document.addEventListener('DOMContentLoaded', async () => {
     showAlert(alertSuccess, '✓ Đã sao chép tin nhắn HR vào clipboard!');
   });
 
-  // 10. Account, Quota & Checkout
+  function renderOrderStatus(order) {
+    if (!orderStatusBadge) return;
+    if (!order || !order.status) {
+      orderStatusBadge.style.display = 'none';
+      return;
+    }
+    orderStatusBadge.style.display = 'block';
+    if (order.status === 'paid') {
+      orderStatusBadge.style.background = '#ecfdf5';
+      orderStatusBadge.style.color = '#047857';
+      orderStatusBadge.textContent = '✓ Đã thanh toán — Gói PRO đã kích hoạt';
+    } else if (order.status === 'failed') {
+      orderStatusBadge.style.background = '#fef2f2';
+      orderStatusBadge.style.color = '#b91c1c';
+      orderStatusBadge.textContent = '✕ Thanh toán thất bại: Số tiền chuyển chưa đủ';
+    } else if (order.status === 'expired') {
+      orderStatusBadge.style.background = '#f1f5f9';
+      orderStatusBadge.style.color = '#64748b';
+      orderStatusBadge.textContent = '⌛ Đơn hàng đã hết hạn — Vui lòng tạo đơn mới';
+    } else if (order.status === 'pending') {
+      orderStatusBadge.style.background = '#eff6ff';
+      orderStatusBadge.style.color = '#1d4ed8';
+      orderStatusBadge.textContent = '⏳ Chờ thanh toán qua ngân hàng';
+    } else if (order.status === 'cancelled') {
+      orderStatusBadge.style.background = '#f1f5f9';
+      orderStatusBadge.style.color = '#64748b';
+      orderStatusBadge.textContent = '✕ Đơn hàng đã hủy';
+    }
+  }
+
+  async function loadPlans() {
+    try {
+      const res = await fetch(`${serverConfig.serverUrl}/api/pro/plans`, {
+        headers: { 'Authorization': `Bearer ${serverConfig.apiToken}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data.plans)) return;
+      const currentSelected = proPlanSelect.value;
+      proPlanSelect.innerHTML = '';
+      for (const p of data.plans) {
+        const opt = document.createElement('option');
+        opt.value = p.plan;
+        const formattedAmount = `${Number(p.amount).toLocaleString('vi-VN')}đ`;
+        if (p.plan === 'monthly') {
+          opt.textContent = `Gói 1 Tháng — ${formattedAmount}`;
+        } else if (p.plan === 'quarterly') {
+          opt.textContent = `Gói 3 Tháng — ${formattedAmount} (Tiết kiệm 16%)`;
+        } else if (p.plan === 'yearly') {
+          opt.textContent = `Gói 1 Năm — ${formattedAmount} (Tiết kiệm 33%)`;
+        } else {
+          opt.textContent = `${p.plan} — ${formattedAmount}`;
+        }
+        if (p.plan === currentSelected || (!currentSelected && p.plan === 'quarterly')) {
+          opt.selected = true;
+        }
+        proPlanSelect.appendChild(opt);
+      }
+    } catch (err) {
+      console.warn('Lỗi tải danh sách gói:', err);
+    }
+  }
+
+  async function loadUsageSummary() {
+    const usageRes = await fetch(`${serverConfig.serverUrl}/api/usage/summary`, {
+      headers: { 'Authorization': `Bearer ${serverConfig.apiToken}` }
+    });
+    if (usageRes.ok) {
+      const u = await usageRes.json();
+      quotaCapture.textContent = `Dữ liệu web: ${u.dataCaptureUsed.toLocaleString('vi-VN')} / ${u.dataCaptureLimit.toLocaleString('vi-VN')} dòng/tháng`;
+      quotaAi.textContent = `Lượt AI: ${u.aiTransformUsed} / ${u.aiTransformLimit} lượt/tháng`;
+      quotaDatasets.textContent = `Bộ dữ liệu: ${u.datasetsCount} / ${u.datasetsLimit} bảng`;
+    }
+  }
+
   async function loadAccountAndCheckout() {
     if (!serverConfig.apiToken) return;
 
     try {
-      // 1. Quota
-      const usageRes = await fetch(`${serverConfig.serverUrl}/api/usage/summary`, {
-        headers: { 'Authorization': `Bearer ${serverConfig.apiToken}` }
-      });
-      if (usageRes.ok) {
-        const u = await usageRes.json();
-        quotaCapture.textContent = `Dữ liệu web: ${u.dataCaptureUsed.toLocaleString('vi-VN')} / ${u.dataCaptureLimit.toLocaleString('vi-VN')} dòng/tháng`;
-        quotaAi.textContent = `Lượt AI: ${u.aiTransformUsed} / ${u.aiTransformLimit} lượt/tháng`;
-        quotaDatasets.textContent = `Bộ dữ liệu: ${u.datasetsCount} / ${u.datasetsLimit} bảng`;
+      await loadUsageSummary();
+      await loadPlans();
+
+      const stored = await chrome.storage.local.get(['currentOrderId']);
+      if (stored.currentOrderId) {
+        const orderRes = await fetch(`${serverConfig.serverUrl}/api/pro/orders/${stored.currentOrderId}`, {
+          headers: { 'Authorization': `Bearer ${serverConfig.apiToken}` }
+        });
+        if (orderRes.ok) {
+          const order = await orderRes.json();
+          renderOrderStatus(order);
+          qrAmount.textContent = `${Number(order.amount).toLocaleString('vi-VN')} đ`;
+          qrTransferCode.textContent = String(order.transferCode);
+          return;
+        }
       }
 
-      // 2. Checkout
-      refreshCheckout();
+      await refreshCheckout();
     } catch (err) {
       console.warn('Lỗi tải quota:', err);
     }
@@ -812,6 +892,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function resetCheckoutSummary() {
     qrAmount.textContent = '—';
     qrTransferCode.textContent = '—';
+    renderOrderStatus(null);
   }
 
   function checkoutNoticeText(checkout) {
@@ -846,6 +927,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const amount = Number(checkout.amount);
       qrAmount.textContent = Number.isFinite(amount) ? `${amount.toLocaleString('vi-VN')} đ` : '—';
       qrTransferCode.textContent = checkout.transferCode ? String(checkout.transferCode) : '—';
+      if (checkout.orderId) {
+        await chrome.storage.local.set({ currentOrderId: checkout.orderId });
+        renderOrderStatus({ status: 'pending' });
+      }
     } catch (err) {
       console.warn('Lỗi checkout:', err);
       resetCheckoutSummary();
@@ -899,7 +984,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkPaymentStatusBtn.textContent = 'Đang kiểm tra…';
     try {
       await checkServerConnection();
-      await loadAccountAndCheckout();
+      const stored = await chrome.storage.local.get(['currentOrderId']);
+      if (stored.currentOrderId) {
+        const orderRes = await fetch(`${serverConfig.serverUrl}/api/pro/orders/${stored.currentOrderId}`, {
+          headers: { 'Authorization': `Bearer ${serverConfig.apiToken}` }
+        });
+        if (orderRes.ok) {
+          const order = await orderRes.json();
+          renderOrderStatus(order);
+          await loadUsageSummary();
+          if (order.status === 'paid') {
+            showAlert(alertSuccess, '✓ Đã kích hoạt gói PRO thành công!');
+          } else if (order.status === 'failed') {
+            showAlert(alertError, '✕ Thanh toán không đủ số tiền của gói cước.');
+          } else if (order.status === 'expired') {
+            showAlert(alertInfo, '⌛ Đơn hàng đã hết hạn.');
+          } else {
+            showAlert(alertInfo, '⏳ Đơn hàng đang chờ thanh toán qua ngân hàng.');
+          }
+          return;
+        }
+      }
+      await loadUsageSummary();
       showAlert(alertSuccess, '✓ Đã cập nhật trạng thái thanh toán và quota mới nhất!');
     } catch (err) {
       showAlert(alertError, err.message);
