@@ -22,9 +22,11 @@ import {
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
 const KEY = 'jobtrack.design.v1';
+const TRASH_KEY = 'jobtrack.trash.v1';
 export { fixture } from './demo';
 
 function load(): Application[] {
+  if (typeof localStorage === 'undefined') return fixture();
   const stored = localStorage.getItem(KEY);
   if (!stored) return fixture();
   const value: unknown = JSON.parse(stored);
@@ -33,8 +35,28 @@ function load(): Application[] {
 }
 
 function store(data: Application[]) {
-  localStorage.setItem(KEY, JSON.stringify(data));
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(KEY, JSON.stringify(data));
+  }
   return structuredClone(data);
+}
+
+function loadTrash(): Application[] {
+  if (typeof localStorage === 'undefined') return [];
+  const stored = localStorage.getItem(TRASH_KEY);
+  if (!stored) return [];
+  try {
+    const value: unknown = JSON.parse(stored);
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeTrash(data: Application[]) {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(TRASH_KEY, JSON.stringify(data));
+  }
 }
 
 export type MutationOptions = { version?: number; confirmReapply?: boolean; key?: string; deadlineInstant?: string };
@@ -105,6 +127,58 @@ export const repository = {
       });
     }
     store(load().filter(app => app.id !== id));
+  },
+
+  async moveToTrash(id: string, version?: number): Promise<void> {
+    if (!demoMode) {
+      return request<void>(`/applications/${encodeURIComponent(id)}/trash`, {
+        method: 'POST',
+        headers: matchHeader(id, version)
+      });
+    }
+    const data = load();
+    const app = data.find(a => a.id === id);
+    if (app) {
+      store(data.filter(a => a.id !== id));
+      const trash = loadTrash();
+      storeTrash([{ ...app, deletedAt: new Date().toISOString() }, ...trash]);
+    }
+  },
+
+  async listTrash(): Promise<Application[]> {
+    if (demoMode) return loadTrash();
+    const raw = await request<ApplicationWireDTO[]>('/applications/trash');
+    if (!Array.isArray(raw)) throw Error('Dữ liệu thùng rác chưa hợp lệ.');
+    return raw.map(wire => wireApplicationToUI(wire) as Application);
+  },
+
+  async restore(id: string): Promise<Application> {
+    if (!demoMode) {
+      const wire = await request<ApplicationWireDTO>(`/applications/${encodeURIComponent(id)}/restore`, {
+        method: 'POST'
+      });
+      return wireApplicationToUI(wire) as Application;
+    }
+    const trash = loadTrash();
+    const app = trash.find(a => a.id === id);
+    if (!app) throw Error('Không tìm thấy hồ sơ trong thùng rác.');
+    storeTrash(trash.filter(a => a.id !== id));
+    const data = load();
+    const restored: Application = { ...app, deletedAt: undefined };
+    store([restored, ...data]);
+    return restored;
+  },
+
+  async purge(id: string, version?: number): Promise<void> {
+    if (!demoMode) {
+      return request<void>(`/applications/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: matchHeader(id, version)
+      });
+    }
+    const trash = loadTrash();
+    storeTrash(trash.filter(a => a.id !== id));
+    store(load().filter(a => a.id !== id));
   },
 
   async interview(applicationId: string, interview: Interview, version?: number, key?: string): Promise<Interview> {

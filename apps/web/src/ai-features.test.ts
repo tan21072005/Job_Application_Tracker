@@ -129,3 +129,59 @@ describe('aiRepository ATS match and Cover letter generation', () => {
   });
 });
 
+describe('repository Trash & Restore lifecycle', () => {
+  const store = new Map<string, string>();
+  const mockStorage = {
+    getItem: (key: string) => store.get(key) || null,
+    setItem: (key: string, val: string) => store.set(key, val),
+    removeItem: (key: string) => store.delete(key),
+    clear: () => store.clear()
+  };
+
+  it('moves application to trash, lists trash, restores, and purges', async () => {
+    vi.stubGlobal('localStorage', mockStorage);
+    const created = await repository.save({
+      company: 'NextGen',
+      position: 'Staff SRE',
+      url: '',
+      source: '',
+      jobCode: '',
+      location: 'HCM',
+      workMode: 'Remote',
+      appliedAt: '',
+      salary: '',
+      notes: '',
+      nextAction: '',
+      deadline: '',
+      status: 'Applied'
+    });
+
+    const activeInitial = await repository.list();
+    expect(activeInitial.some(a => a.id === created.id)).toBe(true);
+
+    await repository.moveToTrash(created.id, created.version);
+
+    const activeAfterTrash = await repository.list();
+    expect(activeAfterTrash.some(a => a.id === created.id)).toBe(false);
+
+    const trashList = await repository.listTrash();
+    expect(trashList.some(a => a.id === created.id)).toBe(true);
+
+    const restored = await repository.restore(created.id);
+    expect(restored.id).toBe(created.id);
+
+    const activeAfterRestore = await repository.list();
+    expect(activeAfterRestore.some(a => a.id === created.id)).toBe(true);
+
+    const trashAfterRestore = await repository.listTrash();
+    expect(trashAfterRestore.some(a => a.id === created.id)).toBe(false);
+
+    await repository.moveToTrash(created.id, restored.version);
+    await repository.purge(created.id, restored.version);
+
+    const trashAfterPurge = await repository.listTrash();
+    expect(trashAfterPurge.some(a => a.id === created.id)).toBe(false);
+  });
+});
+
+
