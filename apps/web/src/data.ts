@@ -219,7 +219,19 @@ import {
   extractBulletsFromResume,
   diagnoseAtsKeywordGaps,
   rewriteBulletPointsXyz,
-  synthesizeOptimizedResume
+  synthesizeOptimizedResume,
+  type BottleneckSeverity,
+  type StageConversionRateDTO,
+  type BottleneckDiagnosticDTO,
+  type VelocityTargetDTO,
+  type PipelineVelocitySimulationDTO,
+  type PipelineVelocityReportDTO,
+  type CalculateVelocityReportInputDTO,
+  type PipelineVelocitySimulationInputDTO,
+  computeStageConversionMetrics,
+  detectPipelineBottlenecks,
+  calculateVelocityTargets,
+  simulatePipelineOutcomes
 } from '@jobtrack/contract';
 
 export type {
@@ -3713,6 +3725,126 @@ export const resumeOptimizerRepository = {
   }
 };
 
+const DEMO_VELOCITY_STORAGE_KEY = 'jobtrack_velocity_report_v1';
+
+function loadDemoVelocityReport(): PipelineVelocityReportDTO | null {
+  try {
+    const raw = localStorage.getItem(DEMO_VELOCITY_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDemoVelocityReport(report: PipelineVelocityReportDTO): void {
+  try {
+    localStorage.setItem(DEMO_VELOCITY_STORAGE_KEY, JSON.stringify(report));
+  } catch {}
+}
+
+export const pipelineVelocityRepository = {
+  async getLatestReport(): Promise<PipelineVelocityReportDTO | null> {
+    if (demoMode) {
+      const existing = loadDemoVelocityReport();
+      if (existing) return existing;
+
+      const defaultTargetDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      return this.generateReport({
+        targetOfferDate: defaultTargetDate,
+        targetOfferCount: 1,
+        simulationHorizonWeeks: 12
+      });
+    }
+    return request<PipelineVelocityReportDTO | null>('/pipeline/velocity/report');
+  },
+
+  async generateReport(
+    input: CalculateVelocityReportInputDTO
+  ): Promise<PipelineVelocityReportDTO> {
+    if (demoMode) {
+      const apps = await repository.list();
+      const mappedApps = apps.map(a => ({
+        status: a.status,
+        appliedAt: a.appliedAt || null,
+        createdAt: a.createdAt,
+        statusUpdatedAt: a.statusUpdatedAt || a.createdAt,
+        interviews: (a.interviews || []).map(i => ({
+          id: i.id,
+          status: i.status,
+          at: i.at
+        }))
+      }));
+
+      const stageMetrics = computeStageConversionMetrics(mappedApps);
+      const bottlenecks = detectPipelineBottlenecks(stageMetrics);
+
+      const now = Date.now();
+      const fourWeeksAgo = now - 28 * 24 * 60 * 60 * 1000;
+      const recentAppsCount = mappedApps.filter(a => {
+        const d = a.appliedAt ? Date.parse(a.appliedAt) : Date.parse(a.createdAt);
+        return Number.isFinite(d) && d >= fourWeeksAgo;
+      }).length;
+      const weeklyVelocity = Math.max(1, Math.round((recentAppsCount / 4) * 10) / 10);
+
+      const velocityTarget = calculateVelocityTargets(
+        stageMetrics,
+        input.targetOfferDate,
+        input.targetOfferCount || 1,
+        weeklyVelocity
+      );
+
+      const activeVelocity = input.simulatedWeeklyVelocity !== undefined
+        ? input.simulatedWeeklyVelocity
+        : velocityTarget.recommendedWeeklyApplications;
+
+      const simulation = simulatePipelineOutcomes(
+        activeVelocity,
+        stageMetrics,
+        input.simulationHorizonWeeks || 12
+      );
+
+      const report: PipelineVelocityReportDTO = {
+        id: `vel-${Date.now()}`,
+        userId: 'demo-user',
+        targetOfferDate: input.targetOfferDate,
+        targetOfferCount: input.targetOfferCount || 1,
+        calculatedAt: new Date().toISOString(),
+        stageMetrics,
+        bottlenecks,
+        velocityTarget,
+        simulation,
+        applicationsAnalyzed: mappedApps.length
+      };
+
+      saveDemoVelocityReport(report);
+      return report;
+    }
+
+    return request<PipelineVelocityReportDTO>('/pipeline/velocity/report', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async simulate(
+    input: PipelineVelocitySimulationInputDTO
+  ): Promise<PipelineVelocitySimulationDTO> {
+    if (demoMode) {
+      let metrics = input.stageMetrics;
+      if (!metrics || metrics.length === 0) {
+        const report = await this.getLatestReport();
+        metrics = report ? report.stageMetrics : computeStageConversionMetrics([]);
+      }
+      return simulatePipelineOutcomes(input.weeklyVelocity, metrics, input.weeksHorizon);
+    }
+
+    return request<PipelineVelocitySimulationDTO>('/pipeline/velocity/simulate', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  }
+};
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
@@ -3782,7 +3914,15 @@ export type {
   OptimizedResumeVariantDTO,
   OptimizeResumeInputDTO,
   RewriteBulletInputDTO,
-  ApplyRewritesInputDTO
+  ApplyRewritesInputDTO,
+  BottleneckSeverity,
+  StageConversionRateDTO,
+  BottleneckDiagnosticDTO,
+  VelocityTargetDTO,
+  PipelineVelocitySimulationDTO,
+  PipelineVelocityReportDTO,
+  CalculateVelocityReportInputDTO,
+  PipelineVelocitySimulationInputDTO
 };
 
 

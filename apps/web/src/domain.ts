@@ -130,7 +130,20 @@ import {
   extractBulletsFromResume,
   diagnoseAtsKeywordGaps,
   rewriteBulletPointsXyz,
-  synthesizeOptimizedResume
+  synthesizeOptimizedResume,
+  type BottleneckSeverity,
+  type StageConversionRateDTO,
+  type BottleneckDiagnosticDTO,
+  type VelocityTargetDTO,
+  type PipelineVelocitySimulationDTO,
+  type PipelineVelocityReportDTO,
+  type CalculateVelocityReportInputDTO,
+  type PipelineVelocitySimulationInputDTO,
+  computeStageConversionMetrics,
+  detectPipelineBottlenecks,
+  calculateVelocityTargets,
+  simulatePipelineOutcomes,
+  validateCalculateVelocityReportInput
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -264,7 +277,20 @@ export {
   extractBulletsFromResume,
   diagnoseAtsKeywordGaps,
   rewriteBulletPointsXyz,
-  synthesizeOptimizedResume
+  synthesizeOptimizedResume,
+  type BottleneckSeverity,
+  type StageConversionRateDTO,
+  type BottleneckDiagnosticDTO,
+  type VelocityTargetDTO,
+  type PipelineVelocitySimulationDTO,
+  type PipelineVelocityReportDTO,
+  type CalculateVelocityReportInputDTO,
+  type PipelineVelocitySimulationInputDTO,
+  computeStageConversionMetrics,
+  detectPipelineBottlenecks,
+  calculateVelocityTargets,
+  simulatePipelineOutcomes,
+  validateCalculateVelocityReportInput
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {
