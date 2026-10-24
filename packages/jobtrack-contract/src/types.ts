@@ -78,6 +78,7 @@ export interface ApplicationWireDTO {
   priority?: ApplicationPriority;
   tags?: string[];
   statusUpdatedAt?: string;
+  scorecard?: Record<string, number>;
   createdAt: string;
   updatedAt: string;
   interviews: InterviewWireDTO[];

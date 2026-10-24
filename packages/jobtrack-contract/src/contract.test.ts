@@ -81,7 +81,15 @@ import {
   deriveRecommendedReconnectDays,
   calculateStageSla,
   validatePipelineMetadataInput,
-  type ContactDTO
+  type ContactDTO,
+  DECISION_DIMENSIONS,
+  DIMENSION_METADATA,
+  DEFAULT_WEIGHT_PROFILE,
+  normalizeWeights,
+  calculateCompositeScore,
+  evaluateDecisionMatrix,
+  validateWeightsInput,
+  validateScorecardInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -1852,4 +1860,192 @@ test('contract: validatePipelineMetadataInput validates priority and tags', () =
   assert.ok(invalid.errors?.priority);
   assert.ok(invalid.errors?.tags);
   assert.ok(invalid.errors?.statusUpdatedAt);
+});
+
+test('contract: normalizeWeights computes normalized 100% distribution correctly and handles partial/empty inputs', () => {
+  const defaults = normalizeWeights();
+  assert.equal(defaults.compensation, 25);
+  assert.equal(defaults.work_life_balance, 20);
+  assert.equal(defaults.career_growth, 20);
+  assert.equal(defaults.company_culture, 15);
+  assert.equal(defaults.commute_flexibility, 10);
+  assert.equal(defaults.leadership_team, 5);
+  assert.equal(defaults.tech_stack, 5);
+
+  const sumDefaults = Object.values(defaults).reduce((a, b) => a + b, 0);
+  assert.equal(sumDefaults, 100);
+
+  const custom = normalizeWeights({
+    compensation: 50,
+    work_life_balance: 50
+  });
+  const sumCustom = Object.values(custom).reduce((a, b) => a + b, 0);
+  assert.equal(sumCustom, 100);
+  assert.ok(custom.compensation > custom.tech_stack);
+
+  const zero = normalizeWeights({
+    compensation: 0,
+    work_life_balance: 0,
+    career_growth: 0,
+    company_culture: 0,
+    commute_flexibility: 0,
+    leadership_team: 0,
+    tech_stack: 0
+  });
+  assert.equal(zero.compensation, 25);
+});
+
+test('contract: calculateCompositeScore calculates accurate weighted score (0-100) and clamps bounds', () => {
+  const perfectScores = {
+    compensation: 10,
+    work_life_balance: 10,
+    career_growth: 10,
+    company_culture: 10,
+    commute_flexibility: 10,
+    leadership_team: 10,
+    tech_stack: 10
+  };
+  const perfectResult = calculateCompositeScore(perfectScores, DEFAULT_WEIGHT_PROFILE);
+  assert.equal(perfectResult, 100);
+
+  const minScores = {
+    compensation: 1,
+    work_life_balance: 1,
+    career_growth: 1,
+    company_culture: 1,
+    commute_flexibility: 1,
+    leadership_team: 1,
+    tech_stack: 1
+  };
+  const minResult = calculateCompositeScore(minScores, DEFAULT_WEIGHT_PROFILE);
+  assert.equal(minResult, 10);
+
+  const mixedScores = {
+    compensation: 8,
+    work_life_balance: 6,
+    career_growth: 9,
+    company_culture: 7,
+    commute_flexibility: 8,
+    leadership_team: 5,
+    tech_stack: 8
+  };
+  const mixedResult = calculateCompositeScore(mixedScores, DEFAULT_WEIGHT_PROFILE);
+  assert.ok(mixedResult >= 70 && mixedResult <= 80);
+});
+
+test('contract: evaluateDecisionMatrix ranks multiple opportunities, detects strengths/weaknesses, and selects category winners', () => {
+  const items = [
+    {
+      id: 'app-google',
+      company: 'Google',
+      position: 'Senior Software Engineer',
+      status: 'Offer',
+      scores: {
+        compensation: 10,
+        work_life_balance: 6,
+        career_growth: 8,
+        company_culture: 7,
+        commute_flexibility: 6,
+        leadership_team: 8,
+        tech_stack: 8
+      }
+    },
+    {
+      id: 'app-startup',
+      company: 'FinTech Startup',
+      position: 'Lead Engineer',
+      status: 'Interview',
+      scores: {
+        compensation: 7,
+        work_life_balance: 3,
+        career_growth: 10,
+        company_culture: 8,
+        commute_flexibility: 9,
+        leadership_team: 7,
+        tech_stack: 9
+      }
+    },
+    {
+      id: 'app-corp',
+      company: 'Enterprise Corp',
+      position: 'Backend Developer',
+      status: 'Screening',
+      scores: {
+        compensation: 6,
+        work_life_balance: 9,
+        career_growth: 4,
+        company_culture: 6,
+        commute_flexibility: 8,
+        leadership_team: 5,
+        tech_stack: 4
+      }
+    }
+  ];
+
+  const result = evaluateDecisionMatrix(items);
+  assert.equal(result.totalCompared, 3);
+  assert.ok(result.topPickId);
+  assert.equal(result.opportunities.length, 3);
+  assert.equal(result.opportunities[0].rank, 1);
+  assert.equal(result.opportunities[1].rank, 2);
+  assert.equal(result.opportunities[2].rank, 3);
+  assert.ok(result.opportunities[0].compositeScore >= result.opportunities[1].compositeScore);
+
+  const startup = result.opportunities.find((o) => o.id === 'app-startup');
+  assert.ok(startup);
+  assert.ok(startup.strengths.includes('career_growth'));
+  assert.ok(startup.weaknesses.includes('work_life_balance'));
+
+  const compWinner = result.categoryWinners.find((w) => w.dimension === 'compensation');
+  assert.ok(compWinner);
+  assert.equal(compWinner.company, 'Google');
+  assert.equal(compWinner.score, 10);
+
+  const wlbWinner = result.categoryWinners.find((w) => w.dimension === 'work_life_balance');
+  assert.ok(wlbWinner);
+  assert.equal(wlbWinner.company, 'Enterprise Corp');
+  assert.equal(wlbWinner.score, 9);
+});
+
+test('contract: validateWeightsInput and validateScorecardInput enforce bounds and valid schemas', () => {
+  const validWeights = validateWeightsInput({
+    compensation: 30,
+    work_life_balance: 20,
+    career_growth: 20,
+    company_culture: 15,
+    commute_flexibility: 15
+  });
+  assert.equal(validWeights.ok, true);
+
+  const invalidWeights = validateWeightsInput({
+    compensation: 150,
+    work_life_balance: -10
+  });
+  assert.equal(invalidWeights.ok, false);
+  assert.ok(invalidWeights.errors?.compensation);
+  assert.ok(invalidWeights.errors?.work_life_balance);
+
+  const validScorecard = validateScorecardInput({
+    scores: {
+      compensation: 8,
+      work_life_balance: 7,
+      career_growth: 9
+    },
+    notes: 'Rất ấn tượng với phúc lợi và công nghệ của team'
+  });
+  assert.equal(validScorecard.ok, true);
+  if (validScorecard.ok) {
+    assert.equal(validScorecard.data.scores.compensation, 8);
+    assert.equal(validScorecard.data.notes, 'Rất ấn tượng với phúc lợi và công nghệ của team');
+  }
+
+  const invalidScorecard = validateScorecardInput({
+    scores: {
+      compensation: 15,
+      career_growth: 0
+    }
+  });
+  assert.equal(invalidScorecard.ok, false);
+  assert.ok(invalidScorecard.errors?.['scores.compensation']);
+  assert.ok(invalidScorecard.errors?.['scores.career_growth']);
 });

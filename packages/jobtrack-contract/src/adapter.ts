@@ -25,6 +25,7 @@ export interface UIApplicationModel {
   priority?: ApplicationWireDTO['priority'];
   tags?: string[];
   statusUpdatedAt?: string;
+  scorecard?: Record<string, number>;
   createdAt: string;
   updatedAt?: string;
   interviews: UIInterviewModel[];
@@ -83,6 +84,7 @@ export function wireApplicationToUI(wire: ApplicationWireDTO): UIApplicationMode
     priority: wire.priority || 'target',
     tags: wire.tags || [],
     statusUpdatedAt: wire.statusUpdatedAt || wire.createdAt,
+    scorecard: wire.scorecard,
     createdAt: wire.createdAt,
     updatedAt: wire.updatedAt,
     interviews: (wire.interviews || []).map(wireInterviewToUI)

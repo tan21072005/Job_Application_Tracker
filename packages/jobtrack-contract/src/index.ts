@@ -18,3 +18,4 @@ export * from './company.ts';
 export * from './follow-up.ts';
 export * from './contact.ts';
 export * from './pipeline.ts';
+export * from './decision.ts';
