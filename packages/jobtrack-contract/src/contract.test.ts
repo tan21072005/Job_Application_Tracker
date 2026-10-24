@@ -31,7 +31,11 @@ import {
   type CrawlRunResultDTO,
   validateCandidateProfileInput,
   generateIcsCalendar,
-  escapeIcsText
+  escapeIcsText,
+  formatApplicationsAsCsv,
+  deriveActivityTimeline,
+  validateBulkStatusInput,
+  validateBulkTrashInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -548,5 +552,116 @@ test('contract: escapeIcsText properly escapes RFC 5545 special delimiters', () 
   const raw = 'Dòng 1\nDòng 2; có dấu chấm phẩy, phẩy và gạch chéo \\';
   const escaped = escapeIcsText(raw);
   assert.ok(escaped.includes('Dòng 1\\nDòng 2\\; có dấu chấm phẩy\\, phẩy và gạch chéo \\\\'));
+});
+
+test('contract: formatApplicationsAsCsv outputs UTF-8 BOM and sanitizes formula injection', () => {
+  const apps = [
+    {
+      id: 'app-001',
+      company: 'Tech Corp',
+      position: '=cmd|/c calc!A0',
+      status: 'Applied' as const,
+      appliedAt: '2026-10-20',
+      salary: '35 triệu',
+      location: 'Hà Nội, Việt Nam',
+      workMode: 'Hybrid' as const,
+      nextAction: '+20% performance review',
+      deadline: '2026-10-25T17:00:00Z',
+      source: 'ITviec',
+      jobCode: 'TC-101',
+      url: 'https://example.com/job/101',
+      notes: 'Ghi chú dòng 1\nDòng 2 với "nháy kép"',
+      interviews: [{ id: 'int-1' }],
+      createdAt: '2026-10-19T08:00:00Z',
+      updatedAt: '2026-10-20T10:00:00Z'
+    }
+  ];
+
+  const csv = formatApplicationsAsCsv(apps);
+  assert.ok(csv.startsWith('\uFEFF'));
+  assert.ok(csv.includes('Mã hồ sơ,Công ty,Vị trí ứng tuyển,Trạng thái'));
+  assert.ok(csv.includes("'=cmd|/c calc!A0"));
+  assert.ok(csv.includes('"Hà Nội, Việt Nam"'));
+  assert.ok(csv.includes("'+20% performance review"));
+  assert.ok(csv.includes('""nháy kép""'));
+});
+
+test('contract: deriveActivityTimeline generates chronological events for application journey', () => {
+  const app = {
+    id: 'app-002',
+    company: 'VNG',
+    position: 'Senior Backend Engineer',
+    status: 'Interview' as const,
+    appliedAt: '2026-10-20',
+    source: 'LinkedIn',
+    nextAction: 'Luyện tập System Design',
+    notes: 'Ứng tuyển qua referral của anh Minh',
+    createdAt: '2026-10-18T10:00:00Z',
+    updatedAt: '2026-10-21T15:00:00Z',
+    interviews: [
+      {
+        id: 'round-1',
+        title: 'Phỏng vấn HR',
+        at: '2026-10-22T09:00:00Z',
+        format: 'Online',
+        location: 'Google Meet',
+        status: 'Completed',
+        notes: 'HR thân thiện'
+      },
+      {
+        id: 'round-2',
+        title: 'Phỏng vấn Kỹ thuật',
+        at: '2026-10-25T14:00:00Z',
+        format: 'On-site',
+        location: 'VNG Campus',
+        status: 'Scheduled',
+        notes: 'Kiến trúc hệ thống'
+      }
+    ]
+  };
+
+  const timeline = deriveActivityTimeline(app);
+  assert.ok(timeline.length >= 5);
+  for (let i = 0; i < timeline.length - 1; i++) {
+    assert.ok(timeline[i].timestamp.localeCompare(timeline[i + 1].timestamp) >= 0);
+  }
+
+  const types = new Set(timeline.map(t => t.type));
+  assert.ok(types.has('created'));
+  assert.ok(types.has('applied'));
+  assert.ok(types.has('interview'));
+  assert.ok(types.has('status_changed'));
+  assert.ok(types.has('notes_updated'));
+});
+
+test('contract: validateBulkStatusInput and validateBulkTrashInput enforce strict structure', () => {
+  const validStatus = validateBulkStatusInput({
+    ids: ['95cf7ba5-fe4c-4e92-bcff-b44b207ec5a2', 'd79e77b0-fe4c-4e92-bcff-b44b207ec5a3'],
+    status: 'Applied'
+  });
+  assert.equal(validStatus.ok, true);
+  if (validStatus.ok) {
+    assert.equal(validStatus.data.ids.length, 2);
+    assert.equal(validStatus.data.status, 'Applied');
+  }
+
+  const invalidStatus = validateBulkStatusInput({
+    ids: ['not-a-uuid'],
+    status: 'InvalidStatus'
+  });
+  assert.equal(invalidStatus.ok, false);
+
+  const validTrash = validateBulkTrashInput({
+    ids: ['95cf7ba5-fe4c-4e92-bcff-b44b207ec5a2']
+  });
+  assert.equal(validTrash.ok, true);
+  if (validTrash.ok) {
+    assert.equal(validTrash.data.ids.length, 1);
+  }
+
+  const emptyTrash = validateBulkTrashInput({
+    ids: []
+  });
+  assert.equal(emptyTrash.ok, false);
 });
 

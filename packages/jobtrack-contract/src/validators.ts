@@ -9,7 +9,9 @@ import {
   type InterviewFormat,
   type InterviewStatus,
   type SortOption,
-  type CandidateProfileMutationInput
+  type CandidateProfileMutationInput,
+  type BulkStatusUpdateDTO,
+  type BulkTrashDTO
 } from './types.ts';
 import { isValidCalendarDate, isValidIsoInstant, isValidIanaTimezone } from './time.ts';
 import { normalizeIdentityKey, normalizeUrl } from './normalization.ts';
@@ -696,6 +698,111 @@ export function validateCandidateProfileInput(rawBody: unknown): ValidationResul
       bio,
       customAnswers,
       expectedUpdatedAt
+    }
+  };
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function validateBulkStatusInput(rawBody: unknown): ValidationResult<BulkStatusUpdateDTO> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu cập nhật hàng loạt không hợp lệ.',
+      errors: { _root: 'Nội dung yêu cầu phải là JSON object.' }
+    };
+  }
+
+  const body = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  const unknown = Object.keys(body).filter(k => k !== 'ids' && k !== 'status');
+  if (unknown.length > 0) {
+    for (const u of unknown) {
+      errors[u] = 'Trường không được hỗ trợ.';
+    }
+  }
+
+  if (!Array.isArray(body.ids) || body.ids.length === 0) {
+    errors.ids = 'Danh sách mã hồ sơ không được để trống.';
+  } else if (body.ids.length > 100) {
+    errors.ids = 'Số lượng hồ sơ mỗi lần thao tác không được vượt quá 100.';
+  } else {
+    for (let i = 0; i < body.ids.length; i++) {
+      const id = body.ids[i];
+      if (typeof id !== 'string' || !UUID_REGEX.test(id.trim())) {
+        errors.ids = 'Mã hồ sơ trong danh sách không đúng định dạng UUID.';
+        break;
+      }
+    }
+  }
+
+  if (!body.status || typeof body.status !== 'string' || !APPLICATION_STATUSES.includes(body.status as ApplicationStatus)) {
+    errors.status = 'Trạng thái ứng tuyển không hợp lệ.';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Dữ liệu thao tác hàng loạt chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      ids: (body.ids as string[]).map(id => id.trim()),
+      status: body.status as ApplicationStatus
+    }
+  };
+}
+
+export function validateBulkTrashInput(rawBody: unknown): ValidationResult<BulkTrashDTO> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu chuyển thùng rác hàng loạt không hợp lệ.',
+      errors: { _root: 'Nội dung yêu cầu phải là JSON object.' }
+    };
+  }
+
+  const body = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  const unknown = Object.keys(body).filter(k => k !== 'ids');
+  if (unknown.length > 0) {
+    for (const u of unknown) {
+      errors[u] = 'Trường không được hỗ trợ.';
+    }
+  }
+
+  if (!Array.isArray(body.ids) || body.ids.length === 0) {
+    errors.ids = 'Danh sách mã hồ sơ không được để trống.';
+  } else if (body.ids.length > 100) {
+    errors.ids = 'Số lượng hồ sơ mỗi lần thao tác không được vượt quá 100.';
+  } else {
+    for (let i = 0; i < body.ids.length; i++) {
+      const id = body.ids[i];
+      if (typeof id !== 'string' || !UUID_REGEX.test(id.trim())) {
+        errors.ids = 'Mã hồ sơ trong danh sách không đúng định dạng UUID.';
+        break;
+      }
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Dữ liệu chuyển thùng rác hàng loạt chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      ids: (body.ids as string[]).map(id => id.trim())
     }
   };
 }

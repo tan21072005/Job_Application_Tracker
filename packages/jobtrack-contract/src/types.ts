@@ -359,3 +359,33 @@ export interface InterviewAgendaItemDTO extends InterviewWireDTO {
   position: string;
   applicationStatus: ApplicationStatus;
 }
+
+export interface BulkStatusUpdateDTO {
+  ids: string[];
+  status: ApplicationStatus;
+}
+
+export interface BulkTrashDTO {
+  ids: string[];
+}
+
+export interface BulkOperationResultDTO {
+  affectedCount: number;
+  ids: string[];
+}
+
+export type ActivityTimelineType =
+  | 'created'
+  | 'applied'
+  | 'interview'
+  | 'status_changed'
+  | 'notes_updated';
+
+export interface ActivityTimelineItemDTO {
+  id: string;
+  timestamp: string;
+  type: ActivityTimelineType;
+  title: string;
+  description?: string;
+  badge?: string;
+}
