@@ -99,7 +99,17 @@ import {
   calculateRoadmapProgress,
   validateMilestoneUpdateInput,
   validateRoadmapGenerateInput,
-  KNOWN_SKILL_CATALOG
+  KNOWN_SKILL_CATALOG,
+  detectEmailCategory,
+  extractMeetingLink,
+  extractCompany,
+  extractPosition,
+  extractRecruiter,
+  extractInterviewDateTime,
+  parseEmailContent,
+  generateIngestionProposal,
+  validateEmailParseInput,
+  validateEmailApplyInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -2238,4 +2248,113 @@ test('contract: validateMilestoneUpdateInput and validateRoadmapGenerateInput va
   assert.equal(validGen.ok, true);
   assert.equal(validGen.data?.targetRole, 'Lead Architect');
   assert.deepEqual(validGen.data?.focusSkills, ['Docker', 'AWS']);
+});
+
+test('contract: detectEmailCategory accurately categorizes various recruitment emails', () => {
+  const interviewRes = detectEmailCategory('Chúng tôi xin gửi thư mời phỏng vấn kỹ thuật vào 14:00 ngày mai', 'Thư mời phỏng vấn');
+  assert.equal(interviewRes.category, 'interview_invitation');
+  assert.ok(interviewRes.confidence >= 90);
+
+  const offerRes = detectEmailCategory('Chúc mừng bạn đã trúng tuyển. Đính kèm là Job Offer Letter và mức lương gross 45M', 'Thư mời nhận việc');
+  assert.equal(offerRes.category, 'offer');
+  assert.ok(offerRes.confidence >= 90);
+
+  const rejectRes = detectEmailCategory('Rất tiếc hồ sơ của bạn chưa phù hợp với tiêu chí hiện tại của công ty', 'Thông báo kết quả tuyển dụng');
+  assert.equal(rejectRes.category, 'rejection');
+  assert.ok(rejectRes.confidence >= 90);
+
+  const ackRes = detectEmailCategory('Chúng tôi đã nhận được hồ sơ ứng tuyển của bạn và sẽ phản hồi sớm', 'Xác nhận nhận hồ sơ');
+  assert.equal(ackRes.category, 'application_ack');
+});
+
+test('contract: extractMeetingLink detects Zoom, Google Meet, and MS Teams links', () => {
+  const gMeet = extractMeetingLink('Link phỏng vấn trực tuyến: https://meet.google.com/abc-defg-hij vui lòng tham gia đúng giờ.');
+  assert.equal(gMeet?.platform, 'Google Meet');
+  assert.equal(gMeet?.url, 'https://meet.google.com/abc-defg-hij');
+
+  const zoom = extractMeetingLink('Vui lòng tham gia phòng họp: https://us02web.zoom.us/j/1234567890?pwd=abc');
+  assert.equal(zoom?.platform, 'Zoom');
+  assert.equal(zoom?.url, 'https://us02web.zoom.us/j/1234567890?pwd=abc');
+
+  const teams = extractMeetingLink('Họp qua MS Teams: https://teams.microsoft.com/l/meetup-join/19%3ameeting_xyz');
+  assert.equal(teams?.platform, 'Microsoft Teams');
+
+  assert.equal(extractMeetingLink('Không có link họp trực tiếp'), null);
+});
+
+test('contract: parseEmailContent extracts company, role, datetime, and recruiter details', () => {
+  const emailText = `Chào bạn,
+Phòng Tuyển dụng VNG Corporation trân trọng mời bạn tham gia vòng phỏng vấn vị trí Senior React Engineer.
+Thời gian: 15:30 ngày 25/11/2026.
+Hình thức: Phỏng vấn trực tuyến qua Google Meet https://meet.google.com/xyz-uvwx-rst
+Nếu cần hỗ trợ, vui lòng liên hệ:
+Trân trọng,
+Nguyễn Hoàng Lan
+Email: lannh@vng.com.vn
+SĐT: 0912345678`;
+
+  const parsed = parseEmailContent(emailText, 'Thư mời phỏng vấn - VNG Corporation', 'recruitment@vng.com.vn');
+  assert.equal(parsed.category, 'interview_invitation');
+  assert.equal(parsed.company, 'VNG Corporation');
+  assert.equal(parsed.position, 'Senior React Engineer');
+  assert.equal(parsed.targetStatus, 'Interview');
+  assert.equal(parsed.interviewSchedule?.format, 'Google Meet');
+  assert.equal(parsed.interviewSchedule?.meetingUrl, 'https://meet.google.com/xyz-uvwx-rst');
+  assert.equal(parsed.recruiter?.name, 'Nguyễn Hoàng Lan');
+  assert.equal(parsed.recruiter?.email, 'lannh@vng.com.vn');
+  assert.equal(parsed.recruiter?.phone, '0912345678');
+});
+
+test('contract: generateIngestionProposal creates proposal based on existing pipeline matching', () => {
+  const existingApps = [
+    { id: 'app-fpt-1', company: 'FPT Software', position: 'Backend Engineer', status: 'Applied' },
+    { id: 'app-vng-2', company: 'VNG Corporation', position: 'Senior React Engineer', status: 'Screening' }
+  ];
+
+  const parsedVng = parseEmailContent(
+    'Mời phỏng vấn tại VNG Corporation ngày 10:00 ngày 28/11/2026 qua https://meet.google.com/abc-defg-hij',
+    'Lịch phỏng vấn VNG'
+  );
+  const proposalVng = generateIngestionProposal(parsedVng, existingApps);
+  assert.equal(proposalVng.actionType, 'schedule_interview');
+  assert.equal(proposalVng.matchedApplicationId, 'app-vng-2');
+  assert.ok(proposalVng.proposedInterview);
+  assert.equal(proposalVng.proposedInterview.format, 'Google Meet');
+
+  const parsedNew = parseEmailContent(
+    'Cảm ơn bạn đã ứng tuyển vị trí DevOps Engineer tại Shopee.',
+    'Shopee Job Application'
+  );
+  const proposalNew = generateIngestionProposal(parsedNew, existingApps);
+  assert.equal(proposalNew.actionType, 'create_application');
+  assert.equal(proposalNew.matchedApplicationId, null);
+  assert.equal(proposalNew.proposedApplication?.company, 'Shopee');
+});
+
+test('contract: validateEmailParseInput and validateEmailApplyInput validate schemas strictly', () => {
+  const validParse = validateEmailParseInput({
+    emailContent: 'Thư mời phỏng vấn tại FPT',
+    subject: 'Interview',
+    sender: 'hr@fpt.com'
+  });
+  assert.equal(validParse.ok, true);
+
+  const invalidParse = validateEmailParseInput({ emailContent: '   ' });
+  assert.equal(invalidParse.ok, false);
+
+  const validApply = validateEmailApplyInput({
+    actionType: 'create_application',
+    confidenceScore: 90,
+    summary: 'Tạo hồ sơ mới',
+    proposedApplication: {
+      company: 'Shopee',
+      position: 'Backend Developer',
+      status: 'Applied'
+    },
+    changesSummary: ['Tạo mới hồ sơ']
+  });
+  assert.equal(validApply.ok, true);
+
+  const invalidApply = validateEmailApplyInput({ actionType: 'unsupported_action' });
+  assert.equal(invalidApply.ok, false);
 });
