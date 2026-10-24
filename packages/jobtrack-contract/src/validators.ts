@@ -4,6 +4,8 @@ import {
   INTERVIEW_FORMATS,
   INTERVIEW_STATUSES,
   SORT_ALLOWLIST,
+  INTERVIEW_QUESTION_CATEGORIES,
+  DOMAIN_TRACKS,
   type ApplicationStatus,
   type WorkMode,
   type InterviewFormat,
@@ -11,7 +13,11 @@ import {
   type SortOption,
   type CandidateProfileMutationInput,
   type BulkStatusUpdateDTO,
-  type BulkTrashDTO
+  type BulkTrashDTO,
+  type InterviewPrepRequestDTO,
+  type InterviewEvaluateRequestDTO,
+  type InterviewQuestionCategory,
+  type DomainTrack
 } from './types.ts';
 import { isValidCalendarDate, isValidIsoInstant, isValidIanaTimezone } from './time.ts';
 import { normalizeIdentityKey, normalizeUrl } from './normalization.ts';
@@ -803,6 +809,199 @@ export function validateBulkTrashInput(rawBody: unknown): ValidationResult<BulkT
     ok: true,
     data: {
       ids: (body.ids as string[]).map(id => id.trim())
+    }
+  };
+}
+
+export function validateInterviewPrepInput(rawBody: unknown): ValidationResult<InterviewPrepRequestDTO> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu chuẩn bị phỏng vấn không hợp lệ.',
+      errors: { _root: 'Nội dung yêu cầu phải là JSON object.' }
+    };
+  }
+
+  const body = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  const allowedKeys = new Set(['company', 'position', 'roundTitle', 'notes', 'skills', 'domainTrack']);
+  const unknown = Object.keys(body).filter(k => !allowedKeys.has(k));
+  if (unknown.length > 0) {
+    for (const u of unknown) {
+      errors[u] = 'Trường không được hỗ trợ.';
+    }
+  }
+
+  let position = '';
+  if (!body.position || typeof body.position !== 'string' || !body.position.trim()) {
+    errors.position = 'Vị trí ứng tuyển là bắt buộc.';
+  } else if (body.position.trim().length > 250) {
+    errors.position = 'Vị trí ứng tuyển không được vượt quá 250 ký tự.';
+  } else {
+    position = body.position.trim();
+  }
+
+  let company = '';
+  if ('company' in body && body.company !== undefined && body.company !== null) {
+    if (typeof body.company !== 'string') {
+      errors.company = 'Tên công ty phải là chuỗi ký tự.';
+    } else if (body.company.trim().length > 250) {
+      errors.company = 'Tên công ty không được vượt quá 250 ký tự.';
+    } else {
+      company = body.company.trim();
+    }
+  }
+
+  let roundTitle: string | undefined = undefined;
+  if ('roundTitle' in body && body.roundTitle !== undefined && body.roundTitle !== null) {
+    if (typeof body.roundTitle !== 'string') {
+      errors.roundTitle = 'Tên vòng phỏng vấn phải là chuỗi ký tự.';
+    } else {
+      roundTitle = body.roundTitle.trim();
+    }
+  }
+
+  let notes: string | null = null;
+  if ('notes' in body && body.notes !== undefined && body.notes !== null) {
+    if (typeof body.notes !== 'string') {
+      errors.notes = 'Ghi chú phải là chuỗi ký tự.';
+    } else {
+      notes = body.notes.trim();
+    }
+  }
+
+  let skills: string[] | undefined = undefined;
+  if ('skills' in body && body.skills !== undefined && body.skills !== null) {
+    if (!Array.isArray(body.skills)) {
+      errors.skills = 'Kỹ năng phải là một mảng chuỗi ký tự.';
+    } else {
+      skills = [];
+      for (const s of body.skills) {
+        if (typeof s === 'string' && s.trim()) {
+          skills.push(s.trim());
+        }
+      }
+    }
+  }
+
+  let domainTrack: DomainTrack | undefined = undefined;
+  if ('domainTrack' in body && body.domainTrack !== undefined && body.domainTrack !== null) {
+    if (typeof body.domainTrack !== 'string' || !DOMAIN_TRACKS.includes(body.domainTrack as DomainTrack)) {
+      errors.domainTrack = 'Chuyên môn phỏng vấn không hợp lệ.';
+    } else {
+      domainTrack = body.domainTrack as DomainTrack;
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Dữ liệu chuẩn bị phỏng vấn chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      position,
+      company,
+      roundTitle,
+      notes,
+      skills,
+      domainTrack
+    }
+  };
+}
+
+export function validateInterviewEvaluateInput(rawBody: unknown): ValidationResult<InterviewEvaluateRequestDTO> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu đánh giá câu trả lời không hợp lệ.',
+      errors: { _root: 'Nội dung yêu cầu phải là JSON object.' }
+    };
+  }
+
+  const body = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  const allowedKeys = new Set(['questionId', 'question', 'category', 'answer', 'targetRole', 'company']);
+  const unknown = Object.keys(body).filter(k => !allowedKeys.has(k));
+  if (unknown.length > 0) {
+    for (const u of unknown) {
+      errors[u] = 'Trường không được hỗ trợ.';
+    }
+  }
+
+  let questionId = '';
+  if (typeof body.questionId === 'string' && body.questionId.trim()) {
+    questionId = body.questionId.trim();
+  }
+
+  let question = '';
+  if (!body.question || typeof body.question !== 'string' || !body.question.trim()) {
+    errors.question = 'Câu hỏi phỏng vấn là bắt buộc.';
+  } else if (body.question.trim().length > 1000) {
+    errors.question = 'Câu hỏi không được vượt quá 1000 ký tự.';
+  } else {
+    question = body.question.trim();
+  }
+
+  let category: InterviewQuestionCategory = 'behavioral';
+  if (!body.category || typeof body.category !== 'string' || !INTERVIEW_QUESTION_CATEGORIES.includes(body.category as InterviewQuestionCategory)) {
+    errors.category = 'Danh mục câu hỏi không hợp lệ.';
+  } else {
+    category = body.category as InterviewQuestionCategory;
+  }
+
+  let answer = '';
+  if (!body.answer || typeof body.answer !== 'string' || !body.answer.trim()) {
+    errors.answer = 'Câu trả lời của bạn là bắt buộc.';
+  } else if (body.answer.trim().length < 5) {
+    errors.answer = 'Câu trả lời quá ngắn (cần tối thiểu 5 ký tự).';
+  } else if (body.answer.trim().length > 10000) {
+    errors.answer = 'Câu trả lời không được vượt quá 10.000 ký tự.';
+  } else {
+    answer = body.answer.trim();
+  }
+
+  let targetRole: string | undefined = undefined;
+  if ('targetRole' in body && body.targetRole !== undefined && body.targetRole !== null) {
+    if (typeof body.targetRole !== 'string') {
+      errors.targetRole = 'Vị trí ứng tuyển phải là chuỗi ký tự.';
+    } else {
+      targetRole = body.targetRole.trim();
+    }
+  }
+
+  let company: string | undefined = undefined;
+  if ('company' in body && body.company !== undefined && body.company !== null) {
+    if (typeof body.company !== 'string') {
+      errors.company = 'Tên công ty phải là chuỗi ký tự.';
+    } else {
+      company = body.company.trim();
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Dữ liệu đánh giá câu trả lời chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      questionId,
+      question,
+      category,
+      answer,
+      targetRole,
+      company
     }
   };
 }

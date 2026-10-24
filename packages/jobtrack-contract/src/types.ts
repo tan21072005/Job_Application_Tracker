@@ -389,3 +389,85 @@ export interface ActivityTimelineItemDTO {
   description?: string;
   badge?: string;
 }
+
+export const INTERVIEW_QUESTION_CATEGORIES = [
+  'technical',
+  'behavioral',
+  'situational',
+  'reverse_qa'
+] as const;
+
+export type InterviewQuestionCategory = typeof INTERVIEW_QUESTION_CATEGORIES[number];
+
+export const DOMAIN_TRACKS = [
+  'frontend',
+  'backend',
+  'fullstack',
+  'devops',
+  'mobile',
+  'general'
+] as const;
+
+export type DomainTrack = typeof DOMAIN_TRACKS[number];
+
+export interface StarGuidelines {
+  situation: string;
+  task: string;
+  action: string;
+  result: string;
+}
+
+export interface MockInterviewQuestionDTO {
+  id: string;
+  question: string;
+  category: InterviewQuestionCategory;
+  intent: string;
+  domainTrack: DomainTrack;
+  starGuidelines: StarGuidelines;
+  sampleAnswer: string;
+}
+
+export interface InterviewPrepRequestDTO {
+  company: string;
+  position: string;
+  roundTitle?: string;
+  notes?: string | null;
+  skills?: string[];
+  domainTrack?: DomainTrack;
+}
+
+export interface InterviewPrepResultDTO {
+  company: string;
+  position: string;
+  domainTrack: DomainTrack;
+  roleLevel: 'Junior' | 'Mid-level' | 'Senior' | 'Lead';
+  questions: MockInterviewQuestionDTO[];
+  reverseQuestions: string[];
+  tips: string[];
+}
+
+export interface InterviewEvaluateRequestDTO {
+  questionId: string;
+  question: string;
+  category: InterviewQuestionCategory;
+  answer: string;
+  targetRole?: string;
+  company?: string;
+}
+
+export interface StarRubricScoreDTO {
+  situationScore: number;
+  taskScore: number;
+  actionScore: number;
+  resultScore: number;
+  clarityScore: number;
+}
+
+export interface InterviewEvaluateResultDTO {
+  overallScore: number;
+  verdict: 'Xuất sắc' | 'Đạt yêu cầu' | 'Cần cải thiện';
+  strengths: string[];
+  improvements: string[];
+  improvedAnswer: string;
+  rubric: StarRubricScoreDTO;
+}

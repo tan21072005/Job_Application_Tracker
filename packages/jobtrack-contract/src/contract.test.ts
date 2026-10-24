@@ -35,7 +35,13 @@ import {
   formatApplicationsAsCsv,
   deriveActivityTimeline,
   validateBulkStatusInput,
-  validateBulkTrashInput
+  validateBulkTrashInput,
+  detectDomainTrack,
+  detectRoleLevel,
+  generateInterviewQuestions,
+  evaluateStarAnswer,
+  validateInterviewPrepInput,
+  validateInterviewEvaluateInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -663,5 +669,110 @@ test('contract: validateBulkStatusInput and validateBulkTrashInput enforce stric
     ids: []
   });
   assert.equal(emptyTrash.ok, false);
+});
+
+test('contract: detectDomainTrack and detectRoleLevel categorize jobs accurately', () => {
+  assert.equal(detectDomainTrack('Senior React / Next.js Developer'), 'frontend');
+  assert.equal(detectDomainTrack('PostgreSQL Node.js Backend Engineer'), 'backend');
+  assert.equal(detectDomainTrack('DevOps & Kubernetes Cloud Lead'), 'devops');
+  assert.equal(detectDomainTrack('Flutter Mobile Developer Intern'), 'mobile');
+  assert.equal(detectDomainTrack('Fullstack Engineer TypeScript'), 'fullstack');
+  assert.equal(detectDomainTrack('Product Manager'), 'general');
+
+  assert.equal(detectRoleLevel('Principal Software Architect'), 'Lead');
+  assert.equal(detectRoleLevel('Senior Backend Engineer'), 'Senior');
+  assert.equal(detectRoleLevel('Junior Frontend Developer'), 'Junior');
+  assert.equal(detectRoleLevel('Software Engineer'), 'Mid-level');
+});
+
+test('contract: generateInterviewQuestions produces structured questions with STAR guidelines', () => {
+  const prep = generateInterviewQuestions({
+    company: 'TechCorp Vietnam',
+    position: 'Senior React Developer',
+    notes: 'Kinh nghiệm với TypeScript, Redux và Next.js',
+    skills: ['React', 'TypeScript', 'Redux']
+  });
+
+  assert.equal(prep.company, 'TechCorp Vietnam');
+  assert.equal(prep.position, 'Senior React Developer');
+  assert.equal(prep.domainTrack, 'frontend');
+  assert.equal(prep.roleLevel, 'Senior');
+  assert.ok(prep.questions.length >= 4);
+
+  const firstQ = prep.questions[0];
+  assert.ok(firstQ.question.length > 10);
+  assert.ok(firstQ.intent.length > 10);
+  assert.ok(firstQ.starGuidelines.situation.length > 5);
+  assert.ok(firstQ.starGuidelines.task.length > 5);
+  assert.ok(firstQ.starGuidelines.action.length > 5);
+  assert.ok(firstQ.starGuidelines.result.length > 5);
+  assert.ok(firstQ.sampleAnswer.length > 20);
+
+  assert.ok(prep.reverseQuestions.length >= 3);
+  assert.ok(prep.tips.length >= 2);
+});
+
+test('contract: evaluateStarAnswer calculates weighted rubric scores and awards bonuses for metrics', () => {
+  const goodAnswer = evaluateStarAnswer({
+    questionId: 'test-1',
+    question: 'Kể về một lần bạn tối ưu hiệu năng trang web?',
+    category: 'behavioral',
+    answer: 'Khi làm việc tại công ty cũ, hệ thống dashboard của dự án bị chậm khi tải bảng dữ liệu. Nhiệm vụ của tôi là đưa tốc độ phản hồi về dưới 200ms. Tôi đã quyết định phân tích bundle, áp dụng virtualization và refactor lại các memoized selectors. Kết quả thời gian tải trang giảm 65%, thời gian render từ 800ms xuống còn 120ms và người dùng rất hài lòng.'
+  });
+
+  assert.ok(goodAnswer.overallScore >= 7.5);
+  assert.ok(goodAnswer.rubric.actionScore >= 7);
+  assert.ok(goodAnswer.rubric.resultScore >= 7);
+  assert.ok(goodAnswer.strengths.length > 0);
+  assert.ok(goodAnswer.improvedAnswer.includes('[Tình huống]'));
+
+  const poorAnswer = evaluateStarAnswer({
+    questionId: 'test-2',
+    question: 'Bạn xử lý xung đột như thế nào?',
+    category: 'behavioral',
+    answer: 'Nói chuyện thôi.'
+  });
+
+  assert.ok(poorAnswer.overallScore < 6.0);
+  assert.equal(poorAnswer.verdict, 'Cần cải thiện');
+  assert.ok(poorAnswer.improvements.length > 0);
+});
+
+test('contract: validateInterviewPrepInput and validateInterviewEvaluateInput enforce schema', () => {
+  const validPrep = validateInterviewPrepInput({
+    company: 'VNG',
+    position: 'Backend Developer',
+    notes: 'Golang, Microservices',
+    domainTrack: 'backend'
+  });
+  assert.equal(validPrep.ok, true);
+
+  const invalidPrep = validateInterviewPrepInput({
+    company: 'VNG',
+    position: ''
+  });
+  assert.equal(invalidPrep.ok, false);
+
+  const unknownPropPrep = validateInterviewPrepInput({
+    company: 'VNG',
+    position: 'Backend',
+    hackerField: true
+  });
+  assert.equal(unknownPropPrep.ok, false);
+
+  const validEval = validateInterviewEvaluateInput({
+    questionId: 'q-1',
+    question: 'How do you handle race conditions?',
+    category: 'technical',
+    answer: 'I use database transactions with pessimistic locking.'
+  });
+  assert.equal(validEval.ok, true);
+
+  const invalidEval = validateInterviewEvaluateInput({
+    question: 'Valid question',
+    category: 'invalid-cat',
+    answer: 'Short'
+  });
+  assert.equal(invalidEval.ok, false);
 });
 
