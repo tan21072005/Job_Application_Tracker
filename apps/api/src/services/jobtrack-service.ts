@@ -2,11 +2,15 @@ import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import {
   canonicalIntentHash,
+  deriveActivityTimeline,
   type ApplicationWireDTO,
   type InterviewWireDTO,
   type DashboardWireDTO,
   type ValidatedApplicationData,
-  type ValidatedInterviewData
+  type ValidatedInterviewData,
+  type BulkOperationResultDTO,
+  type ActivityTimelineItemDTO,
+  type ApplicationStatus
 } from '../../../../packages/jobtrack-contract/src/index.ts';
 
 export class DomainError extends Error {
@@ -545,6 +549,75 @@ export class JobTrackService {
     });
 
     return restored;
+  }
+
+  public async bulkUpdateStatus(
+    userId: string,
+    ids: string[],
+    status: ApplicationStatus,
+    options: MutationOptions = {}
+  ): Promise<BulkOperationResultDTO> {
+    const affected = await this.transaction(async client => {
+      await this.lockActor(client, userId, options.sessionId);
+      const res = await client.query(
+        'UPDATE applications SET status = $1, version = version + 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2 AND id = ANY($3::uuid[]) AND deleted_at IS NULL RETURNING id',
+        [status, userId, ids]
+      );
+      return res.rows.map(r => r.id as string);
+    });
+
+    for (const id of affected) {
+      this.emitEvent(userId, {
+        type: 'MUTATION',
+        entity: 'application',
+        action: 'update',
+        id,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    return {
+      affectedCount: affected.length,
+      ids: affected
+    };
+  }
+
+  public async bulkMoveToTrash(
+    userId: string,
+    ids: string[],
+    options: MutationOptions = {}
+  ): Promise<BulkOperationResultDTO> {
+    const affected = await this.transaction(async client => {
+      await this.lockActor(client, userId, options.sessionId);
+      const res = await client.query(
+        'UPDATE applications SET deleted_at = CURRENT_TIMESTAMP, version = version + 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND id = ANY($2::uuid[]) AND deleted_at IS NULL RETURNING id',
+        [userId, ids]
+      );
+      return res.rows.map(r => r.id as string);
+    });
+
+    for (const id of affected) {
+      this.emitEvent(userId, {
+        type: 'MUTATION',
+        entity: 'application',
+        action: 'delete',
+        id,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    return {
+      affectedCount: affected.length,
+      ids: affected
+    };
+  }
+
+  public async getApplicationTimeline(userId: string, id: string): Promise<ActivityTimelineItemDTO[]> {
+    const app = await this.getApplication(userId, id);
+    if (!app || app.deletedAt) {
+      fail(404, 'Không tìm thấy hồ sơ ứng tuyển.', 'not_found');
+    }
+    return deriveActivityTimeline(app);
   }
 
   public async createInterview(

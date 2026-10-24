@@ -21,7 +21,10 @@ import {
   type InterviewAgendaItemDTO,
   type IcsCalendarEvent,
   type DatasetCategory,
-  generateIcsCalendar
+  generateIcsCalendar,
+  formatApplicationsAsCsv,
+  validateBulkStatusInput,
+  validateBulkTrashInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -487,6 +490,51 @@ app.get('/api/applications/trash', auth, async (req, res, next) => {
   }
 });
 
+app.get('/api/applications/export.csv', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const records = await jobTrackService.listApplications(userId, { includeDeleted: false });
+    const csv = formatApplicationsAsCsv(records);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="jobtrack-applications-${dateStr}.csv"`);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.status(200).send(csv);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/applications/bulk-status', auth, async (req, res, next) => {
+  try {
+    const val = validateBulkStatusInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const sessionId = (req as SessionRequest).sessionId;
+    const result = await jobTrackService.bulkUpdateStatus(userId, val.data.ids, val.data.status, { sessionId });
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/applications/bulk-trash', auth, async (req, res, next) => {
+  try {
+    const val = validateBulkTrashInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const sessionId = (req as SessionRequest).sessionId;
+    const result = await jobTrackService.bulkMoveToTrash(userId, val.data.ids, { sessionId });
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/api/applications/:id', auth, async (req, res, next) => {
   try {
     const record = await jobTrackService.getApplication((req as SessionRequest).userId, String(req.params.id));
@@ -591,6 +639,16 @@ app.post('/api/applications/:id/restore', auth, async (req, res, next) => {
       sessionId: (req as SessionRequest).sessionId
     });
     res.set('ETag', etag(id, restored.version)).json(restored);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/applications/:id/timeline', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const timeline = await jobTrackService.getApplicationTimeline(userId, String(req.params.id));
+    res.status(200).json(timeline);
   } catch (error) {
     next(error);
   }
