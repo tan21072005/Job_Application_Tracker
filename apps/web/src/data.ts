@@ -34,7 +34,11 @@ import {
   type InterviewQuestionCategory,
   type DomainTrack,
   generateInterviewQuestions,
-  evaluateStarAnswer
+  evaluateStarAnswer,
+  type CsvImportItemInput,
+  type CsvImportResultDTO,
+  type CsvImportRowErrorDTO,
+  parseApplicationsFromCsv
 } from '@jobtrack/contract';
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
@@ -293,6 +297,105 @@ export const repository = {
     return request<BulkOperationResultDTO>('/applications/bulk-trash', {
       method: 'POST',
       body: JSON.stringify({ ids })
+    });
+  },
+
+  async importCsv(rows: CsvImportItemInput[], skipDuplicates = true): Promise<CsvImportResultDTO> {
+    if (demoMode) {
+      const all = load();
+      const existingUrls = new Set<string>();
+      const existingCompPos = new Set<string>();
+
+      for (const a of all) {
+        if (a.url) existingUrls.add(a.url.trim().toLowerCase());
+        existingCompPos.add(`${a.company.trim().toLowerCase()}::${a.position.trim().toLowerCase()}`);
+      }
+
+      const batchUrls = new Set<string>();
+      const batchCompPos = new Set<string>();
+      const inserted: Application[] = [];
+      const insertedIds: string[] = [];
+      const errors: CsvImportRowErrorDTO[] = [];
+      let skippedDuplicatesCount = 0;
+
+      for (let i = 0; i < rows.length; i++) {
+        const item = rows[i];
+        const rowNum = i + 1;
+
+        if (!item.company?.trim() || !item.position?.trim()) {
+          errors.push({
+            rowNumber: rowNum,
+            field: 'company/position',
+            message: 'Tên công ty và vị trí không được để trống.'
+          });
+          continue;
+        }
+
+        const compClean = item.company.trim();
+        const posClean = item.position.trim();
+        const compPosKey = `${compClean.toLowerCase()}::${posClean.toLowerCase()}`;
+        const cleanUrl = item.url?.trim()?.toLowerCase() || null;
+
+        const isDupUrl = cleanUrl ? (existingUrls.has(cleanUrl) || batchUrls.has(cleanUrl)) : false;
+        const isDupCompPos = existingCompPos.has(compPosKey) || batchCompPos.has(compPosKey);
+
+        if (isDupUrl || isDupCompPos) {
+          if (skipDuplicates) {
+            skippedDuplicatesCount++;
+            continue;
+          } else {
+            errors.push({
+              rowNumber: rowNum,
+              field: 'duplicate',
+              message: `Hồ sơ "${posClean} tại ${compClean}" đã tồn tại.`
+            });
+            continue;
+          }
+        }
+
+        const id = crypto.randomUUID ? crypto.randomUUID() : `demo-${Date.now()}-${i}`;
+        const newApp: Application = {
+          id,
+          company: compClean,
+          position: posClean,
+          status: item.status || 'Saved',
+          appliedAt: item.appliedAt || '',
+          salary: item.salary || '',
+          location: item.location || '',
+          workMode: item.workMode || 'Remote',
+          nextAction: item.nextAction || '',
+          deadline: item.deadline || '',
+          source: item.source || '',
+          jobCode: item.jobCode || '',
+          url: item.url || '',
+          notes: item.notes || '',
+          interviews: [],
+          version: 1,
+          createdAt: new Date().toISOString()
+        };
+
+        inserted.push(newApp);
+        insertedIds.push(id);
+        if (cleanUrl) batchUrls.add(cleanUrl);
+        batchCompPos.add(compPosKey);
+      }
+
+      if (inserted.length > 0) {
+        store([...inserted, ...all]);
+      }
+
+      return {
+        importedCount: insertedIds.length,
+        skippedDuplicatesCount,
+        failedCount: errors.length,
+        insertedIds,
+        errors
+      };
+    }
+
+    return request<CsvImportResultDTO>('/applications/import-csv', {
+      method: 'POST',
+      body: JSON.stringify({ rows, skipDuplicates })
     });
   },
 

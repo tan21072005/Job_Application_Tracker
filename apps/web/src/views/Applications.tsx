@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Columns3, List, Plus, Search, X, ArrowUpRight, Globe, FileSpreadsheet } from 'lucide-react';
+import { Columns3, List, Plus, Search, X, ArrowUpRight, Globe, FileSpreadsheet, UploadCloud } from 'lucide-react';
 import { filtered, labels, statuses, type Application, type Status } from '../domain';
 import { Button, Empty, Monogram, StatusBadge } from '../components/ui';
 import { ApplicationRow, Deadline } from './Dashboard';
 import BulkActionBar from '../components/BulkActionBar';
 import { repository, downloadApplicationsCsv } from '../data';
+import ImportCsvModal from '../components/ImportCsvModal';
+import type { CsvImportResultDTO } from '@jobtrack/contract';
 
 export type Filters = { query: string; status: string; sort: string; view: 'list' | 'pipeline' };
 export const initialFilters: Filters = { query: '', status: 'all', sort: 'created-desc', view: 'list' };
@@ -30,6 +32,7 @@ export default function Applications({
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [showCsvModal, setShowCsvModal] = useState(false);
 
   const visible = filtered(apps, filters.query, filters.status, filters.sort);
   const set = (key: keyof Filters, value: string) => onFilters({ ...filters, [key]: value });
@@ -100,6 +103,12 @@ export default function Applications({
     notify?.(`Đã xuất toàn bộ ${apps.length} hồ sơ ra file CSV.`);
   }
 
+  function handleCsvSuccess(res: CsvImportResultDTO) {
+    const dupText = res.skippedDuplicatesCount > 0 ? ` (đã bỏ qua ${res.skippedDuplicatesCount} hồ sơ trùng)` : '';
+    notify?.(`Đã nhập thành công ${res.importedCount} hồ sơ${dupText}.`);
+    onRefresh?.();
+  }
+
   return (
     <>
       <div className="page-heading">
@@ -108,6 +117,14 @@ export default function Applications({
           <p>{apps.length} cơ hội · mỗi hồ sơ một bước tiếp theo.</p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
+          <Button
+            kind="secondary"
+            aria-label="Nhập từ file CSV"
+            onClick={() => setShowCsvModal(true)}
+          >
+            <UploadCloud size={18} />
+            <span>Nhập CSV</span>
+          </Button>
           <Button
             kind="secondary"
             aria-label="Xuất file CSV"
@@ -284,6 +301,14 @@ export default function Applications({
         onClear={() => setSelectedIds(new Set())}
         busy={busy}
       />
+
+      {showCsvModal && (
+        <ImportCsvModal
+          onClose={() => setShowCsvModal(false)}
+          onSuccess={handleCsvSuccess}
+          existingApps={apps.map(a => ({ company: a.company, position: a.position, url: a.url }))}
+        />
+      )}
     </>
   );
 }

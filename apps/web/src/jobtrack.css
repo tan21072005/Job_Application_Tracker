@@ -413,3 +413,53 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .mock-reverse-item p{margin:0;flex:1;font-size:13px;color:var(--ink);line-height:1.4}
 .mock-loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px 0;color:var(--muted);font-size:13px}
 .mock-coach-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:14px;margin-top:16px}
+
+.csv-import-modal-body{display:flex;flex-direction:column;gap:16px;max-height:calc(85vh - 120px);overflow-y:auto;padding-right:4px}
+.csv-import-error-banner{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#dc2626;font-size:13px}
+.csv-dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;border:2px dashed var(--line);border-radius:var(--radius);background:var(--canvas);cursor:pointer;transition:border-color 0.15s ease,background 0.15s ease;text-align:center}
+.csv-dropzone:hover,.csv-dropzone.is-dragging{border-color:var(--primary);background:var(--soft)}
+.csv-dropzone-icon{width:64px;height:64px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--primary);margin-bottom:16px}
+.csv-dropzone-title{font-size:15px;font-weight:700;color:var(--ink);margin:0 0 6px 0}
+.csv-dropzone-hint{font-size:12.5px;color:var(--muted);margin:0 0 18px 0;max-width:440px;line-height:1.5}
+.csv-template-guide{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:8px;width:100%}
+.csv-guide-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+.csv-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.csv-col-tag{background:#fff;border:1px solid var(--line);padding:3px 8px;border-radius:6px;font-size:11px;color:var(--ink)}
+.csv-preview-container{display:flex;flex-direction:column;gap:16px}
+.csv-file-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--soft);border-radius:8px}
+.csv-file-meta{display:flex;align-items:center;gap:10px}
+.csv-file-icon{color:var(--primary)}
+.csv-filename{font-weight:600;font-size:13px;color:var(--ink)}
+.csv-total-pill{background:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--line)}
+.csv-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.csv-stat-card{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;border:1px solid var(--line)}
+.csv-stat-card.stat-valid{background:#ecfdf5;border-color:#a7f3d0}
+.csv-stat-card.stat-valid .stat-icon{color:#059669}
+.csv-stat-card.stat-valid .stat-num{color:#065f46}
+.csv-stat-card.stat-duplicate{background:#fffbeb;border-color:#fde68a}
+.csv-stat-card.stat-duplicate .stat-icon{color:#d97706}
+.csv-stat-card.stat-duplicate .stat-num{color:#92400e}
+.csv-stat-card.stat-error{background:#fef2f2;border-color:#fecaca}
+.csv-stat-card.stat-error .stat-icon{color:#dc2626}
+.csv-stat-card.stat-error .stat-num{color:#991b1b}
+.stat-text{display:flex;flex-direction:column}
+.stat-num{font-size:18px;font-weight:800;line-height:1}
+.stat-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.csv-table-wrapper{border:1px solid var(--line);border-radius:8px;overflow:hidden;max-height:300px;overflow-y:auto}
+.csv-preview-table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+.csv-preview-table th{background:var(--canvas);padding:8px 12px;font-weight:700;color:var(--muted);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2}
+.csv-preview-table td{padding:8px 12px;border-bottom:1px solid var(--line);color:var(--ink);vertical-align:top}
+.csv-preview-table tr.row-valid{background:#fff}
+.csv-preview-table tr.row-duplicate{background:#fffdf7}
+.csv-preview-table tr.row-error{background:#fff8f8}
+.cell-num{font-weight:600;color:var(--muted);width:45px}
+.cell-company strong{color:var(--ink)}
+.cell-url-hint{font-size:10px;color:var(--muted);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-position{color:var(--ink)}
+.csv-badge-status{display:inline-block;padding:2px 8px;border-radius:10px;background:var(--soft);color:var(--primary);font-size:11px;font-weight:600}
+.csv-check-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.csv-check-badge.badge-valid{background:#ecfdf5;color:#059669}
+.csv-check-badge.badge-dup{background:#fffbeb;color:#d97706}
+.csv-check-badge.badge-err{background:#fef2f2;color:#dc2626}
+.csv-options-bar{padding:8px 0}
+.csv-checkbox-label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);cursor:pointer;user-select:none}

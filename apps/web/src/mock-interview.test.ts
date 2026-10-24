@@ -26,7 +26,7 @@ describe('aiRepository mock interview & coach (demoMode)', () => {
     const prep = await aiRepository.getInterviewPrep({
       position: 'Senior Frontend Engineer',
       company: 'TechCorp Vietnam',
-      jobDescription: 'React TypeScript Next.js Performance Optimization Microfrontends',
+      notes: 'React TypeScript Next.js Performance Optimization Microfrontends',
       skills: ['React', 'TypeScript', 'Tailwind', 'GraphQL']
     });
 
