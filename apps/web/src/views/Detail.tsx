@@ -1,13 +1,16 @@
-import { ArrowLeft, ArrowUpRight, CalendarDays, ExternalLink, Pencil, Plus, Trash2, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, ArrowUpRight, Award, CalendarDays, ExternalLink, Pencil, Plus, Trash2, Sparkles } from 'lucide-react';
 import { deviceTimezone, formatDate, formatTime, labels, statuses, type Application, type Interview, type Status } from '../domain';
 import { Button, Empty, Monogram, StatusBadge } from '../components/ui';
 import { interviewLabels } from '../components/forms';
 import { Deadline } from './Dashboard';
 import AiAssistantPanel from '../components/AiAssistantPanel';
 import ActivityTimeline from '../components/ActivityTimeline';
+import OfferEvaluationModal from '../components/OfferEvaluationModal';
 
 export default function Detail({
   app,
+  allOffers,
   tab,
   busy,
   onTab,
@@ -21,6 +24,7 @@ export default function Detail({
   notify
 }: {
   app: Application;
+  allOffers?: Application[];
   tab: 'info' | 'interviews' | 'ai';
   busy: boolean;
   onTab: (tab: 'info' | 'interviews' | 'ai') => void;
@@ -33,6 +37,7 @@ export default function Detail({
   onStatus: (status: Status) => void;
   notify?: (message: string, isError?: boolean) => void;
 }) {
+  const [showOfferModal, setShowOfferModal] = useState(false);
   const tabs: ('info' | 'interviews' | 'ai')[] = ['info', 'interviews', 'ai'];
 
   return (
@@ -65,6 +70,21 @@ export default function Detail({
         </label>
         <span>Đã tạo {formatDate(app.createdAt)}</span>
       </div>
+
+      {app.status === 'Offer' && (
+        <aside className="offer-celebration-banner" aria-label="Thư mời nhận việc">
+          <div className="offer-celebration-content">
+            <span className="offer-celebration-badge">
+              <Sparkles size={18} />
+              <strong>Chúc mừng! Bạn đã nhận được Thư mời nhận việc (Offer)</strong>
+            </span>
+            <p>Phân tích tổng thu nhập năm (TC), đánh giá phúc lợi, so sánh các cơ hội và tạo kịch bản đàm phán thù lao tối ưu với AI.</p>
+          </div>
+          <Button kind="primary" onClick={() => setShowOfferModal(true)}>
+            <Award size={16} />Đánh giá Offer & Đàm phán
+          </Button>
+        </aside>
+      )}
 
       <div
         className="detail-tabs"
@@ -226,6 +246,15 @@ export default function Detail({
 
       {tab === 'ai' && (
         <AiAssistantPanel app={app} notify={notify} />
+      )}
+
+      {showOfferModal && (
+        <OfferEvaluationModal
+          application={app}
+          allOffers={allOffers}
+          onClose={() => setShowOfferModal(false)}
+          notify={notify}
+        />
       )}
     </>
   );

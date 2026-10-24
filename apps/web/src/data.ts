@@ -38,7 +38,17 @@ import {
   type CsvImportItemInput,
   type CsvImportResultDTO,
   type CsvImportRowErrorDTO,
-  parseApplicationsFromCsv
+  parseApplicationsFromCsv,
+  calculateAnnualTotalCompensation,
+  evaluateOfferDetails,
+  compareOffers,
+  generateCounterOfferScript,
+  type OfferEvaluationInput,
+  type OfferComparisonInput,
+  type CounterOfferNegotiationInput,
+  type OfferEvaluationDTO,
+  type OfferComparisonMatrixDTO,
+  type CounterOfferScriptDTO
 } from '@jobtrack/contract';
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
@@ -736,6 +746,69 @@ export const aiRepository = {
       return evaluateStarAnswer(input);
     }
     return request<InterviewEvaluateResultDTO>('/ai/pro/interview-evaluate', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async evaluateOffer(input: OfferEvaluationInput): Promise<OfferEvaluationDTO> {
+    if (demoMode) {
+      const comp = calculateAnnualTotalCompensation({
+        baseSalaryMonthly: input.compensation.baseSalaryMonthly,
+        currency: input.compensation.currency || 'VND',
+        bonusMonthsPerYear: input.compensation.bonusMonthsPerYear,
+        annualBonusCash: input.compensation.annualBonusCash,
+        stockOptionsOrEquityAnnual: input.compensation.stockOptionsOrEquityAnnual,
+        allowanceMonthly: input.compensation.allowanceMonthly
+      });
+      return evaluateOfferDetails({
+        applicationId: input.applicationId,
+        company: input.company,
+        position: input.position,
+        compensation: comp,
+        workplaceFactors: input.workplaceFactors,
+        weights: input.weights
+      });
+    }
+    return request<OfferEvaluationDTO>('/ai/pro/offer-evaluate', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async compareOffers(input: OfferComparisonInput): Promise<OfferComparisonMatrixDTO> {
+    if (demoMode) {
+      const list = input.offers.map(o => {
+        const comp = calculateAnnualTotalCompensation({
+          baseSalaryMonthly: o.compensation.baseSalaryMonthly,
+          currency: o.compensation.currency || 'VND',
+          bonusMonthsPerYear: o.compensation.bonusMonthsPerYear,
+          annualBonusCash: o.compensation.annualBonusCash,
+          stockOptionsOrEquityAnnual: o.compensation.stockOptionsOrEquityAnnual,
+          allowanceMonthly: o.compensation.allowanceMonthly
+        });
+        return evaluateOfferDetails({
+          applicationId: o.applicationId,
+          company: o.company,
+          position: o.position,
+          compensation: comp,
+          workplaceFactors: o.workplaceFactors,
+          weights: o.weights
+        });
+      });
+      return compareOffers(list);
+    }
+    return request<OfferComparisonMatrixDTO>('/ai/pro/offer-compare', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async generateCounterOffer(input: CounterOfferNegotiationInput): Promise<CounterOfferScriptDTO> {
+    if (demoMode) {
+      return generateCounterOfferScript(input);
+    }
+    return request<CounterOfferScriptDTO>('/ai/pro/counter-offer', {
       method: 'POST',
       body: JSON.stringify(input)
     });
