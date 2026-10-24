@@ -12,13 +12,15 @@ import {
   CalendarCheck,
   ChevronRight,
   ListTodo,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import type { InterviewAgendaItemDTO } from '@jobtrack/contract';
 import type { Application } from '../domain';
 import { formatDate, formatTime } from '../domain';
 import { interviewsRepository } from '../data';
 import { Button, Monogram, StatusBadge } from '../components/ui';
+import MockInterviewModal from '../components/MockInterviewModal';
 
 interface Props {
   apps: Application[];
@@ -77,6 +79,7 @@ export default function InterviewsView({ apps, onOpen, notify }: Props) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'today' | 'overdue' | 'completed'>('all');
   const [formatFilter, setFormatFilter] = useState<string>('all');
   const [prepChecks, setPrepChecks] = useState<Record<string, boolean>>({});
+  const [mockTarget, setMockTarget] = useState<InterviewAgendaItemDTO | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -94,6 +97,15 @@ export default function InterviewsView({ apps, onOpen, notify }: Props) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSavePreparation(prepText: string) {
+    if (!mockTarget) return;
+    const existing = mockTarget.preparation || '';
+    const updatedPrep = existing.trim() ? `${existing}\n\n${prepText}` : prepText;
+    await interviewsRepository.updateInterview(mockTarget.id, { preparation: updatedPrep });
+    notify('Đã thêm nội dung vào phần chuẩn bị của vòng phỏng vấn.');
+    void loadAgenda();
   }
 
   useEffect(() => {
@@ -195,6 +207,35 @@ export default function InterviewsView({ apps, onOpen, notify }: Props) {
           </p>
         </div>
         <div className="interviews-header-actions">
+          <Button
+            kind="primary"
+            onClick={() => {
+              const target = agenda[0] || (apps.length > 0 ? {
+                id: 'mock-sample',
+                applicationId: apps[0].id,
+                company: apps[0].company,
+                position: apps[0].position,
+                title: 'Phỏng vấn chuyên môn',
+                at: new Date().toISOString(),
+                timezone: 'Asia/Ho_Chi_Minh',
+                format: 'Online' as const,
+                location: null,
+                preparation: null,
+                notes: null,
+                status: 'Scheduled' as const,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                applicationStatus: apps[0].status
+              } : null);
+              if (target) setMockTarget(target);
+              else notify('Chưa có hồ sơ ứng tuyển nào để luyện phỏng vấn.', true);
+            }}
+            className="mock-interview-header-btn"
+          >
+            <Sparkles size={16} />
+            <span>Luyện phỏng vấn AI</span>
+          </Button>
+
           <Button
             kind="secondary"
             onClick={() => void handleExportIcs()}
@@ -434,6 +475,15 @@ export default function InterviewsView({ apps, onOpen, notify }: Props) {
 
                 <footer className="agenda-card-footer">
                   <Button
+                    kind="secondary"
+                    onClick={() => setMockTarget(item)}
+                    className="agenda-mock-btn"
+                  >
+                    <Sparkles size={14} />
+                    <span>Luyện phỏng vấn AI</span>
+                  </Button>
+
+                  <Button
                     kind={isCompleted ? 'secondary' : 'primary'}
                     onClick={() => void handleToggleComplete(item)}
                     className="agenda-action-complete-btn"
@@ -464,6 +514,18 @@ export default function InterviewsView({ apps, onOpen, notify }: Props) {
             );
           })}
         </div>
+      )}
+
+      {mockTarget && (
+        <MockInterviewModal
+          company={mockTarget.company}
+          position={mockTarget.position}
+          roundTitle={mockTarget.title}
+          notes={mockTarget.notes}
+          onClose={() => setMockTarget(null)}
+          onSaveToPrep={handleSavePreparation}
+          notify={notify}
+        />
       )}
     </div>
   );

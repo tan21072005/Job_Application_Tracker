@@ -28,7 +28,13 @@ import {
   formatApplicationsAsCsv,
   deriveActivityTimeline,
   type ActivityTimelineItemDTO,
-  type BulkOperationResultDTO
+  type BulkOperationResultDTO,
+  type InterviewPrepResultDTO,
+  type InterviewEvaluateResultDTO,
+  type InterviewQuestionCategory,
+  type DomainTrack,
+  generateInterviewQuestions,
+  evaluateStarAnswer
 } from '@jobtrack/contract';
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
@@ -587,6 +593,49 @@ export const aiRepository = {
       method: 'POST',
       body: JSON.stringify(input)
     });
+  },
+
+  async getInterviewPrep(input: {
+    company: string;
+    position: string;
+    notes?: string | null;
+    roundTitle?: string;
+    skills?: string[];
+    domainTrack?: DomainTrack;
+  }): Promise<InterviewPrepResultDTO> {
+    if (demoMode) {
+      const profile = await profileRepository.get();
+      const skills = profile?.skills || input.skills || ['TypeScript', 'React', 'Node.js'];
+      return generateInterviewQuestions({
+        company: input.company,
+        position: input.position,
+        notes: input.notes,
+        roundTitle: input.roundTitle,
+        skills,
+        domainTrack: input.domainTrack
+      });
+    }
+    return request<InterviewPrepResultDTO>('/ai/pro/interview-prep', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async evaluateInterviewAnswer(input: {
+    questionId: string;
+    question: string;
+    category: InterviewQuestionCategory;
+    answer: string;
+    targetRole?: string;
+    company?: string;
+  }): Promise<InterviewEvaluateResultDTO> {
+    if (demoMode) {
+      return evaluateStarAnswer(input);
+    }
+    return request<InterviewEvaluateResultDTO>('/ai/pro/interview-evaluate', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
   }
 };
 
@@ -771,6 +820,28 @@ export const interviewsRepository = {
       body: JSON.stringify({ status: nextStatus })
     });
     return { ...item, status: nextStatus };
+  },
+
+  async updateInterview(id: string, patch: Partial<{ title: string; at: string; timezone: string; format: InterviewFormat; location?: string; preparation?: string; notes?: string; status: string }>): Promise<InterviewWireDTO> {
+    if (demoMode) {
+      const apps = load();
+      let targetRound: InterviewWireDTO | null = null;
+      for (const app of apps) {
+        const round = (app.interviews || []).find(r => r.id === id);
+        if (round) {
+          Object.assign(round, patch);
+          targetRound = round as unknown as InterviewWireDTO;
+          break;
+        }
+      }
+      if (!targetRound) throw new ApiError('Không tìm thấy lịch phỏng vấn.', 404);
+      store(apps);
+      return targetRound;
+    }
+    return request<InterviewWireDTO>(`/interviews/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch)
+    });
   },
 
   async exportIcs(): Promise<string> {

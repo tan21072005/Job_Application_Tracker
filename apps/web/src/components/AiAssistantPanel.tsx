@@ -9,12 +9,14 @@ import {
   LoaderCircle,
   Info,
   FileText,
-  Send
+  Send,
+  Award
 } from 'lucide-react';
 import type { Application } from '../domain';
 import { aiRepository } from '../data';
 import type { AtsMatchResultDTO, CoverLetterResultDTO } from '@jobtrack/contract';
 import { Button } from './ui';
+import MockInterviewModal from './MockInterviewModal';
 
 export default function AiAssistantPanel({
   app,
@@ -34,6 +36,7 @@ export default function AiAssistantPanel({
 
   const [copiedLetter, setCopiedLetter] = useState(false);
   const [copiedPitch, setCopiedPitch] = useState(false);
+  const [showMockModal, setShowMockModal] = useState(false);
 
   async function handleAnalyzeAts() {
     setAtsLoading(true);
@@ -329,7 +332,41 @@ export default function AiAssistantPanel({
             </div>
           )}
         </section>
+
+        <section className="ai-card mock-coach-card">
+          <div className="ai-card-header">
+            <div className="ai-card-icon-wrapper">
+              <Award size={20} />
+            </div>
+            <div>
+              <h3>Huấn luyện viên Phỏng vấn AI · STAR Coach</h3>
+              <p>Thực hành trả lời câu hỏi phỏng vấn chuyên sâu theo JD và nhận điểm số rubric tức thì.</p>
+            </div>
+          </div>
+
+          <div className="ai-card-body">
+            <p className="ai-card-description">
+              Tạo bộ câu hỏi theo chuyên môn (Kỹ thuật, Hành vi STAR, Tình huống thực tế và Câu hỏi hỏi lại HR), sau đó chấm điểm câu trả lời thử nghiệm của bạn với phân tích ưu điểm và góp ý chi tiết.
+            </p>
+            <div className="ai-card-actions">
+              <Button kind="primary" onClick={() => setShowMockModal(true)} className="launch-mock-btn">
+                <Sparkles size={15} />
+                <span>Bắt đầu luyện phỏng vấn</span>
+              </Button>
+            </div>
+          </div>
+        </section>
       </div>
+
+      {showMockModal && (
+        <MockInterviewModal
+          company={app.company}
+          position={app.position}
+          notes={app.notes}
+          onClose={() => setShowMockModal(false)}
+          notify={notify}
+        />
+      )}
     </div>
   );
 }
