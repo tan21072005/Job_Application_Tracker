@@ -157,7 +157,18 @@ import {
   getPacingDurationSeconds,
   generateSimulationQuestions,
   evaluateSimulationTurn,
-  synthesizeSessionReport
+  synthesizeSessionReport,
+  type PortfolioDisplaySettings,
+  DEFAULT_DISPLAY_SETTINGS,
+  type PortfolioConfigDTO,
+  type DossierSkillItemDTO,
+  type DossierRoadmapProgressDTO,
+  type DossierSimulationReadinessDTO,
+  type PublicDossierViewDTO,
+  type ShareTokenDTO,
+  type UpdatePortfolioInputDTO,
+  type GenerateTokenInputDTO,
+  synthesizePublicDossier
 } from '@jobtrack/contract';
 
 export type {
@@ -3105,6 +3116,188 @@ export const simulationRepository = {
   }
 };
 
+const PORTFOLIO_STORAGE_KEY = 'jobtrack_candidate_portfolio';
+
+function loadDemoPortfolio(): PortfolioConfigDTO {
+  if (typeof localStorage === 'undefined') {
+    return {
+      id: 'port-demo-default',
+      slug: 'nhat-tan-lead',
+      title: 'Lead Software Architect',
+      bio: 'Chuyên gia xây dựng hệ thống phần mềm phân tán, microservices chịu tải cao và kiến trúc cloud-native.',
+      location: 'Thành phố Hồ Chí Minh, Việt Nam',
+      salaryExpectation: '60.000.000 - 80.000.000 VNĐ',
+      targetRoles: ['Lead Backend Engineer', 'Solutions Architect'],
+      displaySettings: DEFAULT_DISPLAY_SETTINGS,
+      isPublic: true,
+      shareToken: 'demo-share-token-12345',
+      tokenExpiresAt: null,
+      accessCount: 14,
+      lastAccessedAt: new Date(Date.now() - 3600000).toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  const raw = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
+  if (raw) {
+    try {
+      return JSON.parse(raw) as PortfolioConfigDTO;
+    } catch {
+    }
+  }
+
+  const defaultPortfolio: PortfolioConfigDTO = {
+    id: 'port-demo-01',
+    slug: 'nhat-tan-lead',
+    title: 'Lead Software Architect',
+    bio: 'Chuyên gia xây dựng hệ thống phần mềm phân tán, microservices chịu tải cao và kiến trúc cloud-native.',
+    location: 'Thành phố Hồ Chí Minh, Việt Nam',
+    salaryExpectation: '60.000.000 - 80.000.000 VNĐ',
+    targetRoles: ['Lead Backend Engineer', 'Solutions Architect'],
+    displaySettings: DEFAULT_DISPLAY_SETTINGS,
+    isPublic: true,
+    shareToken: 'demo-share-token-12345',
+    tokenExpiresAt: null,
+    accessCount: 14,
+    lastAccessedAt: new Date(Date.now() - 3600000).toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  saveDemoPortfolio(defaultPortfolio);
+  return defaultPortfolio;
+}
+
+function saveDemoPortfolio(portfolio: PortfolioConfigDTO): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(portfolio));
+  }
+}
+
+export const portfolioRepository = {
+  async getPortfolio(): Promise<PortfolioConfigDTO> {
+    if (demoMode) {
+      return loadDemoPortfolio();
+    }
+    return request<PortfolioConfigDTO>('/portfolio');
+  },
+
+  async updatePortfolio(input: UpdatePortfolioInputDTO): Promise<PortfolioConfigDTO> {
+    if (demoMode) {
+      const current = loadDemoPortfolio();
+      const updated: PortfolioConfigDTO = {
+        ...current,
+        title: input.title !== undefined ? input.title.trim() : current.title,
+        slug: input.slug !== undefined ? input.slug.trim().toLowerCase() : current.slug,
+        bio: input.bio !== undefined ? input.bio : current.bio,
+        location: input.location !== undefined ? input.location : current.location,
+        salaryExpectation: input.salaryExpectation !== undefined ? input.salaryExpectation : current.salaryExpectation,
+        targetRoles: input.targetRoles !== undefined ? input.targetRoles : current.targetRoles,
+        isPublic: input.isPublic !== undefined ? input.isPublic : current.isPublic,
+        displaySettings: {
+          ...current.displaySettings,
+          ...(input.displaySettings || {})
+        },
+        updatedAt: new Date().toISOString()
+      };
+      saveDemoPortfolio(updated);
+      return updated;
+    }
+    return request<PortfolioConfigDTO>('/portfolio', {
+      method: 'PUT',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async generateToken(expiryDays?: number): Promise<ShareTokenDTO> {
+    if (demoMode) {
+      const current = loadDemoPortfolio();
+      const token = `demo-tok-${Date.now()}`;
+      const expiresAt = expiryDays ? new Date(Date.now() + expiryDays * 86400000).toISOString() : null;
+
+      current.shareToken = token;
+      current.tokenExpiresAt = expiresAt;
+      current.updatedAt = new Date().toISOString();
+      saveDemoPortfolio(current);
+
+      return {
+        token,
+        publicUrl: `/dossier/${token}`,
+        accessCount: current.accessCount || 0,
+        lastAccessedAt: current.lastAccessedAt || null,
+        expiresAt,
+        isActive: true
+      };
+    }
+    return request<ShareTokenDTO>('/portfolio/token', {
+      method: 'POST',
+      body: JSON.stringify({ expiryDays })
+    });
+  },
+
+  async revokeToken(): Promise<boolean> {
+    if (demoMode) {
+      const current = loadDemoPortfolio();
+      current.shareToken = null;
+      current.tokenExpiresAt = null;
+      current.updatedAt = new Date().toISOString();
+      saveDemoPortfolio(current);
+      return true;
+    }
+    await request('/portfolio/token', { method: 'DELETE' });
+    return true;
+  },
+
+  async getPublicDossier(token: string): Promise<PublicDossierViewDTO | null> {
+    if (demoMode) {
+      const config = loadDemoPortfolio();
+      if (!config.isPublic || config.shareToken !== token) {
+        return null;
+      }
+      if (config.tokenExpiresAt && new Date(config.tokenExpiresAt) < new Date()) {
+        return null;
+      }
+
+      config.accessCount = (config.accessCount || 0) + 1;
+      config.lastAccessedAt = new Date().toISOString();
+      saveDemoPortfolio(config);
+
+      const demoSkills: DossierSkillItemDTO[] = [
+        { name: 'TypeScript', category: 'Language', verified: true },
+        { name: 'Node.js', category: 'Backend', verified: true },
+        { name: 'Distributed Systems', category: 'Architecture', verified: true },
+        { name: 'PostgreSQL', category: 'Database', verified: true },
+        { name: 'System Design', category: 'Architecture', verified: true },
+        { name: 'React', category: 'Frontend', verified: true }
+      ];
+
+      const demoRoadmap: DossierRoadmapProgressDTO = {
+        targetRole: config.targetRoles[0] || 'Lead Software Architect',
+        progressPercent: 85,
+        completedMilestones: 4,
+        totalMilestones: 5
+      };
+
+      const demoSimulation: DossierSimulationReadinessDTO = {
+        grade: 'Ready',
+        score: 92,
+        track: 'system_design'
+      };
+
+      return synthesizePublicDossier(
+        config,
+        'Nhật Tân',
+        demoSkills,
+        demoRoadmap,
+        demoSimulation,
+        3
+      );
+    }
+    return request<PublicDossierViewDTO>(`/public/dossier/${encodeURIComponent(token)}`);
+  }
+};
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
@@ -3129,7 +3322,16 @@ export type {
   SimulationSessionReportDTO,
   SimulationSessionDTO,
   StartSimulationInputDTO,
-  SubmitTurnInputDTO
+  SubmitTurnInputDTO,
+  PortfolioDisplaySettings,
+  PortfolioConfigDTO,
+  DossierSkillItemDTO,
+  DossierRoadmapProgressDTO,
+  DossierSimulationReadinessDTO,
+  PublicDossierViewDTO,
+  ShareTokenDTO,
+  UpdatePortfolioInputDTO,
+  GenerateTokenInputDTO
 };
 
 

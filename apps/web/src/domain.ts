@@ -66,7 +66,20 @@ import {
   getPacingDurationSeconds,
   generateSimulationQuestions,
   evaluateSimulationTurn,
-  synthesizeSessionReport
+  synthesizeSessionReport,
+  type PortfolioDisplaySettings,
+  DEFAULT_DISPLAY_SETTINGS,
+  type PortfolioConfigDTO,
+  type DossierSkillItemDTO,
+  type DossierRoadmapProgressDTO,
+  type DossierSimulationReadinessDTO,
+  type PublicDossierViewDTO,
+  type ShareTokenDTO,
+  type UpdatePortfolioInputDTO,
+  type GenerateTokenInputDTO,
+  generateVerificationFingerprint,
+  synthesizePublicDossier,
+  verifyDossierIntegrity
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -136,7 +149,20 @@ export {
   getPacingDurationSeconds,
   generateSimulationQuestions,
   evaluateSimulationTurn,
-  synthesizeSessionReport
+  synthesizeSessionReport,
+  type PortfolioDisplaySettings,
+  DEFAULT_DISPLAY_SETTINGS,
+  type PortfolioConfigDTO,
+  type DossierSkillItemDTO,
+  type DossierRoadmapProgressDTO,
+  type DossierSimulationReadinessDTO,
+  type PublicDossierViewDTO,
+  type ShareTokenDTO,
+  type UpdatePortfolioInputDTO,
+  type GenerateTokenInputDTO,
+  generateVerificationFingerprint,
+  synthesizePublicDossier,
+  verifyDossierIntegrity
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {
