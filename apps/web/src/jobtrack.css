@@ -717,3 +717,78 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
   .funnel-row{grid-template-columns:1fr;gap:8px}
   .funnel-conversion-meta{text-align:left}
 }
+
+.resume-tailor-modal, .resume-manager-modal{max-width:880px;width:95vw;max-height:90vh;display:flex;flex-direction:column}
+.tailor-input-grid{display:flex;flex-direction:column;gap:14px;background:#f8fafc;padding:16px;border-radius:10px;border:1px solid var(--line)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tailor-actions-bar{display:flex;justify-content:flex-end;margin-top:6px}
+.ats-score-banner{display:flex;align-items:center;justify-content:center;gap:20px;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#ffffff;padding:18px 24px;border-radius:12px;margin:18px 0}
+.score-stat-card{display:flex;flex-direction:column;align-items:center;gap:4px}
+.score-stat-card .stat-label{font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em}
+.score-stat-card .stat-value{font-size:32px;font-weight:800;color:#e2e8f0}
+.score-stat-card.highlight .stat-value{color:#38bdf8}
+.score-arrow{font-size:24px;color:#64748b}
+.score-delta-badge{background:rgba(16,185,129,0.2);border:1px solid #10b981;color:#34d399;font-weight:700;font-size:14px;padding:6px 14px;border-radius:20px}
+.tab-navigation{display:flex;gap:8px;border-bottom:2px solid var(--line);margin-bottom:16px}
+.tab-btn{background:none;border:none;padding:10px 16px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+.diff-view-panel{display:flex;flex-direction:column;gap:12px;max-height:460px;overflow-y:auto;padding-right:4px}
+.diff-item{background:#ffffff;border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.diff-header{display:flex;align-items:center;gap:8px;font-size:12px}
+.diff-badge{font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase}
+.diff-modified .diff-badge{background:#fef3c7;color:#b45309}
+.diff-added .diff-badge{background:#dcfce7;color:#15803d}
+.diff-retained .diff-badge{background:#f1f5f9;color:#64748b}
+.diff-section-tag{font-weight:600;color:var(--muted);background:#f8fafc;padding:2px 6px;border-radius:4px}
+.diff-reason{color:#64748b;font-style:italic;margin-left:auto}
+.diff-box{padding:10px 12px;border-radius:6px;font-size:13px;line-height:1.5}
+.diff-box .box-title{font-weight:700;font-size:11.5px;display:block;margin-bottom:4px;text-transform:uppercase}
+.diff-original{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
+.diff-tailored{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.tailored-cv-preview{background:#ffffff;border:1px solid var(--line);border-radius:8px;padding:24px;max-height:480px;overflow-y:auto;line-height:1.6}
+.cv-header-block{border-bottom:2px solid #e2e8f0;padding-bottom:12px;margin-bottom:16px}
+.cv-header-block h3{font-size:20px;font-weight:700;margin:0 0 4px 0}
+.cv-role{font-size:14px;color:var(--primary);font-weight:600}
+.cv-section{margin-bottom:18px}
+.cv-section h4{font-size:14px;text-transform:uppercase;color:var(--muted);letter-spacing:.05em;border-bottom:1px solid #f1f5f9;padding-bottom:6px;margin:0 0 10px 0}
+.cv-experience-card{margin-bottom:14px}
+.exp-heading{display:flex;gap:8px;align-items:center;font-size:13.5px;margin-bottom:6px}
+.exp-period{margin-left:auto;color:var(--muted);font-size:12px}
+.bullet-points-list{margin:0;padding-left:18px;font-size:13px;color:#334155}
+.bullet-points-list li{margin-bottom:4px}
+.tech-tags-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.tech-tag{font-size:11px;background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:4px;font-weight:500}
+.skill-groups-container{display:flex;flex-direction:column;gap:8px}
+.skill-group-card{display:flex;align-items:baseline;gap:10px;font-size:13px}
+.skill-category-title{font-weight:600;min-width:140px;color:var(--ink)}
+.skill-chips-row{display:flex;flex-wrap:wrap;gap:6px}
+.skill-chip{background:#eff6ff;color:#1e40af;font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:12px;border:1px solid #dbeafe}
+.keywords-view-panel{display:flex;flex-direction:column;gap:14px}
+.keywords-summary-bar{background:#f8fafc;padding:12px 16px;border-radius:8px;border:1px solid var(--line);font-size:13px}
+.keywords-grid{display:flex;flex-wrap:wrap;gap:8px;max-height:400px;overflow-y:auto}
+.keyword-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:12.5px;font-weight:500;border:1px solid transparent}
+.keyword-chip.matched{background:#dcfce7;border-color:#86efac;color:#14532d}
+.keyword-chip.missing{background:#fee2e2;border-color:#fca5a5;color:#7f1d1d}
+.keyword-status{font-weight:700}
+.keyword-found-in{font-size:11px;opacity:.8}
+.tailoring-notes-box{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px;margin-top:14px}
+.tailoring-notes-box h4{font-size:13px;font-weight:700;color:#92400e;margin:0 0 8px 0}
+.tailoring-notes-box ul{margin:0;padding-left:18px;font-size:12.5px;color:#78350f}
+.tailoring-notes-box li{margin-bottom:4px}
+.modal-footer-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.manager-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.resume-variants-grid{display:flex;flex-direction:column;gap:12px;max-height:540px;overflow-y:auto}
+.resume-variant-item{background:#ffffff;border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s}
+.resume-variant-item.is-master{border-color:#3b82f6;background:#f8faff}
+.variant-header{display:flex;justify-content:space-between;align-items:center}
+.variant-title-wrap{display:flex;align-items:center;gap:10px}
+.variant-name{font-size:15px;font-weight:700;margin:0;color:var(--ink)}
+.variant-actions{display:flex;gap:6px}
+.variant-role{font-size:13px;color:var(--primary);font-weight:600}
+.variant-summary{font-size:13px;color:var(--muted);margin:0;line-height:1.5}
+.variant-meta{font-size:12px;color:#64748b;display:flex;gap:8px}
+.variant-select-bar{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.manager-form-view{display:flex;flex-direction:column;gap:14px;max-height:600px;overflow-y:auto;padding-right:6px}
+.form-actions-bar{display:flex;justify-content:flex-end;gap:10px;margin-top:10px}
+

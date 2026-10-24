@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowUpRight, Award, CalendarDays, ExternalLink, Pencil, Plus, Trash2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Award, CalendarDays, ExternalLink, Pencil, Plus, Trash2, Sparkles, FileText } from 'lucide-react';
 import { deviceTimezone, formatDate, formatTime, labels, statuses, type Application, type Interview, type Status } from '../domain';
 import { Button, Empty, Monogram, StatusBadge } from '../components/ui';
 import { interviewLabels } from '../components/forms';
@@ -7,6 +7,7 @@ import { Deadline } from './Dashboard';
 import AiAssistantPanel from '../components/AiAssistantPanel';
 import ActivityTimeline from '../components/ActivityTimeline';
 import OfferEvaluationModal from '../components/OfferEvaluationModal';
+import { ResumeTailorModal } from '../components/ResumeTailorModal';
 
 export default function Detail({
   app,
@@ -38,6 +39,7 @@ export default function Detail({
   notify?: (message: string, isError?: boolean) => void;
 }) {
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showTailorModal, setShowTailorModal] = useState(false);
   const tabs: ('info' | 'interviews' | 'ai')[] = ['info', 'interviews', 'ai'];
 
   return (
@@ -52,6 +54,9 @@ export default function Detail({
           <h1>{app.position}</h1>
           <p>{app.company}{app.location ? ` · ${app.location}` : ''}{app.workMode ? ` · ${app.workMode}` : ''}</p>
         </div>
+        <Button kind="secondary" className="tailor-resume-btn" onClick={() => setShowTailorModal(true)}>
+          <FileText size={16} />May đo CV (ATS)
+        </Button>
         <Button kind="secondary" onClick={onEdit}>
           <Pencil size={16} />Sửa hồ sơ
         </Button>
@@ -254,6 +259,19 @@ export default function Detail({
           allOffers={allOffers}
           onClose={() => setShowOfferModal(false)}
           notify={notify}
+        />
+      )}
+
+      {showTailorModal && (
+        <ResumeTailorModal
+          isOpen={showTailorModal}
+          company={app.company}
+          position={app.position}
+          jobDescription={app.notes || ''}
+          onClose={() => setShowTailorModal(false)}
+          onSavedVariant={(variant) => {
+            if (notify) notify(`Đã lưu phiên bản CV "${variant.name}" thành công!`);
+          }}
         />
       )}
     </>

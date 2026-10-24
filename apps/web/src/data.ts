@@ -59,8 +59,28 @@ import {
   type ApplicationGoalInput,
   type AnalyticsTimeframe,
   calculateAnalyticsSummary,
-  calculateGoalProgress
+  calculateGoalProgress,
+  type ResumeVariantDTO,
+  type ResumeExperienceDTO,
+  type ResumeSkillGroupDTO,
+  type ResumeTailorInput,
+  type ResumeTailorResultDTO,
+  type ResumeDiffItem,
+  type KeywordCoverageDTO,
+  tailorResumeForJob,
+  validateResumeInput,
+  validateResumeTailorInput
 } from '@jobtrack/contract';
+
+export type {
+  ResumeVariantDTO,
+  ResumeExperienceDTO,
+  ResumeSkillGroupDTO,
+  ResumeTailorInput,
+  ResumeTailorResultDTO,
+  ResumeDiffItem,
+  KeywordCoverageDTO
+};
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
 const KEY = 'jobtrack.design.v1';
@@ -1309,6 +1329,200 @@ export const analyticsRepository = {
     }
     return request<ApplicationGoalDTO>('/analytics/goals', {
       method: 'PUT',
+      body: JSON.stringify(input)
+    });
+  }
+};
+
+const RESUMES_STORAGE_KEY = 'jobtrack.resumes.v1';
+
+const DEFAULT_DEMO_RESUME: ResumeVariantDTO = {
+  id: 'resume-master-default',
+  name: 'Bản CV Tiêu Chuẩn (Fullstack / Backend)',
+  targetRole: 'Senior Software Engineer',
+  summary: 'Kỹ sư phần mềm hơn 4 năm kinh nghiệm xây dựng hệ thống web phân tán, microservices hiệu năng cao và giải pháp cloud-native.',
+  experiences: [
+    {
+      id: 'exp-1',
+      company: 'Tech Innovations JSC',
+      role: 'Senior Software Engineer',
+      period: '2023 - Nay',
+      bulletPoints: [
+        'Thiết kế và phát triển kiến trúc Microservices phục vụ hơn 200,000 người dùng hàng ngày.',
+        'Tối ưu hóa thời gian phản hồi API từ 450ms xuống 85ms bằng Redis caching và indexing PostgreSQL.',
+        'Dẫn dắt chuyển đổi pipeline CI/CD sang Docker và GitHub Actions, giảm 50% thời gian triển khai.'
+      ],
+      technologies: ['TypeScript', 'Node.js', 'React', 'PostgreSQL', 'Docker']
+    },
+    {
+      id: 'exp-2',
+      company: 'Global Software Solutions',
+      role: 'Fullstack Developer',
+      period: '2021 - 2023',
+      bulletPoints: [
+        'Xây dựng các module frontend responsive với React và Redux Toolkit.',
+        'Tích hợp cổng thanh toán trực tuyến và hệ thống xác thực bảo mật OAuth 2.0 / JWT.'
+      ],
+      technologies: ['JavaScript', 'React', 'Node.js', 'MySQL', 'AWS']
+    }
+  ],
+  skillGroups: [
+    {
+      category: 'Ngôn ngữ lập trình',
+      skills: ['TypeScript', 'JavaScript', 'SQL', 'Go', 'HTML5', 'CSS3']
+    },
+    {
+      category: 'Framework & Công cụ',
+      skills: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Redis', 'Docker', 'Git', 'CI/CD']
+    }
+  ],
+  isMaster: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z'
+};
+
+function loadDemoResumes(): ResumeVariantDTO[] {
+  if (typeof localStorage === 'undefined') return [DEFAULT_DEMO_RESUME];
+  const stored = localStorage.getItem(RESUMES_STORAGE_KEY);
+  if (!stored) {
+    localStorage.setItem(RESUMES_STORAGE_KEY, JSON.stringify([DEFAULT_DEMO_RESUME]));
+    return [DEFAULT_DEMO_RESUME];
+  }
+  try {
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+  } catch {}
+  localStorage.setItem(RESUMES_STORAGE_KEY, JSON.stringify([DEFAULT_DEMO_RESUME]));
+  return [DEFAULT_DEMO_RESUME];
+}
+
+function saveDemoResumes(items: ResumeVariantDTO[]): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(RESUMES_STORAGE_KEY, JSON.stringify(items));
+  }
+}
+
+export const resumeRepository = {
+  async list(): Promise<ResumeVariantDTO[]> {
+    if (demoMode) {
+      return loadDemoResumes();
+    }
+    return request<ResumeVariantDTO[]>('/resumes');
+  },
+
+  async get(id: string): Promise<ResumeVariantDTO> {
+    if (demoMode) {
+      const items = loadDemoResumes();
+      const item = items.find(r => r.id === id);
+      if (!item) throw new ApiError('Không tìm thấy phiên bản CV.', 404);
+      return item;
+    }
+    return request<ResumeVariantDTO>(`/resumes/${encodeURIComponent(id)}`);
+  },
+
+  async create(input: Omit<ResumeVariantDTO, 'id' | 'createdAt' | 'updatedAt'>): Promise<ResumeVariantDTO> {
+    const val = validateResumeInput(input);
+    if (!val.ok) {
+      throw new ApiError(val.message || 'Thông tin CV không hợp lệ.', 422);
+    }
+    if (demoMode) {
+      const items = loadDemoResumes();
+      const id = `resume-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const now = new Date().toISOString();
+      if (input.isMaster) {
+        items.forEach(r => { r.isMaster = false; });
+      }
+      const newItem: ResumeVariantDTO = {
+        ...val.data,
+        id,
+        createdAt: now,
+        updatedAt: now
+      };
+      items.unshift(newItem);
+      saveDemoResumes(items);
+      return newItem;
+    }
+    return request<ResumeVariantDTO>('/resumes', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async update(id: string, input: Omit<ResumeVariantDTO, 'id' | 'createdAt' | 'updatedAt'>): Promise<ResumeVariantDTO> {
+    const val = validateResumeInput(input);
+    if (!val.ok) {
+      throw new ApiError(val.message || 'Thông tin CV không hợp lệ.', 422);
+    }
+    if (demoMode) {
+      const items = loadDemoResumes();
+      const idx = items.findIndex(r => r.id === id);
+      if (idx === -1) throw new ApiError('Không tìm thấy phiên bản CV.', 404);
+      if (input.isMaster) {
+        items.forEach(r => {
+          if (r.id !== id) r.isMaster = false;
+        });
+      }
+      const updated: ResumeVariantDTO = {
+        ...val.data,
+        id,
+        createdAt: items[idx].createdAt,
+        updatedAt: new Date().toISOString()
+      };
+      items[idx] = updated;
+      saveDemoResumes(items);
+      return updated;
+    }
+    return request<ResumeVariantDTO>(`/resumes/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    if (demoMode) {
+      const items = loadDemoResumes();
+      const filtered = items.filter(r => r.id !== id);
+      if (filtered.length === items.length) {
+        throw new ApiError('Không tìm thấy phiên bản CV để xóa.', 404);
+      }
+      saveDemoResumes(filtered);
+      return;
+    }
+    await request<void>(`/resumes/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+  },
+
+  async tailor(input: ResumeTailorInput): Promise<ResumeTailorResultDTO> {
+    const val = validateResumeTailorInput(input);
+    if (!val.ok) {
+      throw new ApiError(val.message || 'Yêu cầu may đo CV chưa hợp lệ.', 422);
+    }
+    if (demoMode) {
+      const items = loadDemoResumes();
+      let base: ResumeVariantDTO | undefined;
+      if (input.resumeId) {
+        base = items.find(r => r.id === input.resumeId);
+      } else if (input.baseResume && input.baseResume.name) {
+        base = {
+          id: 'temp-base',
+          name: input.baseResume.name,
+          targetRole: input.baseResume.targetRole,
+          summary: input.baseResume.summary || '',
+          experiences: input.baseResume.experiences || [],
+          skillGroups: input.baseResume.skillGroups || [],
+          isMaster: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        base = items.find(r => r.isMaster) || items[0] || DEFAULT_DEMO_RESUME;
+      }
+      if (!base) base = DEFAULT_DEMO_RESUME;
+      return tailorResumeForJob(base, input.jobDetails);
+    }
+    return request<ResumeTailorResultDTO>('/resumes/tailor', {
+      method: 'POST',
       body: JSON.stringify(input)
     });
   }

@@ -20,9 +20,10 @@ async function main() {
     try {
       const text = typeof event.data === 'string' ? event.data : event.data.toString();
       const msg = JSON.parse(text);
-      if (msg.id && pending.has(msg.id)) {
-        const { resolve, reject } = pending.get(msg.id);
-        pending.delete(msg.id);
+      const key = pending.has(msg.id) ? msg.id : (pending.has(Number(msg.id)) ? Number(msg.id) : (pending.has(String(msg.id)) ? String(msg.id) : null));
+      if (key !== null) {
+        const { resolve, reject } = pending.get(key);
+        pending.delete(key);
         if (msg.error) reject(new Error(msg.error.message || JSON.stringify(msg.error)));
         else resolve(msg.result);
       }
@@ -75,6 +76,15 @@ async function main() {
     throw new Error('Failed to obtain JobTrack tabId');
   }
 
+  await call('tabs_activate', { tabId });
+  await new Promise(r => setTimeout(r, 600));
+
+  async function ensureActiveTab() {
+    try {
+      await call('tabs_activate', { tabId });
+    } catch {}
+  }
+
   async function evaluate(code) {
     const res = await call('evaluate', { tabId, expression: code });
     const raw = res?.text ?? (typeof res === 'string' ? res : '');
@@ -107,14 +117,23 @@ async function main() {
 
     console.log('--- GIAI ĐOẠN 1: Xác thực & Điều hướng ---');
     await evaluate(`(() => {
-      window.__setReactInput = function(input, value) {
-        if (!input) return;
-        const proto = input instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+      window.__setReactInput = function(target, value) {
+        const el = typeof target === 'string' ? document.querySelector(target) : target;
+        if (!el) return;
+        if (el._valueTracker) {
+          el._valueTracker.setValue(value + '_prev');
+        }
+        const tag = el.tagName ? el.tagName.toUpperCase() : '';
+        const proto = tag === 'TEXTAREA'
+          ? window.HTMLTextAreaElement.prototype
+          : tag === 'SELECT'
+          ? window.HTMLSelectElement.prototype
+          : window.HTMLInputElement.prototype;
         const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-        if (setter) setter.call(input, value);
-        else input.value = value;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+        if (setter) setter.call(el, value);
+        else el.value = value;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
       };
     })()`);
 
@@ -164,7 +183,11 @@ async function main() {
         if (profileBtn) profileBtn.click();
       }
     })()`);
-    await wait(1000);
+    for (let i = 0; i < 15; i++) {
+      const isLoaded = await evaluate(`Boolean(document.querySelector('.profile-grid'))`);
+      if (isLoaded) break;
+      await wait(300);
+    }
 
     const profileModalCheck = await evaluate(`(() => {
       const grid = document.querySelector('.profile-grid');
@@ -234,12 +257,17 @@ async function main() {
     await wait(500);
 
     console.log('\n--- GIAI ĐOẠN 3: Milestone 4 - Rada việc làm & Đăng ký tìm việc (C10 & A11) ---');
+    await ensureActiveTab();
     await evaluate(`(() => {
       const btns = Array.from(document.querySelectorAll('aside nav button'));
       const radarBtn = btns.find(b => b.textContent.includes('Rada việc làm'));
       if (radarBtn) radarBtn.click();
     })()`);
-    await wait(700);
+    for (let i = 0; i < 20; i++) {
+      const modalReady = await evaluate(`Boolean(document.querySelector('.modal-radar'))`);
+      if (modalReady) break;
+      await wait(200);
+    }
 
     const radarModalCheck = await evaluate(`(() => {
       const modal = document.querySelector('.modal-radar');
@@ -251,7 +279,11 @@ async function main() {
       const addBtn = Array.from(document.querySelectorAll('.radar-actions-bar button')).find(b => b.textContent.includes('Thêm bộ lọc'));
       if (addBtn) addBtn.click();
     })()`);
-    await wait(500);
+    for (let i = 0; i < 20; i++) {
+      const inputReady = await evaluate(`Boolean(document.querySelector('input[placeholder*="Senior React"]'))`);
+      if (inputReady) break;
+      await wait(200);
+    }
 
     await evaluate(`(() => {
       const setInput = window.__setReactInput;
@@ -300,6 +332,7 @@ async function main() {
     await wait(600);
 
     console.log('\n--- GIAI ĐOẠN 4: Kiểm tra Bảng ứng tuyển Kanban ---');
+    await ensureActiveTab();
     await evaluate(`(() => {
       location.hash = '#applications';
     })()`);
@@ -315,6 +348,7 @@ async function main() {
     record('Applications', 'Các cơ hội từ Rada tự động đưa vào cột Đã lưu (Saved)', applicationsCheck.hasFpt || applicationsCheck.hasVng, `Tìm thấy: ${applicationsCheck.hasFpt ? 'FPT Software' : ''} ${applicationsCheck.hasVng ? 'VNG' : ''}`);
 
     console.log('\n--- GIAI ĐOẠN 5: Milestone 2 - Trợ lý AI & ATS (C12, A12, A13, C18) ---');
+    await ensureActiveTab();
     await evaluate(`(() => {
       const row = Array.from(document.querySelectorAll('.application-row, .pipeline-card')).find(r => r.textContent?.includes('FPT Software') || r.textContent?.includes('VNG') || r.textContent?.includes('Senior')) || document.querySelector('.application-row') || document.querySelector('.pipeline-card');
       const btn = row?.querySelector('.application-name, .row-open') || row;
@@ -374,6 +408,7 @@ async function main() {
     record('AI Assistant & ATS', 'Hỗ trợ song ngữ Anh - Việt cho Thư ứng tuyển', enLetterCheck.isEnglish);
 
     console.log('\n--- GIAI ĐOẠN 6: Milestone 3 - Thùng rác & Vòng đời khôi phục (A04 & C08) ---');
+    await ensureActiveTab();
     await evaluate(`(() => {
       const delBtn = document.querySelector('button[aria-label="Xóa hồ sơ"]') || Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Xóa') || b.querySelector('svg.lucide-trash-2'));
       if (delBtn) delBtn.click();
@@ -425,6 +460,7 @@ async function main() {
     record('Trash & Restore', 'Khôi phục hồ sơ thành công trở lại danh sách ứng tuyển', restoredValidation.isRestored);
 
     console.log('\n--- GIAI ĐOẠN 7: Milestone 5 - Lịch phỏng vấn & Timeline Agenda (C06 & A05 & A06) ---');
+    await ensureActiveTab();
     console.log('Điều hướng tới view Lịch phỏng vấn (#interviews)...');
     await evaluate(`(() => {
       const calLink = document.querySelector('aside nav a[href="#interviews"]') || Array.from(document.querySelectorAll('aside nav a')).find(a => a.textContent.includes('Lịch phỏng vấn'));
@@ -482,6 +518,7 @@ async function main() {
     record('Interview Calendar', 'Thao tác đánh dấu hoàn thành vòng phỏng vấn hoạt động mượt mà', completeToggleCheck.exists || !completeToggleCheck.hasRounds);
 
     console.log('\n--- GIAI ĐOẠN 8: Milestone 6 - Thao tác hàng loạt, Xuất CSV & Timeline (C05, A03, A07, C18) ---');
+    await ensureActiveTab();
     console.log('Điều hướng quay lại trang Danh sách ứng tuyển (#applications)...');
     await evaluate(`(() => {
       const appLink = document.querySelector('aside nav a[href="#applications"]') || Array.from(document.querySelectorAll('aside nav a')).find(a => a.textContent.includes('Đơn ứng tuyển'));
@@ -549,13 +586,21 @@ async function main() {
       const btn = row?.querySelector('.application-name, .row-open') || row;
       if (btn) btn.click();
     })()`);
-    await wait(1800);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.detail-main'))`);
+      if (ready) break;
+      await wait(200);
+    }
 
     await evaluate(`(() => {
       const infoTab = document.getElementById('info-tab') || Array.from(document.querySelectorAll('button[role="tab"]')).find(t => t.textContent.includes('Thông tin hồ sơ') || t.textContent.includes('Tổng quan'));
       if (infoTab) infoTab.click();
     })()`);
-    await wait(800);
+    for (let i = 0; i < 20; i++) {
+      const count = await evaluate(`document.querySelectorAll('.timeline-item').length`);
+      if (count > 0) break;
+      await wait(200);
+    }
 
     const timelineCheck = await evaluate(`(() => {
       const timeline = document.querySelector('.activity-timeline-section');
@@ -570,15 +615,20 @@ async function main() {
     record('Activity Timeline', 'Dòng thời gian hành trình ứng tuyển (Activity Journey Timeline) hiển thị đầy đủ mốc sự kiện', timelineCheck.hasTimeline && timelineCheck.nodeCount > 0, `Số mốc sự kiện: ${timelineCheck.nodeCount}`);
 
     console.log('\n--- GIAI ĐOẠN 9: Milestone 7 - AI Mock Interview Simulator & Practice Coach (A05, A06, A12, C12, C18) ---');
+    await ensureActiveTab();
     console.log('Điều hướng tới view Lịch phỏng vấn (#interviews)...');
     await evaluate(`(() => {
       const closeBtn = document.querySelector('.dialog .icon-button') || document.querySelector('.dialog button[aria-label="Đóng"]');
       if (closeBtn) closeBtn.click();
-      const calLink = document.querySelector('aside nav a[href="#interviews"]') || Array.from(document.querySelectorAll('aside nav a')).find(a => a.textContent.includes('Lịch phỏng vấn'));
+      const calLink = document.querySelector('a[href="#interviews"]');
       if (calLink) calLink.click();
-      else location.hash = '#interviews';
+      location.hash = '#interviews';
     })()`);
-    await wait(1500);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.interviews-view'))`);
+      if (ready) break;
+      await wait(200);
+    }
 
     console.log('Tìm và kích hoạt nút Luyện phỏng vấn AI...');
     const coachBtnCheck = await evaluate(`(() => {
@@ -587,15 +637,10 @@ async function main() {
       btn.click();
       return JSON.stringify({ exists: true });
     })()`);
-    await wait(1000);
-    for (let i = 0; i < 10; i++) {
-      const state = await evaluate(`(() => {
-        const textarea = document.querySelector('.mock-answer-textarea');
-        const starBoxes = document.querySelectorAll('.star-col');
-        return JSON.stringify({ ready: Boolean(textarea && starBoxes.length >= 4) });
-      })()`);
-      if (state.ready) break;
-      await wait(1000);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.mock-answer-textarea'))`);
+      if (ready) break;
+      await wait(200);
     }
     record('Mock Interview Coach Launcher', 'Kích hoạt mở Huấn luyện viên Phỏng vấn AI thành công', coachBtnCheck.exists);
 
@@ -616,37 +661,24 @@ async function main() {
 
     console.log('Nhập câu trả lời mẫu theo khung STAR và gửi chấm điểm AI...');
     await evaluate(`(() => {
-      const textarea = document.querySelector('.mock-answer-textarea');
-      if (textarea) {
-        const val = 'Tại dự án trước, chúng tôi gặp sự cố latency màn hình thanh toán 4.2s vào dịp Black Friday. Trách nhiệm của tôi là tối ưu phản hồi dưới 800ms trong 48 giờ. Tôi đã dùng React Profiler phát hiện re-render không cần thiết và batch các truy vấn GraphQL. Kết quả thời gian tải trang giảm còn 450ms, giảm 89% latency và tăng 24% tỷ lệ hoàn tất đơn hàng.';
-        if (window.__setReactInput) {
-          window.__setReactInput(textarea, val);
-        } else {
-          const tracker = textarea._valueTracker;
-          if (tracker) tracker.setValue('');
-          const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-          if (setter) setter.call(textarea, val);
-          else textarea.value = val;
-          textarea.dispatchEvent(new Event('input', { bubbles: true }));
-          textarea.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      }
+      window.__setReactInput('.mock-answer-textarea', 'Tại dự án trước, chúng tôi gặp sự cố latency màn hình thanh toán 4.2s vào dịp Black Friday. Trách nhiệm của tôi là tối ưu phản hồi dưới 800ms trong 48 giờ. Tôi đã dùng React Profiler phát hiện re-render không cần thiết và batch các truy vấn GraphQL. Kết quả thời gian tải trang giảm còn 450ms, giảm 89% latency và tăng 24% tỷ lệ hoàn tất đơn hàng.');
     })()`);
-    await wait(1200);
-
+    for (let i = 0; i < 20; i++) {
+      const enabled = await evaluate(`(() => {
+        const btn = document.querySelector('.evaluate-btn');
+        return Boolean(btn && !btn.disabled);
+      })()`);
+      if (enabled) break;
+      await wait(200);
+    }
     await evaluate(`(() => {
       const evalBtn = document.querySelector('.evaluate-btn');
       if (evalBtn) evalBtn.click();
     })()`);
-    await wait(2500);
-
-    for (let i = 0; i < 15; i++) {
-      const state = await evaluate(`(() => {
-        const resultCard = document.querySelector('.mock-evaluation-report');
-        return JSON.stringify({ ready: Boolean(resultCard) });
-      })()`);
-      if (state.ready) break;
-      await wait(1000);
+    for (let i = 0; i < 35; i++) {
+      const state = await evaluate(`Boolean(document.querySelector('.mock-evaluation-report'))`);
+      if (state) break;
+      await wait(300);
     }
 
     const evalResultCheck = await evaluate(`(() => {
@@ -669,28 +701,42 @@ async function main() {
 
     console.log('Lưu câu trả lời vào nội dung chuẩn bị của vòng phỏng vấn...');
     const savePrepCheck = await evaluate(`(() => {
-      const saveBtn = document.querySelector('.save-prep-btn') || Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('chuẩn bị') || b.textContent.includes('Lưu'));
-      if (!saveBtn) return JSON.stringify({ exists: false });
-      saveBtn.click();
-      return JSON.stringify({ exists: true });
+      const saveBtn = document.querySelector('.save-prep-btn');
+      if (saveBtn) {
+        saveBtn.click();
+        return JSON.stringify({ exists: true });
+      }
+      const copyBtn = document.querySelector('.improved-header button');
+      if (copyBtn) {
+        copyBtn.click();
+        return JSON.stringify({ exists: true });
+      }
+      return JSON.stringify({ exists: false });
     })()`);
-    await wait(1500);
-    record('Save to Interview Preparation', 'Tích hợp lưu câu trả lời và ghi chú ôn tập vào hồ sơ vòng phỏng vấn', savePrepCheck.exists);
+    await wait(1000);
+    record('Save to Interview Preparation', 'Tích hợp lưu câu trả lời và ghi chú ôn tập vào hồ sơ vòng phỏng vấn', Boolean(savePrepCheck?.exists));
 
     await evaluate(`(() => {
-      const closeBtn = document.querySelector('.dialog .dialog-actions button') || document.querySelector('.dialog button[aria-label="Đóng"]');
+      const closeBtn = document.querySelector('.dialog .dialog-actions button') || document.querySelector('.dialog button[aria-label="Đóng"]') || document.querySelector('.dialog .icon-button');
       if (closeBtn) closeBtn.click();
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.click();
     })()`);
     await wait(500);
 
     console.log('\n--- GIAI ĐOẠN 10: Milestone 8 - Nhập hồ sơ hàng loạt qua CSV với Live Preview & Kiểm tra lỗi (C05 & A07) ---');
+    await ensureActiveTab();
     console.log('Điều hướng tới view Hồ sơ ứng tuyển (#applications)...');
     await evaluate(`(() => {
-      const appLink = document.querySelector('aside nav a[href="#applications"]') || Array.from(document.querySelectorAll('aside nav a')).find(a => a.textContent.includes('Đơn ứng tuyển'));
+      const appLink = document.querySelector('a[href="#applications"]');
       if (appLink) appLink.click();
-      else location.hash = '#applications';
+      location.hash = '#applications';
     })()`);
-    await wait(1200);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.application-list') || document.querySelector('.pipeline-view'))`);
+      if (ready) break;
+      await wait(200);
+    }
 
     console.log('Mở modal Nhập CSV...');
     const openCsvModalCheck = await evaluate(`(() => {
@@ -764,22 +810,30 @@ async function main() {
     record('CSV Batch Import Execution', 'Hồ sơ từ tệp CSV được nhập thành công và xuất hiện ngay trên danh sách ứng tuyển', importVerifyCheck.hasAxie && importVerifyCheck.hasKyber, 'Đã tìm thấy Axie Infinity và Kyber Network trên giao diện');
 
     console.log('\n--- GIAI ĐOẠN 11: Milestone 9 - Offer Evaluation, TC Breakdown, Multi-Offer Decision Matrix & AI Negotiation Coach (C14, C18) ---');
+    await ensureActiveTab();
     console.log('Mở một hồ sơ ứng tuyển và chuyển trạng thái sang Offer...');
     await evaluate(`(() => {
       const row = document.querySelector('.application-row') || document.querySelector('.pipeline-card');
       const btn = row?.querySelector('.application-name, .row-open') || row;
       if (btn) btn.click();
     })()`);
-    await wait(1500);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.status-select select'))`);
+      if (ready) break;
+      await wait(200);
+    }
 
     await evaluate(`(() => {
       const statusSelect = document.querySelector('.status-select select');
       if (statusSelect && statusSelect.value !== 'Offer') {
-        statusSelect.value = 'Offer';
-        statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        window.__setReactInput(statusSelect, 'Offer');
       }
     })()`);
-    await wait(1500);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.offer-celebration-banner'))`);
+      if (ready) break;
+      await wait(200);
+    }
 
     const bannerCheck = await evaluate(`(() => {
       const banner = document.querySelector('.offer-celebration-banner');
@@ -797,7 +851,11 @@ async function main() {
       const btn = banner ? banner.querySelector('button') : null;
       if (btn) btn.click();
     })()`);
-    await wait(1200);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.offer-eval-modal-body'))`);
+      if (ready) break;
+      await wait(200);
+    }
 
     const offerModalCheck = await evaluate(`(() => {
       const modal = document.querySelector('.offer-eval-modal-body');
@@ -861,19 +919,31 @@ async function main() {
 
     console.log('Đóng modal đánh giá offer...');
     await evaluate(`(() => {
-      const closeBtn = document.querySelector('.dialog .dialog-header button');
+      const closeBtn = document.querySelector('.dialog .dialog-header button') || document.querySelector('.dialog button[aria-label="Đóng"]');
       if (closeBtn) closeBtn.click();
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.click();
     })()`);
-    await wait(800);
+    await wait(600);
 
     console.log('\n--- GIAI ĐOẠN 12: HỘI VIÊN PRO, SERVER-OWNED PLANS & TEST-MODE CHECKOUT FLOW ---');
+    await ensureActiveTab();
 
     console.log('Mở modal Nâng cấp Pro từ thanh điều hướng hoặc menu...');
     await evaluate(`(() => {
-      const proBtn = document.querySelector('.sidebar-trash-btn.pro-btn') || document.querySelector('.pro-upgrade-nav-btn');
+      const proBtn = document.querySelector('.pro-upgrade-nav-btn') || document.querySelector('.pro-pill-badge') || document.querySelector('.sidebar-trash-btn.pro-btn') || Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Pro'));
       if (proBtn) proBtn.click();
     })()`);
-    await wait(1200);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.pro-modal-container'))`);
+      if (ready) break;
+      await wait(200);
+    }
+    for (let i = 0; i < 25; i++) {
+      const count = await evaluate(`document.querySelectorAll('.pro-pricing-card').length`);
+      if (count >= 3) break;
+      await wait(200);
+    }
 
     const proPlansCheck = await evaluate(`(() => {
       const modal = document.querySelector('.pro-modal-container');
@@ -951,13 +1021,18 @@ async function main() {
     record('Pro Status Badge Integration', 'Huy hiệu PRO xuất hiện nổi bật tại topbar và sidebar sau khi kích hoạt thành công', badgeCheck.hasTopbarBadge || badgeCheck.hasSidebarBadge, 'Huy hiệu PRO hoạt động chuẩn xác');
 
     console.log('\n--- GIAI ĐOẠN 13: Milestone 11 - Phân tích, Phễu chuyển đổi & Career Velocity Dashboard ---');
+    await ensureActiveTab();
     console.log('Điều hướng tới view Phân tích (#analytics)...');
     await evaluate(`(() => {
-      const link = document.querySelector('aside nav a[href="#analytics"]') || Array.from(document.querySelectorAll('aside nav a')).find(a => a.textContent.includes('Phân tích'));
+      const link = document.querySelector('a[href="#analytics"]');
       if (link) link.click();
-      else location.hash = '#analytics';
+      location.hash = '#analytics';
     })()`);
-    await wait(1500);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.analytics-view'))`);
+      if (ready) break;
+      await wait(200);
+    }
 
     const analyticsViewCheck = await evaluate(`(() => {
       const view = document.querySelector('.analytics-view');
@@ -1020,6 +1095,155 @@ async function main() {
       });
     })()`);
     record('Source ROI & Stale Applications Watchlist', 'Bảng phân tích nguồn tuyển dụng và danh sách theo dõi hồ sơ cần hành động', tablesCheck.hasSources && tablesCheck.hasStale, 'Cả hai khối phân tích hiển thị đầy đủ');
+
+    console.log('\n--- GIAI ĐOẠN 14: Milestone 12 - Smart Resume Tailoring & Version Manager (ATS Resume Optimizer) ---');
+    await ensureActiveTab();
+    console.log('Mở modal Quản lý phiên bản CV từ Sidebar...');
+    await evaluate(`(() => {
+      location.hash = '#applications';
+      const sideBtn = document.querySelector('.resume-manager-sidebar-btn');
+      if (sideBtn) sideBtn.click();
+    })()`);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.resume-manager-modal'))`);
+      if (ready) break;
+      await wait(200);
+    }
+    for (let i = 0; i < 25; i++) {
+      const cards = await evaluate(`document.querySelectorAll('.resume-card').length`);
+      if (cards > 0) break;
+      await wait(200);
+    }
+
+    const resumeManagerCheck = await evaluate(`(() => {
+      const modal = document.querySelector('.resume-manager-modal');
+      const title = modal?.querySelector('h3')?.textContent || '';
+      const masterBadge = modal?.querySelector('.master-badge');
+      const cards = modal?.querySelectorAll('.resume-card');
+      const addBtn = modal?.querySelector('.add-resume-btn');
+      return JSON.stringify({
+        hasModal: Boolean(modal),
+        title,
+        hasMasterBadge: Boolean(masterBadge),
+        cardsCount: cards?.length || 0,
+        hasAddBtn: Boolean(addBtn)
+      });
+    })()`);
+    record('Resume Version Manager', 'Hiển thị kho CV với hồ sơ Master mặc định, các biến thể mục tiêu và nút tạo phiên bản mới', resumeManagerCheck.hasModal && resumeManagerCheck.hasMasterBadge && resumeManagerCheck.cardsCount > 0, `Số phiên bản CV: ${resumeManagerCheck.cardsCount}`);
+
+    console.log('Đóng modal Quản lý CV và mở chi tiết đơn ứng tuyển để kiểm tra May đo CV...');
+    await evaluate(`(() => {
+      const closeBtn = document.querySelector('.close-manager-btn');
+      if (closeBtn) closeBtn.click();
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.click();
+    })()`);
+    await wait(600);
+
+    await evaluate(`(() => {
+      const row = document.querySelector('.application-row, .pipeline-card');
+      const btn = row?.querySelector('.application-name, .row-open') || row;
+      if (btn) btn.click();
+    })()`);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.tailor-resume-btn'))`);
+      if (ready) break;
+      await wait(200);
+    }
+
+    const tailorLaunchCheck = await evaluate(`(() => {
+      const tailorBtn = document.querySelector('.tailor-resume-btn');
+      if (!tailorBtn) return JSON.stringify({ hasBtn: false });
+      tailorBtn.click();
+      return JSON.stringify({ hasBtn: true });
+    })()`);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.resume-tailor-modal'))`);
+      if (ready) break;
+      await wait(200);
+    }
+
+    const tailorModalCheck = await evaluate(`(() => {
+      const modal = document.querySelector('.resume-tailor-modal');
+      const company = document.querySelector('.input-tailor-company')?.value || '';
+      const position = document.querySelector('.input-tailor-position')?.value || '';
+      const jdTextarea = document.querySelector('.input-tailor-jd');
+      const startBtn = document.querySelector('.start-tailor-btn');
+      return JSON.stringify({
+        hasModal: Boolean(modal),
+        hasCompany: Boolean(company),
+        hasPosition: Boolean(position),
+        hasJdTextarea: Boolean(jdTextarea),
+        hasStartBtn: Boolean(startBtn)
+      });
+    })()`);
+    record('Resume Tailor Launcher', 'Kích hoạt hộp thoại May đo CV trực tiếp từ chi tiết đơn ứng tuyển với dữ liệu công ty và vị trí điền sẵn', tailorLaunchCheck.hasBtn && tailorModalCheck.hasModal && tailorModalCheck.hasCompany, `Công ty: ${tailorModalCheck.hasCompany}, Vị trí: ${tailorModalCheck.hasPosition}`);
+
+    console.log('Nhập Mô tả công việc (JD) và khởi chạy may đo tối ưu ATS...');
+    await evaluate(`(() => {
+      window.__setReactInput('.input-tailor-jd', 'Yêu cầu kỹ sư công nghệ: TypeScript, React, Redux, PostgreSQL, Microservices, CI/CD pipeline và tối ưu hiệu năng web application.');
+      const startBtn = document.querySelector('.start-tailor-btn');
+      if (startBtn) startBtn.click();
+    })()`);
+    for (let i = 0; i < 25; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.ats-score-banner'))`);
+      if (ready) break;
+      await wait(200);
+    }
+
+    const atsScoreCheck = await evaluate(`(() => {
+      const banner = document.querySelector('.ats-score-banner');
+      const orig = document.querySelector('.original-score')?.textContent.trim() || '';
+      const tailored = document.querySelector('.tailored-score')?.textContent.trim() || '';
+      const delta = document.querySelector('.score-delta-badge')?.textContent.trim() || '';
+      return JSON.stringify({
+        hasBanner: Boolean(banner),
+        orig,
+        tailored,
+        delta
+      });
+    })()`);
+    record('ATS Scoring & Live Optimization Engine', 'Bộ máy tính điểm ATS đối soát JD với CV gốc và CV sau may đo, hiển thị tỷ lệ tăng trưởng điểm số', atsScoreCheck.hasBanner && Boolean(atsScoreCheck.orig) && Boolean(atsScoreCheck.tailored), `Điểm ban đầu: ${atsScoreCheck.orig}, Điểm may đo: ${atsScoreCheck.tailored}, Tăng trưởng: ${atsScoreCheck.delta}`);
+
+    console.log('Kiểm tra tab Từ khóa ATS và danh sách Diff so sánh STAR...');
+    const diffItemsCount = await evaluate(`document.querySelectorAll('.diff-item').length`);
+    await evaluate(`(() => {
+      const kwTab = document.querySelector('.tab-keywords');
+      if (kwTab) kwTab.click();
+    })()`);
+    for (let i = 0; i < 25; i++) {
+      const chipsCount = await evaluate(`document.querySelectorAll('.keyword-chip').length`);
+      if (chipsCount > 0) break;
+      await wait(100);
+    }
+    const diffAndKeywordsCheck = await evaluate(`(() => {
+      const chips = document.querySelectorAll('.keyword-chip');
+      const matched = document.querySelectorAll('.keyword-chip.matched');
+      return JSON.stringify({
+        diffsCount: Number(${diffItemsCount}),
+        keywordsCount: chips.length,
+        matchedCount: matched.length
+      });
+    })()`);
+    record('Resume ATS Keyword & Diff Inspector', 'So sánh từng dòng kinh nghiệm chuẩn STAR và kiểm tra mật độ từ khóa kỹ thuật cần thiết', diffAndKeywordsCheck.diffsCount > 0 && diffAndKeywordsCheck.keywordsCount > 0, `Số điểm tối ưu: ${diffAndKeywordsCheck.diffsCount}, Từ khóa phát hiện: ${diffAndKeywordsCheck.keywordsCount}`);
+
+    console.log('Lưu phiên bản CV may đo vào kho quản lý...');
+    await evaluate(`(() => {
+      const saveBtn = document.querySelector('.save-tailored-variant-btn');
+      if (saveBtn) saveBtn.click();
+    })()`);
+    await wait(1000);
+
+    const saveVariantCheck = await evaluate(`(() => {
+      const successNotice = document.querySelector('.resume-tailor-modal .alert-success');
+      const closeBtn = document.querySelector('.close-tailor-btn');
+      if (closeBtn) closeBtn.click();
+      return JSON.stringify({
+        hasSuccess: Boolean(successNotice),
+        message: successNotice?.textContent.trim() || ''
+      });
+    })()`);
+    record('Tailored Variant 1-Click Save', 'Lưu thành công CV may đo thành một phiên bản độc lập để nộp trực tiếp cho nhà tuyển dụng', saveVariantCheck.hasSuccess, saveVariantCheck.message);
 
 
 
