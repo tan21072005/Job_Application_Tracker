@@ -131,7 +131,21 @@ import {
   type EmailIngestProposalDTO,
   type EmailIngestApplyResultDTO,
   parseEmailContent,
-  generateIngestionProposal
+  generateIngestionProposal,
+  type CampaignObjective,
+  type OutreachTargetType,
+  type OutreachChannel,
+  type RecipientStatus,
+  type OutreachStepDTO,
+  type OutreachRecipientDTO,
+  type OutreachCampaignDTO,
+  type CampaignAnalyticsDTO,
+  type CreateCampaignInputDTO,
+  type AddRecipientInputDTO,
+  type UpdateRecipientStepInputDTO,
+  generateOutreachSequence,
+  personalizeMessage,
+  computeCampaignMetrics
 } from '@jobtrack/contract';
 
 export type {
@@ -2714,12 +2728,223 @@ export const emailIngestRepository = {
   }
 };
 
+const OUTREACH_STORAGE_KEY = 'jobtrack.outreach.campaigns.v1';
+
+function defaultDemoCampaign(): OutreachCampaignDTO {
+  const steps = generateOutreachSequence('referral_request', 'engineer', 'Senior Frontend Engineer', 'Shopee Vietnam');
+  const recipients: OutreachRecipientDTO[] = [
+    {
+      id: 'demo-rec-1',
+      campaignId: 'demo-camp-1',
+      contactId: null,
+      name: 'Nguyễn Văn Minh',
+      title: 'Senior Frontend Architect',
+      company: 'Shopee Vietnam',
+      channel: 'linkedin',
+      email: 'minh.nguyen@shopee.vn',
+      linkedinUrl: 'https://linkedin.com/in/minh-shopee',
+      currentStepIndex: 1,
+      status: 'pending',
+      lastContactedAt: null,
+      notes: 'Alumni ĐH Bách Khoa',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'demo-rec-2',
+      campaignId: 'demo-camp-1',
+      contactId: null,
+      name: 'Trần Thu Hà',
+      title: 'Engineering Manager',
+      company: 'Shopee Vietnam',
+      channel: 'linkedin',
+      email: 'ha.tran@shopee.vn',
+      linkedinUrl: 'https://linkedin.com/in/ha-shopee',
+      currentStepIndex: 2,
+      status: 'replied',
+      lastContactedAt: new Date(Date.now() - 86400000).toISOString(),
+      notes: 'Đã hẹn gửi CV qua email',
+      createdAt: new Date(Date.now() - 172800000).toISOString(),
+      updatedAt: new Date(Date.now() - 86400000).toISOString()
+    }
+  ];
+  return {
+    id: 'demo-camp-1',
+    name: 'Chiến dịch Referral Shopee Q4',
+    objective: 'referral_request',
+    targetType: 'engineer',
+    targetCompany: 'Shopee Vietnam',
+    targetRole: 'Senior Frontend Engineer',
+    status: 'active',
+    steps,
+    recipients,
+    analytics: computeCampaignMetrics(recipients),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function loadDemoCampaigns(): OutreachCampaignDTO[] {
+  if (typeof localStorage === 'undefined') return [defaultDemoCampaign()];
+  const raw = localStorage.getItem(OUTREACH_STORAGE_KEY);
+  if (!raw) {
+    const initial = [defaultDemoCampaign()];
+    localStorage.setItem(OUTREACH_STORAGE_KEY, JSON.stringify(initial));
+    return initial;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [defaultDemoCampaign()];
+  }
+}
+
+function saveDemoCampaigns(campaigns: OutreachCampaignDTO[]): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(OUTREACH_STORAGE_KEY, JSON.stringify(campaigns));
+  }
+}
+
+export const outreachRepository = {
+  async listCampaigns(): Promise<OutreachCampaignDTO[]> {
+    if (demoMode) {
+      return loadDemoCampaigns();
+    }
+    return request<OutreachCampaignDTO[]>('/outreach/campaigns');
+  },
+
+  async getCampaign(id: string): Promise<OutreachCampaignDTO | null> {
+    if (demoMode) {
+      const list = loadDemoCampaigns();
+      return list.find(c => c.id === id) || null;
+    }
+    return request<OutreachCampaignDTO>(`/outreach/campaigns/${encodeURIComponent(id)}`);
+  },
+
+  async createCampaign(input: CreateCampaignInputDTO): Promise<OutreachCampaignDTO> {
+    if (demoMode) {
+      const list = loadDemoCampaigns();
+      const campaignId = `camp-${Date.now()}`;
+      const steps = input.customSteps && input.customSteps.length > 0
+        ? input.customSteps.map((s, idx) => ({ ...s, id: `step-${idx + 1}` }))
+        : generateOutreachSequence(input.objective, input.targetType, input.targetRole, input.targetCompany);
+
+      const newCampaign: OutreachCampaignDTO = {
+        id: campaignId,
+        name: input.name,
+        objective: input.objective,
+        targetType: input.targetType,
+        targetCompany: input.targetCompany,
+        targetRole: input.targetRole,
+        status: 'active',
+        steps,
+        recipients: [],
+        analytics: computeCampaignMetrics([]),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      list.unshift(newCampaign);
+      saveDemoCampaigns(list);
+      return newCampaign;
+    }
+    return request<OutreachCampaignDTO>('/outreach/campaigns', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async addRecipient(campaignId: string, input: AddRecipientInputDTO): Promise<OutreachRecipientDTO> {
+    if (demoMode) {
+      const list = loadDemoCampaigns();
+      const campaign = list.find(c => c.id === campaignId);
+      if (!campaign) throw new Error('Chiến dịch không tồn tại.');
+
+      const newRecipient: OutreachRecipientDTO = {
+        id: `rec-${Date.now()}`,
+        campaignId,
+        contactId: input.contactId || null,
+        name: input.name,
+        title: input.title || '',
+        company: input.company,
+        channel: input.channel || 'linkedin',
+        email: input.email || null,
+        linkedinUrl: input.linkedinUrl || null,
+        currentStepIndex: 1,
+        status: 'pending',
+        lastContactedAt: null,
+        notes: input.notes || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      campaign.recipients.unshift(newRecipient);
+      campaign.analytics = computeCampaignMetrics(campaign.recipients);
+      campaign.updatedAt = new Date().toISOString();
+      saveDemoCampaigns(list);
+      return newRecipient;
+    }
+    return request<OutreachRecipientDTO>(`/outreach/campaigns/${encodeURIComponent(campaignId)}/recipients`, {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async updateRecipientStep(recipientId: string, input: UpdateRecipientStepInputDTO): Promise<OutreachRecipientDTO> {
+    if (demoMode) {
+      const list = loadDemoCampaigns();
+      let found: OutreachRecipientDTO | null = null;
+      for (const c of list) {
+        const r = c.recipients.find(rec => rec.id === recipientId);
+        if (r) {
+          r.currentStepIndex = input.currentStepIndex;
+          r.status = input.status;
+          if (input.notes !== undefined) r.notes = input.notes;
+          if (input.status !== 'pending') r.lastContactedAt = new Date().toISOString();
+          r.updatedAt = new Date().toISOString();
+          c.analytics = computeCampaignMetrics(c.recipients);
+          c.updatedAt = new Date().toISOString();
+          found = r;
+          break;
+        }
+      }
+      if (!found) throw new Error('Không tìm thấy người nhận.');
+      saveDemoCampaigns(list);
+      return found;
+    }
+    return request<OutreachRecipientDTO>(`/outreach/recipients/${encodeURIComponent(recipientId)}/step`, {
+      method: 'PATCH',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async deleteCampaign(id: string): Promise<boolean> {
+    if (demoMode) {
+      const list = loadDemoCampaigns();
+      const next = list.filter(c => c.id !== id);
+      saveDemoCampaigns(next);
+      return true;
+    }
+    await request(`/outreach/campaigns/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    return true;
+  }
+};
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
   IngestionActionType,
   EmailIngestProposalDTO,
-  EmailIngestApplyResultDTO
+  EmailIngestApplyResultDTO,
+  CampaignObjective,
+  OutreachTargetType,
+  OutreachChannel,
+  RecipientStatus,
+  OutreachStepDTO,
+  OutreachRecipientDTO,
+  OutreachCampaignDTO,
+  CampaignAnalyticsDTO,
+  CreateCampaignInputDTO,
+  AddRecipientInputDTO,
+  UpdateRecipientStepInputDTO
 };
 
 

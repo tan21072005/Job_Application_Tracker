@@ -40,7 +40,21 @@ import {
   type EmailIngestProposalDTO,
   type EmailIngestApplyResultDTO,
   parseEmailContent,
-  generateIngestionProposal
+  generateIngestionProposal,
+  type CampaignObjective,
+  type OutreachTargetType,
+  type OutreachChannel,
+  type RecipientStatus,
+  type OutreachStepDTO,
+  type OutreachRecipientDTO,
+  type OutreachCampaignDTO,
+  type CampaignAnalyticsDTO,
+  type CreateCampaignInputDTO,
+  type AddRecipientInputDTO,
+  type UpdateRecipientStepInputDTO,
+  generateOutreachSequence,
+  personalizeMessage,
+  computeCampaignMetrics
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -84,7 +98,21 @@ export {
   type EmailIngestProposalDTO,
   type EmailIngestApplyResultDTO,
   parseEmailContent,
-  generateIngestionProposal
+  generateIngestionProposal,
+  type CampaignObjective,
+  type OutreachTargetType,
+  type OutreachChannel,
+  type RecipientStatus,
+  type OutreachStepDTO,
+  type OutreachRecipientDTO,
+  type OutreachCampaignDTO,
+  type CampaignAnalyticsDTO,
+  type CreateCampaignInputDTO,
+  type AddRecipientInputDTO,
+  type UpdateRecipientStepInputDTO,
+  generateOutreachSequence,
+  personalizeMessage,
+  computeCampaignMetrics
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {
