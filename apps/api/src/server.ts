@@ -48,7 +48,9 @@ import {
   validateCreateCampaignInput,
   validateUpdateRecipientStepInput,
   validateStartSimulationInput,
-  validateSubmitTurnInput
+  validateSubmitTurnInput,
+  validatePortfolioConfigInput,
+  validateGenerateTokenInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -84,6 +86,7 @@ import { RoadmapService } from './services/roadmap-service.ts';
 import { EmailIngestService } from './services/email-ingest-service.ts';
 import { OutreachService } from './services/outreach-service.ts';
 import { SimulationService } from './services/simulation-service.ts';
+import { PortfolioService } from './services/portfolio-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -136,6 +139,7 @@ export const roadmapService = new RoadmapService(pool);
 export const emailIngestService = new EmailIngestService(pool);
 export const outreachService = new OutreachService(pool);
 export const simulationService = new SimulationService(pool);
+export const portfolioService = new PortfolioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1462,6 +1466,76 @@ app.delete('/api/simulation/sessions/:id', auth, async (req, res, next) => {
       return res.status(404).json({ code: 'not_found', message: 'Phiên phỏng vấn không tồn tại.' });
     }
     res.json({ success: true, message: 'Đã xóa phiên phỏng vấn.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/portfolio', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const portfolio = await portfolioService.getPortfolio(userId);
+    res.json(portfolio);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/portfolio', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validatePortfolioConfigInput(req.body);
+    if (!val.valid) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.errors.join(' ')
+      });
+    }
+    const updated = await portfolioService.updatePortfolio(userId, req.body);
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/portfolio/token', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateGenerateTokenInput(req.body);
+    if (!val.valid) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.errors.join(' ')
+      });
+    }
+    const tokenInfo = await portfolioService.generateToken(userId, req.body?.expiryDays);
+    res.status(201).json(tokenInfo);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/portfolio/token', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    await portfolioService.revokeToken(userId);
+    res.json({ success: true, message: 'Đã hủy liên kết chia sẻ công khai.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/public/dossier/:token', async (req, res, next) => {
+  try {
+    const dossier = await portfolioService.getPublicDossier(
+      req.params.token,
+      req.ip,
+      req.headers['user-agent']
+    );
+    if (!dossier) {
+      return res.status(404).json({ code: 'not_found', message: 'Hồ sơ năng lực không tồn tại hoặc liên kết đã hết hạn.' });
+    }
+    res.json(dossier);
   } catch (error) {
     next(error);
   }
