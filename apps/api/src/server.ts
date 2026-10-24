@@ -35,7 +35,9 @@ import {
   validateSimulateWebhookInput,
   validateContactInput,
   validateInteractionInput,
-  validatePipelineMetadataInput
+  validatePipelineMetadataInput,
+  validateWeightsInput,
+  validateScorecardInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -65,6 +67,7 @@ import { CompanyService } from './services/company-service.ts';
 import { FollowUpService } from './services/follow-up-service.ts';
 import { ContactService } from './services/contact-service.ts';
 import { PipelineService } from './services/pipeline-service.ts';
+import { DecisionService } from './services/decision-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -111,6 +114,7 @@ export const companyService = new CompanyService(pool);
 export const followUpService = new FollowUpService(pool);
 export const contactService = new ContactService(pool);
 export const pipelineService = new PipelineService(pool);
+export const decisionService = new DecisionService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -555,6 +559,46 @@ app.get('/api/pipeline/summary', auth, async (req, res, next) => {
   }
 });
 
+app.get('/api/decision-matrix/weights', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const weights = await decisionService.getWeights(userId);
+    res.json(weights);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/decision-matrix/weights', auth, async (req, res, next) => {
+  try {
+    const val = validateWeightsInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const updated = await decisionService.saveWeights(userId, val.data);
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+app.get('/api/decision-matrix', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const idsParam = req.query.ids;
+    let appIds: string[] | undefined = undefined;
+    if (typeof idsParam === 'string' && idsParam.trim()) {
+      appIds = idsParam.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    const matrix = await decisionService.getDecisionMatrix(userId, appIds);
+    res.json(matrix);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/applications/bulk-status', auth, async (req, res, next) => {
   try {
     const val = validateBulkStatusInput(req.body);
@@ -668,6 +712,36 @@ app.patch('/api/applications/:id/pipeline', auth, async (req, res, next) => {
     const updated = await pipelineService.updatePipelineMetadata(userId, String(req.params.id), val.data);
     if (!updated) {
       throw new Problem(404, 'Không tìm thấy hồ sơ ứng tuyển cần cập nhật tiến độ.', 'not_found');
+    }
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/applications/:id/scorecard', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const scorecard = await decisionService.getScorecard(userId, String(req.params.id));
+    if (!scorecard) {
+      throw new Problem(404, 'Không tìm thấy phiếu điểm của hồ sơ.', 'not_found');
+    }
+    res.json(scorecard);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/applications/:id/scorecard', auth, async (req, res, next) => {
+  try {
+    const val = validateScorecardInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const updated = await decisionService.updateScorecard(userId, String(req.params.id), val.data);
+    if (!updated) {
+      throw new Problem(404, 'Không tìm thấy hồ sơ để cập nhật phiếu điểm.', 'not_found');
     }
     res.json(updated);
   } catch (error) {
@@ -1134,6 +1208,7 @@ app.patch('/api/subscriptions/:id/toggle', auth, async (req, res, next) => {
   }
 });
 
+
 app.delete('/api/subscriptions/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -1342,6 +1417,7 @@ app.put('/api/resumes/:id', auth, async (req, res, next) => {
   }
 });
 
+
 app.delete('/api/resumes/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -1495,6 +1571,7 @@ app.patch('/api/contacts/:id', auth, async (req, res, next) => {
   }
 });
 
+
 app.delete('/api/contacts/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -1637,6 +1714,7 @@ app.patch('/api/datasets/:id', auth, async (req, res, next) => {
     next(error);
   }
 });
+
 
 app.delete('/api/datasets/:id', auth, async (req, res, next) => {
   try {
