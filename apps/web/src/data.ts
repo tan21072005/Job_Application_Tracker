@@ -231,7 +231,18 @@ import {
   computeStageConversionMetrics,
   detectPipelineBottlenecks,
   calculateVelocityTargets,
-  simulatePipelineOutcomes
+  simulatePipelineOutcomes,
+  type CultureDimension,
+  type ReverseInterviewTargetRole,
+  type CultureDimensionScoreDTO,
+  type ReverseInterviewQuestionDTO,
+  type CultureCompatibilityReportDTO,
+  type AnalyzeCultureInputDTO,
+  type CultureQuestionGenerationInputDTO,
+  CULTURE_DIMENSION_LABELS,
+  CULTURE_INDUSTRY_BENCHMARKS,
+  evaluateCompanyCulture,
+  generateReverseInterviewQuestions
 } from '@jobtrack/contract';
 
 export type {
@@ -3845,6 +3856,112 @@ export const pipelineVelocityRepository = {
   }
 };
 
+const DEMO_CULTURE_RADAR_KEY = 'jobtrack_culture_radars_v1';
+
+function getDemoCultureRadar(company?: string): CultureCompatibilityReportDTO | null {
+  try {
+    const raw = localStorage.getItem(DEMO_CULTURE_RADAR_KEY);
+    if (!raw) return null;
+    const list = JSON.parse(raw) as CultureCompatibilityReportDTO[];
+    if (!Array.isArray(list) || list.length === 0) return null;
+    if (company && company.trim().length > 0) {
+      const match = list.find(r => r.company.toLowerCase() === company.trim().toLowerCase());
+      if (match) return match;
+    }
+    return list[0];
+  } catch {
+    return null;
+  }
+}
+
+function saveDemoCultureRadar(report: CultureCompatibilityReportDTO): void {
+  try {
+    const raw = localStorage.getItem(DEMO_CULTURE_RADAR_KEY);
+    let list: CultureCompatibilityReportDTO[] = [];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) list = parsed;
+    }
+    list = [report, ...list.filter(r => r.id !== report.id && r.company.toLowerCase() !== report.company.toLowerCase())];
+    localStorage.setItem(DEMO_CULTURE_RADAR_KEY, JSON.stringify(list));
+  } catch {
+  }
+}
+
+export const cultureRadarRepository = {
+  async getLatestRadar(company?: string): Promise<CultureCompatibilityReportDTO | null> {
+    if (demoMode) {
+      const existing = getDemoCultureRadar(company);
+      if (existing) return existing;
+      const compName = company && company.trim().length > 0 ? company.trim() : 'FPT Software';
+      const evaluated = evaluateCompanyCulture(compName);
+      const questions = generateReverseInterviewQuestions(evaluated.dimensionScores, 'engineering_manager');
+      const fallbackReport: CultureCompatibilityReportDTO = {
+        id: `culture-${Date.now()}`,
+        userId: 'demo-user',
+        company: compName,
+        targetRole: 'engineering_manager',
+        calculatedAt: new Date().toISOString(),
+        overallCompatibilityScore: evaluated.overallScore,
+        dimensionScores: evaluated.dimensionScores,
+        reverseInterviewQuestions: questions,
+        criticalRedFlagsCount: evaluated.criticalRedFlagsCount,
+        standoutGreenFlagsCount: evaluated.standoutGreenFlagsCount,
+        synthesisSummary: evaluated.synthesisSummary
+      };
+      saveDemoCultureRadar(fallbackReport);
+      return fallbackReport;
+    }
+
+    const query = company && company.trim().length > 0 ? `?company=${encodeURIComponent(company.trim())}` : '';
+    return request<CultureCompatibilityReportDTO | null>(`/culture/radar${query}`);
+  },
+
+  async analyzeCulture(input: AnalyzeCultureInputDTO): Promise<CultureCompatibilityReportDTO> {
+    if (demoMode) {
+      const evaluated = evaluateCompanyCulture(input.company, input.candidatePreferences);
+      const questions = generateReverseInterviewQuestions(
+        evaluated.dimensionScores,
+        (input.targetRole as ReverseInterviewTargetRole) || 'engineering_manager'
+      );
+      const report: CultureCompatibilityReportDTO = {
+        id: `culture-${Date.now()}`,
+        userId: 'demo-user',
+        company: input.company,
+        targetRole: input.targetRole,
+        calculatedAt: new Date().toISOString(),
+        overallCompatibilityScore: evaluated.overallScore,
+        dimensionScores: evaluated.dimensionScores,
+        reverseInterviewQuestions: questions,
+        criticalRedFlagsCount: evaluated.criticalRedFlagsCount,
+        standoutGreenFlagsCount: evaluated.standoutGreenFlagsCount,
+        synthesisSummary: evaluated.synthesisSummary
+      };
+      saveDemoCultureRadar(report);
+      return report;
+    }
+
+    return request<CultureCompatibilityReportDTO>('/culture/analyze', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async generateQuestions(input: CultureQuestionGenerationInputDTO): Promise<ReverseInterviewQuestionDTO[]> {
+    if (demoMode) {
+      const scores = input.dimensionScores && input.dimensionScores.length > 0
+        ? input.dimensionScores
+        : evaluateCompanyCulture('Standard Tech').dimensionScores;
+      return generateReverseInterviewQuestions(scores, input.targetRole || 'engineering_manager');
+    }
+
+    return request<ReverseInterviewQuestionDTO[]>('/culture/questions', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  }
+};
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
@@ -3922,7 +4039,14 @@ export type {
   PipelineVelocitySimulationDTO,
   PipelineVelocityReportDTO,
   CalculateVelocityReportInputDTO,
-  PipelineVelocitySimulationInputDTO
+  PipelineVelocitySimulationInputDTO,
+  CultureDimension,
+  ReverseInterviewTargetRole,
+  CultureDimensionScoreDTO,
+  ReverseInterviewQuestionDTO,
+  CultureCompatibilityReportDTO,
+  AnalyzeCultureInputDTO,
+  CultureQuestionGenerationInputDTO
 };
 
 

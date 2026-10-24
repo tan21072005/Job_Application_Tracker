@@ -143,7 +143,19 @@ import {
   detectPipelineBottlenecks,
   calculateVelocityTargets,
   simulatePipelineOutcomes,
-  validateCalculateVelocityReportInput
+  validateCalculateVelocityReportInput,
+  type CultureDimension,
+  type ReverseInterviewTargetRole,
+  type CultureDimensionScoreDTO,
+  type ReverseInterviewQuestionDTO,
+  type CultureCompatibilityReportDTO,
+  type AnalyzeCultureInputDTO,
+  type CultureQuestionGenerationInputDTO,
+  CULTURE_DIMENSION_LABELS,
+  CULTURE_INDUSTRY_BENCHMARKS,
+  evaluateCompanyCulture,
+  generateReverseInterviewQuestions,
+  validateAnalyzeCultureInput
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -290,7 +302,19 @@ export {
   detectPipelineBottlenecks,
   calculateVelocityTargets,
   simulatePipelineOutcomes,
-  validateCalculateVelocityReportInput
+  validateCalculateVelocityReportInput,
+  type CultureDimension,
+  type ReverseInterviewTargetRole,
+  type CultureDimensionScoreDTO,
+  type ReverseInterviewQuestionDTO,
+  type CultureCompatibilityReportDTO,
+  type AnalyzeCultureInputDTO,
+  type CultureQuestionGenerationInputDTO,
+  CULTURE_DIMENSION_LABELS,
+  CULTURE_INDUSTRY_BENCHMARKS,
+  evaluateCompanyCulture,
+  generateReverseInterviewQuestions,
+  validateAnalyzeCultureInput
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {
