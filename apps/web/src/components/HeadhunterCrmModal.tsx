@@ -259,7 +259,7 @@ export function HeadhunterCrmModal({
       l.name.toLowerCase().includes(q) ||
       l.agency.toLowerCase().includes(q) ||
       l.role.toLowerCase().includes(q) ||
-      l.specialties.some(s => s.toLowerCase().includes(q));
+      (l.specialties || []).some(s => s.toLowerCase().includes(q));
     return matchesTier && matchesSearch;
   });
 
