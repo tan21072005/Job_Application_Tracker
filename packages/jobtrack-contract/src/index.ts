@@ -23,3 +23,4 @@ export * from './chat.ts';
 export * from './skill-roadmap.ts';
 export * from './email-ingest.ts';
 export * from './outreach-campaign.ts';
+export * from './interview-simulation.ts';

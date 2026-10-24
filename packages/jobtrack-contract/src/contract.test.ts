@@ -115,7 +115,12 @@ import {
   computeCampaignMetrics,
   validateCreateCampaignInput,
   validateUpdateRecipientStepInput,
-  type OutreachRecipientDTO
+  type OutreachRecipientDTO,
+  generateSimulationQuestions,
+  evaluateSimulationTurn,
+  synthesizeSessionReport,
+  validateStartSimulationInput,
+  validateSubmitTurnInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -2516,4 +2521,122 @@ test('contract: validateCreateCampaignInput and validateUpdateRecipientStepInput
     status: 'unknown_status'
   });
   assert.equal(invalidStep.valid, false);
+});
+
+test('contract: generateSimulationQuestions generates 3 contextual questions across different tracks and difficulties', () => {
+  const sysDesignSenior = generateSimulationQuestions('system_design', 'senior', 'Principal Architect', 'Shopee');
+  assert.equal(sysDesignSenior.length, 3);
+  assert.ok(sysDesignSenior[0].includes('notification') || sysDesignSenior[0].includes('distributed'));
+
+  const behavioralMid = generateSimulationQuestions('behavioral_star', 'mid', 'Backend Engineer', 'Tiki');
+  assert.equal(behavioralMid.length, 3);
+  assert.ok(behavioralMid[0].includes('dự án') || behavioralMid[0].includes('khó khăn'));
+
+  const techDeep = generateSimulationQuestions('technical_deepdive', 'senior', 'Go Lead', 'VNG');
+  assert.equal(techDeep.length, 3);
+  assert.ok(techDeep[0].includes('Event Loop') || techDeep[0].includes('tech stack'));
+});
+
+test('contract: evaluateSimulationTurn calculates structure, technical depth, metrics, and timing penalties accurately', () => {
+  const answerGood = `Tình huống là hệ thống thanh toán gặp lỗi timeout. Nhiệm vụ của tôi là tối ưu Redis caching và PostgreSQL connection pool. Tôi đã triển khai sharding và Kafka queue. Kết quả là giảm latency từ 450ms xuống còn 35ms (giảm 92%) và chịu tải 25,000 req/s.`;
+  const evaluationGood = evaluateSimulationTurn(
+    'Thiết kế giải pháp chịu tải cao',
+    answerGood,
+    90,
+    'standard_2min',
+    'system_design'
+  );
+
+  assert.ok(evaluationGood.structureScore >= 80);
+  assert.ok(evaluationGood.metricImpactScore >= 85);
+  assert.ok(evaluationGood.technicalDepthScore >= 70);
+  assert.ok(evaluationGood.compositeScore >= 75);
+  assert.ok(evaluationGood.strengths.length > 0);
+  assert.ok(evaluationGood.exemplarAnswer.length > 20);
+
+  const answerWeak = `Tôi chỉ làm việc chăm chỉ và sửa code.`;
+  const evaluationWeak = evaluateSimulationTurn(
+    'Kể về sai lầm kỹ thuật',
+    answerWeak,
+    200,
+    'standard_2min',
+    'behavioral_star'
+  );
+
+  assert.ok(evaluationWeak.compositeScore < 50);
+  assert.ok(evaluationWeak.improvements.length > 0);
+});
+
+test('contract: synthesizeSessionReport aggregates scores, assigns readiness grade, and suggests focus areas', () => {
+  const mockTurns = [
+    {
+      turnNumber: 1,
+      question: 'Q1',
+      answer: 'A1',
+      timeTakenSeconds: 80,
+      structureScore: 90,
+      technicalDepthScore: 85,
+      metricImpactScore: 95,
+      compositeScore: 90,
+      strengths: ['Bố cục mạch lạc', 'Số liệu thuyết phục'],
+      improvements: [],
+      exemplarAnswer: 'Exemplar 1'
+    },
+    {
+      turnNumber: 2,
+      question: 'Q2',
+      answer: 'A2',
+      timeTakenSeconds: 95,
+      structureScore: 85,
+      technicalDepthScore: 80,
+      metricImpactScore: 85,
+      compositeScore: 83,
+      strengths: ['Am hiểu công nghệ'],
+      improvements: ['Cần kết nối số liệu'],
+      exemplarAnswer: 'Exemplar 2'
+    }
+  ];
+
+  const report = synthesizeSessionReport(mockTurns);
+  assert.equal(report.overallScore, 87);
+  assert.equal(report.readinessGrade, 'Ready');
+  assert.ok(report.topStrengths.length >= 2);
+  assert.ok(report.summary.includes('Ready'));
+
+  const emptyReport = synthesizeSessionReport([]);
+  assert.equal(emptyReport.overallScore, 0);
+  assert.equal(emptyReport.readinessGrade, 'High Risk');
+});
+
+test('contract: validateStartSimulationInput and validateSubmitTurnInput validate schemas strictly', () => {
+  const validStart = validateStartSimulationInput({
+    targetRole: 'Senior Backend Engineer',
+    targetCompany: 'Shopee Vietnam',
+    track: 'system_design',
+    difficulty: 'senior',
+    pacingMode: 'standard_2min'
+  });
+  assert.equal(validStart.valid, true);
+
+  const invalidStart = validateStartSimulationInput({
+    targetRole: '',
+    targetCompany: '',
+    track: 'unsupported_track',
+    difficulty: 'unknown',
+    pacingMode: 'invalid'
+  });
+  assert.equal(invalidStart.valid, false);
+  assert.ok(invalidStart.errors.length >= 4);
+
+  const validTurn = validateSubmitTurnInput({
+    answer: 'Câu trả lời chi tiết...',
+    timeTakenSeconds: 75
+  });
+  assert.equal(validTurn.valid, true);
+
+  const invalidTurn = validateSubmitTurnInput({
+    answer: '',
+    timeTakenSeconds: -5
+  });
+  assert.equal(invalidTurn.valid, false);
 });
