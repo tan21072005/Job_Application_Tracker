@@ -89,7 +89,10 @@ import {
   calculateCompositeScore,
   evaluateDecisionMatrix,
   validateWeightsInput,
-  validateScorecardInput
+  validateScorecardInput,
+  validateChatInput,
+  parseChatMarkdown,
+  DEFAULT_SUGGESTED_CHAT_PROMPTS
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -2048,4 +2051,103 @@ test('contract: validateWeightsInput and validateScorecardInput enforce bounds a
   assert.equal(invalidScorecard.ok, false);
   assert.ok(invalidScorecard.errors?.['scores.compensation']);
   assert.ok(invalidScorecard.errors?.['scores.career_growth']);
+});
+
+test('contract: validateChatInput validates required message text, bounds, session and context', () => {
+  const valid = validateChatInput({
+    message: 'Tóm tắt các buổi phỏng vấn sắp tới trong tuần này',
+    sessionId: 'session-xyz-123',
+    context: {
+      pathname: '/interviews',
+      applicationId: 'app-abc'
+    }
+  });
+
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.message, 'Tóm tắt các buổi phỏng vấn sắp tới trong tuần này');
+    assert.equal(valid.data.sessionId, 'session-xyz-123');
+    assert.equal(valid.data.context?.pathname, '/interviews');
+  }
+
+  const emptyMsg = validateChatInput({
+    message: '   '
+  });
+  assert.equal(emptyMsg.ok, false);
+  assert.ok(emptyMsg.errors?.message);
+
+  const nonStringMsg = validateChatInput({
+    message: 12345
+  });
+  assert.equal(nonStringMsg.ok, false);
+  assert.ok(nonStringMsg.errors?.message);
+
+  const longMsg = validateChatInput({
+    message: 'a'.repeat(2001)
+  });
+  assert.equal(longMsg.ok, false);
+  assert.ok(longMsg.errors?.message);
+
+  const invalidSession = validateChatInput({
+    message: 'Xin chào',
+    sessionId: 's'.repeat(125)
+  });
+  assert.equal(invalidSession.ok, false);
+  assert.ok(invalidSession.errors?.sessionId);
+
+  const nonObject = validateChatInput('not-an-object');
+  assert.equal(nonObject.ok, false);
+  assert.ok(nonObject.errors?.root);
+});
+
+test('contract: parseChatMarkdown parses headings, lists, code blocks, and paragraphs', () => {
+  const text = `# Báo cáo tổng hợp
+## Tình trạng hồ sơ
+Dưới đây là danh sách việc làm đang chờ:
+- VNG: Chờ phản hồi vòng 2
+* FPT: Chuẩn bị làm bài test
+• Shopee: Phỏng vấn ngày mai
+
+1. Bước một: Ôn tập System Design
+2. Bước hai: Gửi email follow-up
+
+\`\`\`json
+{"status": "ok"}
+\`\`\`
+
+Đoạn văn kết thúc buổi làm việc.`;
+
+  const blocks = parseChatMarkdown(text);
+  assert.ok(blocks.length >= 6);
+
+  const h1 = blocks.find((b) => b.type === 'heading' && b.level === 1);
+  assert.ok(h1);
+  assert.equal(h1.content, 'Báo cáo tổng hợp');
+
+  const h2 = blocks.find((b) => b.type === 'heading' && b.level === 2);
+  assert.ok(h2);
+  assert.equal(h2.content, 'Tình trạng hồ sơ');
+
+  const bulletList = blocks.find((b) => b.type === 'bullet_list');
+  assert.ok(bulletList);
+  assert.equal(bulletList.items?.length, 3);
+  assert.ok(bulletList.items?.[0].includes('VNG'));
+
+  const numList = blocks.find((b) => b.type === 'numbered_list');
+  assert.ok(numList);
+  assert.equal(numList.items?.length, 2);
+  assert.ok(numList.items?.[0].includes('Bước một'));
+
+  const code = blocks.find((b) => b.type === 'code_block');
+  assert.ok(code);
+  assert.ok(code.content.includes('"status": "ok"'));
+
+  const emptyResult = parseChatMarkdown('');
+  assert.deepEqual(emptyResult, []);
+});
+
+test('contract: DEFAULT_SUGGESTED_CHAT_PROMPTS provides actionable career queries', () => {
+  assert.ok(DEFAULT_SUGGESTED_CHAT_PROMPTS.length >= 3);
+  assert.ok(DEFAULT_SUGGESTED_CHAT_PROMPTS.some((p) => p.includes('phỏng vấn')));
+  assert.ok(DEFAULT_SUGGESTED_CHAT_PROMPTS.some((p) => p.includes('hồ sơ')));
 });
