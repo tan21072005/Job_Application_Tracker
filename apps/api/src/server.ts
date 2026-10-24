@@ -87,8 +87,9 @@ import { EmailIngestService } from './services/email-ingest-service.ts';
 import { OutreachService } from './services/outreach-service.ts';
 import { SimulationService } from './services/simulation-service.ts';
 import { PortfolioService } from './services/portfolio-service.ts';
+import { CompensationService } from './services/compensation-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
-import { parseVietnameseCurrency } from '@jobtrack/contract';
+import { parseVietnameseCurrency, validateCreateCompensationForecastInput } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
 const isTest = process.env.NODE_ENV === 'test';
@@ -140,6 +141,7 @@ export const emailIngestService = new EmailIngestService(pool);
 export const outreachService = new OutreachService(pool);
 export const simulationService = new SimulationService(pool);
 export const portfolioService = new PortfolioService(pool);
+export const compensationService = new CompensationService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1540,6 +1542,61 @@ app.get('/api/public/dossier/:token', async (req, res, next) => {
     next(error);
   }
 });
+
+app.get('/api/compensation/forecasts', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const forecasts = await compensationService.listForecasts(userId);
+    res.json(forecasts);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/compensation/forecasts', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCreateCompensationForecastInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({
+        code: 'validation_error',
+        message: validation.message || 'Dữ liệu không hợp lệ.',
+        errors: validation.errors
+      });
+    }
+    const created = await compensationService.createForecast(userId, validation.data);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/compensation/benchmark', auth, async (req, res, next) => {
+  try {
+    const role = typeof req.query.role === 'string' ? req.query.role : 'Frontend Engineer';
+    const level = typeof req.query.level === 'string' ? (req.query.level as any) : 'senior';
+    const annualCash = typeof req.query.annualCash === 'string' ? Number(req.query.annualCash) || 0 : 0;
+    const currency = req.query.currency === 'USD' ? 'USD' : 'VND';
+    const benchmark = await compensationService.getBenchmark(role, level, annualCash, currency);
+    res.json(benchmark);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/compensation/forecasts/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await compensationService.deleteForecast(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy bản dự báo thu nhập.' });
+    }
+    res.json({ success: true, message: 'Đã xóa bản dự báo thu nhập.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 app.get('/api/ai/grants', auth, async (req, res, next) => {
   try {
