@@ -153,7 +153,11 @@ import {
   detectPipelineBottlenecks,
   calculateVelocityTargets,
   simulatePipelineOutcomes,
-  validateCalculateVelocityReportInput
+  validateCalculateVelocityReportInput,
+  evaluateCompanyCulture,
+  computeCultureCompatibility,
+  generateReverseInterviewQuestions,
+  validateAnalyzeCultureInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -3387,6 +3391,149 @@ test('contract: validateCalculateVelocityReportInput enforces schema constraints
     assert.ok(invalid.errors.simulationHorizonWeeks);
   }
 });
+
+test('contract: validateAnalyzeCultureInput validates company and preference weights', () => {
+  const valid = validateAnalyzeCultureInput({
+    company: 'FPT Software',
+    targetRole: 'Senior Frontend Engineer',
+    candidatePreferences: {
+      engineering_rigor: 5,
+      oncall_wlb: 4,
+      psychological_safety: 5
+    }
+  });
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.company, 'FPT Software');
+    assert.equal(valid.data.candidatePreferences?.engineering_rigor, 5);
+  }
+
+  const invalidEmpty = validateAnalyzeCultureInput({
+    company: '   '
+  });
+  assert.equal(invalidEmpty.ok, false);
+  if (!invalidEmpty.ok) {
+    assert.ok(invalidEmpty.errors.company);
+  }
+
+  const invalidWeights = validateAnalyzeCultureInput({
+    company: 'VNG',
+    candidatePreferences: {
+      engineering_rigor: 10
+    }
+  });
+  assert.equal(invalidWeights.ok, false);
+});
+
+test('contract: evaluateCompanyCulture evaluates 6 pillars and benchmark deltas', () => {
+  const result = evaluateCompanyCulture('FPT Software', {
+    engineering_rigor: 5,
+    oncall_wlb: 5
+  });
+
+  assert.equal(result.dimensionScores.length, 6);
+  assert.ok(result.overallScore >= 0 && result.overallScore <= 100);
+  assert.ok(result.synthesisSummary.length > 20);
+
+  const rigor = result.dimensionScores.find(d => d.dimension === 'engineering_rigor');
+  assert.ok(rigor);
+  assert.equal(rigor.score, 74);
+  assert.equal(rigor.benchmarkAvg, 68);
+  assert.ok(rigor.summary.includes('+6 điểm'));
+
+  const wlb = result.dimensionScores.find(d => d.dimension === 'oncall_wlb');
+  assert.ok(wlb);
+  assert.equal(wlb.score, 70);
+  assert.ok(wlb.greenFlags.length > 0);
+});
+
+test('contract: computeCultureCompatibility applies penalties for low scores in high priority dimensions', () => {
+  const lowScores = [
+    {
+      dimension: 'oncall_wlb' as const,
+      name: 'On-Call & WLB',
+      score: 40,
+      benchmarkAvg: 62,
+      summary: 'Poor',
+      redFlags: ['Bad on-call'],
+      greenFlags: []
+    },
+    {
+      dimension: 'engineering_rigor' as const,
+      name: 'Rigor',
+      score: 80,
+      benchmarkAvg: 68,
+      summary: 'Good',
+      redFlags: [],
+      greenFlags: ['Great CI']
+    }
+  ];
+
+  const highPriorityWlb = computeCultureCompatibility(lowScores, {
+    oncall_wlb: 5,
+    engineering_rigor: 2
+  });
+
+  const lowPriorityWlb = computeCultureCompatibility(lowScores, {
+    oncall_wlb: 1,
+    engineering_rigor: 5
+  });
+
+  assert.ok(highPriorityWlb < lowPriorityWlb);
+});
+
+test('contract: generateReverseInterviewQuestions produces targeted probes for lowest dimensions', () => {
+  const mockDimensions = [
+    {
+      dimension: 'engineering_rigor' as const,
+      name: 'Rigor',
+      score: 85,
+      benchmarkAvg: 68,
+      summary: 'Great',
+      redFlags: [],
+      greenFlags: []
+    },
+    {
+      dimension: 'oncall_wlb' as const,
+      name: 'WLB',
+      score: 45,
+      benchmarkAvg: 62,
+      summary: 'Struggling',
+      redFlags: [],
+      greenFlags: []
+    },
+    {
+      dimension: 'tech_debt_tooling' as const,
+      name: 'Tech Debt',
+      score: 50,
+      benchmarkAvg: 60,
+      summary: 'Debt',
+      redFlags: [],
+      greenFlags: []
+    },
+    {
+      dimension: 'psychological_safety' as const,
+      name: 'Psychological Safety',
+      score: 55,
+      benchmarkAvg: 70,
+      summary: 'Caution',
+      redFlags: [],
+      greenFlags: []
+    }
+  ];
+
+  const questionsEm = generateReverseInterviewQuestions(mockDimensions, 'engineering_manager');
+  assert.equal(questionsEm.length, 3);
+  assert.ok(questionsEm.some(q => q.dimension === 'oncall_wlb'));
+  assert.ok(questionsEm.every(q => q.targetRole === 'engineering_manager'));
+  assert.ok(questionsEm[0].listeningFor.length > 0);
+  assert.ok(questionsEm[0].redFlagSignal.length > 0);
+
+  const questionsPeer = generateReverseInterviewQuestions(mockDimensions, 'peer_engineer');
+  assert.equal(questionsPeer.length, 3);
+  assert.ok(questionsPeer.every(q => q.targetRole === 'peer_engineer'));
+});
+
 
 
 
