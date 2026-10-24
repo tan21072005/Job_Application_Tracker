@@ -157,7 +157,16 @@ import {
   evaluateCompanyCulture,
   computeCultureCompatibility,
   generateReverseInterviewQuestions,
-  validateAnalyzeCultureInput
+  validateAnalyzeCultureInput,
+  parseInboundRecruiterPitch,
+  generateRecruiterReplyDraft,
+  computeRecruiterRelationshipHealth,
+  detectMandateConflict,
+  validateParsePitchInput,
+  validateRecruiterLeadInput,
+  validateMandateInput,
+  validateRecruiterReplyDraftInput,
+  KNOWN_HEADHUNTER_AGENCIES
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -3532,6 +3541,145 @@ test('contract: generateReverseInterviewQuestions produces targeted probes for l
   const questionsPeer = generateReverseInterviewQuestions(mockDimensions, 'peer_engineer');
   assert.equal(questionsPeer.length, 3);
   assert.ok(questionsPeer.every(q => q.targetRole === 'peer_engineer'));
+});
+
+test('contract: parseInboundRecruiterPitch detects Tier-1 agency, role, stealth clues, salary, and flags', () => {
+  const pitchText = `
+    Chào bạn, tôi là Mai Hoàng từ Robert Walters Vietnam.
+    Hiện tại tôi đang phụ trách độc quyền (retained mandate) vị trí Vice President of Engineering cho một khách hàng bảo mật thuộc nhóm fintech unicorn tại TP. Hồ Chí Minh.
+    Dải ngân sách dự kiến là $5,000 - $7,000 USD gross / month.
+    Yêu cầu ứng viên có thế mạnh về Golang, Kubernetes, Microservices và năng lực lãnh đạo đội ngũ trên 30 kỹ sư.
+    Bạn vui lòng xem xét và phản hồi nhé!
+  `;
+
+  const result = parseInboundRecruiterPitch(pitchText, 'linkedin_inmail');
+  assert.equal(result.recruiterName, 'Mai Hoàng');
+  assert.equal(result.agencyName, 'Robert Walters');
+  assert.equal(result.agencyTier, 'tier1_global');
+  assert.equal(result.targetRole, 'Vice President of Engineering');
+  assert.equal(result.isConfidentialCompany, true);
+  assert.ok(result.companyClues.length >= 1);
+  assert.equal(result.currency, 'USD');
+  assert.equal(result.extractedMinComp, 5000);
+  assert.equal(result.extractedMaxComp, 7000);
+  assert.equal(result.mandateExclusivity, 'exclusive_retained');
+  assert.ok(result.keyRequirements.includes('GOLANG'));
+  assert.ok(result.keyRequirements.includes('KUBERNETES'));
+  assert.ok(result.greenFlags.length >= 2);
+  assert.ok(result.confidenceScore >= 80);
+});
+
+test('contract: generateRecruiterReplyDraft generates strategic reply across all 4 intents', () => {
+  const pitch = parseInboundRecruiterPitch(`
+    Chào bạn, mình là Tuấn từ Navigos Search. Bên mình đang tuyển Tech Lead cho đối tác ngân hàng lớn, lương 60 - 80 triệu VND.
+  `);
+
+  const replyCriteria = generateRecruiterReplyDraft(pitch, 'explore_with_criteria');
+  assert.equal(replyCriteria.intent, 'explore_with_criteria');
+  assert.ok(replyCriteria.subject.includes('Tech Lead'));
+  assert.ok(replyCriteria.body.includes('Mô tả công việc (JD)'));
+  assert.equal(replyCriteria.suggestedTone, 'assertive_executive');
+
+  const replySalary = generateRecruiterReplyDraft(pitch, 'salary_first', {
+    minCompGross: 100000000,
+    preferredCurrency: 'VND'
+  });
+  assert.equal(replySalary.intent, 'salary_first');
+  assert.ok(replySalary.body.includes('100,000,000 VND'));
+  assert.ok(replySalary.strategyNotes.length > 0);
+
+  const replyPass = generateRecruiterReplyDraft(pitch, 'polite_pass');
+  assert.equal(replyPass.intent, 'polite_pass');
+  assert.ok(replyPass.body.includes('LinkedIn'));
+  assert.equal(replyPass.suggestedTone, 'cordial_decline');
+
+  const replyMandate = generateRecruiterReplyDraft(pitch, 'exclusive_mandate_check');
+  assert.equal(replyMandate.intent, 'exclusive_mandate_check');
+  assert.ok(replyMandate.body.includes('Double-Submission'));
+  assert.ok(replyMandate.body.includes('Hiring Manager'));
+});
+
+test('contract: computeRecruiterRelationshipHealth computes composite score, penalties, and action suggestions', () => {
+  const activeTrusted = computeRecruiterRelationshipHealth({
+    tier: 'trusted_advisor',
+    rating: 5,
+    mandatesCount: 3,
+    lastContactedAt: new Date(Date.now() - 10 * 86400000).toISOString()
+  });
+  assert.ok(activeTrusted.healthScore >= 90);
+  assert.equal(activeTrusted.healthStatus, 'excellent');
+  assert.ok(activeTrusted.nextActionSuggestion.length > 0);
+
+  const dormantRecruiter = computeRecruiterRelationshipHealth({
+    tier: 'situational_contingency',
+    rating: 3,
+    mandatesCount: 0,
+    lastContactedAt: new Date(Date.now() - 120 * 86400000).toISOString()
+  });
+  assert.ok(dormantRecruiter.healthScore < 60);
+  assert.ok(['cooling', 'dormant'].includes(dormantRecruiter.healthStatus));
+
+  const blacklisted = computeRecruiterRelationshipHealth({
+    tier: 'blacklisted',
+    rating: 1
+  });
+  assert.equal(blacklisted.healthScore, 0);
+  assert.equal(blacklisted.healthStatus, 'risk');
+});
+
+test('contract: detectMandateConflict detects prior agency pitches and double-submission collision risks', () => {
+  const mockMandates = [
+    {
+      id: 'm1',
+      userId: 'u1',
+      leadId: 'l1',
+      recruiterName: 'Mai Hoàng',
+      agencyName: 'Robert Walters',
+      roleTitle: 'Head of Engineering',
+      clientCompany: 'Techcombank Digital',
+      isConfidential: false,
+      exclusivity: 'exclusive_retained' as const,
+      status: 'submitted' as const,
+      pitchedAt: '2026-09-15T00:00:00Z',
+      updatedAt: '2026-09-15T00:00:00Z'
+    }
+  ];
+
+  const conflict = detectMandateConflict(mockMandates, 'Techcombank Digital');
+  assert.equal(conflict.hasConflict, true);
+  assert.ok(conflict.warningMessage?.includes('Robert Walters'));
+  assert.ok(conflict.warningMessage?.includes('lockout'));
+
+  const noConflict = detectMandateConflict(mockMandates, 'Shopee Vietnam');
+  assert.equal(noConflict.hasConflict, false);
+});
+
+test('contract: validateParsePitchInput, validateRecruiterLeadInput, validateMandateInput enforce strict schemas', () => {
+  const validPitch = validateParsePitchInput({ rawText: 'We are hiring a CTO.' });
+  assert.equal(validPitch.ok, true);
+
+  const invalidPitch = validateParsePitchInput({ rawText: '  ' });
+  assert.equal(invalidPitch.ok, false);
+
+  const validLead = validateRecruiterLeadInput({
+    name: 'Mai Hoàng',
+    agency: 'Robert Walters',
+    tier: 'trusted_advisor'
+  });
+  assert.equal(validLead.ok, true);
+
+  const invalidLead = validateRecruiterLeadInput({ name: ' ' });
+  assert.equal(invalidLead.ok, false);
+
+  const validMandate = validateMandateInput({
+    leadId: 'lead-123',
+    roleTitle: 'VP of Engineering',
+    clientCompany: 'VNG Corporation'
+  });
+  assert.equal(validMandate.ok, true);
+
+  const invalidMandate = validateMandateInput({ leadId: 'lead-123' });
+  assert.equal(invalidMandate.ok, false);
 });
 
 

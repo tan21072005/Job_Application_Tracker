@@ -30,3 +30,4 @@ export * from './career-trajectory.ts';
 export * from './resume-optimizer.ts';
 export * from './pipeline-velocity.ts';
 export * from './culture-radar.ts';
+export * from './headhunter-crm.ts';
