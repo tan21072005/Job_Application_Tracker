@@ -186,7 +186,21 @@ import {
   calculateNetTakeHomeVnd,
   forecastCompensationScenarios,
   evaluateMarketBenchmark,
-  deriveNegotiationLeveragePoints
+  deriveNegotiationLeveragePoints,
+  type TrackType,
+  type PromotionDimension,
+  type GapLevel,
+  type PromotionCompetencyDTO,
+  type PromotionInitiativeDTO,
+  type PromotionReadinessDTO,
+  type TrajectoryStepDTO,
+  type TrajectorySimulationDTO,
+  type SimulateTrajectoryInputDTO,
+  type UpdateCompetenciesInputDTO,
+  PROMOTION_DIMENSION_METADATA,
+  recommendPromotionInitiatives,
+  evaluatePromotionReadiness,
+  simulateCareerTrajectory
 } from '@jobtrack/contract';
 
 export type {
@@ -3458,6 +3472,87 @@ export const compensationRepository = {
   }
 };
 
+const CAREER_TRAJECTORY_KEY = 'jobtrack.career_trajectory.v1';
+
+function loadDemoTrajectory(): TrajectorySimulationDTO | null {
+  try {
+    const raw = localStorage.getItem(CAREER_TRAJECTORY_KEY);
+    if (!raw) {
+      const defaultSim = simulateCareerTrajectory({
+        currentRole: 'Senior Frontend Engineer',
+        currentLevel: 'Senior',
+        targetTrack: 'ic',
+        targetRole: 'Staff',
+        horizonYears: 4,
+        userScores: {
+          technical_breadth: 75,
+          system_scale: 70,
+          org_influence: 60,
+          mentorship_culture: 65,
+          business_impact: 70
+        }
+      });
+      localStorage.setItem(CAREER_TRAJECTORY_KEY, JSON.stringify(defaultSim));
+      return defaultSim;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveDemoTrajectory(sim: TrajectorySimulationDTO): void {
+  try {
+    localStorage.setItem(CAREER_TRAJECTORY_KEY, JSON.stringify(sim));
+  } catch {}
+}
+
+export const careerTrajectoryRepository = {
+  async getTrajectory(): Promise<TrajectorySimulationDTO | null> {
+    if (demoMode) {
+      return loadDemoTrajectory();
+    }
+    return request<TrajectorySimulationDTO | null>('/trajectory');
+  },
+
+  async simulate(input: SimulateTrajectoryInputDTO): Promise<TrajectorySimulationDTO> {
+    if (demoMode) {
+      const sim = simulateCareerTrajectory(input);
+      saveDemoTrajectory(sim);
+      return sim;
+    }
+    return request<TrajectorySimulationDTO>('/trajectory/simulate', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async updateCompetencies(input: UpdateCompetenciesInputDTO): Promise<TrajectorySimulationDTO> {
+    if (demoMode) {
+      const existing = loadDemoTrajectory();
+      const currentRole = existing ? existing.currentRole : 'Senior Frontend Engineer';
+      const currentLevel = existing && existing.readiness ? existing.readiness.currentLevel : 'Senior';
+      const targetTrack = existing ? existing.targetTrack : 'ic';
+      const targetRole = existing ? existing.targetRole : (targetTrack === 'ic' ? 'Staff' : 'Tech Lead');
+      const horizonYears = existing ? existing.horizonYears : 4;
+      const sim = simulateCareerTrajectory({
+        currentRole,
+        currentLevel,
+        targetTrack,
+        targetRole,
+        horizonYears,
+        userScores: input.scores
+      });
+      saveDemoTrajectory(sim);
+      return sim;
+    }
+    return request<TrajectorySimulationDTO>('/trajectory/competencies', {
+      method: 'PUT',
+      body: JSON.stringify(input)
+    });
+  }
+};
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
@@ -3504,7 +3599,17 @@ export type {
   CompensationBenchmarkDTO,
   NegotiationLeveragePointDTO,
   CompensationForecastDTO,
-  CreateCompensationForecastInputDTO
+  CreateCompensationForecastInputDTO,
+  TrackType,
+  PromotionDimension,
+  GapLevel,
+  PromotionCompetencyDTO,
+  PromotionInitiativeDTO,
+  PromotionReadinessDTO,
+  TrajectoryStepDTO,
+  TrajectorySimulationDTO,
+  SimulateTrajectoryInputDTO,
+  UpdateCompetenciesInputDTO
 };
 
 

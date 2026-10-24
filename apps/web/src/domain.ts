@@ -97,7 +97,21 @@ import {
   calculateNetTakeHomeVnd,
   forecastCompensationScenarios,
   evaluateMarketBenchmark,
-  deriveNegotiationLeveragePoints
+  deriveNegotiationLeveragePoints,
+  type TrackType,
+  type PromotionDimension,
+  type GapLevel,
+  type PromotionCompetencyDTO,
+  type PromotionInitiativeDTO,
+  type PromotionReadinessDTO,
+  type TrajectoryStepDTO,
+  type TrajectorySimulationDTO,
+  type SimulateTrajectoryInputDTO,
+  type UpdateCompetenciesInputDTO,
+  PROMOTION_DIMENSION_METADATA,
+  recommendPromotionInitiatives,
+  evaluatePromotionReadiness,
+  simulateCareerTrajectory
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -198,7 +212,21 @@ export {
   calculateNetTakeHomeVnd,
   forecastCompensationScenarios,
   evaluateMarketBenchmark,
-  deriveNegotiationLeveragePoints
+  deriveNegotiationLeveragePoints,
+  type TrackType,
+  type PromotionDimension,
+  type GapLevel,
+  type PromotionCompetencyDTO,
+  type PromotionInitiativeDTO,
+  type PromotionReadinessDTO,
+  type TrajectoryStepDTO,
+  type TrajectorySimulationDTO,
+  type SimulateTrajectoryInputDTO,
+  type UpdateCompetenciesInputDTO,
+  PROMOTION_DIMENSION_METADATA,
+  recommendPromotionInitiatives,
+  evaluatePromotionReadiness,
+  simulateCareerTrajectory
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {
