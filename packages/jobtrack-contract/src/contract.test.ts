@@ -79,6 +79,8 @@ import {
   validateInteractionInput,
   calculateRelationshipHealth,
   deriveRecommendedReconnectDays,
+  calculateStageSla,
+  validatePipelineMetadataInput,
   type ContactDTO
 } from './index.ts';
 
@@ -1799,4 +1801,55 @@ test('contract: validateInteractionInput validates channel and required summary'
 
   assert.equal(invalid.ok, false);
   assert.ok(invalid.errors?.summary);
+});
+
+test('contract: calculateStageSla evaluates SLA thresholds and stagnation severity correctly', () => {
+  const normal = calculateStageSla('Applied', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
+  assert.equal(normal.stage, 'Applied');
+  assert.equal(normal.daysInStage, 3);
+  assert.equal(normal.maxRecommendedDays, 14);
+  assert.equal(normal.isStagnant, false);
+  assert.equal(normal.slaSeverity, 'normal');
+
+  const warning = calculateStageSla('Interview', new Date(Date.now() - 8 * 24 * 60 * 60 * 1000));
+  assert.equal(warning.stage, 'Interview');
+  assert.equal(warning.daysInStage, 8);
+  assert.equal(warning.maxRecommendedDays, 7);
+  assert.equal(warning.isStagnant, true);
+  assert.equal(warning.slaSeverity, 'warning');
+
+  const critical = calculateStageSla('Applied', new Date(Date.now() - 25 * 24 * 60 * 60 * 1000));
+  assert.equal(critical.isStagnant, true);
+  assert.equal(critical.slaSeverity, 'critical');
+  assert.ok(critical.recommendation.includes('LinkedIn') || critical.recommendation.includes('follow-up'));
+
+  const rejected = calculateStageSla('Rejected', new Date(Date.now() - 50 * 24 * 60 * 60 * 1000));
+  assert.equal(rejected.isStagnant, false);
+  assert.equal(rejected.slaSeverity, 'normal');
+});
+
+test('contract: validatePipelineMetadataInput validates priority and tags', () => {
+  const valid = validatePipelineMetadataInput({
+    priority: 'urgent',
+    tags: ['#remote', 'Golang', '#FinTech', 'remote'],
+    statusUpdatedAt: '2026-10-20T00:00:00.000Z'
+  });
+
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.priority, 'urgent');
+    assert.deepEqual(valid.data.tags, ['remote', 'golang', 'fintech']);
+    assert.ok(valid.data.statusUpdatedAt);
+  }
+
+  const invalid = validatePipelineMetadataInput({
+    priority: 'invalid_priority',
+    tags: 'not_an_array',
+    statusUpdatedAt: 'invalid_date'
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors?.priority);
+  assert.ok(invalid.errors?.tags);
+  assert.ok(invalid.errors?.statusUpdatedAt);
 });

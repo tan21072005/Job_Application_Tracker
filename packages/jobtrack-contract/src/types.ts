@@ -36,6 +36,9 @@ export const SORT_ALLOWLIST = [
 ] as const;
 export type SortOption = typeof SORT_ALLOWLIST[number];
 
+export const APPLICATION_PRIORITIES = ['urgent', 'target', 'safety', 'backlog'] as const;
+export type ApplicationPriority = typeof APPLICATION_PRIORITIES[number];
+
 export interface InterviewWireDTO {
   id: string;
   applicationId: string;
@@ -70,8 +73,11 @@ export interface ApplicationWireDTO {
   nextAction: string | null;
   deadline: string | null; // ISO instant or null (never empty string on wire)
   status: ApplicationStatus;
-  version: number; // Required version integer >= 1
-  deletedAt?: string | null; // Null if active, ISO instant if trashed
+  version: number;
+  deletedAt?: string | null;
+  priority?: ApplicationPriority;
+  tags?: string[];
+  statusUpdatedAt?: string;
   createdAt: string;
   updatedAt: string;
   interviews: InterviewWireDTO[];
