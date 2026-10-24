@@ -33,7 +33,14 @@ import {
   extractSkillsFromText,
   extractSkillsFromApplications,
   generateCareerRoadmap,
-  calculateRoadmapProgress
+  calculateRoadmapProgress,
+  type EmailCategory,
+  type ExtractedEmailEntityDTO,
+  type IngestionActionType,
+  type EmailIngestProposalDTO,
+  type EmailIngestApplyResultDTO,
+  parseEmailContent,
+  generateIngestionProposal
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -70,7 +77,14 @@ export {
   extractSkillsFromText,
   extractSkillsFromApplications,
   generateCareerRoadmap,
-  calculateRoadmapProgress
+  calculateRoadmapProgress,
+  type EmailCategory,
+  type ExtractedEmailEntityDTO,
+  type IngestionActionType,
+  type EmailIngestProposalDTO,
+  type EmailIngestApplyResultDTO,
+  parseEmailContent,
+  generateIngestionProposal
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {

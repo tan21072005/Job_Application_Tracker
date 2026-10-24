@@ -163,7 +163,7 @@ export function detectEmailCategory(text: string, subject = ''): { category: Ema
 }
 
 export function extractMeetingLink(text: string): { url: string; platform: string } | null {
-  const googleMeetMatch = text.match(/https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i);
+  const googleMeetMatch = text.match(/https:\/\/meet\.google\.com\/[a-zA-Z0-9_-]+/i);
   if (googleMeetMatch) {
     return { url: googleMeetMatch[0], platform: 'Google Meet' };
   }

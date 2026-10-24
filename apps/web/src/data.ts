@@ -124,7 +124,14 @@ import {
   type MilestoneStatus,
   extractSkillsFromApplications,
   generateCareerRoadmap,
-  calculateRoadmapProgress
+  calculateRoadmapProgress,
+  type EmailCategory,
+  type ExtractedEmailEntityDTO,
+  type IngestionActionType,
+  type EmailIngestProposalDTO,
+  type EmailIngestApplyResultDTO,
+  parseEmailContent,
+  generateIngestionProposal
 } from '@jobtrack/contract';
 
 export type {
@@ -2604,6 +2611,116 @@ export const careerRoadmapRepository = {
 };
 
 export const roadmapRepository = careerRoadmapRepository;
+
+export const emailIngestRepository = {
+  async parseEmail(content: string, subject?: string, sender?: string): Promise<EmailIngestProposalDTO> {
+    if (demoMode) {
+      const apps = await repository.list();
+      const extracted = parseEmailContent(content, subject, sender);
+      const appsSummary = apps.map(a => ({
+        id: a.id,
+        company: a.company,
+        position: a.position,
+        status: a.status
+      }));
+      return generateIngestionProposal(extracted, appsSummary);
+    }
+    return request<EmailIngestProposalDTO>('/ingest/email/parse', {
+      method: 'POST',
+      body: JSON.stringify({ emailContent: content, subject, sender })
+    });
+  },
+
+  async applyProposal(proposal: EmailIngestProposalDTO): Promise<EmailIngestApplyResultDTO> {
+    if (demoMode) {
+      if (proposal.actionType === 'create_application') {
+        const appData = proposal.proposedApplication!;
+        const draft = {
+          ...emptyDraft,
+          company: appData.company,
+          position: appData.position,
+          status: appData.status,
+          notes: appData.notes || '',
+          nextAction: appData.nextAction || ''
+        };
+        const created = await repository.save(draft);
+        let interviewId: string | null = null;
+        if (proposal.proposedInterview) {
+          const added = await repository.interview(created.id, {
+            id: `new-${crypto.randomUUID()}`,
+            title: proposal.proposedInterview.title,
+            at: proposal.proposedInterview.at,
+            timezone: proposal.proposedInterview.timezone,
+            format: proposal.proposedInterview.format,
+            location: proposal.proposedInterview.location,
+            preparation: proposal.proposedInterview.preparation || '',
+            notes: proposal.proposedInterview.notes || '',
+            status: 'Scheduled'
+          }, created.version);
+          interviewId = added.id;
+        }
+        return {
+          success: true,
+          actionTaken: 'create_application',
+          applicationId: created.id,
+          interviewId,
+          message: `Đã tạo mới hồ sơ ứng tuyển tại ${appData.company}.`
+        };
+      }
+
+      const targetId = proposal.matchedApplicationId!;
+      const apps = await repository.list();
+      const current = apps.find(a => a.id === targetId);
+      if (!current) {
+        throw new Error('Không tìm thấy hồ sơ để cập nhật.');
+      }
+
+      const updatedStatus = proposal.proposedApplication?.status || 'Interview';
+      const updatedApp = await repository.save({
+        ...current,
+        status: updatedStatus,
+        nextAction: proposal.proposedApplication?.nextAction || current.nextAction
+      }, current.id, { version: current.version });
+
+      let interviewId: string | null = null;
+      if (proposal.actionType === 'schedule_interview' && proposal.proposedInterview) {
+        const added = await repository.interview(current.id, {
+          id: `new-${crypto.randomUUID()}`,
+          title: proposal.proposedInterview.title,
+          at: proposal.proposedInterview.at,
+          timezone: proposal.proposedInterview.timezone,
+          format: proposal.proposedInterview.format,
+          location: proposal.proposedInterview.location,
+          preparation: proposal.proposedInterview.preparation || '',
+          notes: proposal.proposedInterview.notes || '',
+          status: 'Scheduled'
+        }, updatedApp.version);
+        interviewId = added.id;
+      }
+
+      return {
+        success: true,
+        actionTaken: proposal.actionType,
+        applicationId: targetId,
+        interviewId,
+        message: `Đã cập nhật trạng thái hồ sơ thành "${updatedStatus}".`
+      };
+    }
+
+    return request<EmailIngestApplyResultDTO>('/ingest/email/apply', {
+      method: 'POST',
+      body: JSON.stringify(proposal)
+    });
+  }
+};
+
+export type {
+  EmailCategory,
+  ExtractedEmailEntityDTO,
+  IngestionActionType,
+  EmailIngestProposalDTO,
+  EmailIngestApplyResultDTO
+};
 
 
 
