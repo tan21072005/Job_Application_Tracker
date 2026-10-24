@@ -53,7 +53,16 @@ import {
   validateOfferComparisonInput,
   validateCounterOfferInput,
   validateCheckoutInput,
-  validateSimulateWebhookInput
+  validateSimulateWebhookInput,
+  validateAnalyticsQuery,
+  validateApplicationGoalInput,
+  filterApplicationsByTimeframe,
+  calculateFunnelMetrics,
+  calculateVelocityMetrics,
+  calculateSourceMetrics,
+  findStaleApplications,
+  calculateGoalProgress,
+  calculateAnalyticsSummary
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -1142,4 +1151,215 @@ test('contract: validateCheckoutInput and validateSimulateWebhookInput validate 
   if (validSimulate.ok) {
     assert.equal(validSimulate.data.orderId, 'ord_12345');
   }
+});
+
+test('contract: validateAnalyticsQuery handles valid and invalid timeframes', () => {
+  assert.equal(validateAnalyticsQuery(null).ok, true);
+  assert.equal(validateAnalyticsQuery(null).data.timeframe, 'all');
+
+  assert.equal(validateAnalyticsQuery({ timeframe: '30d' }).ok, true);
+  assert.equal(validateAnalyticsQuery({ timeframe: '30d' }).data.timeframe, '30d');
+
+  assert.equal(validateAnalyticsQuery({ timeframe: '90d' }).ok, true);
+  assert.equal(validateAnalyticsQuery({ timeframe: 'year' }).ok, true);
+
+  const invalid = validateAnalyticsQuery({ timeframe: '100d' });
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.message);
+});
+
+test('contract: validateApplicationGoalInput validates numeric bounds', () => {
+  const nullCheck = validateApplicationGoalInput(null);
+  assert.equal(nullCheck.ok, false);
+
+  const validEmpty = validateApplicationGoalInput({});
+  assert.equal(validEmpty.ok, true);
+  assert.equal(validEmpty.data.weeklyApplicationsTarget, 5);
+  assert.equal(validEmpty.data.monthlyInterviewsTarget, 2);
+  assert.equal(validEmpty.data.targetOffers, 1);
+
+  const outOfBounds = validateApplicationGoalInput({
+    weeklyApplicationsTarget: 200,
+    monthlyInterviewsTarget: -5,
+    targetOffers: 50
+  });
+  assert.equal(outOfBounds.ok, false);
+  assert.ok(outOfBounds.errors?.weeklyApplicationsTarget);
+  assert.ok(outOfBounds.errors?.monthlyInterviewsTarget);
+  assert.ok(outOfBounds.errors?.targetOffers);
+
+  const customValid = validateApplicationGoalInput({
+    weeklyApplicationsTarget: 10,
+    monthlyInterviewsTarget: 4,
+    targetOffers: 2
+  });
+  assert.equal(customValid.ok, true);
+  assert.equal(customValid.data.weeklyApplicationsTarget, 10);
+  assert.equal(customValid.data.monthlyInterviewsTarget, 4);
+  assert.equal(customValid.data.targetOffers, 2);
+});
+
+test('contract: filterApplicationsByTimeframe filters records accurately', () => {
+  const now = Date.parse('2026-10-24T12:00:00Z');
+  const items = [
+    { id: '1', createdAt: '2026-10-20T10:00:00Z', appliedAt: '2026-10-20' },
+    { id: '2', createdAt: '2026-09-01T10:00:00Z', appliedAt: '2026-09-01' },
+    { id: '3', createdAt: '2025-01-01T10:00:00Z', appliedAt: null }
+  ];
+
+  const all = filterApplicationsByTimeframe(items, 'all', now);
+  assert.equal(all.length, 3);
+
+  const thirtyDays = filterApplicationsByTimeframe(items, '30d', now);
+  assert.equal(thirtyDays.length, 1);
+  assert.equal(thirtyDays[0].id, '1');
+
+  const ninetyDays = filterApplicationsByTimeframe(items, '90d', now);
+  assert.equal(ninetyDays.length, 2);
+
+  const oneYear = filterApplicationsByTimeframe(items, 'year', now);
+  assert.equal(oneYear.length, 2);
+});
+
+test('contract: calculateFunnelMetrics computes conversion dropoffs', () => {
+  const sampleApps = [
+    { status: 'Saved' as const },
+    { status: 'Applied' as const },
+    { status: 'Screening' as const },
+    { status: 'Interview' as const },
+    { status: 'Offer' as const },
+    { status: 'Rejected' as const }
+  ];
+
+  const funnel = calculateFunnelMetrics(sampleApps);
+  assert.equal(funnel.length, 5);
+
+  const savedStage = funnel.find(s => s.stage === 'Saved');
+  assert.ok(savedStage);
+  assert.equal(savedStage.count, 6);
+
+  const appliedStage = funnel.find(s => s.stage === 'Applied');
+  assert.ok(appliedStage);
+  assert.equal(appliedStage.count, 5);
+
+  const offerStage = funnel.find(s => s.stage === 'Offer');
+  assert.ok(offerStage);
+  assert.equal(offerStage.count, 1);
+  assert.equal(offerStage.overallConversionRate, 16.7);
+});
+
+test('contract: calculateVelocityMetrics computes stage durations', () => {
+  const sampleApps = [
+    {
+      status: 'Interview' as const,
+      appliedAt: '2026-10-01T08:00:00Z',
+      createdAt: '2026-10-01T08:00:00Z',
+      updatedAt: '2026-10-05T08:00:00Z',
+      interviews: [{ at: '2026-10-11T08:00:00Z', status: 'Completed' }]
+    },
+    {
+      status: 'Rejected' as const,
+      appliedAt: '2026-10-01T08:00:00Z',
+      createdAt: '2026-10-01T08:00:00Z',
+      updatedAt: '2026-10-15T08:00:00Z'
+    },
+    {
+      status: 'Offer' as const,
+      appliedAt: '2026-10-01T08:00:00Z',
+      createdAt: '2026-10-01T08:00:00Z',
+      updatedAt: '2026-10-21T08:00:00Z'
+    }
+  ];
+
+  const velocity = calculateVelocityMetrics(sampleApps);
+  assert.equal(velocity.activeCount, 2);
+  assert.equal(velocity.terminalCount, 1);
+  assert.ok(velocity.timeToFirstResponseDays !== null);
+  assert.ok(velocity.timeToInterviewDays !== null);
+  assert.ok(velocity.timeToOfferDays !== null);
+  assert.ok(velocity.overallCycleDays !== null);
+  assert.equal(velocity.timeToInterviewDays, 10);
+  assert.equal(velocity.overallCycleDays, 14);
+});
+
+test('contract: calculateSourceMetrics groups and ranks sources', () => {
+  const sampleApps = [
+    { source: 'LinkedIn', status: 'Interview' as const },
+    { source: 'LinkedIn', status: 'Offer' as const },
+    { source: 'TopCV', status: 'Rejected' as const },
+    { source: null, status: 'Applied' as const }
+  ];
+
+  const sources = calculateSourceMetrics(sampleApps);
+  assert.equal(sources.length, 3);
+  const linkedIn = sources.find(s => s.source === 'LinkedIn');
+  assert.ok(linkedIn);
+  assert.equal(linkedIn.totalApplications, 2);
+  assert.equal(linkedIn.offerRate, 50);
+
+  const unknown = sources.find(s => s.source === 'Chưa phân loại');
+  assert.ok(unknown);
+  assert.equal(unknown.totalApplications, 1);
+});
+
+test('contract: findStaleApplications flags inactive applications with recommendations', () => {
+  const now = Date.parse('2026-10-24T12:00:00Z');
+  const sampleApps = [
+    {
+      id: 'app-stale-1',
+      company: 'FPT Software',
+      position: 'Tech Lead',
+      status: 'Applied' as const,
+      appliedAt: '2026-10-01',
+      updatedAt: '2026-10-05T08:00:00Z'
+    },
+    {
+      id: 'app-active',
+      company: 'VNG',
+      position: 'Senior Engineer',
+      status: 'Interview' as const,
+      appliedAt: '2026-10-20',
+      updatedAt: '2026-10-23T08:00:00Z',
+      interviews: [{ at: '2026-10-26T09:00:00Z', status: 'Scheduled' }]
+    },
+    {
+      id: 'app-terminal',
+      company: 'Viettel',
+      position: 'Staff Engineer',
+      status: 'Rejected' as const,
+      appliedAt: '2026-09-01',
+      updatedAt: '2026-09-20T08:00:00Z'
+    }
+  ];
+
+  const stale = findStaleApplications(sampleApps, now, 7);
+  assert.equal(stale.length, 1);
+  assert.equal(stale[0].id, 'app-stale-1');
+  assert.ok(stale[0].daysInactive >= 18);
+  assert.ok(stale[0].recommendedAction.includes('Follow-up'));
+});
+
+test('contract: calculateAnalyticsSummary aggregates entire dashboard payload', () => {
+  const now = Date.parse('2026-10-24T12:00:00Z');
+  const sampleApps = [
+    {
+      id: 'app-1',
+      company: 'Shopee',
+      position: 'Fullstack Dev',
+      source: 'LinkedIn',
+      status: 'Offer' as const,
+      appliedAt: '2026-10-10',
+      createdAt: '2026-10-10T08:00:00Z',
+      updatedAt: '2026-10-22T08:00:00Z',
+      interviews: [{ id: 'int-1', at: '2026-10-15T09:00:00Z', status: 'Completed' }]
+    }
+  ];
+
+  const summary = calculateAnalyticsSummary(sampleApps, { weeklyApplicationsTarget: 3 }, { timeframe: '30d', now });
+  assert.equal(summary.timeframe, '30d');
+  assert.equal(summary.funnel.length, 5);
+  assert.equal(summary.velocity.activeCount, 1);
+  assert.equal(summary.sources.length, 1);
+  assert.equal(summary.goals.targetOffers, 1);
+  assert.equal(summary.goals.currentOffers, 1);
 });

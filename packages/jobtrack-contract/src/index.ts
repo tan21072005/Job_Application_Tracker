@@ -12,3 +12,4 @@ export * from './timeline.ts';
 export * from './interview-coach.ts';
 export * from './csv-parser.ts';
 export * from './offer-evaluator.ts';
+export * from './analytics.ts';
