@@ -185,7 +185,15 @@ import {
   type CapTableSnapshotDTO,
   type DilutionRoundDTO,
   type ExecutiveEquityGrantDTO,
-  type EquityModelDTO
+  type EquityModelDTO,
+  calculateBackchannelProbability,
+  compute360CoverageMatrix,
+  computeAuditVulnerabilityIndex,
+  generateRefereeBriefingPacketMarkdown,
+  validateReferenceAdvocateInput,
+  validateBackchannelAuditInput,
+  type ReferenceAdvocateDTO,
+  type TargetStakeholderNodeDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -4065,6 +4073,199 @@ test('contract: validateEquityGrantInput and validateEquityModelMutationInput en
   });
   assert.equal(invalidModel.ok, false);
 });
+
+test('contract: calculateBackchannelProbability computes realistic probabilities across network degrees and roles', () => {
+  const node1 = {
+    id: 's-1',
+    fullName: 'David Nguyen',
+    role: 'VP Engineering',
+    organization: 'TechFlow Global',
+    isDecisionMaker: true,
+    networkOverlapDegree: 'first_degree' as const,
+    mutualCompanies: ['FinFlow Global', 'VNG Corp'],
+    mutualTenureOverlapMonths: 36,
+    potentialBackchannelIntermediaries: ['Alice Tran'],
+    predictedSentiment: 'champion' as const
+  };
+  const res1 = calculateBackchannelProbability(node1);
+  assert.ok(res1.probabilityScore >= 80);
+  assert.ok(res1.rationale.includes('1st-degree'));
+  assert.ok(res1.rationale.includes('shared historical employers'));
+
+  const node2 = {
+    id: 's-2',
+    fullName: 'Robert Miller',
+    role: 'External Board Director',
+    organization: 'FinTech Capital',
+    isDecisionMaker: false,
+    networkOverlapDegree: 'third_degree' as const,
+    mutualCompanies: [],
+    mutualTenureOverlapMonths: 0,
+    potentialBackchannelIntermediaries: [],
+    predictedSentiment: 'neutral' as const
+  };
+  const res2 = calculateBackchannelProbability(node2);
+  assert.ok(res2.probabilityScore <= 20);
+});
+
+test('contract: compute360CoverageMatrix validates archetype balance, identifies missing archetypes, and flags competency gaps', () => {
+  const sampleAdvocates: ReferenceAdvocateDTO[] = [
+    {
+      id: 'adv-1',
+      fullName: 'Michael Pham',
+      currentTitle: 'Chief Technology Officer',
+      currentCompany: 'Apex FinTech',
+      relationshipArchetype: 'superior_sponsor',
+      sharedCompany: 'FinFlow Global',
+      sharedTenureStart: '2020-01',
+      sharedTenureEnd: '2023-06',
+      sharedTenureMonths: 42,
+      projectsCoDelivered: ['Global Core Payment Gateway'],
+      endorsementStrength: 'unconditional_champion',
+      vouchedCompetencies: ['scaling_0_to_1', 'board_governance', 'crisis_incident_response'],
+      email: 'michael.pham@example.com',
+      preferredChannel: 'email',
+      ndaRestricted: false,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z'
+    },
+    {
+      id: 'adv-2',
+      fullName: 'Sarah Chen',
+      currentTitle: 'VP of Product',
+      currentCompany: 'CloudSphere',
+      relationshipArchetype: 'cross_functional_peer',
+      sharedCompany: 'FinFlow Global',
+      sharedTenureStart: '2020-05',
+      sharedTenureEnd: '2023-06',
+      sharedTenureMonths: 37,
+      projectsCoDelivered: ['Multi-Tenant Billing Engine'],
+      endorsementStrength: 'strong_advocate',
+      vouchedCompetencies: ['cross_functional_synergy', 'scaling_0_to_1'],
+      email: 'sarah.chen@example.com',
+      preferredChannel: 'linkedin',
+      ndaRestricted: false,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z'
+    }
+  ];
+
+  const matrix = compute360CoverageMatrix(sampleAdvocates);
+  assert.equal(matrix.totalAdvocates, 2);
+  assert.equal(matrix.archetypeCounts.superior_sponsor, 1);
+  assert.equal(matrix.archetypeCounts.cross_functional_peer, 1);
+  assert.equal(matrix.archetypeCounts.direct_report, 0);
+  assert.ok(matrix.missingArchetypes.includes('direct_report'));
+  assert.ok(matrix.criticalGaps.some(g => g.includes('Missing Direct-Report Referee')));
+  assert.ok(matrix.overallReadinessScore >= 30 && matrix.overallReadinessScore <= 70);
+});
+
+test('contract: computeAuditVulnerabilityIndex calculates accurate vulnerability index, tier, and recommendations', () => {
+  const highRiskStakeholders: TargetStakeholderNodeDTO[] = [
+    {
+      id: 's-1',
+      fullName: 'Hostile Manager',
+      role: 'VP Tech',
+      organization: 'Target Corp',
+      isDecisionMaker: true,
+      networkOverlapDegree: 'first_degree',
+      mutualCompanies: ['PastCorp'],
+      mutualTenureOverlapMonths: 36,
+      potentialBackchannelIntermediaries: [],
+      predictedSentiment: 'adverse_risk',
+      probabilityScore: 90,
+      rationale: 'Known past management clash'
+    }
+  ];
+
+  const auditResult = computeAuditVulnerabilityIndex(highRiskStakeholders);
+  assert.ok(auditResult.vulnerabilityIndex >= 75);
+  assert.equal(auditResult.level, 'critical_backchannel_danger');
+  assert.ok(auditResult.recommendations.some(r => r.includes('Immediate Action')));
+
+  const emptyAudit = computeAuditVulnerabilityIndex([]);
+  assert.equal(emptyAudit.vulnerabilityIndex, 0);
+  assert.equal(emptyAudit.level, 'low_risk');
+});
+
+test('contract: generateRefereeBriefingPacketMarkdown formats complete briefing packet with markdown dossier', () => {
+  const advocate: ReferenceAdvocateDTO = {
+    id: 'adv-1',
+    fullName: 'Michael Pham',
+    currentTitle: 'Chief Technology Officer',
+    currentCompany: 'Apex FinTech',
+    relationshipArchetype: 'superior_sponsor',
+    sharedCompany: 'FinFlow Global',
+    sharedTenureStart: '2020-01',
+    sharedTenureEnd: '2023-06',
+    sharedTenureMonths: 42,
+    projectsCoDelivered: ['Global Core Payment Gateway'],
+    endorsementStrength: 'unconditional_champion',
+    vouchedCompetencies: ['scaling_0_to_1', 'board_governance'],
+    email: 'michael.pham@example.com',
+    preferredChannel: 'email',
+    ndaRestricted: false,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z'
+  };
+
+  const audit = {
+    targetCompany: 'HyperScale AI',
+    targetRole: 'VP of Engineering',
+    applicationId: 'app-99'
+  };
+
+  const packet = generateRefereeBriefingPacketMarkdown(advocate, audit);
+  assert.equal(packet.advocateId, 'adv-1');
+  assert.equal(packet.targetCompany, 'HyperScale AI');
+  assert.ok(packet.formattedMarkdown.includes('# Executive Reference Briefing Packet'));
+  assert.ok(packet.formattedMarkdown.includes('Global Core Payment Gateway'));
+  assert.ok(packet.formattedMarkdown.includes('Michael Pham'));
+  assert.ok(packet.priorityProjectsToHighlight.length > 0);
+});
+
+test('contract: validateReferenceAdvocateInput and validateBackchannelAuditInput enforce strict validation', () => {
+  const validAdvocate = validateReferenceAdvocateInput({
+    fullName: 'Alice Walker',
+    currentTitle: 'VP People',
+    currentCompany: 'Nexus AI',
+    relationshipArchetype: 'cross_functional_peer',
+    sharedCompany: 'CloudScale',
+    sharedTenureStart: '2021-01',
+    sharedTenureEnd: '2023-01',
+    sharedTenureMonths: 24,
+    projectsCoDelivered: ['Hiring 50 Engineers in 9 months'],
+    endorsementStrength: 'strong_advocate',
+    vouchedCompetencies: ['people_leadership'],
+    email: 'alice.walker@example.com',
+    preferredChannel: 'email',
+    ndaRestricted: false
+  });
+  assert.equal(validAdvocate.ok, true);
+
+  const invalidAdvocate = validateReferenceAdvocateInput({
+    fullName: '',
+    email: 'invalid-email'
+  });
+  assert.equal(invalidAdvocate.ok, false);
+
+  const validAudit = validateBackchannelAuditInput({
+    auditName: 'Q1 HyperScale Backchannel Defense',
+    targetCompany: 'HyperScale AI',
+    targetRole: 'VP of Engineering',
+    advocateIds: ['adv-1'],
+    stakeholders: [],
+    risks: []
+  });
+  assert.equal(validAudit.ok, true);
+
+  const invalidAudit = validateBackchannelAuditInput({
+    auditName: '',
+    targetCompany: ''
+  });
+  assert.equal(invalidAudit.ok, false);
+});
+
 
 
 

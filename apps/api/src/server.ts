@@ -95,6 +95,7 @@ import { CultureRadarService } from './services/culture-radar-service.ts';
 import { HeadhunterCrmService } from './services/headhunter-crm-service.ts';
 import { SystemDesignService } from './services/system-design-service.ts';
 import { EquityLiquidityService } from './services/equity-liquidity-service.ts';
+import { BackchannelService } from './services/backchannel-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -114,7 +115,9 @@ import {
   validateSystemDesignSessionInput,
   validateSystemDesignBlueprintInput,
   validateEquityGrantInput,
-  validateEquityModelMutationInput
+  validateEquityModelMutationInput,
+  validateReferenceAdvocateInput,
+  validateBackchannelAuditInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -175,6 +178,7 @@ export const cultureRadarService = new CultureRadarService(pool);
 export const headhunterCrmService = new HeadhunterCrmService(pool);
 export const systemDesignService = new SystemDesignService(pool);
 export const equityLiquidityService = new EquityLiquidityService(pool);
+export const backchannelService = new BackchannelService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -2189,6 +2193,165 @@ app.post('/api/equity/compare', auth, async (req, res, next) => {
       return res.status(404).json({ code: 'not_found', message: 'Mot hoac ca hai mo hinh khong ton tai.' });
     }
     res.json(comparison);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/backchannel/advocates', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const advocates = await backchannelService.listAdvocates(userId);
+    res.json(advocates);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/backchannel/advocates', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateReferenceAdvocateInput(req.body);
+    if (!validation.ok) {
+      throw new Problem(422, validation.message, 'validation_error', validation.errors);
+    }
+    const created = await backchannelService.createAdvocate(userId, validation.data);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/backchannel/advocates/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const advocate = await backchannelService.getAdvocate(userId, String(req.params.id));
+    if (!advocate) {
+      return res.status(404).json({ code: 'not_found', message: 'Nguoi bao chung khong ton tai.' });
+    }
+    res.json(advocate);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.patch('/api/backchannel/advocates/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const advocateId = String(req.params.id);
+    const existing = await backchannelService.getAdvocate(userId, advocateId);
+    if (!existing) {
+      return res.status(404).json({ code: 'not_found', message: 'Nguoi bao chung khong ton tai.' });
+    }
+    const merged = { ...existing, ...req.body };
+    const validation = validateReferenceAdvocateInput(merged);
+    if (!validation.ok) {
+      throw new Problem(422, validation.message, 'validation_error', validation.errors);
+    }
+    const updated = await backchannelService.updateAdvocate(userId, advocateId, validation.data);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/backchannel/advocates/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await backchannelService.deleteAdvocate(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Nguoi bao chung khong ton tai.' });
+    }
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/backchannel/audits', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const audits = await backchannelService.listAudits(userId);
+    res.json(audits);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/backchannel/audits', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateBackchannelAuditInput(req.body);
+    if (!validation.ok) {
+      throw new Problem(422, validation.message, 'validation_error', validation.errors);
+    }
+    const created = await backchannelService.createAudit(userId, validation.data);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/backchannel/audits/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const audit = await backchannelService.getAudit(userId, String(req.params.id));
+    if (!audit) {
+      return res.status(404).json({ code: 'not_found', message: 'Dot kiem toan backchannel khong ton tai.' });
+    }
+    res.json(audit);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.patch('/api/backchannel/audits/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const auditId = String(req.params.id);
+    const existing = await backchannelService.getAudit(userId, auditId);
+    if (!existing) {
+      return res.status(404).json({ code: 'not_found', message: 'Dot kiem toan backchannel khong ton tai.' });
+    }
+    const merged = { ...existing, ...req.body };
+    const validation = validateBackchannelAuditInput(merged);
+    if (!validation.ok) {
+      throw new Problem(422, validation.message, 'validation_error', validation.errors);
+    }
+    const updated = await backchannelService.updateAudit(userId, auditId, validation.data);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/backchannel/audits/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await backchannelService.deleteAudit(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Dot kiem toan backchannel khong ton tai.' });
+    }
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/backchannel/audits/:id/generate-briefing', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const auditId = String(req.params.id);
+    const b = bodyObject(req.body);
+    const advocateId = typeof b.advocateId === 'string' ? b.advocateId : '';
+    if (!advocateId) {
+      throw new Problem(422, 'advocateId la bat buoc.', 'invalid_request');
+    }
+    const packet = await backchannelService.generateBriefing(userId, auditId, advocateId);
+    if (!packet) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay dot kiem toan hoac nguoi bao chung.' });
+    }
+    res.status(201).json(packet);
   } catch (err) {
     next(err);
   }

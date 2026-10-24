@@ -310,7 +310,29 @@ import {
   resolveLiquidationWaterfall,
   evaluateWaterfallMatrix,
   compareExecutiveEquityPackages,
-  exportEquityModelToMarkdown
+  exportEquityModelToMarkdown,
+  type ReferenceArchetype,
+  type EndorsementStrength,
+  type ExecutiveCompetencyKey,
+  type NetworkOverlapDegree,
+  type SentimentRiskTier,
+  type VulnerabilityLevel,
+  type TransitionFrictionType,
+  type ReferenceAdvocateDTO,
+  type ReferenceAdvocateMutationDTO,
+  type TargetStakeholderNodeDTO,
+  type CompetencyCoverageCellDTO,
+  type Backchannel360CoverageMatrixDTO,
+  type RefereeBriefingPacketDTO,
+  type CareerTransitionRiskDTO,
+  type BackchannelAuditDTO,
+  type BackchannelAuditMutationDTO,
+  calculateBackchannelProbability,
+  compute360CoverageMatrix,
+  computeAuditVulnerabilityIndex,
+  generateRefereeBriefingPacketMarkdown,
+  EXECUTIVE_COMPETENCY_LABELS,
+  ARCHETYPE_LABELS
 } from '@jobtrack/contract';
 
 export type {
@@ -5240,6 +5262,546 @@ export const equityRepository = {
   }
 };
 
+const DEMO_REFERENCE_ADVOCATES: ReferenceAdvocateDTO[] = [
+  {
+    id: 'adv-exec-1',
+    fullName: 'Michael Pham',
+    currentTitle: 'Chief Technology Officer',
+    currentCompany: 'Apex FinTech Global',
+    relationshipArchetype: 'superior_sponsor',
+    sharedCompany: 'FinFlow Global',
+    sharedTenureStart: '2020-01',
+    sharedTenureEnd: '2023-06',
+    sharedTenureMonths: 42,
+    projectsCoDelivered: ['Global Core Payment Gateway', 'PCI-DSS Tier-1 Compliance Program'],
+    endorsementStrength: 'unconditional_champion',
+    vouchedCompetencies: ['scaling_0_to_1', 'board_governance', 'crisis_incident_response'],
+    email: 'michael.pham@apexfintech.io',
+    phone: '+1 (415) 555-0192',
+    linkedinUrl: 'https://linkedin.com/in/michaelpham-cto',
+    preferredChannel: 'email',
+    ndaRestricted: false,
+    notes: 'Can vouch for executive board presentations, scaling from 5 to 50 engineers, and navigating banking partner diligence.',
+    createdAt: '2026-01-10T00:00:00.000Z',
+    updatedAt: '2026-01-10T00:00:00.000Z'
+  },
+  {
+    id: 'adv-exec-2',
+    fullName: 'Sarah Chen',
+    currentTitle: 'VP of Product',
+    currentCompany: 'CloudSphere AI',
+    relationshipArchetype: 'cross_functional_peer',
+    sharedCompany: 'FinFlow Global',
+    sharedTenureStart: '2020-05',
+    sharedTenureEnd: '2023-06',
+    sharedTenureMonths: 37,
+    projectsCoDelivered: ['Multi-Tenant Billing Engine', 'Automated Dispute Settlement Engine'],
+    endorsementStrength: 'strong_advocate',
+    vouchedCompetencies: ['cross_functional_synergy', 'scaling_0_to_1'],
+    email: 'sarah.chen@cloudsphere.ai',
+    phone: '+1 (650) 555-0143',
+    linkedinUrl: 'https://linkedin.com/in/sarahchen-vpproduct',
+    preferredChannel: 'linkedin',
+    ndaRestricted: false,
+    notes: 'Strongest cross-functional partner. Can speak to tight engineering-product alignment, PRD trade-offs, and velocity.',
+    createdAt: '2026-01-12T00:00:00.000Z',
+    updatedAt: '2026-01-12T00:00:00.000Z'
+  },
+  {
+    id: 'adv-exec-3',
+    fullName: 'Alex Tran',
+    currentTitle: 'Principal Staff Engineer',
+    currentCompany: 'FinFlow Global',
+    relationshipArchetype: 'direct_report',
+    sharedCompany: 'FinFlow Global',
+    sharedTenureStart: '2020-08',
+    sharedTenureEnd: '2023-06',
+    sharedTenureMonths: 34,
+    projectsCoDelivered: ['Distributed Ledger Re-Architecture', 'Zero-Downtime Migration to Aurora'],
+    endorsementStrength: 'unconditional_champion',
+    vouchedCompetencies: ['people_leadership', 'turnaround_restructuring'],
+    email: 'alex.tran@finflow.io',
+    preferredChannel: 'signal',
+    ndaRestricted: false,
+    notes: 'Former direct report. Mentored from Senior to Principal. Validates management empathy, zero attrition on squad, and technical coaching.',
+    createdAt: '2026-01-14T00:00:00.000Z',
+    updatedAt: '2026-01-14T00:00:00.000Z'
+  },
+  {
+    id: 'adv-exec-4',
+    fullName: 'David Sterling',
+    currentTitle: 'General Partner',
+    currentCompany: 'Horizon Ventures',
+    relationshipArchetype: 'external_stakeholder',
+    sharedCompany: 'FinFlow Global',
+    sharedTenureStart: '2020-01',
+    sharedTenureEnd: '2023-06',
+    sharedTenureMonths: 42,
+    projectsCoDelivered: ['Series B Technical Due Diligence', 'Executive Board Roadmaps'],
+    endorsementStrength: 'strong_advocate',
+    vouchedCompetencies: ['board_governance', 'scaling_0_to_1'],
+    email: 'david@horizonvc.com',
+    preferredChannel: 'email',
+    ndaRestricted: false,
+    notes: 'FinFlow Series A & B lead investor. High backchannel authority with Silicon Valley and Southeast Asian VC syndicates.',
+    createdAt: '2026-01-15T00:00:00.000Z',
+    updatedAt: '2026-01-15T00:00:00.000Z'
+  }
+];
+
+const DEMO_BACKCHANNEL_AUDITS: BackchannelAuditDTO[] = [
+  {
+    id: 'audit-demo-1',
+    applicationId: 'app-cognitive-scale',
+    auditName: 'CognitiveScale AI Executive Vulnerability Audit',
+    targetCompany: 'CognitiveScale AI',
+    targetRole: 'VP of Engineering',
+    advocateIds: ['adv-exec-1', 'adv-exec-2', 'adv-exec-3', 'adv-exec-4'],
+    stakeholders: [
+      {
+        id: 'stk-1',
+        fullName: 'Marcus Vance',
+        role: 'Co-Founder & Chief Executive Officer',
+        organization: 'CognitiveScale AI',
+        isDecisionMaker: true,
+        networkOverlapDegree: 'second_degree',
+        mutualCompanies: ['FinFlow Global'],
+        mutualTenureOverlapMonths: 18,
+        potentialBackchannelIntermediaries: ['David Sterling (Horizon Ventures)'],
+        predictedSentiment: 'champion',
+        probabilityScore: 78,
+        rationale: 'Primary decision-maker; mutual Series B investor path through Horizon Ventures'
+      },
+      {
+        id: 'stk-2',
+        fullName: 'Dr. Evelyn Reed',
+        role: 'Head of AI Research & Co-Founder',
+        organization: 'CognitiveScale AI',
+        isDecisionMaker: true,
+        networkOverlapDegree: 'second_degree',
+        mutualCompanies: [],
+        mutualTenureOverlapMonths: 0,
+        potentialBackchannelIntermediaries: ['Stanford AI Alumni Network'],
+        predictedSentiment: 'neutral',
+        probabilityScore: 42,
+        rationale: 'Co-founder evaluating architectural scale; 2nd-degree academic overlap'
+      },
+      {
+        id: 'stk-3',
+        fullName: 'Jonathan Cole',
+        role: 'Board Director (Tier-1 VC)',
+        organization: 'Sequoia Southeast Asia',
+        isDecisionMaker: true,
+        networkOverlapDegree: 'first_degree',
+        mutualCompanies: ['FinFlow Global'],
+        mutualTenureOverlapMonths: 36,
+        potentialBackchannelIntermediaries: ['Michael Pham'],
+        predictedSentiment: 'adverse_risk',
+        probabilityScore: 92,
+        rationale: 'High probability backchannel check; board member with legacy ties to past FinFlow restructuring'
+      }
+    ],
+    coverageMatrix: compute360CoverageMatrix(DEMO_REFERENCE_ADVOCATES),
+    risks: [
+      {
+        id: 'risk-1',
+        frictionType: 'mass_layoff_restructuring',
+        company: 'FinFlow Global',
+        timeframe: '2023-Q1',
+        candidateContext: 'Macro interest rate shock led to company-wide 20% workforce reduction mandated by board.',
+        framingNarrative: 'Engineered clean organizational consolidation, preserved 100% of critical core payment infrastructure, and offered severance above market with career placement.',
+        defensibleFacts: [
+          'Core platform uptime remained 99.995% throughout restructuring',
+          'Zero voluntary attrition of remaining senior staff over following 12 months',
+          'Restructuring achieved target 35% burn reduction to reach GAAP profitability'
+        ],
+        refereeAlignmentScript: 'When asked about the 2023 re-org: "The candidate led the difficult restructuring with deep empathy and transparent communication, protecting critical tech assets while executing board directives flawlessly."',
+        proactiveReframing: 'Demonstrates financial realism and tough leadership courage under economic downturn pressure.'
+      }
+    ],
+    briefings: [],
+    overallBackchannelVulnerabilityIndex: 56,
+    vulnerabilityLevel: 'high_exposure',
+    strategicRecommendations: [
+      'Noticeable network overlap with neutral and adverse hiring authorities.',
+      'Deploy David Sterling (Horizon Ventures) to proactively contact Marcus Vance before formal offer committee.',
+      'Pre-brief Michael Pham and Sarah Chen on Jonathan Cole (Sequoia) likely outreach regarding 2023 restructuring.'
+    ],
+    createdAt: '2026-01-20T00:00:00.000Z',
+    updatedAt: '2026-01-20T00:00:00.000Z'
+  }
+];
+
+function loadDemoAdvocates(): ReferenceAdvocateDTO[] {
+  try {
+    const raw = localStorage.getItem('jobtrack_demo_reference_advocates');
+    if (raw) return JSON.parse(raw);
+  } catch {
+  }
+  return [...DEMO_REFERENCE_ADVOCATES];
+}
+
+function saveDemoAdvocates(advocates: ReferenceAdvocateDTO[]): void {
+  try {
+    localStorage.setItem('jobtrack_demo_reference_advocates', JSON.stringify(advocates));
+  } catch {
+  }
+}
+
+function loadDemoAudits(): BackchannelAuditDTO[] {
+  try {
+    const raw = localStorage.getItem('jobtrack_demo_backchannel_audits');
+    if (raw) return JSON.parse(raw);
+  } catch {
+  }
+  return [...DEMO_BACKCHANNEL_AUDITS];
+}
+
+function saveDemoAudits(audits: BackchannelAuditDTO[]): void {
+  try {
+    localStorage.setItem('jobtrack_demo_backchannel_audits', JSON.stringify(audits));
+  } catch {
+  }
+}
+
+const backchannelRepository = {
+  async listAdvocates(): Promise<ReferenceAdvocateDTO[]> {
+    if (demoMode) return loadDemoAdvocates();
+    try {
+      return await request<ReferenceAdvocateDTO[]>('/backchannel/advocates');
+    } catch {
+      return loadDemoAdvocates();
+    }
+  },
+
+  async getAdvocate(id: string): Promise<ReferenceAdvocateDTO | null> {
+    if (demoMode) {
+      const list = loadDemoAdvocates();
+      return list.find(a => a.id === id) || null;
+    }
+    try {
+      return await request<ReferenceAdvocateDTO>(`/backchannel/advocates/${encodeURIComponent(id)}`);
+    } catch {
+      const list = loadDemoAdvocates();
+      return list.find(a => a.id === id) || null;
+    }
+  },
+
+  async createAdvocate(input: ReferenceAdvocateMutationDTO): Promise<ReferenceAdvocateDTO> {
+    if (demoMode) {
+      const list = loadDemoAdvocates();
+      const now = new Date().toISOString();
+      const newAdvocate: ReferenceAdvocateDTO = {
+        id: `adv-${Date.now()}`,
+        ...input,
+        createdAt: now,
+        updatedAt: now
+      };
+      list.unshift(newAdvocate);
+      saveDemoAdvocates(list);
+      return newAdvocate;
+    }
+    try {
+      return await request<ReferenceAdvocateDTO>('/backchannel/advocates', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const list = loadDemoAdvocates();
+      const now = new Date().toISOString();
+      const newAdvocate: ReferenceAdvocateDTO = {
+        id: `adv-${Date.now()}`,
+        ...input,
+        createdAt: now,
+        updatedAt: now
+      };
+      list.unshift(newAdvocate);
+      saveDemoAdvocates(list);
+      return newAdvocate;
+    }
+  },
+
+  async updateAdvocate(id: string, input: Partial<ReferenceAdvocateMutationDTO>): Promise<ReferenceAdvocateDTO | null> {
+    if (demoMode) {
+      const list = loadDemoAdvocates();
+      const idx = list.findIndex(a => a.id === id);
+      if (idx === -1) return null;
+      const updated: ReferenceAdvocateDTO = {
+        ...list[idx],
+        ...input,
+        updatedAt: new Date().toISOString()
+      };
+      list[idx] = updated;
+      saveDemoAdvocates(list);
+      return updated;
+    }
+    try {
+      return await request<ReferenceAdvocateDTO>(`/backchannel/advocates/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const list = loadDemoAdvocates();
+      const idx = list.findIndex(a => a.id === id);
+      if (idx === -1) return null;
+      const updated: ReferenceAdvocateDTO = {
+        ...list[idx],
+        ...input,
+        updatedAt: new Date().toISOString()
+      };
+      list[idx] = updated;
+      saveDemoAdvocates(list);
+      return updated;
+    }
+  },
+
+  async deleteAdvocate(id: string): Promise<boolean> {
+    if (demoMode) {
+      const list = loadDemoAdvocates();
+      const nextList = list.filter(a => a.id !== id);
+      const deleted = nextList.length !== list.length;
+      if (deleted) saveDemoAdvocates(nextList);
+      return deleted;
+    }
+    try {
+      await request<void>(`/backchannel/advocates/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      const list = loadDemoAdvocates();
+      const nextList = list.filter(a => a.id !== id);
+      const deleted = nextList.length !== list.length;
+      if (deleted) saveDemoAdvocates(nextList);
+      return deleted;
+    }
+  },
+
+  async listAudits(): Promise<BackchannelAuditDTO[]> {
+    if (demoMode) return loadDemoAudits();
+    try {
+      return await request<BackchannelAuditDTO[]>('/backchannel/audits');
+    } catch {
+      return loadDemoAudits();
+    }
+  },
+
+  async getAudit(id: string): Promise<BackchannelAuditDTO | null> {
+    if (demoMode) {
+      const list = loadDemoAudits();
+      return list.find(a => a.id === id) || null;
+    }
+    try {
+      return await request<BackchannelAuditDTO>(`/backchannel/audits/${encodeURIComponent(id)}`);
+    } catch {
+      const list = loadDemoAudits();
+      return list.find(a => a.id === id) || null;
+    }
+  },
+
+  async createAudit(input: BackchannelAuditMutationDTO): Promise<BackchannelAuditDTO> {
+    if (demoMode) {
+      const list = loadDemoAudits();
+      const advocates = loadDemoAdvocates();
+      const selected = advocates.filter(a => (input.advocateIds || []).includes(a.id));
+      const scoredStakeholders = (input.stakeholders || []).map(s => {
+        const { probabilityScore, rationale } = calculateBackchannelProbability(s);
+        return { ...s, probabilityScore, rationale };
+      });
+      const { vulnerabilityIndex, level, recommendations } = computeAuditVulnerabilityIndex(scoredStakeholders);
+      const coverageMatrix = compute360CoverageMatrix(selected, input.requiredCompetencies);
+      const now = new Date().toISOString();
+
+      const newAudit: BackchannelAuditDTO = {
+        id: `audit-${Date.now()}`,
+        applicationId: input.applicationId,
+        auditName: input.auditName,
+        targetCompany: input.targetCompany,
+        targetRole: input.targetRole,
+        advocateIds: input.advocateIds || [],
+        stakeholders: scoredStakeholders,
+        coverageMatrix,
+        risks: input.risks || [],
+        briefings: [],
+        overallBackchannelVulnerabilityIndex: vulnerabilityIndex,
+        vulnerabilityLevel: level,
+        strategicRecommendations: recommendations,
+        createdAt: now,
+        updatedAt: now
+      };
+      list.unshift(newAudit);
+      saveDemoAudits(list);
+      return newAudit;
+    }
+    try {
+      return await request<BackchannelAuditDTO>('/backchannel/audits', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const list = loadDemoAudits();
+      const advocates = loadDemoAdvocates();
+      const selected = advocates.filter(a => (input.advocateIds || []).includes(a.id));
+      const scoredStakeholders = (input.stakeholders || []).map(s => {
+        const { probabilityScore, rationale } = calculateBackchannelProbability(s);
+        return { ...s, probabilityScore, rationale };
+      });
+      const { vulnerabilityIndex, level, recommendations } = computeAuditVulnerabilityIndex(scoredStakeholders);
+      const coverageMatrix = compute360CoverageMatrix(selected, input.requiredCompetencies);
+      const now = new Date().toISOString();
+
+      const newAudit: BackchannelAuditDTO = {
+        id: `audit-${Date.now()}`,
+        applicationId: input.applicationId,
+        auditName: input.auditName,
+        targetCompany: input.targetCompany,
+        targetRole: input.targetRole,
+        advocateIds: input.advocateIds || [],
+        stakeholders: scoredStakeholders,
+        coverageMatrix,
+        risks: input.risks || [],
+        briefings: [],
+        overallBackchannelVulnerabilityIndex: vulnerabilityIndex,
+        vulnerabilityLevel: level,
+        strategicRecommendations: recommendations,
+        createdAt: now,
+        updatedAt: now
+      };
+      list.unshift(newAudit);
+      saveDemoAudits(list);
+      return newAudit;
+    }
+  },
+
+  async updateAudit(id: string, input: Partial<BackchannelAuditMutationDTO>): Promise<BackchannelAuditDTO | null> {
+    if (demoMode) {
+      const list = loadDemoAudits();
+      const idx = list.findIndex(a => a.id === id);
+      if (idx === -1) return null;
+      const existing = list[idx];
+      const advocates = loadDemoAdvocates();
+      const advocateIds = input.advocateIds !== undefined ? input.advocateIds : existing.advocateIds;
+      const selected = advocates.filter(a => advocateIds.includes(a.id));
+      const stakeholders = (input.stakeholders !== undefined ? input.stakeholders : existing.stakeholders).map(s => {
+        const { probabilityScore, rationale } = calculateBackchannelProbability(s);
+        return { ...s, probabilityScore, rationale };
+      });
+      const { vulnerabilityIndex, level, recommendations } = computeAuditVulnerabilityIndex(stakeholders);
+      const coverageMatrix = compute360CoverageMatrix(selected, input.requiredCompetencies);
+
+      const updated: BackchannelAuditDTO = {
+        ...existing,
+        ...input,
+        stakeholders,
+        coverageMatrix,
+        overallBackchannelVulnerabilityIndex: vulnerabilityIndex,
+        vulnerabilityLevel: level,
+        strategicRecommendations: recommendations,
+        updatedAt: new Date().toISOString()
+      };
+      list[idx] = updated;
+      saveDemoAudits(list);
+      return updated;
+    }
+    try {
+      return await request<BackchannelAuditDTO>(`/backchannel/audits/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const list = loadDemoAudits();
+      const idx = list.findIndex(a => a.id === id);
+      if (idx === -1) return null;
+      const existing = list[idx];
+      const advocates = loadDemoAdvocates();
+      const advocateIds = input.advocateIds !== undefined ? input.advocateIds : existing.advocateIds;
+      const selected = advocates.filter(a => advocateIds.includes(a.id));
+      const stakeholders = (input.stakeholders !== undefined ? input.stakeholders : existing.stakeholders).map(s => {
+        const { probabilityScore, rationale } = calculateBackchannelProbability(s);
+        return { ...s, probabilityScore, rationale };
+      });
+      const { vulnerabilityIndex, level, recommendations } = computeAuditVulnerabilityIndex(stakeholders);
+      const coverageMatrix = compute360CoverageMatrix(selected, input.requiredCompetencies);
+
+      const updated: BackchannelAuditDTO = {
+        ...existing,
+        ...input,
+        stakeholders,
+        coverageMatrix,
+        overallBackchannelVulnerabilityIndex: vulnerabilityIndex,
+        vulnerabilityLevel: level,
+        strategicRecommendations: recommendations,
+        updatedAt: new Date().toISOString()
+      };
+      list[idx] = updated;
+      saveDemoAudits(list);
+      return updated;
+    }
+  },
+
+  async deleteAudit(id: string): Promise<boolean> {
+    if (demoMode) {
+      const list = loadDemoAudits();
+      const nextList = list.filter(a => a.id !== id);
+      const deleted = nextList.length !== list.length;
+      if (deleted) saveDemoAudits(nextList);
+      return deleted;
+    }
+    try {
+      await request<void>(`/backchannel/audits/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      const list = loadDemoAudits();
+      const nextList = list.filter(a => a.id !== id);
+      const deleted = nextList.length !== list.length;
+      if (deleted) saveDemoAudits(nextList);
+      return deleted;
+    }
+  },
+
+  async generateBriefing(auditId: string, advocateId: string): Promise<RefereeBriefingPacketDTO | null> {
+    if (demoMode) {
+      const audit = await this.getAudit(auditId);
+      const advocate = await this.getAdvocate(advocateId);
+      if (!audit || !advocate) return null;
+
+      const packet = generateRefereeBriefingPacketMarkdown(advocate, {
+        targetCompany: audit.targetCompany,
+        targetRole: audit.targetRole,
+        applicationId: audit.applicationId
+      });
+
+      const otherBriefings = audit.briefings.filter(b => b.advocateId !== advocateId);
+      audit.briefings = [...otherBriefings, packet];
+      await this.updateAudit(auditId, audit);
+      return packet;
+    }
+    try {
+      return await request<RefereeBriefingPacketDTO>(`/backchannel/audits/${encodeURIComponent(auditId)}/generate-briefing`, {
+        method: 'POST',
+        body: JSON.stringify({ advocateId })
+      });
+    } catch {
+      const audit = await this.getAudit(auditId);
+      const advocate = await this.getAdvocate(advocateId);
+      if (!audit || !advocate) return null;
+
+      const packet = generateRefereeBriefingPacketMarkdown(advocate, {
+        targetCompany: audit.targetCompany,
+        targetRole: audit.targetRole,
+        applicationId: audit.applicationId
+      });
+
+      const otherBriefings = audit.briefings.filter(b => b.advocateId !== advocateId);
+      audit.briefings = [...otherBriefings, packet];
+      await this.updateAudit(auditId, audit);
+      return packet;
+    }
+  }
+};
+
 
 export type {
   EmailCategory,
@@ -5378,8 +5940,26 @@ export type {
   EquityModelDTO,
   ExecutiveEquityGrantMutationDTO,
   EquityModelMutationDTO,
-  ExecutivePackageComparisonDTO
+  ExecutivePackageComparisonDTO,
+  ReferenceArchetype,
+  EndorsementStrength,
+  ExecutiveCompetencyKey,
+  NetworkOverlapDegree,
+  SentimentRiskTier,
+  VulnerabilityLevel,
+  TransitionFrictionType,
+  ReferenceAdvocateDTO,
+  ReferenceAdvocateMutationDTO,
+  TargetStakeholderNodeDTO,
+  CompetencyCoverageCellDTO,
+  Backchannel360CoverageMatrixDTO,
+  RefereeBriefingPacketDTO,
+  CareerTransitionRiskDTO,
+  BackchannelAuditDTO,
+  BackchannelAuditMutationDTO
 };
+
+export { backchannelRepository };
 
 
 
