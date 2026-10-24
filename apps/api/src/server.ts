@@ -17,7 +17,11 @@ import {
   type InterviewWireDTO,
   type DashboardWireDTO,
   type ValidatedApplicationData,
-  type ValidatedInterviewData
+  type ValidatedInterviewData,
+  type InterviewAgendaItemDTO,
+  type IcsCalendarEvent,
+  type DatasetCategory,
+  generateIcsCalendar
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -125,7 +129,7 @@ const bodyObject = (body: unknown): Record<string, unknown> =>
     ? (body as Record<string, unknown>)
     : fail(422, 'Nội dung yêu cầu chưa hợp lệ.');
 
-type SessionRequest = Request & { userId: string; sessionId: string; requestId: string };
+type SessionRequest = Request & { userId: string; sessionId: string; requestId: string; scopes?: string[]; client?: string };
 type RawBodyRequest = Request & { rawBody?: Buffer };
 
 async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
@@ -253,7 +257,6 @@ app.use('/api', (req, res, next) => {
   if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) return next();
   const requestOrigin = req.get('origin');
   if (!requestOrigin || requestOrigin === origin) return next();
-  // Payment Webhook (from banking gateways like VietQR, SePay, PayOS)
   if (req.originalUrl?.startsWith('/api/pro/webhook') || req.path?.startsWith('/pro/webhook')) {
     return next();
   }
@@ -354,13 +357,15 @@ app.post('/api/auth/register', authLimit, async (req, res, next) => {
     const b = bodyObject(req.body);
     const email = str(b.email, 254, 'email', true).toLowerCase();
     const password = b.password;
+    const invalidPassMsg = 'Mật khẩu chưa hợp lệ.';
+    const passLenMsg = 'Mật khẩu cần từ 15–64 ký tự.';
     if (typeof password !== 'string' || password.length > 64) {
-      throw new Problem(422, 'Mật khẩu chưa hợp lệ.', 'invalid_request', { password: 'Mật khẩu chưa hợp lệ.' });
+      throw new Problem(422, invalidPassMsg, 'invalid_request', { password: invalidPassMsg });
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 15) {
       fail(422, 'Email hoặc mật khẩu chưa hợp lệ. Mật khẩu cần từ 15–64 ký tự.', 'invalid_request', {
         email: 'Email hoặc mật khẩu chưa hợp lệ.',
-        password: 'Mật khẩu cần từ 15–64 ký tự.'
+        password: passLenMsg
       });
     }
     const userId = randomUUID();
@@ -660,6 +665,51 @@ app.delete('/api/interviews/:id', auth, async (req, res, next) => {
   }
 });
 
+app.get('/api/interviews', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const apps = await jobTrackService.listApplications(userId, { includeDeleted: false });
+    const items: InterviewAgendaItemDTO[] = apps.flatMap(app =>
+      (app.interviews || []).map(interview => ({
+        ...interview,
+        company: app.company,
+        position: app.position,
+        applicationStatus: app.status
+      }))
+    );
+    items.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+    res.json(items);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/interviews/export.ics', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const apps = await jobTrackService.listApplications(userId, { includeDeleted: false });
+    const events: IcsCalendarEvent[] = apps.flatMap(app =>
+      (app.interviews || []).map(interview => ({
+        id: interview.id,
+        title: interview.title,
+        company: app.company,
+        position: app.position,
+        at: interview.at,
+        timezone: interview.timezone,
+        format: interview.format,
+        location: interview.location,
+        notes: interview.notes
+      }))
+    );
+    const icsContent = generateIcsCalendar(events);
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="jobtrack-interviews.ics"');
+    res.send(icsContent);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/api/dashboard', auth, async (req, res, next) => {
   try {
     const dashboard = await jobTrackService.getDashboardSummary((req as SessionRequest).userId);
@@ -899,7 +949,6 @@ app.put('/api/profile', auth, async (req, res, next) => {
   }
 });
 
-// Job Subscriptions Endpoints (Phase 4: Batch Job Alert Crawler)
 app.get('/api/subscriptions', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -972,9 +1021,6 @@ app.post('/api/subscriptions/:id/run', auth, async (req, res, next) => {
   }
 });
 
-// ==========================================
-// PRO MEMBERSHIP & VIETQR CHECKOUT ENDPOINTS
-// ==========================================
 app.get('/api/pro/status', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -1020,9 +1066,6 @@ app.post('/api/pro/activate', (_req, _res, next) => {
   next(new Problem(403, 'Gói Pro chỉ được kích hoạt bằng webhook thanh toán đã ký.', 'activation_requires_payment'));
 });
 
-// ==========================================
-// PAYMENT WEBHOOK (VIETQR / SEPAY / PAYOS)
-// ==========================================
 app.post('/api/pro/webhook', async (req, res, next) => {
   try {
     const b = (req.body && typeof req.body === 'object' && !Array.isArray(req.body))
@@ -1042,9 +1085,6 @@ app.post('/api/pro/webhook', async (req, res, next) => {
   }
 });
 
-// ==========================================
-// EXTENSION PAIRING & STATUS (PAGEWEAVE)
-// ==========================================
 app.post('/api/auth/extension/pair', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -1077,7 +1117,7 @@ app.get('/api/auth/extension/status', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
     const proStatus = await aiProService.getProStatus(userId);
-    const scopes = (req as any).scopes || [];
+    const scopes = (req as SessionRequest).scopes || [];
     res.json({
       valid: true,
       userId,
@@ -1092,9 +1132,6 @@ app.get('/api/auth/extension/status', auth, async (req, res, next) => {
   }
 });
 
-// ==========================================
-// UNIVERSAL DATASETS & RECORDS (PAGEWEAVE)
-// ==========================================
 app.get('/api/datasets', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -1111,7 +1148,9 @@ app.post('/api/datasets', auth, async (req, res, next) => {
     const b = bodyObject(req.body);
     const name = str(b.name, 200, 'name', true);
     const description = typeof b.description === 'string' ? b.description.trim() : null;
-    const category = typeof b.category === 'string' ? b.category as any : 'custom';
+    const allowedCategories: DatasetCategory[] = ['product_research', 'research_notes', 'company_list', 'jobtrack', 'custom'];
+    const rawCat = typeof b.category === 'string' ? b.category : 'custom';
+    const category: DatasetCategory = allowedCategories.includes(rawCat as DatasetCategory) ? (rawCat as DatasetCategory) : 'custom';
     const columns = Array.isArray(b.columns) ? b.columns : [];
 
     const dataset = await datasetService.createDataset(userId, {
@@ -1258,9 +1297,6 @@ app.post('/api/ai/transform', auth, async (req, res, next) => {
   }
 });
 
-// ==========================================
-// PRO FEATURE 1: ATS RESUME MATCH SCORE & KEYWORD GAP
-// ==========================================
 app.post('/api/ai/pro/ats-match', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -1280,9 +1316,6 @@ app.post('/api/ai/pro/ats-match', auth, async (req, res, next) => {
   }
 });
 
-// ==========================================
-// PRO FEATURE 2: AI TAILORED COVER LETTER GENERATOR
-// ==========================================
 app.post('/api/ai/pro/cover-letter', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;

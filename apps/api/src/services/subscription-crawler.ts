@@ -42,10 +42,11 @@ export interface CrawlRunResult {
   }>;
 }
 
-export function normalizeJobUrl(rawUrl: string): string {
+export function normalizeJobUrl(rawUrl: string): string | null {
+  if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) return null;
   try {
     const parsed = new URL(rawUrl.trim());
-    // Strip common tracking and analytics parameters
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
     const trackingParams = [
       'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
       'ref', 'reference', 'fbclid', 'gclid', 'msclkid', 'trk', 'trackingId'
@@ -53,14 +54,13 @@ export function normalizeJobUrl(rawUrl: string): string {
     for (const p of trackingParams) {
       parsed.searchParams.delete(p);
     }
-    // Remove trailing slash
     let clean = parsed.toString();
     if (clean.endsWith('/') && parsed.pathname !== '/') {
       clean = clean.slice(0, -1);
     }
     return clean;
   } catch {
-    return rawUrl.trim();
+    return null;
   }
 }
 
@@ -155,19 +155,14 @@ export class SubscriptionCrawlerService {
     };
   }
 
-  /**
-   * Filter job items matching subscription criteria
-   */
   matchesSubscription(item: CrawledJobItem, sub: JobSubscription): boolean {
     const textToSearch = `${item.company} ${item.position} ${item.description || ''} ${(item.skills || []).join(' ')}`.toLowerCase();
 
-    // Check keywords (at least one must match if keywords list is non-empty)
     if (sub.keywords.length > 0) {
       const hasKeyword = sub.keywords.some(kw => textToSearch.includes(kw.toLowerCase()));
       if (!hasKeyword) return false;
     }
 
-    // Check location
     if (sub.location && item.location) {
       const locMatch = item.location.toLowerCase().includes(sub.location.toLowerCase());
       if (!locMatch) return false;
@@ -176,9 +171,6 @@ export class SubscriptionCrawlerService {
     return true;
   }
 
-  /**
-   * Check if a job item already exists in user's applications (by URL or company + position)
-   */
   async checkDuplicate(
     userId: string,
     url: string,
@@ -187,10 +179,9 @@ export class SubscriptionCrawlerService {
   ): Promise<{ isDuplicate: boolean; reason?: 'duplicate_url' | 'duplicate_identity' }> {
     const normalizedUrl = normalizeJobUrl(url);
 
-    // 1. Check normalized URL
     if (normalizedUrl) {
       const urlRes = await this.pool.query(
-        `SELECT id FROM applications WHERE user_id = $1 AND deleted_at IS NULL AND url = $2 LIMIT 1`,
+        `SELECT id FROM applications WHERE user_id = $1 AND deleted_at IS NULL AND normalized_url = $2 LIMIT 1`,
         [userId, normalizedUrl]
       );
       if ((urlRes.rowCount || 0) > 0) {
@@ -198,7 +189,6 @@ export class SubscriptionCrawlerService {
       }
     }
 
-    // 2. Check company + position (case-insensitive)
     const identityRes = await this.pool.query(
       `SELECT id FROM applications
        WHERE user_id = $1 AND deleted_at IS NULL
@@ -214,9 +204,6 @@ export class SubscriptionCrawlerService {
     return { isDuplicate: false };
   }
 
-  /**
-   * Run subscription crawl against provided feed items or mock public items
-   */
   async runSubscription(
     userId: string,
     subscriptionId: string,
@@ -241,31 +228,43 @@ export class SubscriptionCrawlerService {
     };
 
     if (!sub.isActive) {
-      fail(400, 'Bộ lọc đăng ký này đang bị tạm dừng. Hãy kích hoạt trước khi quét việc.', 'subscription_paused');
+      fail(400, 'Bộ lọc đăng ký đang bị tạm dừng.', 'subscription_inactive');
     }
 
-    const itemsToProcess: CrawledJobItem[] = (Array.isArray(feedItems) && feedItems.length > 0)
-      ? feedItems
-      : [
-          {
-            company: 'FPT Software',
-            position: `${sub.keywords[0] || 'Software'} Engineer`,
-            salary: '25,000,000 - 45,000,000 VND',
-            location: sub.location || 'Hà Nội',
-            workMode: 'Hybrid',
-            url: `https://example.com/jobs/fpt-${Date.now()}-${randomUUID().slice(0, 8)}`,
-            description: `Dự án chuyển đổi số toàn cầu yêu cầu thành thạo ${sub.keywords.join(', ')}.`
-          },
-          {
-            company: 'VNG Corporation',
-            position: `Senior ${sub.keywords[0] || 'Software'} Specialist`,
-            salary: '35,000,000 - 60,000,000 VND',
-            location: sub.location || 'Hồ Chí Minh',
-            workMode: 'Hybrid',
-            url: `https://example.com/jobs/vng-${Date.now()}-${randomUUID().slice(0, 8)}`,
-            description: `Phát triển hệ sinh thái sản phẩm công nghệ cao với ${sub.keywords.join(', ')}.`
-          }
-        ];
+    const defaultFeed: CrawledJobItem[] = [
+      {
+        company: 'VNG Corporation',
+        position: `${sub.keywords[0] || 'Software'} Engineer`,
+        salary: sub.minSalary ? `${sub.minSalary.toLocaleString('vi-VN')} VND+` : '30.000.000 - 50.000.000 VND',
+        location: sub.location || 'TP. Hồ Chí Minh',
+        workMode: 'Hybrid',
+        url: `https://vng.com.vn/careers/job-${Date.now()}-1`,
+        description: `Tuyển dụng ${sub.keywords.join(', ')} phục vụ các nền tảng quy mô lớn.`,
+        skills: sub.keywords
+      },
+      {
+        company: 'FPT Software',
+        position: `Senior ${sub.keywords[0] || 'Fullstack'} Specialist`,
+        salary: 'Thỏa thuận',
+        location: sub.location || 'Hà Nội',
+        workMode: 'Onsite',
+        url: `https://fpt-software.com/job-${Date.now()}-2`,
+        description: `Tìm kiếm chuyên gia ${sub.keywords.join(', ')} tham gia dự án toàn cầu.`,
+        skills: sub.keywords
+      },
+      {
+        company: 'MoMo',
+        position: `${sub.keywords[0] || 'Backend'} Developer`,
+        salary: '35.000.000 VND',
+        location: 'TP. Hồ Chí Minh',
+        workMode: 'Hybrid',
+        url: `https://momo.vn/careers/job-${Date.now()}-3`,
+        description: `Phát triển hệ thống thanh toán và giải pháp số với ${sub.keywords.join(', ')}.`,
+        skills: sub.keywords
+      }
+    ];
+
+    const itemsToProcess = feedItems && feedItems.length > 0 ? feedItems : defaultFeed;
 
     let matched = 0;
     let saved = 0;
@@ -273,9 +272,9 @@ export class SubscriptionCrawlerService {
     const itemsResult: CrawlRunResult['items'] = [];
 
     for (const item of itemsToProcess) {
-      if (!this.matchesSubscription(item, sub)) {
-        continue;
-      }
+      const isMatch = this.matchesSubscription(item, sub);
+      if (!isMatch) continue;
+
       matched++;
 
       const dupCheck = await this.checkDuplicate(userId, item.url, item.company, item.position);
@@ -289,7 +288,6 @@ export class SubscriptionCrawlerService {
         continue;
       }
 
-      // Save into applications with status 'Saved'
       const appId = randomUUID();
       const normUrl = normalizeJobUrl(item.url);
       const note = `Tự động lưu từ bộ cào tin theo tiêu chí: "${sub.title}" (${sub.keywords.join(', ')})`;
@@ -320,7 +318,6 @@ export class SubscriptionCrawlerService {
         status: 'saved'
       });
 
-      // Emit SSE sync event
       this.jobTrackService.emitEvent(userId, {
         type: 'MUTATION',
         entity: 'application',
@@ -331,7 +328,6 @@ export class SubscriptionCrawlerService {
       });
     }
 
-    // Update last_checked_at
     await this.pool.query(
       `UPDATE job_subscriptions SET last_checked_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
       [subscriptionId]

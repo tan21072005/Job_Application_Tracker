@@ -115,21 +115,16 @@ export interface PaymentWebhookResult {
 }
 
 
-// Từ điển kỹ năng đa ngành (Công nghệ, Tài chính - Kế toán, Quản lý, Kỹ thuật - Môi trường)
 const COMMON_SKILL_KEYWORDS = [
-  // IT & Phần mềm
   'JavaScript', 'TypeScript', 'React', 'Vue', 'Angular', 'Node.js', 'Python', 'Java',
   'C#', 'Golang', 'PHP', 'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis',
   'Docker', 'Kubernetes', 'AWS', 'GCP', 'Azure', 'CI/CD', 'Git', 'Linux',
   'REST API', 'GraphQL', 'Microservices', 'Agile', 'Scrum', 'Jira',
-  // Kế toán - Tài chính
   'Kế toán trưởng', 'Kế toán tổng hợp', 'Báo cáo tài chính', 'Quyết toán thuế',
   'Hóa đơn điện tử', 'Kiểm toán', 'MISA', 'FAST', 'SAP', 'ERP', 'Quản trị chi phí',
   'Dòng tiền', 'Phân tích tài chính', 'Thuế TNDN', 'Thuế GTGT',
-  // Kỹ thuật & Môi trường & Sản xuất
   'Vận hành trạm', 'Xử lý nước thải', 'Hóa chất', 'An toàn lao động', 'ISO 14001',
   'ISO 9001', 'Bảo trì thiết bị', 'Kỹ thuật môi trường', 'Giám sát kỹ thuật',
-  // Kỹ năng mềm & Quản trị
   'Quản lý đội ngũ', 'Lãnh đạo', 'Giao tiếp', 'Đàm phán', 'Giải quyết vấn đề',
   'Tiếng Anh', 'TOEIC', 'IELTS', 'Lập kế hoạch'
 ];
@@ -141,16 +136,12 @@ export class AiProService {
     this.pool = pool;
   }
 
-  // ---------------------------------------------------------------------------
-  // 1. Feature 1: ATS Resume Match Score & Keyword Gap Analyzer
-  // ---------------------------------------------------------------------------
   async analyzeAtsMatch(
     jd: { company: string; position: string; notes?: string | null },
     profile: CandidateProfile | null
   ): Promise<AtsMatchResult> {
     const jdText = `${jd.position} ${jd.company} ${jd.notes || ''}`.toLowerCase();
 
-    // 1. Tìm các kỹ năng được nhắc tới trong JD
     const detectedJdSkills: string[] = [];
     for (const skill of COMMON_SKILL_KEYWORDS) {
       if (jdText.includes(skill.toLowerCase())) {
@@ -158,13 +149,11 @@ export class AiProService {
       }
     }
 
-    // Nếu không tìm thấy kỹ năng trong từ điển, bóc tách từ khóa chức danh
     if (detectedJdSkills.length === 0) {
       const words = jd.position.split(/\s+/).filter(w => w.length > 2);
       detectedJdSkills.push(...words.slice(0, 4));
     }
 
-    // 2. Chuẩn bị hồ sơ ứng viên
     const candidateSkills = (profile?.skills || []).map(s => s.trim());
     const candidateBio = (profile?.bio || '').toLowerCase();
     const candidateText = `${candidateSkills.join(' ')} ${candidateBio}`.toLowerCase();
@@ -193,7 +182,6 @@ export class AiProService {
       }
     }
 
-    // 3. Tính điểm ATS (0 - 100)
     let score = 50;
     if (detectedJdSkills.length > 0) {
       const matchRatio = matchedSkills.length / detectedJdSkills.length;
@@ -203,7 +191,6 @@ export class AiProService {
     if (profile?.bio && profile.bio.length > 50) score += 10;
     score = Math.min(96, Math.max(25, score));
 
-    // 4. Đánh giá xếp loại & khuyến nghị
     let overallFit: AtsMatchResult['overallFit'] = 'Tiềm năng';
     if (score >= 85) overallFit = 'Xuất sắc';
     else if (score >= 70) overallFit = 'Phù hợp';
@@ -234,9 +221,6 @@ export class AiProService {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // 2. Feature 2: AI Tailored Cover Letter & Outreach Pitch Generator
-  // ---------------------------------------------------------------------------
   async generateCoverLetter(
     jd: { company: string; position: string; notes?: string | null },
     profile: CandidateProfile | null,
@@ -287,9 +271,6 @@ export class AiProService {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // 3. Pro Membership & VietQR Checkout Engine
-  // ---------------------------------------------------------------------------
   async getProStatus(userId: string): Promise<ProStatus> {
     const res = await this.pool.query(
       `SELECT tier, pro_expires_at AS "expiresAt" FROM user_memberships WHERE user_id = $1`,
