@@ -41,7 +41,10 @@ import {
   generateInterviewQuestions,
   evaluateStarAnswer,
   validateInterviewPrepInput,
-  validateInterviewEvaluateInput
+  validateInterviewEvaluateInput,
+  parseApplicationsFromCsv,
+  validateCsvImportRequest,
+  neutralizeFormula
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -774,5 +777,113 @@ test('contract: validateInterviewPrepInput and validateInterviewEvaluateInput en
     answer: 'Short'
   });
   assert.equal(invalidEval.ok, false);
+});
+
+test('contract: parseApplicationsFromCsv handles bilingual headers, BOM, and delimiters', () => {
+  const csvWithBom = '\uFEFF"Công ty","Vị trí","Trạng thái","Ngày nộp","Mức lương","Địa điểm","Hình thức"\n' +
+    '"Shopee Vietnam","Senior Frontend Engineer","Phỏng vấn","24/10/2026","60M","TP. HCM","Kết hợp"\n' +
+    '"VNG Corporation","Platform Tech Lead","Đã nộp","2026-10-22","75M","Hà Nội","Từ xa"';
+
+  const preview = parseApplicationsFromCsv(csvWithBom);
+  assert.equal(preview.hasBom, true);
+  assert.equal(preview.delimiter, ',');
+  assert.equal(preview.totalRows, 2);
+  assert.equal(preview.validRowsCount, 2);
+  assert.equal(preview.errorRowsCount, 0);
+
+  const row1 = preview.rows[0];
+  assert.equal(row1.company, 'Shopee Vietnam');
+  assert.equal(row1.position, 'Senior Frontend Engineer');
+  assert.equal(row1.status, 'Interview');
+  assert.equal(row1.appliedAt, '2026-10-24');
+  assert.equal(row1.workMode, 'Hybrid');
+
+  const row2 = preview.rows[1];
+  assert.equal(row2.company, 'VNG Corporation');
+  assert.equal(row2.position, 'Platform Tech Lead');
+  assert.equal(row2.status, 'Applied');
+  assert.equal(row2.appliedAt, '2026-10-22');
+  assert.equal(row2.workMode, 'Remote');
+});
+
+test('contract: parseApplicationsFromCsv neutralizes spreadsheet formula injection', () => {
+  assert.equal(neutralizeFormula("=cmd|' /C calc'!A0"), "cmd|' /C calc'!A0");
+  assert.equal(neutralizeFormula('@SUM(A1:A10)'), 'SUM(A1:A10)');
+  assert.equal(neutralizeFormula('+12345'), '12345');
+  assert.equal(neutralizeFormula("'-4567"), '-4567');
+
+  const dangerousCsv = 'Company,Position,Notes\n' +
+    'Evil Corp,=1+1,@calc\n' +
+    'Safe Corp,"\'+formula",Normal note';
+
+  const preview = parseApplicationsFromCsv(dangerousCsv);
+  assert.equal(preview.totalRows, 2);
+  assert.equal(preview.rows[0].position, '1+1');
+  assert.equal(preview.rows[0].notes, 'calc');
+  assert.equal(preview.rows[1].position, '+formula');
+});
+
+test('contract: parseApplicationsFromCsv detects row errors and duplicate candidates', () => {
+  const badCsv = 'Company,Position,DateApplied,Url\n' +
+    ',Software Engineer,2026-10-20,https://example.com/job1\n' +
+    'TechCorp,,2026-10-20,https://example.com/job2\n' +
+    'ValidCorp,Senior Go Engineer,invalid-date,not-a-url\n' +
+    'ExistingCorp,Lead Architect,2026-10-20,https://example.com/existing';
+
+  const preview = parseApplicationsFromCsv(badCsv, {
+    existingApps: [
+      { company: 'ExistingCorp', position: 'Lead Architect', url: 'https://example.com/existing' }
+    ]
+  });
+
+  assert.equal(preview.totalRows, 4);
+  assert.equal(preview.rows[0].isValid, false);
+  assert.equal(preview.rows[0].errors.some(e => e.includes('công ty')), true);
+
+  assert.equal(preview.rows[1].isValid, false);
+  assert.equal(preview.rows[1].errors.some(e => e.includes('vị trí')), true);
+
+  assert.equal(preview.rows[2].isValid, false);
+  assert.equal(preview.rows[2].errors.length >= 2, true);
+
+  assert.equal(preview.rows[3].isValid, true);
+  assert.equal(preview.rows[3].isDuplicate, true);
+  assert.equal(preview.duplicateRowsCount, 1);
+});
+
+test('contract: validateCsvImportRequest strictly validates payload structure and field limits', () => {
+  const valid = validateCsvImportRequest({
+    rows: [
+      {
+        company: 'FPT Software',
+        position: 'Senior Java Developer',
+        status: 'Applied',
+        appliedAt: '2026-10-24',
+        salary: '45M',
+        location: 'Hà Nội',
+        workMode: 'Hybrid'
+      }
+    ],
+    skipDuplicates: true
+  });
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.rows.length, 1);
+    assert.equal(valid.data.skipDuplicates, true);
+  }
+
+  const emptyRows = validateCsvImportRequest({ rows: [] });
+  assert.equal(emptyRows.ok, false);
+
+  const unknownFields = validateCsvImportRequest({
+    rows: [{ company: 'Test', position: 'Dev' }],
+    extraField: 123
+  });
+  assert.equal(unknownFields.ok, false);
+
+  const invalidRowDate = validateCsvImportRequest({
+    rows: [{ company: 'Test', position: 'Dev', appliedAt: '2026-02-30' }]
+  });
+  assert.equal(invalidRowDate.ok, false);
 });
 

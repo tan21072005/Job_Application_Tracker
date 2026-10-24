@@ -471,3 +471,72 @@ export interface InterviewEvaluateResultDTO {
   improvedAnswer: string;
   rubric: StarRubricScoreDTO;
 }
+
+export interface CsvImportRowErrorDTO {
+  rowNumber: number;
+  field: string;
+  message: string;
+  rawVal?: string;
+}
+
+export interface CsvImportRowDTO {
+  rowNumber: number;
+  company: string;
+  position: string;
+  status: ApplicationStatus;
+  appliedAt: string | null;
+  salary: string | null;
+  location: string | null;
+  workMode: WorkMode | null;
+  nextAction: string | null;
+  deadline: string | null;
+  source: string | null;
+  jobCode: string | null;
+  url: string | null;
+  notes: string | null;
+  isValid: boolean;
+  isDuplicate?: boolean;
+  duplicateReason?: string;
+  errors: string[];
+}
+
+export interface CsvImportPreviewDTO {
+  totalRows: number;
+  validRowsCount: number;
+  errorRowsCount: number;
+  duplicateRowsCount: number;
+  delimiter: ',' | ';';
+  hasBom: boolean;
+  headersFound: string[];
+  rows: CsvImportRowDTO[];
+  globalErrors: string[];
+}
+
+export interface CsvImportItemInput {
+  company: string;
+  position: string;
+  status?: ApplicationStatus;
+  appliedAt?: string | null;
+  salary?: string | null;
+  location?: string | null;
+  workMode?: WorkMode | null;
+  nextAction?: string | null;
+  deadline?: string | null;
+  source?: string | null;
+  jobCode?: string | null;
+  url?: string | null;
+  notes?: string | null;
+}
+
+export interface CsvImportRequestDTO {
+  rows: CsvImportItemInput[];
+  skipDuplicates?: boolean;
+}
+
+export interface CsvImportResultDTO {
+  importedCount: number;
+  skippedDuplicatesCount: number;
+  failedCount: number;
+  insertedIds: string[];
+  errors: CsvImportRowErrorDTO[];
+}

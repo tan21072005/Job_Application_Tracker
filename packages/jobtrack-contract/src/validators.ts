@@ -17,7 +17,9 @@ import {
   type InterviewPrepRequestDTO,
   type InterviewEvaluateRequestDTO,
   type InterviewQuestionCategory,
-  type DomainTrack
+  type DomainTrack,
+  type CsvImportItemInput,
+  type CsvImportRequestDTO
 } from './types.ts';
 import { isValidCalendarDate, isValidIsoInstant, isValidIanaTimezone } from './time.ts';
 import { normalizeIdentityKey, normalizeUrl } from './normalization.ts';
@@ -1002,6 +1004,159 @@ export function validateInterviewEvaluateInput(rawBody: unknown): ValidationResu
       answer,
       targetRole,
       company
+    }
+  };
+}
+
+export function validateCsvImportRequest(rawBody: unknown): ValidationResult<CsvImportRequestDTO> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu tải lên phải là một đối tượng JSON hợp lệ.',
+      errors: { body: 'Đối tượng body không đúng định dạng.' }
+    };
+  }
+
+  const body = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  const allowedKeys = new Set(['rows', 'skipDuplicates']);
+  for (const k of Object.keys(body)) {
+    if (!allowedKeys.has(k)) {
+      errors[k] = `Trường "${k}" không được phép trong yêu cầu nhập CSV.`;
+    }
+  }
+
+  if (!('rows' in body) || !Array.isArray(body.rows)) {
+    errors.rows = 'Danh sách dòng dữ liệu (rows) là bắt buộc và phải là một mảng.';
+    return {
+      ok: false,
+      message: 'Dữ liệu nhập CSV chưa hợp lệ.',
+      errors
+    };
+  }
+
+  const rawRows = body.rows as unknown[];
+  if (rawRows.length === 0) {
+    errors.rows = 'Danh sách dòng dữ liệu không được để trống.';
+  } else if (rawRows.length > 500) {
+    errors.rows = 'Số lượng dòng nhập mỗi lần không được vượt quá 500 dòng.';
+  }
+
+  const validatedRows: CsvImportItemInput[] = [];
+  const validStatuses: Set<ApplicationStatus> = new Set(['Saved', 'Applied', 'Screening', 'Interview', 'Offer', 'Rejected', 'Withdrawn']);
+  const validWorkModes: Set<WorkMode> = new Set(['On-site', 'Hybrid', 'Remote']);
+
+  for (let i = 0; i < rawRows.length; i++) {
+    const r = rawRows[i];
+    if (!r || typeof r !== 'object' || Array.isArray(r)) {
+      errors[`rows[${i}]`] = `Dòng thứ ${i + 1} phải là một đối tượng dữ liệu.`;
+      continue;
+    }
+
+    const rowObj = r as Record<string, unknown>;
+    const rowAllowedKeys = new Set([
+      'company', 'position', 'status', 'appliedAt', 'salary',
+      'location', 'workMode', 'nextAction', 'deadline',
+      'source', 'jobCode', 'url', 'notes'
+    ]);
+
+    for (const rk of Object.keys(rowObj)) {
+      if (!rowAllowedKeys.has(rk)) {
+        errors[`rows[${i}].${rk}`] = `Trường "${rk}" không được hỗ trợ trong dòng dữ liệu.`;
+      }
+    }
+
+    if (typeof rowObj.company !== 'string' || !rowObj.company.trim()) {
+      errors[`rows[${i}].company`] = `Dòng thứ ${i + 1} thiếu tên công ty.`;
+    } else if (rowObj.company.trim().length > 250) {
+      errors[`rows[${i}].company`] = `Dòng thứ ${i + 1} tên công ty vượt quá 250 ký tự.`;
+    }
+
+    if (typeof rowObj.position !== 'string' || !rowObj.position.trim()) {
+      errors[`rows[${i}].position`] = `Dòng thứ ${i + 1} thiếu vị trí ứng tuyển.`;
+    } else if (rowObj.position.trim().length > 250) {
+      errors[`rows[${i}].position`] = `Dòng thứ ${i + 1} vị trí ứng tuyển vượt quá 250 ký tự.`;
+    }
+
+    let status: ApplicationStatus | undefined = undefined;
+    if ('status' in rowObj && rowObj.status !== undefined && rowObj.status !== null) {
+      if (typeof rowObj.status !== 'string' || !validStatuses.has(rowObj.status as ApplicationStatus)) {
+        errors[`rows[${i}].status`] = `Trạng thái "${String(rowObj.status)}" không hợp lệ.`;
+      } else {
+        status = rowObj.status as ApplicationStatus;
+      }
+    }
+
+    let workMode: WorkMode | null = null;
+    if ('workMode' in rowObj && rowObj.workMode !== undefined && rowObj.workMode !== null) {
+      if (typeof rowObj.workMode !== 'string' || !validWorkModes.has(rowObj.workMode as WorkMode)) {
+        errors[`rows[${i}].workMode`] = `Hình thức làm việc "${String(rowObj.workMode)}" không hợp lệ.`;
+      } else {
+        workMode = rowObj.workMode as WorkMode;
+      }
+    }
+
+    let appliedAt: string | null = null;
+    if ('appliedAt' in rowObj && rowObj.appliedAt !== undefined && rowObj.appliedAt !== null) {
+      if (typeof rowObj.appliedAt !== 'string') {
+        errors[`rows[${i}].appliedAt`] = `Ngày ứng tuyển phải là chuỗi ký tự.`;
+      } else if (rowObj.appliedAt.trim()) {
+        const d = rowObj.appliedAt.trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !isValidCalendarDate(d)) {
+          errors[`rows[${i}].appliedAt`] = `Ngày ứng tuyển "${d}" không đúng lịch hoặc định dạng YYYY-MM-DD.`;
+        } else {
+          appliedAt = d;
+        }
+      }
+    }
+
+    let url: string | null = null;
+    if ('url' in rowObj && rowObj.url !== undefined && rowObj.url !== null) {
+      if (typeof rowObj.url !== 'string') {
+        errors[`rows[${i}].url`] = `Đường dẫn URL phải là chuỗi ký tự.`;
+      } else if (rowObj.url.trim()) {
+        const u = rowObj.url.trim();
+        if (u.length > 2000) {
+          errors[`rows[${i}].url`] = `Đường dẫn URL vượt quá 2000 ký tự.`;
+        } else if (!/^https?:\/\//i.test(u)) {
+          errors[`rows[${i}].url`] = `Đường dẫn URL phải bắt đầu bằng http:// hoặc https://.`;
+        } else {
+          url = u;
+        }
+      }
+    }
+
+    validatedRows.push({
+      company: typeof rowObj.company === 'string' ? rowObj.company.trim() : '',
+      position: typeof rowObj.position === 'string' ? rowObj.position.trim() : '',
+      status: status || 'Saved',
+      appliedAt,
+      salary: typeof rowObj.salary === 'string' && rowObj.salary.trim() ? rowObj.salary.trim().slice(0, 250) : null,
+      location: typeof rowObj.location === 'string' && rowObj.location.trim() ? rowObj.location.trim().slice(0, 250) : null,
+      workMode,
+      nextAction: typeof rowObj.nextAction === 'string' && rowObj.nextAction.trim() ? rowObj.nextAction.trim().slice(0, 250) : null,
+      deadline: typeof rowObj.deadline === 'string' && rowObj.deadline.trim() ? rowObj.deadline.trim().slice(0, 50) : null,
+      source: typeof rowObj.source === 'string' && rowObj.source.trim() ? rowObj.source.trim().slice(0, 100) : null,
+      jobCode: typeof rowObj.jobCode === 'string' && rowObj.jobCode.trim() ? rowObj.jobCode.trim().slice(0, 100) : null,
+      url,
+      notes: typeof rowObj.notes === 'string' && rowObj.notes.trim() ? rowObj.notes.trim().slice(0, 5000) : null
+    });
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Dữ liệu nhập CSV chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      rows: validatedRows,
+      skipDuplicates: body.skipDuplicates !== false
     }
   };
 }
