@@ -62,7 +62,12 @@ import {
   calculateSourceMetrics,
   findStaleApplications,
   calculateGoalProgress,
-  calculateAnalyticsSummary
+  calculateAnalyticsSummary,
+  validateResumeInput,
+  validateResumeTailorInput,
+  calculateResumeAtsScore,
+  generateResumeDiff,
+  tailorResumeForJob
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -1362,4 +1367,160 @@ test('contract: calculateAnalyticsSummary aggregates entire dashboard payload', 
   assert.equal(summary.sources.length, 1);
   assert.equal(summary.goals.targetOffers, 1);
   assert.equal(summary.goals.currentOffers, 1);
+});
+
+test('contract: validateResumeInput validates variant structure and limits', () => {
+  const nullCheck = validateResumeInput(null);
+  assert.equal(nullCheck.ok, false);
+
+  const emptyCheck = validateResumeInput({});
+  assert.equal(emptyCheck.ok, false);
+  assert.ok(emptyCheck.errors?.name);
+
+  const valid = validateResumeInput({
+    name: 'CV Senior Frontend 2026',
+    targetRole: 'Senior React Developer',
+    summary: 'Chuyên gia phát triển ứng dụng React với hơn 5 năm kinh nghiệm.',
+    experiences: [
+      {
+        company: 'VNG',
+        role: 'Senior Frontend Engineer',
+        period: '2023 - Nay',
+        bulletPoints: ['Tối ưu hóa thời gian tải ứng dụng 45%'],
+        technologies: ['React', 'TypeScript', 'Tailwind']
+      }
+    ],
+    skillGroups: [
+      { category: 'Frontend', skills: ['React', 'TypeScript', 'Next.js'] }
+    ],
+    isMaster: true
+  });
+
+  assert.equal(valid.ok, true);
+  assert.equal(valid.data.name, 'CV Senior Frontend 2026');
+  assert.equal(valid.data.isMaster, true);
+  assert.equal(valid.data.experiences.length, 1);
+});
+
+test('contract: validateResumeTailorInput enforces company and position', () => {
+  const invalid = validateResumeTailorInput({});
+  assert.equal(invalid.ok, false);
+
+  const missingPos = validateResumeTailorInput({ jobDetails: { company: 'FPT' } });
+  assert.equal(missingPos.ok, false);
+
+  const valid = validateResumeTailorInput({
+    resumeId: 'res-123',
+    jobDetails: {
+      company: 'Shopee',
+      position: 'Frontend Lead',
+      description: 'Yêu cầu kinh nghiệm React, Next.js, Performance Optimization',
+      requiredSkills: ['React', 'Next.js']
+    }
+  });
+
+  assert.equal(valid.ok, true);
+  assert.equal(valid.data.jobDetails.company, 'Shopee');
+  assert.equal(valid.data.jobDetails.position, 'Frontend Lead');
+});
+
+test('contract: calculateResumeAtsScore accurately evaluates keyword presence', () => {
+  const sample = {
+    summary: 'Kỹ sư phần mềm đam mê React và TypeScript.',
+    experiences: [
+      {
+        bulletPoints: ['Xây dựng microservices với Node.js và Docker'],
+        technologies: ['Docker', 'AWS']
+      }
+    ],
+    skillGroups: [
+      { skills: ['React', 'TypeScript', 'PostgreSQL'] }
+    ]
+  };
+
+  const fullMatch = calculateResumeAtsScore(sample, ['React', 'TypeScript', 'Docker', 'PostgreSQL']);
+  assert.equal(fullMatch.score, 100);
+
+  const partialMatch = calculateResumeAtsScore(sample, ['React', 'Kubernetes', 'Golang', 'Rust']);
+  assert.equal(partialMatch.score, 25);
+
+  const emptyKeywords = calculateResumeAtsScore(sample, []);
+  assert.equal(emptyKeywords.score, 100);
+});
+
+test('contract: generateResumeDiff detects changes across sections', () => {
+  const orig = {
+    id: 'res-1',
+    name: 'CV Gốc',
+    summary: 'Kỹ sư Frontend kinh nghiệm.',
+    experiences: [
+      {
+        id: 'exp-1',
+        company: 'VNG',
+        role: 'Developer',
+        period: '2023 - 2026',
+        bulletPoints: ['Phát triển giao diện ứng dụng.'],
+        technologies: ['React']
+      }
+    ],
+    skillGroups: [{ category: 'Kỹ năng', skills: ['React', 'CSS'] }],
+    isMaster: true,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z'
+  };
+
+  const tailored = {
+    ...orig,
+    summary: 'Kỹ sư Frontend chuyên sâu về Performance tại Shopee.',
+    experiences: [
+      {
+        ...orig.experiences[0],
+        bulletPoints: ['Phát triển giao diện ứng dụng, trực tiếp tối ưu hóa tải trang.']
+      }
+    ],
+    skillGroups: [{ category: 'Kỹ năng', skills: ['Next.js', 'React', 'CSS'] }]
+  };
+
+  const diffs = generateResumeDiff(orig, tailored);
+  assert.ok(diffs.length >= 2);
+  const sumDiff = diffs.find(d => d.section === 'summary');
+  assert.ok(sumDiff);
+  assert.equal(sumDiff.type, 'modified');
+});
+
+test('contract: tailorResumeForJob synthesizes tailored variant and boosts score', () => {
+  const base = {
+    id: 'res-master',
+    name: 'CV Gốc',
+    summary: 'Lập trình viên Web.',
+    experiences: [
+      {
+        id: 'exp-1',
+        company: 'TechCorp',
+        role: 'Software Engineer',
+        period: '2022 - 2026',
+        bulletPoints: ['Thiết kế giao diện người dùng'],
+        technologies: ['JavaScript']
+      }
+    ],
+    skillGroups: [{ category: 'Kỹ năng', skills: ['JavaScript', 'HTML'] }],
+    isMaster: true,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z'
+  };
+
+  const job = {
+    company: 'Grab',
+    position: 'Senior React Engineer',
+    description: 'Tìm kiếm chuyên gia React, TypeScript, GraphQL để xây dựng hệ thống thanh toán tốc độ cao.',
+    requiredSkills: ['React', 'TypeScript', 'GraphQL']
+  };
+
+  const result = tailorResumeForJob(base, job);
+  assert.ok(result.tailoredScore >= 80);
+  assert.ok(result.tailoredScore >= result.originalScore);
+  assert.ok(result.diffs.length > 0);
+  assert.ok(result.tailoringNotes.length >= 3);
+  assert.ok(result.tailoredResume.name.includes('Grab'));
+  assert.ok(result.tailoredResume.summary.includes('Grab'));
 });
