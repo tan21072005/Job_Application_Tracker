@@ -56,6 +56,7 @@ import { SubscriptionCrawlerService } from './services/subscription-crawler.ts';
 import { CandidateProfileService } from './services/candidate-profile.ts';
 import { AiProService, normalizeProPlan } from './services/ai-pro-service.ts';
 import { DatasetService } from './services/dataset-service.ts';
+import { AnalyticsService } from './services/analytics-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -96,6 +97,7 @@ export const subscriptionCrawlerService = new SubscriptionCrawlerService(pool, j
 export const candidateProfileService = new CandidateProfileService(pool);
 export const aiProService = new AiProService(pool);
 export const datasetService = new DatasetService(pool);
+export const analyticsService = new AnalyticsService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1215,6 +1217,36 @@ app.post('/api/pro/test/simulate-webhook', auth, async (req, res, next) => {
     });
 
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/analytics/summary', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const summary = await analyticsService.getSummary(userId, req.query);
+    res.json(summary);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/analytics/goals', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const goals = await analyticsService.getGoals(userId);
+    res.json(goals);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/analytics/goals', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const goals = await analyticsService.updateGoals(userId, req.body);
+    res.json(goals);
   } catch (error) {
     next(error);
   }
