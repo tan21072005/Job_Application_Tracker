@@ -30,7 +30,9 @@ import {
   validateCsvImportRequest,
   validateOfferEvaluationInput,
   validateOfferComparisonInput,
-  validateCounterOfferInput
+  validateCounterOfferInput,
+  validateCheckoutInput,
+  validateSimulateWebhookInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -54,6 +56,7 @@ import { SubscriptionCrawlerService } from './services/subscription-crawler.ts';
 import { CandidateProfileService } from './services/candidate-profile.ts';
 import { AiProService, normalizeProPlan } from './services/ai-pro-service.ts';
 import { DatasetService } from './services/dataset-service.ts';
+import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -71,6 +74,12 @@ const secret = process.env.JWT_SECRET || (isTest ? 'jobtrack_test_jwt_secret_wit
 const origin = process.env.APP_ORIGIN || 'http://127.0.0.1:64364';
 if (!databaseUrl || !secret || secret.length < 32) throw Error('Set DATABASE_URL and a JWT_SECRET of at least 32 characters.');
 if (process.env.NODE_ENV === 'production' && !process.env.APP_ORIGIN) throw Error('Set APP_ORIGIN in production.');
+if (!process.env.PAYMENT_WEBHOOK_SECRET && process.env.NODE_ENV !== 'production') {
+  process.env.PAYMENT_WEBHOOK_SECRET = 'jobtrack_dev_test_payment_webhook_secret_key_32_characters';
+}
+if (!process.env.PAYMENT_MODE && process.env.NODE_ENV !== 'production') {
+  process.env.PAYMENT_MODE = 'test';
+}
 const key = new TextEncoder().encode(secret);
 
 const pool = new Pool({
@@ -1132,9 +1141,12 @@ app.get('/api/pro/orders/:orderId', auth, async (req, res, next) => {
 
 app.post('/api/pro/checkout', auth, async (req, res, next) => {
   try {
+    const val = validateCheckoutInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
     const userId = (req as SessionRequest).userId;
-    const b = bodyObject(req.body);
-    const checkout = await aiProService.createCheckout(userId, normalizeProPlan(b.plan));
+    const checkout = await aiProService.createCheckout(userId, val.data.plan);
     res.json(checkout);
   } catch (error) {
     next(error);
@@ -1156,6 +1168,50 @@ app.post('/api/pro/webhook', async (req, res, next) => {
       signature: req.get('X-JobTrack-Signature') ?? undefined,
       timestamp: req.get('X-JobTrack-Timestamp') ?? undefined,
       payload: b
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/pro/test/simulate-webhook', auth, async (req, res, next) => {
+  try {
+    const val = validateSimulateWebhookInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const order = await aiProService.getOrder(userId, val.data.orderId);
+    if (order.status === 'paid') {
+      return res.json({
+        success: true,
+        replayed: true,
+        orderId: order.orderId,
+        plan: order.plan
+      });
+    }
+
+    const webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET || 'jobtrack_dev_test_payment_webhook_secret_key_32_characters';
+    const payload = {
+      transferCode: order.transferCode,
+      amount: order.amount,
+      currency: order.currency
+    };
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const timestamp = Date.now();
+    const signature = signPaymentPayload({
+      secret: webhookSecret,
+      timestamp,
+      rawBody
+    });
+
+    const result = await aiProService.handlePaymentWebhook({
+      rawBody,
+      signature,
+      timestamp: String(timestamp),
+      payload
     });
 
     res.json(result);

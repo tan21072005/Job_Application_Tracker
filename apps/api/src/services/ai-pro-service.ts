@@ -53,6 +53,46 @@ export const PLAN_DURATION_DAYS: Readonly<Record<ProPlan, number>> = Object.free
   yearly: 365
 });
 
+export const PLAN_METADATA: Readonly<Record<ProPlan, {
+  name: string;
+  highlightBadge?: string;
+  savingsPercent?: number;
+  features: string[];
+}>> = Object.freeze({
+  monthly: {
+    name: 'Gói 1 Tháng',
+    features: [
+      'Không giới hạn quản lý hồ sơ ứng tuyển',
+      'AI phân tích độ khớp ATS & gợi ý từ khóa',
+      'AI tạo Cover Letter cá nhân hóa không giới hạn',
+      'AI Luyện phỏng vấn STAR & chấm điểm chi tiết',
+      'So sánh đa offer & AI Đàm phán mức lương'
+    ]
+  },
+  quarterly: {
+    name: 'Gói 3 Tháng',
+    highlightBadge: 'Phổ biến nhất',
+    savingsPercent: 16,
+    features: [
+      'Tất cả tính năng của gói 1 tháng',
+      'Tiết kiệm 16% so với thanh toán từng tháng',
+      'Đồng hành trọn vẹn chu kỳ tìm việc và thử việc',
+      'Ưu tiên tài nguyên AI phản hồi nhanh nhất'
+    ]
+  },
+  yearly: {
+    name: 'Gói 1 Năm',
+    highlightBadge: 'Tiết kiệm nhất',
+    savingsPercent: 33,
+    features: [
+      'Tất cả đặc quyền Pro trọn vẹn 365 ngày',
+      'Tiết kiệm 33% chi phí (chỉ ~66.000đ/tháng)',
+      'Job Radar AI tự động quét cơ hội mới định kỳ',
+      'Trải nghiệm sớm nhất các tính năng AI thế hệ mới'
+    ]
+  }
+});
+
 export const PAYMENT_MODE_ENV = 'PAYMENT_MODE';
 export const PAYMENT_TEST_MODE = 'test';
 const PAYMENT_TEST_NOTICE =
@@ -346,12 +386,19 @@ export class AiProService {
 
   getPlans(): ProPlanDTO[] {
     const plans: ProPlan[] = ['monthly', 'quarterly', 'yearly'];
-    return plans.map(plan => ({
-      plan,
-      amount: PLAN_PRICES[plan],
-      currency: 'VND',
-      durationDays: PLAN_DURATION_DAYS[plan]
-    }));
+    return plans.map(plan => {
+      const meta = PLAN_METADATA[plan];
+      return {
+        plan,
+        name: meta.name,
+        amount: PLAN_PRICES[plan],
+        currency: 'VND',
+        durationDays: PLAN_DURATION_DAYS[plan],
+        highlightBadge: meta.highlightBadge,
+        savingsPercent: meta.savingsPercent,
+        features: meta.features
+      };
+    });
   }
 
   async getOrder(userId: string, orderId: string): Promise<ProOrderDTO> {

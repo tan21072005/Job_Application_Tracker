@@ -587,3 +587,73 @@ test('Checkout: a payment mode that differs from the exact value fails closed', 
   );
   assert.equal(after.rows[0].count, before.rows[0].count);
 });
+
+test('Plans: returns server-owned plans with rich metadata', async () => {
+  const { cookie } = await registerUser();
+  const res = await fetch(`${base}/api/pro/plans`, {
+    headers: { 'Origin': origin, 'Cookie': cookie }
+  });
+  assert.equal(res.status, 200);
+  const data = (await res.json()) as { plans: Array<{ plan: string; name: string; amount: number; features: string[] }> };
+  assert.equal(data.plans.length, 3);
+  const monthly = data.plans.find(p => p.plan === 'monthly');
+  assert.ok(monthly);
+  assert.equal(monthly?.amount, 99000);
+  assert.ok(Array.isArray(monthly?.features) && monthly.features.length > 0);
+  assert.ok(monthly?.name);
+});
+
+test('Simulate Webhook: successfully completes order and promotes user to pro', async () => {
+  const { cookie, userId } = await registerUser();
+  const checkout = await createOrder(cookie, 'quarterly');
+  assert.equal(checkout.status, 200);
+  assert.equal(checkout.body.amount, 249000);
+
+  const simulateRes = await fetch(`${base}/api/pro/test/simulate-webhook`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Origin': origin, 'Cookie': cookie },
+    body: JSON.stringify({ orderId: checkout.body.orderId })
+  });
+  assert.equal(simulateRes.status, 200);
+  const simBody = (await simulateRes.json()) as { success: boolean; replayed: boolean; orderId: string; plan: string };
+  assert.equal(simBody.success, true);
+  assert.equal(simBody.orderId, checkout.body.orderId);
+  assert.equal(simBody.plan, 'quarterly');
+
+  const statusRes = await fetch(`${base}/api/pro/status`, {
+    headers: { 'Origin': origin, 'Cookie': cookie }
+  });
+  assert.equal(statusRes.status, 200);
+  const statusBody = (await statusRes.json()) as { isPro: boolean; tier: string; expiresAt: string | null };
+  assert.equal(statusBody.isPro, true);
+  assert.equal(statusBody.tier, 'pro');
+  assert.ok(statusBody.expiresAt);
+
+  const replayRes = await fetch(`${base}/api/pro/test/simulate-webhook`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Origin': origin, 'Cookie': cookie },
+    body: JSON.stringify({ orderId: checkout.body.orderId })
+  });
+  assert.equal(replayRes.status, 200);
+  const replayBody = (await replayRes.json()) as { success: boolean; replayed: boolean };
+  assert.equal(replayBody.success, true);
+  assert.equal(replayBody.replayed, true);
+});
+
+test('Simulate Webhook: rejects invalid orderId or non-existent order', async () => {
+  const { cookie } = await registerUser();
+
+  const invalidRes = await fetch(`${base}/api/pro/test/simulate-webhook`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Origin': origin, 'Cookie': cookie },
+    body: JSON.stringify({ orderId: '   ' })
+  });
+  assert.equal(invalidRes.status, 422);
+
+  const notFoundRes = await fetch(`${base}/api/pro/test/simulate-webhook`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Origin': origin, 'Cookie': cookie },
+    body: JSON.stringify({ orderId: randomUUID() })
+  });
+  assert.equal(notFoundRes.status, 404);
+});
