@@ -42,7 +42,9 @@ import {
   DEFAULT_SUGGESTED_CHAT_PROMPTS,
   type ChatActionReceiptDTO,
   validateMilestoneUpdateInput,
-  validateRoadmapGenerateInput
+  validateRoadmapGenerateInput,
+  validateEmailParseInput,
+  validateEmailApplyInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -75,6 +77,7 @@ import { PipelineService } from './services/pipeline-service.ts';
 import { DecisionService } from './services/decision-service.ts';
 import { ChatService } from './services/chat-service.ts';
 import { RoadmapService } from './services/roadmap-service.ts';
+import { EmailIngestService } from './services/email-ingest-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -124,6 +127,7 @@ export const pipelineService = new PipelineService(pool);
 export const decisionService = new DecisionService(pool);
 export const chatService = new ChatService(pool);
 export const roadmapService = new RoadmapService(pool);
+export const emailIngestService = new EmailIngestService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1250,6 +1254,40 @@ app.delete('/api/career/roadmap/:id', auth, async (req, res, next) => {
       });
     }
     res.json({ success: true, deletedId: roadmapId });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/ingest/email/parse', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateEmailParseInput(req.body);
+    if (!val.ok) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.message
+      });
+    }
+    const proposal = await emailIngestService.parseAndPropose(userId, val.data);
+    res.json(proposal);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/ingest/email/apply', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateEmailApplyInput(req.body);
+    if (!val.ok) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.message
+      });
+    }
+    const result = await emailIngestService.applyProposal(userId, val.data);
+    res.status(201).json(result);
   } catch (error) {
     next(error);
   }
