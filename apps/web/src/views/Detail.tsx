@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowUpRight, Award, CalendarDays, ExternalLink, Pencil, Plus, Trash2, Sparkles, FileText, Building2, Send } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Award, CalendarDays, ExternalLink, Pencil, Plus, Trash2, Sparkles, FileText, Building2, Send, Users } from 'lucide-react';
 import { deviceTimezone, formatDate, formatTime, labels, statuses, type Application, type Interview, type Status } from '../domain';
 import { Button, Empty, Monogram, StatusBadge } from '../components/ui';
 import { interviewLabels } from '../components/forms';
@@ -10,6 +10,7 @@ import OfferEvaluationModal from '../components/OfferEvaluationModal';
 import { ResumeTailorModal } from '../components/ResumeTailorModal';
 import { CompanyIntelligenceModal } from '../components/CompanyIntelligenceModal';
 import { FollowUpSequencerModal } from '../components/FollowUpSequencerModal';
+import { NetworkingContactsModal } from '../components/NetworkingContactsModal';
 
 export default function Detail({
   app,
@@ -44,6 +45,7 @@ export default function Detail({
   const [showTailorModal, setShowTailorModal] = useState(false);
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
   const tabs: ('info' | 'interviews' | 'ai')[] = ['info', 'interviews', 'ai'];
 
   return (
@@ -58,6 +60,9 @@ export default function Detail({
           <h1>{app.position}</h1>
           <p>{app.company}{app.location ? ` · ${app.location}` : ''}{app.workMode ? ` · ${app.workMode}` : ''}</p>
         </div>
+        <Button kind="secondary" className="networking-contacts-btn" onClick={() => setShowContactsModal(true)}>
+          <Users size={16} />Liên hệ & CRM
+        </Button>
         <Button kind="secondary" className="follow-up-sequencer-btn" onClick={() => setShowFollowUpModal(true)}>
           <Send size={16} />Gửi Follow-up
         </Button>
@@ -298,6 +303,16 @@ export default function Detail({
           isOpen={showFollowUpModal}
           app={app}
           onClose={() => setShowFollowUpModal(false)}
+          notify={notify}
+        />
+      )}
+
+      {showContactsModal && (
+        <NetworkingContactsModal
+          isOpen={showContactsModal}
+          applications={[app]}
+          initialApplicationId={app.id}
+          onClose={() => setShowContactsModal(false)}
           notify={notify}
         />
       )}

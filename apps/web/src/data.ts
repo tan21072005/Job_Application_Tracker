@@ -86,7 +86,18 @@ import {
   DEFAULT_FOLLOW_UP_TEMPLATES,
   calculateFollowUpCadence,
   generateFollowUpEmail,
-  validateFollowUpLogInput
+  validateFollowUpLogInput,
+  type ContactType,
+  type RelationshipStrength,
+  type InteractionChannel,
+  type ContactDTO,
+  type ContactInteractionDTO,
+  type ContactMutationInput,
+  type InteractionMutationInput,
+  type RelationshipHealthDTO,
+  calculateRelationshipHealth,
+  validateContactInput,
+  validateInteractionInput
 } from '@jobtrack/contract';
 
 export type {
@@ -106,7 +117,15 @@ export type {
   FollowUpCadenceStatusDTO,
   FollowUpTemplateDTO,
   GenerateFollowUpInput,
-  GeneratedFollowUpDraftDTO
+  GeneratedFollowUpDraftDTO,
+  ContactType,
+  RelationshipStrength,
+  InteractionChannel,
+  ContactDTO,
+  ContactInteractionDTO,
+  ContactMutationInput,
+  InteractionMutationInput,
+  RelationshipHealthDTO
 };
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
@@ -1772,6 +1791,325 @@ export const followUpRepository = {
       });
     }
     return request<FollowUpCadenceStatusDTO[]>('/follow-ups/due');
+  }
+};
+
+const CONTACTS_STORAGE_KEY = 'jobtrack.contacts.v1';
+const CONTACT_INTERACTIONS_STORAGE_KEY = 'jobtrack.contact_interactions.v1';
+
+function initialDemoContacts(): ContactDTO[] {
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  return [
+    {
+      id: 'cnt-demo-1',
+      name: 'Nguyễn Hoàng Nam',
+      company: 'Shopee Vietnam',
+      role: 'Senior Technical Recruiter',
+      type: 'recruiter',
+      email: 'nam.nguyen@shopee.example.com',
+      phone: '0901234567',
+      linkedinUrl: 'https://linkedin.com/in/nam-recruiter',
+      relationshipStrength: 'in_touch',
+      notes: 'Liên hệ qua LinkedIn về vị trí Senior Backend Engineer. Trao đổi rất tích cực.',
+      lastContactedAt: new Date(now - 5 * day).toISOString(),
+      createdAt: new Date(now - 10 * day).toISOString(),
+      updatedAt: new Date(now - 5 * day).toISOString()
+    },
+    {
+      id: 'cnt-demo-2',
+      name: 'Trần Thị Mai Anh',
+      company: 'VNG Corporation',
+      role: 'Engineering Director',
+      type: 'hiring_manager',
+      email: 'maianh.tran@vng.example.com',
+      linkedinUrl: 'https://linkedin.com/in/maianh-vng',
+      relationshipStrength: 'advocate',
+      notes: 'Phỏng vấn kỹ thuật vòng System Design. Đã trao đổi về định hướng nền tảng.',
+      lastContactedAt: new Date(now - 35 * day).toISOString(),
+      createdAt: new Date(now - 40 * day).toISOString(),
+      updatedAt: new Date(now - 35 * day).toISOString()
+    },
+    {
+      id: 'cnt-demo-3',
+      name: 'Lê Quốc Bảo',
+      company: 'FPT Software',
+      role: 'Principal Architect',
+      type: 'mentor',
+      email: 'baolq@fpt.example.com',
+      phone: '0912345678',
+      relationshipStrength: 'in_touch',
+      notes: 'Mentor hướng dẫn định hướng kiến trúc Microservices và Cloud Native.',
+      lastContactedAt: new Date(now - 12 * day).toISOString(),
+      createdAt: new Date(now - 60 * day).toISOString(),
+      updatedAt: new Date(now - 12 * day).toISOString()
+    },
+    {
+      id: 'cnt-demo-4',
+      name: 'Hoàng Minh Tuấn',
+      company: 'Tiki',
+      role: 'Staff Engineer (Người giới thiệu)',
+      type: 'referrer',
+      email: 'tuan.hoang@tiki.example.com',
+      relationshipStrength: 'dormant',
+      notes: 'Bạn đại học, đã giới thiệu vào vị trí Lead Golang năm ngoái.',
+      lastContactedAt: new Date(now - 95 * day).toISOString(),
+      createdAt: new Date(now - 120 * day).toISOString(),
+      updatedAt: new Date(now - 95 * day).toISOString()
+    }
+  ];
+}
+
+function initialDemoInteractions(): Record<string, ContactInteractionDTO[]> {
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  return {
+    'cnt-demo-1': [
+      {
+        id: 'int-demo-1',
+        contactId: 'cnt-demo-1',
+        channel: 'linkedin',
+        summary: 'Trao đổi qua tin nhắn về dải lương và phúc lợi của Shopee',
+        details: 'Nam chia sẻ chế độ hybrid 2 ngày/tuần, dải lương gross cạnh tranh.',
+        date: new Date(now - 5 * day).toISOString(),
+        createdAt: new Date(now - 5 * day).toISOString()
+      }
+    ],
+    'cnt-demo-2': [
+      {
+        id: 'int-demo-2',
+        contactId: 'cnt-demo-2',
+        channel: 'interview',
+        summary: 'Phỏng vấn chuyên sâu kiến trúc hệ thống phân tán',
+        details: 'Chị Mai Anh đánh giá cao phần tối ưu cache và message queue.',
+        date: new Date(now - 35 * day).toISOString(),
+        createdAt: new Date(now - 35 * day).toISOString()
+      }
+    ]
+  };
+}
+
+function loadDemoContacts(): ContactDTO[] {
+  if (typeof localStorage === 'undefined') return initialDemoContacts();
+  const stored = localStorage.getItem(CONTACTS_STORAGE_KEY);
+  if (!stored) {
+    const init = initialDemoContacts();
+    saveDemoContacts(init);
+    return init;
+  }
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return initialDemoContacts();
+  }
+}
+
+function saveDemoContacts(list: ContactDTO[]): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(list));
+  }
+}
+
+function loadDemoInteractions(): Record<string, ContactInteractionDTO[]> {
+  if (typeof localStorage === 'undefined') return initialDemoInteractions();
+  const stored = localStorage.getItem(CONTACT_INTERACTIONS_STORAGE_KEY);
+  if (!stored) {
+    const init = initialDemoInteractions();
+    saveDemoInteractions(init);
+    return init;
+  }
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return initialDemoInteractions();
+  }
+}
+
+function saveDemoInteractions(map: Record<string, ContactInteractionDTO[]>): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(CONTACT_INTERACTIONS_STORAGE_KEY, JSON.stringify(map));
+  }
+}
+
+export const contactRepository = {
+  async list(filters?: { query?: string; company?: string; type?: string; strength?: string }): Promise<(ContactDTO & { health: RelationshipHealthDTO })[]> {
+    if (demoMode) {
+      let list = loadDemoContacts();
+      if (filters?.query) {
+        const q = filters.query.toLowerCase();
+        list = list.filter(c =>
+          c.name.toLowerCase().includes(q) ||
+          c.company.toLowerCase().includes(q) ||
+          (c.role && c.role.toLowerCase().includes(q))
+        );
+      }
+      if (filters?.company) {
+        list = list.filter(c => c.company === filters.company);
+      }
+      if (filters?.type) {
+        list = list.filter(c => c.type === filters.type);
+      }
+      if (filters?.strength) {
+        list = list.filter(c => c.relationshipStrength === filters.strength);
+      }
+      return list.map(c => ({
+        ...c,
+        health: calculateRelationshipHealth(c)
+      }));
+    }
+
+    const params = new URLSearchParams();
+    if (filters?.query) params.set('query', filters.query);
+    if (filters?.company) params.set('company', filters.company);
+    if (filters?.type) params.set('type', filters.type);
+    if (filters?.strength) params.set('strength', filters.strength);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return request<(ContactDTO & { health: RelationshipHealthDTO })[]>(`/contacts${qs}`);
+  },
+
+  async get(id: string): Promise<{ contact: ContactDTO; interactions: ContactInteractionDTO[]; health: RelationshipHealthDTO }> {
+    if (demoMode) {
+      const contacts = loadDemoContacts();
+      const contact = contacts.find(c => c.id === id);
+      if (!contact) throw new ApiError('Không tìm thấy người liên hệ.', 404);
+      const allInteractions = loadDemoInteractions();
+      const interactions = allInteractions[id] || [];
+      const health = calculateRelationshipHealth(contact, interactions[0]?.date);
+      return { contact, interactions, health };
+    }
+    return request<{ contact: ContactDTO; interactions: ContactInteractionDTO[]; health: RelationshipHealthDTO }>(`/contacts/${encodeURIComponent(id)}`);
+  },
+
+  async create(input: ContactMutationInput): Promise<ContactDTO> {
+    const val = validateContactInput(input);
+    if (!val.ok) {
+      throw new ApiError(val.message || 'Dữ liệu người liên hệ không hợp lệ.', 422);
+    }
+    if (demoMode) {
+      const contacts = loadDemoContacts();
+      const now = new Date().toISOString();
+      const newContact: ContactDTO = {
+        id: `cnt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: val.data.name,
+        company: val.data.company,
+        role: val.data.role,
+        type: val.data.type || 'recruiter',
+        email: val.data.email,
+        phone: val.data.phone,
+        linkedinUrl: val.data.linkedinUrl,
+        relationshipStrength: val.data.relationshipStrength || 'connected',
+        applicationId: val.data.applicationId,
+        notes: val.data.notes,
+        lastContactedAt: val.data.lastContactedAt || now,
+        createdAt: now,
+        updatedAt: now
+      };
+      contacts.unshift(newContact);
+      saveDemoContacts(contacts);
+      return newContact;
+    }
+    return request<ContactDTO>('/contacts', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async update(id: string, input: Partial<ContactMutationInput>): Promise<ContactDTO> {
+    if (demoMode) {
+      const contacts = loadDemoContacts();
+      const idx = contacts.findIndex(c => c.id === id);
+      if (idx === -1) throw new ApiError('Không tìm thấy người liên hệ.', 404);
+      const existing = contacts[idx];
+      const merged = { ...existing, ...input };
+      const val = validateContactInput(merged);
+      if (!val.ok) {
+        throw new ApiError(val.message || 'Dữ liệu cập nhật người liên hệ không hợp lệ.', 422);
+      }
+      const updated: ContactDTO = {
+        ...existing,
+        name: val.data.name,
+        company: val.data.company,
+        role: val.data.role,
+        type: val.data.type || existing.type,
+        email: val.data.email,
+        phone: val.data.phone,
+        linkedinUrl: val.data.linkedinUrl,
+        relationshipStrength: val.data.relationshipStrength || existing.relationshipStrength,
+        applicationId: val.data.applicationId,
+        notes: val.data.notes,
+        lastContactedAt: val.data.lastContactedAt,
+        updatedAt: new Date().toISOString()
+      };
+      contacts[idx] = updated;
+      saveDemoContacts(contacts);
+      return updated;
+    }
+    return request<ContactDTO>(`/contacts/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    if (demoMode) {
+      let contacts = loadDemoContacts();
+      contacts = contacts.filter(c => c.id !== id);
+      saveDemoContacts(contacts);
+      const allInteractions = loadDemoInteractions();
+      delete allInteractions[id];
+      saveDemoInteractions(allInteractions);
+      return;
+    }
+    return request<void>(`/contacts/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+  },
+
+  async addInteraction(contactId: string, input: InteractionMutationInput): Promise<ContactInteractionDTO> {
+    const val = validateInteractionInput(input);
+    if (!val.ok) {
+      throw new ApiError(val.message || 'Dữ liệu tương tác không hợp lệ.', 422);
+    }
+    if (demoMode) {
+      const contacts = loadDemoContacts();
+      const cIdx = contacts.findIndex(c => c.id === contactId);
+      if (cIdx === -1) throw new ApiError('Không tìm thấy người liên hệ.', 404);
+
+      const allInteractions = loadDemoInteractions();
+      const existing = allInteractions[contactId] || [];
+      const newInteraction: ContactInteractionDTO = {
+        id: `int-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        contactId,
+        channel: val.data.channel,
+        summary: val.data.summary,
+        details: val.data.details,
+        date: val.data.date || new Date().toISOString(),
+        followUpDate: val.data.followUpDate,
+        createdAt: new Date().toISOString()
+      };
+      allInteractions[contactId] = [newInteraction, ...existing];
+      saveDemoInteractions(allInteractions);
+
+      contacts[cIdx].lastContactedAt = newInteraction.date;
+      contacts[cIdx].updatedAt = new Date().toISOString();
+      saveDemoContacts(contacts);
+
+      return newInteraction;
+    }
+    return request<ContactInteractionDTO>(`/contacts/${encodeURIComponent(contactId)}/interactions`, {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async getReconnectDue(): Promise<(ContactDTO & { health: RelationshipHealthDTO })[]> {
+    if (demoMode) {
+      const all = await this.list();
+      return all
+        .filter(c => c.health.isReconnectDue || c.health.isDormant)
+        .sort((a, b) => b.health.daysSinceLastContact - a.health.daysSinceLastContact);
+    }
+    return request<(ContactDTO & { health: RelationshipHealthDTO })[]>('/contacts/reconnect-due');
   }
 };
 
