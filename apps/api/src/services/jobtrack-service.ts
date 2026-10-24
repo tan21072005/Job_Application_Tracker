@@ -3,6 +3,8 @@ import type { Pool, PoolClient } from 'pg';
 import {
   canonicalIntentHash,
   deriveActivityTimeline,
+  normalizeUrl,
+  normalizeIdentityKey,
   type ApplicationWireDTO,
   type InterviewWireDTO,
   type DashboardWireDTO,
@@ -10,7 +12,10 @@ import {
   type ValidatedInterviewData,
   type BulkOperationResultDTO,
   type ActivityTimelineItemDTO,
-  type ApplicationStatus
+  type ApplicationStatus,
+  type CsvImportRequestDTO,
+  type CsvImportResultDTO,
+  type CsvImportRowErrorDTO
 } from '../../../../packages/jobtrack-contract/src/index.ts';
 
 export class DomainError extends Error {
@@ -814,5 +819,162 @@ export class JobTrackService {
       response: Number(row.response),
       asOf: new Date().toISOString()
     };
+  }
+
+  public async bulkImportFromCsv(
+    userId: string,
+    input: CsvImportRequestDTO,
+    options: MutationOptions = {}
+  ): Promise<CsvImportResultDTO> {
+    return this.transaction(async client => {
+      await this.lockActor(client, userId, options.sessionId);
+
+      const existingRes = await client.query<{
+        id: string;
+        normalized_url: string | null;
+        source_normalized: string | null;
+        job_code_normalized: string | null;
+        comp: string;
+        pos: string;
+      }>(
+        `SELECT id, normalized_url, source_normalized, job_code_normalized,
+                LOWER(TRIM(company)) AS comp, LOWER(TRIM(position)) AS pos
+         FROM applications
+         WHERE user_id = $1 AND deleted_at IS NULL`,
+        [userId]
+      );
+
+      const existingUrls = new Set<string>();
+      const existingKeys = new Set<string>();
+      const existingCompPos = new Set<string>();
+
+      for (const row of existingRes.rows) {
+        if (row.normalized_url) existingUrls.add(row.normalized_url);
+        if (row.source_normalized && row.job_code_normalized) {
+          existingKeys.add(`${row.source_normalized}::${row.job_code_normalized}`);
+        }
+        existingCompPos.add(`${row.comp}::${row.pos}`);
+      }
+
+      const insertedIds: string[] = [];
+      const errors: CsvImportRowErrorDTO[] = [];
+      let skippedDuplicatesCount = 0;
+      const skipDuplicates = input.skipDuplicates !== false;
+
+      const batchUrls = new Set<string>();
+      const batchKeys = new Set<string>();
+      const batchCompPos = new Set<string>();
+
+      for (let i = 0; i < input.rows.length; i++) {
+        const item = input.rows[i];
+        const rowNum = i + 1;
+
+        if (!item.company?.trim() || !item.position?.trim()) {
+          errors.push({
+            rowNumber: rowNum,
+            field: 'company/position',
+            message: 'Tên công ty và vị trí ứng tuyển không được để trống.'
+          });
+          continue;
+        }
+
+        const compClean = item.company.trim();
+        const posClean = item.position.trim();
+        const compPosKey = `${compClean.toLowerCase()}::${posClean.toLowerCase()}`;
+
+        let normUrl: string | null = null;
+        if (item.url?.trim()) {
+          const u = normalizeUrl(item.url.trim());
+          if (u.error) {
+            errors.push({ rowNumber: rowNum, field: 'url', message: u.error });
+            continue;
+          }
+          normUrl = u.normalized;
+        }
+
+        let srcNorm: string | null = null;
+        if (item.source?.trim()) {
+          const s = normalizeIdentityKey(item.source.trim());
+          srcNorm = s.normalized;
+        }
+
+        let jcNorm: string | null = null;
+        if (item.jobCode?.trim()) {
+          const j = normalizeIdentityKey(item.jobCode.trim());
+          jcNorm = j.normalized;
+        }
+
+        const isDupUrl = Boolean(normUrl && (existingUrls.has(normUrl) || batchUrls.has(normUrl)));
+        const isDupSourceCode = Boolean(srcNorm && jcNorm && (existingKeys.has(`${srcNorm}::${jcNorm}`) || batchKeys.has(`${srcNorm}::${jcNorm}`)));
+        const isDupCompPos = existingCompPos.has(compPosKey) || batchCompPos.has(compPosKey);
+
+        if (isDupUrl || isDupSourceCode || isDupCompPos) {
+          if (skipDuplicates) {
+            skippedDuplicatesCount++;
+            continue;
+          } else {
+            errors.push({
+              rowNumber: rowNum,
+              field: 'duplicate',
+              message: `Hồ sơ "${posClean} tại ${compClean}" đã tồn tại.`
+            });
+            continue;
+          }
+        }
+
+        const id = randomUUID();
+        const status: ApplicationStatus = item.status || 'Saved';
+        const appliedAt = item.appliedAt || null;
+        const salary = item.salary || null;
+        const location = item.location || null;
+        const workMode = item.workMode || null;
+        const nextAction = item.nextAction || null;
+        const deadline = item.deadline || null;
+        const notes = item.notes || null;
+
+        await client.query(
+          `INSERT INTO applications(
+            id, user_id, company, position, url, normalized_url,
+            source, source_normalized, job_code, job_code_normalized,
+            location, work_mode, applied_at, salary, notes, next_action,
+            deadline_at, status, version
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6,
+            $7, $8, $9, $10,
+            $11, $12, $13, $14, $15, $16,
+            $17, $18, 1
+          )`,
+          [
+            id, userId, compClean, posClean, item.url?.trim() || null, normUrl,
+            item.source?.trim() || null, srcNorm, item.jobCode?.trim() || null, jcNorm,
+            location, workMode, appliedAt, salary, notes, nextAction,
+            deadline, status
+          ]
+        );
+
+        insertedIds.push(id);
+        if (normUrl) batchUrls.add(normUrl);
+        if (srcNorm && jcNorm) batchKeys.add(`${srcNorm}::${jcNorm}`);
+        batchCompPos.add(compPosKey);
+      }
+
+      if (insertedIds.length > 0) {
+        this.emitEvent(userId, {
+          type: 'MUTATION',
+          entity: 'application',
+          action: 'create',
+          id: insertedIds[0],
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      return {
+        importedCount: insertedIds.length,
+        skippedDuplicatesCount,
+        failedCount: errors.length,
+        insertedIds,
+        errors
+      };
+    });
   }
 }

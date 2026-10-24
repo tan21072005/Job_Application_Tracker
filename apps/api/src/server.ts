@@ -26,7 +26,8 @@ import {
   validateBulkStatusInput,
   validateBulkTrashInput,
   validateInterviewPrepInput,
-  validateInterviewEvaluateInput
+  validateInterviewEvaluateInput,
+  validateCsvImportRequest
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -531,6 +532,21 @@ app.post('/api/applications/bulk-trash', auth, async (req, res, next) => {
     const userId = (req as SessionRequest).userId;
     const sessionId = (req as SessionRequest).sessionId;
     const result = await jobTrackService.bulkMoveToTrash(userId, val.data.ids, { sessionId });
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/applications/import-csv', auth, async (req, res, next) => {
+  try {
+    const val = validateCsvImportRequest(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const sessionId = (req as SessionRequest).sessionId;
+    const result = await jobTrackService.bulkImportFromCsv(userId, val.data, { sessionId });
     res.status(200).json(result);
   } catch (error) {
     next(error);
