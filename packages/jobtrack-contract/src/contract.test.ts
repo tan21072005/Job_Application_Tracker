@@ -120,7 +120,13 @@ import {
   evaluateSimulationTurn,
   synthesizeSessionReport,
   validateStartSimulationInput,
-  validateSubmitTurnInput
+  validateSubmitTurnInput,
+  generateVerificationFingerprint,
+  synthesizePublicDossier,
+  verifyDossierIntegrity,
+  validatePortfolioConfigInput,
+  validateGenerateTokenInput,
+  type PortfolioConfigDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -2639,4 +2645,103 @@ test('contract: validateStartSimulationInput and validateSubmitTurnInput validat
     timeTakenSeconds: -5
   });
   assert.equal(invalidTurn.valid, false);
+});
+
+test('contract: generateVerificationFingerprint and verifyDossierIntegrity work deterministically', () => {
+  const payload = {
+    slug: 'tan-tech-lead',
+    targetRoles: ['Staff Engineer', 'Engineering Manager'],
+    topSkills: ['Go', 'Kubernetes', 'System Design'],
+    verifiedAt: '2026-10-25T00:00:00.000Z'
+  };
+
+  const fp1 = generateVerificationFingerprint(payload);
+  const fp2 = generateVerificationFingerprint(payload);
+
+  assert.equal(typeof fp1, 'string');
+  assert.equal(fp1.length, 64);
+  assert.equal(fp1, fp2);
+
+  const tamperedPayload = {
+    ...payload,
+    topSkills: ['Go', 'Kubernetes', 'Tampered Skill']
+  };
+  const fpTampered = generateVerificationFingerprint(tamperedPayload);
+  assert.notEqual(fp1, fpTampered);
+});
+
+test('contract: synthesizePublicDossier respects privacy and anonymization settings', () => {
+  const config: PortfolioConfigDTO = {
+    id: 'port-1',
+    slug: 'alex-tran',
+    title: 'Senior Distributed Systems Architect',
+    bio: '10 năm kinh nghiệm scale hệ thống thanh toán hàng đầu',
+    location: 'Hồ Chí Minh, Việt Nam',
+    salaryExpectation: '80.000.000 - 100.000.000 VNĐ',
+    targetRoles: ['Staff Engineer', 'Solutions Architect'],
+    displaySettings: {
+      showInterviews: false,
+      showSalaryExpectation: false,
+      showRoadmapProgress: true,
+      showTopSkills: true,
+      showSimulationScore: true,
+      anonymizeCandidateName: true
+    },
+    isPublic: true,
+    createdAt: '2026-10-25T00:00:00.000Z',
+    updatedAt: '2026-10-25T00:00:00.000Z'
+  };
+
+  const skills = [
+    { name: 'Distributed Systems', category: 'Architecture', verified: true },
+    { name: 'Kafka', category: 'Backend', verified: true }
+  ];
+  const roadmap = {
+    targetRole: 'Staff Engineer',
+    progressPercent: 75,
+    completedMilestones: 3,
+    totalMilestones: 4
+  };
+  const simulation = {
+    grade: 'Ready' as const,
+    score: 92,
+    track: 'system_design'
+  };
+
+  const dossier = synthesizePublicDossier(config, 'Alex Trần', skills, roadmap, simulation, 4, '2026-10-25T00:00:00.000Z');
+
+  assert.equal(dossier.candidateName.startsWith('Kỹ sư A***'), true);
+  assert.equal(dossier.salaryExpectation, null);
+  assert.equal(dossier.activeInterviewsCount, null);
+  assert.ok(dossier.roadmapProgress);
+  assert.equal(dossier.roadmapProgress?.progressPercent, 75);
+  assert.equal(dossier.topSkills.length, 2);
+  assert.equal(dossier.isVerified, true);
+  assert.equal(verifyDossierIntegrity(dossier), true);
+
+  const tamperedDossier = { ...dossier, topSkills: [] };
+  assert.equal(verifyDossierIntegrity(tamperedDossier), false);
+});
+
+test('contract: validatePortfolioConfigInput and validateGenerateTokenInput validate rules strictly', () => {
+  const validConfig = validatePortfolioConfigInput({
+    title: 'Senior Software Engineer',
+    slug: 'nguyen-van-a-2026',
+    targetRoles: ['Senior Backend']
+  });
+  assert.equal(validConfig.valid, true);
+
+  const invalidConfig = validatePortfolioConfigInput({
+    title: '',
+    slug: 'Invalid Slug!',
+    targetRoles: []
+  });
+  assert.equal(invalidConfig.valid, false);
+  assert.ok(invalidConfig.errors.length >= 3);
+
+  const validToken = validateGenerateTokenInput({ expiryDays: 30 });
+  assert.equal(validToken.valid, true);
+
+  const invalidToken = validateGenerateTokenInput({ expiryDays: 500 });
+  assert.equal(invalidToken.valid, false);
 });

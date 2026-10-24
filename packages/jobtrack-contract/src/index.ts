@@ -24,3 +24,4 @@ export * from './skill-roadmap.ts';
 export * from './email-ingest.ts';
 export * from './outreach-campaign.ts';
 export * from './interview-simulation.ts';
+export * from './portfolio-dossier.ts';
