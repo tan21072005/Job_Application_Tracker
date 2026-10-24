@@ -37,7 +37,10 @@ import {
   validateInteractionInput,
   validatePipelineMetadataInput,
   validateWeightsInput,
-  validateScorecardInput
+  validateScorecardInput,
+  validateChatInput,
+  DEFAULT_SUGGESTED_CHAT_PROMPTS,
+  type ChatActionReceiptDTO
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -68,6 +71,7 @@ import { FollowUpService } from './services/follow-up-service.ts';
 import { ContactService } from './services/contact-service.ts';
 import { PipelineService } from './services/pipeline-service.ts';
 import { DecisionService } from './services/decision-service.ts';
+import { ChatService } from './services/chat-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -115,6 +119,7 @@ export const followUpService = new FollowUpService(pool);
 export const contactService = new ContactService(pool);
 export const pipelineService = new PipelineService(pool);
 export const decisionService = new DecisionService(pool);
+export const chatService = new ChatService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -968,10 +973,31 @@ app.post('/api/ai/chat', auth, async (req, res, next) => {
     const userId = (req as SessionRequest).userId;
     const sessionId = (req as SessionRequest).sessionId;
     const body = (req.body && typeof req.body === 'object') ? req.body as Record<string, unknown> : {};
-    const message = String(body.chatInput || body.message || '').trim();
-    if (!message) {
-      throw new Problem(422, 'Nội dung tin nhắn không được để trống.', 'invalid_message');
+    
+    const valid = validateChatInput({
+      message: body.message || body.chatInput,
+      sessionId,
+      context: typeof body.context === 'object' && body.context !== null ? (body.context as Record<string, unknown>) : undefined
+    });
+
+    if (!valid.ok) {
+      throw new Problem(422, valid.message, 'invalid_message');
     }
+
+    const message = valid.data.message;
+
+    const plainGrantToken = `jt_grant_${randomUUID().replace(/-/g, '')}`;
+    const grantTokenHash = createHash('sha256').update(plainGrantToken).digest('hex');
+    const grantId = randomUUID();
+    await pool.query(
+      "INSERT INTO ai_grants(id, user_id, client, token_hash, scopes, expires_at) VALUES($1, $2, $3, $4, ARRAY['full_control'], CURRENT_TIMESTAMP + interval '10 minutes')",
+      [grantId, userId, 'n8n-agent', grantTokenHash]
+    );
+
+    await chatService.saveMessage(userId, sessionId, {
+      sender: 'user',
+      message
+    });
 
     const n8nUrl = process.env.N8N_WEBHOOK_URL || 'https://maximum-eastcoast-obstruct.ngrok-free.dev/webhook/jobtrack-agent';
     const n8nApiKey = process.env.N8N_API_KEY || process.env.CHATBOT_API_KEY || '';
@@ -987,7 +1013,10 @@ app.post('/api/ai/chat', auth, async (req, res, next) => {
           chatInput: message,
           sessionId,
           userId,
+          grantToken: plainGrantToken,
           context: {
+            ...(valid.data.context || {}),
+            grantToken: plainGrantToken,
             origin,
             timestamp: new Date().toISOString()
           }
@@ -997,15 +1026,34 @@ app.post('/api/ai/chat', auth, async (req, res, next) => {
 
       if (n8nRes.ok) {
         const data = await n8nRes.json().catch(() => null);
-        if (data) {
-          return res.json(data);
+        if (data && typeof data === 'object') {
+          const rec = data as Record<string, unknown>;
+          const extractedText = String(rec.output || rec.reply || rec.text || rec.message || '').trim();
+          if (extractedText) {
+            const receipts = Array.isArray(rec.receipts) ? (rec.receipts as ChatActionReceiptDTO[]) : [];
+            await chatService.saveMessage(userId, sessionId, {
+              sender: 'assistant',
+              message: extractedText,
+              receipts,
+              provenance: 'n8n'
+            });
+            return res.json({
+              reply: extractedText,
+              sessionId,
+              receipts,
+              provenance: 'n8n',
+              suggestedPrompts: DEFAULT_SUGGESTED_CHAT_PROMPTS,
+              timestamp: new Date().toISOString(),
+              output: extractedText,
+              text: extractedText
+            });
+          }
         }
       }
     } catch (n8nErr) {
       console.warn('[BFF] n8n webhook call failed, falling back to local grounded response:', (n8nErr as Error).message);
     }
 
-    // Grounded intelligence response (AI12 workflows)
     const summary = await jobTrackService.getDashboardSummary(userId);
     const lower = message.toLowerCase();
 
@@ -1046,7 +1094,7 @@ app.post('/api/ai/chat', auth, async (req, res, next) => {
       const activeApps = apps.filter(a => !['Offer', 'Rejected', 'Withdrawn'].includes(a.status));
       const staleApps = activeApps.filter(a => {
         const updated = new Date(a.updatedAt).getTime();
-        return (Date.now() - updated) > 7 * 86400000; // > 7 days
+        return (Date.now() - updated) > 7 * 86400000;
       });
 
       if (staleApps.length > 0) {
@@ -1064,13 +1112,67 @@ app.post('/api/ai/chat', auth, async (req, res, next) => {
         `Em rất ấn tượng với định hướng phát triển cũng như văn hóa làm việc của [Tên công ty]. Em viết thư này để hỏi thăm tình hình xét duyệt hồ sơ / kết quả vòng trao đổi vừa qua, cũng như sẵn sàng cung cấp thêm bất kỳ thông tin nào nếu công ty cần.\n\n` +
         `Rất mong sớm nhận được phản hồi từ anh/chị.\n\n` +
         `Trân trọng,\n[Họ và tên của bạn] - [Số điện thoại]`;
+    } else if (lower.includes('so sánh') || lower.includes('đánh giá') || lower.includes('matrix') || lower.includes('cơ hội')) {
+      const matrix = await decisionService.getDecisionMatrix(userId);
+      if (matrix.opportunities.length > 0) {
+        const top = matrix.opportunities[0];
+        reply = `⚖️ **Bảng so sánh cơ hội ứng tuyển:**\n\n` +
+          `Hiện bạn đang so sánh **${matrix.totalCompared} cơ hội**.\n` +
+          `• Lựa chọn dẫn đầu hiện tại: **${top.company}** (${top.position}) với điểm tổng hợp: **${top.compositeScore}/100**.\n` +
+          (matrix.categoryWinners.length > 0 ? `• Điểm sáng vượt trội: ${matrix.categoryWinners.map(w => `${w.company} (${w.score}/10)`).slice(0, 3).join(', ')}.\n` : '') +
+          `\n💡 Bạn có thể mở bảng Ma trận Đánh giá (Decision Matrix) trên thanh công cụ để tinh chỉnh trọng số cá nhân!`;
+      } else {
+        reply = `Bạn chưa có hồ sơ nào được chấm điểm trong Ma trận Đánh giá. Hãy vào mục "So sánh cơ hội" để gán điểm cho các công ty bạn quan tâm nhé!`;
+      }
     } else {
-      reply = `Chào bạn! Tôi là trợ lý JobTrack AI (Full Control). Hiện bạn đang có ${summary.total} hồ sơ ứng tuyển, ${summary.upcoming} phỏng vấn sắp tới và ${summary.offers} offer.\n\nBạn có thể hỏi tôi:\n• "Hôm nay tôi cần làm gì?"\n• "Chuẩn bị phỏng vấn"\n• "Kiểm tra hồ sơ lâu chưa cập nhật"\n• "Nháp thư follow-up"\nHoặc nhập trực tiếp link tuyển dụng từ nút "Nhập từ link"!`;
+      reply = `Chào bạn! Tôi là trợ lý JobTrack AI (Full Control). Hiện bạn đang có ${summary.total} hồ sơ ứng tuyển, ${summary.upcoming} phỏng vấn sắp tới và ${summary.offers} offer.\n\nBạn có thể hỏi tôi:\n• "Hôm nay tôi cần làm gì?"\n• "Chuẩn bị phỏng vấn"\n• "Kiểm tra hồ sơ lâu chưa cập nhật"\n• "So sánh các cơ hội ứng tuyển"\n• "Nháp thư follow-up"\nHoặc nhập trực tiếp link tuyển dụng từ nút "Nhập từ link"!`;
     }
 
+    await chatService.saveMessage(userId, sessionId, {
+      sender: 'assistant',
+      message: reply,
+      receipts: [],
+      provenance: 'local_fallback'
+    });
+
     return res.json({
+      reply,
+      sessionId,
+      receipts: [],
+      provenance: 'local_fallback',
+      suggestedPrompts: DEFAULT_SUGGESTED_CHAT_PROMPTS,
+      timestamp: new Date().toISOString(),
       output: reply,
       text: reply
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/ai/chat/history', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const sessionId = String(req.query.sessionId || (req as SessionRequest).sessionId || 'default');
+    const messages = await chatService.getHistory(userId, sessionId);
+    res.json({
+      sessionId,
+      messages,
+      total: messages.length
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/ai/chat/history', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const sessionId = String(req.query.sessionId || (req as SessionRequest).sessionId || 'default');
+    const cleared = await chatService.clearHistory(userId, sessionId);
+    res.json({
+      success: true,
+      cleared
     });
   } catch (error) {
     next(error);
