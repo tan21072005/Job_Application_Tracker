@@ -288,7 +288,29 @@ import {
   SYSTEM_DESIGN_SCENARIOS,
   calculateCapacityEstimates,
   evaluateSystemArchitecture,
-  exportBlueprintToMarkdown
+  exportBlueprintToMarkdown,
+  type EquityGrantType,
+  type VestingScheduleType,
+  type AccelerationClause,
+  type LiquidationPreferenceType,
+  type TaxJurisdiction,
+  type PreferredTierDTO,
+  type CapTableSnapshotDTO,
+  type ExecutiveEquityGrantDTO,
+  type DilutionRoundDTO,
+  type DilutionSimulationResultDTO,
+  type WaterfallBreakdownDTO,
+  type TaxOptimizationAnalysisDTO,
+  type EquityModelDTO,
+  type ExecutiveEquityGrantMutationDTO,
+  type EquityModelMutationDTO,
+  type ExecutivePackageComparisonDTO,
+  calculateDilutionPipeline,
+  computeExerciseCostAndTax,
+  resolveLiquidationWaterfall,
+  evaluateWaterfallMatrix,
+  compareExecutiveEquityPackages,
+  exportEquityModelToMarkdown
 } from '@jobtrack/contract';
 
 export type {
@@ -4783,6 +4805,441 @@ export const systemDesignRepository = {
   }
 };
 
+const DEMO_EXECUTIVE_MODELS: EquityModelDTO[] = [
+  {
+    id: 'demo-model-fintech-cto',
+    modelName: 'Series B SEA Fintech CTO Offer',
+    grant: {
+      id: 'grant-cto-sea',
+      company: 'FinFlow Global (Singapore/VN)',
+      role: 'Chief Technology Officer',
+      grantType: 'esop',
+      shareCount: 200000,
+      strikePrice: 0.50,
+      currentFmv: 2.20,
+      preferredPrice: 4.80,
+      grantDate: '2024-03-01',
+      vestingStartDate: '2024-03-01',
+      vestingScheduleType: 'standard_4yr_1yr_cliff',
+      cliffMonths: 12,
+      vestingDurationMonths: 48,
+      postTerminationExerciseMonths: 120,
+      accelerationClause: 'double_trigger_acceleration',
+      hasEarlyExercise: true,
+      section83bElected: false
+    },
+    capTable: {
+      totalFullyDilutedShares: 10000000,
+      commonShares: 6000000,
+      unallocatedOptionPoolShares: 1000000,
+      preferredTiers: [
+        {
+          tierName: 'Series Seed',
+          originalInvestmentAmount: 2000000,
+          sharesIssued: 1000000,
+          preferenceMultiple: 1.0,
+          participationType: 'non_participating',
+          seniorityRank: 1
+        },
+        {
+          tierName: 'Series A',
+          originalInvestmentAmount: 8000000,
+          sharesIssued: 2000000,
+          preferenceMultiple: 1.0,
+          participationType: 'non_participating',
+          seniorityRank: 2
+        }
+      ]
+    },
+    dilutionRounds: [
+      {
+        roundName: 'Series B Growth',
+        preMoneyValuation: 50000000,
+        capitalRaised: 18000000,
+        newOptionPoolExpansionPercent: 5,
+        issuedShareCount: 3600000,
+        postMoneyValuation: 68000000,
+        investorSharePercentage: 26.47,
+        cumulativeDilutionFactor: 73.53
+      },
+      {
+        roundName: 'Series C Expansion',
+        preMoneyValuation: 160000000,
+        capitalRaised: 40000000,
+        newOptionPoolExpansionPercent: 5,
+        issuedShareCount: 3400000,
+        postMoneyValuation: 200000000,
+        investorSharePercentage: 20.0,
+        cumulativeDilutionFactor: 58.82
+      }
+    ],
+    exitScenarios: evaluateWaterfallMatrix(
+      [25000000, 50000000, 100000000, 250000000, 500000000, 1000000000],
+      {
+        totalFullyDilutedShares: 17000000,
+        commonShares: 6000000,
+        unallocatedOptionPoolShares: 1000000,
+        preferredTiers: [
+          {
+            tierName: 'Series Seed',
+            originalInvestmentAmount: 2000000,
+            sharesIssued: 1000000,
+            preferenceMultiple: 1.0,
+            participationType: 'non_participating',
+            seniorityRank: 1
+          },
+          {
+            tierName: 'Series A',
+            originalInvestmentAmount: 8000000,
+            sharesIssued: 2000000,
+            preferenceMultiple: 1.0,
+            participationType: 'non_participating',
+            seniorityRank: 2
+          },
+          {
+            tierName: 'Series B Growth',
+            originalInvestmentAmount: 18000000,
+            sharesIssued: 3600000,
+            preferenceMultiple: 1.0,
+            participationType: 'non_participating',
+            seniorityRank: 3
+          },
+          {
+            tierName: 'Series C Expansion',
+            originalInvestmentAmount: 40000000,
+            sharesIssued: 3400000,
+            preferenceMultiple: 1.0,
+            participationType: 'non_participating',
+            seniorityRank: 4
+          }
+        ]
+      },
+      200000,
+      0.50,
+      'vietnam_pit'
+    ),
+    taxAnalysis: computeExerciseCostAndTax(
+      {
+        id: 'grant-cto-sea',
+        company: 'FinFlow Global (Singapore/VN)',
+        role: 'Chief Technology Officer',
+        grantType: 'esop',
+        shareCount: 200000,
+        strikePrice: 0.50,
+        currentFmv: 2.20,
+        preferredPrice: 4.80,
+        grantDate: '2024-03-01',
+        vestingStartDate: '2024-03-01',
+        vestingScheduleType: 'standard_4yr_1yr_cliff',
+        cliffMonths: 12,
+        vestingDurationMonths: 48,
+        postTerminationExerciseMonths: 120,
+        accelerationClause: 'double_trigger_acceleration',
+        hasEarlyExercise: true,
+        section83bElected: false
+      },
+      14.71,
+      14.71,
+      'vietnam_pit'
+    ),
+    notes: 'Negotiated 10-year post-termination exercise window and double-trigger acceleration upon change of control.',
+    createdAt: '2024-03-01T00:00:00.000Z',
+    updatedAt: '2024-03-01T00:00:00.000Z'
+  },
+  {
+    id: 'demo-model-us-vp',
+    modelName: 'Pre-IPO Enterprise AI VP Engineering Offer',
+    grant: {
+      id: 'grant-vp-ai',
+      company: 'CognitiveScale AI',
+      role: 'VP of Engineering',
+      grantType: 'iso',
+      shareCount: 125000,
+      strikePrice: 2.40,
+      currentFmv: 8.50,
+      preferredPrice: 18.00,
+      grantDate: '2024-02-15',
+      vestingStartDate: '2024-02-15',
+      vestingScheduleType: 'standard_4yr_1yr_cliff',
+      cliffMonths: 12,
+      vestingDurationMonths: 48,
+      postTerminationExerciseMonths: 90,
+      accelerationClause: 'single_trigger_acceleration',
+      hasEarlyExercise: true,
+      section83bElected: true
+    },
+    capTable: {
+      totalFullyDilutedShares: 25000000,
+      commonShares: 15000000,
+      unallocatedOptionPoolShares: 2500000,
+      preferredTiers: [
+        {
+          tierName: 'Series A',
+          originalInvestmentAmount: 15000000,
+          sharesIssued: 3500000,
+          preferenceMultiple: 1.0,
+          participationType: 'non_participating',
+          seniorityRank: 1
+        },
+        {
+          tierName: 'Series B',
+          originalInvestmentAmount: 45000000,
+          sharesIssued: 4000000,
+          preferenceMultiple: 1.0,
+          participationType: 'non_participating',
+          seniorityRank: 2
+        }
+      ]
+    },
+    dilutionRounds: [
+      {
+        roundName: 'Series C Mezzanine',
+        preMoneyValuation: 350000000,
+        capitalRaised: 70000000,
+        newOptionPoolExpansionPercent: 3,
+        issuedShareCount: 5000000,
+        postMoneyValuation: 420000000,
+        investorSharePercentage: 16.67,
+        cumulativeDilutionFactor: 83.33
+      }
+    ],
+    exitScenarios: evaluateWaterfallMatrix(
+      [50000000, 100000000, 250000000, 500000000, 1000000000, 1500000000],
+      {
+        totalFullyDilutedShares: 30000000,
+        commonShares: 15000000,
+        unallocatedOptionPoolShares: 2500000,
+        preferredTiers: [
+          {
+            tierName: 'Series A',
+            originalInvestmentAmount: 15000000,
+            sharesIssued: 3500000,
+            preferenceMultiple: 1.0,
+            participationType: 'non_participating',
+            seniorityRank: 1
+          },
+          {
+            tierName: 'Series B',
+            originalInvestmentAmount: 45000000,
+            sharesIssued: 4000000,
+            preferenceMultiple: 1.0,
+            participationType: 'non_participating',
+            seniorityRank: 2
+          },
+          {
+            tierName: 'Series C Mezzanine',
+            originalInvestmentAmount: 70000000,
+            sharesIssued: 5000000,
+            preferenceMultiple: 1.0,
+            participationType: 'non_participating',
+            seniorityRank: 3
+          }
+        ]
+      },
+      125000,
+      2.40,
+      'us_federal_california'
+    ),
+    taxAnalysis: computeExerciseCostAndTax(
+      {
+        id: 'grant-vp-ai',
+        company: 'CognitiveScale AI',
+        role: 'VP of Engineering',
+        grantType: 'iso',
+        shareCount: 125000,
+        strikePrice: 2.40,
+        currentFmv: 8.50,
+        preferredPrice: 18.00,
+        grantDate: '2024-02-15',
+        vestingStartDate: '2024-02-15',
+        vestingScheduleType: 'standard_4yr_1yr_cliff',
+        cliffMonths: 12,
+        vestingDurationMonths: 48,
+        postTerminationExerciseMonths: 90,
+        accelerationClause: 'single_trigger_acceleration',
+        hasEarlyExercise: true,
+        section83bElected: true
+      },
+      33.33,
+      33.33,
+      'us_federal_california'
+    ),
+    notes: '83(b) election filed within 30 days of unvested early exercise.',
+    createdAt: '2024-02-15T00:00:00.000Z',
+    updatedAt: '2024-02-15T00:00:00.000Z'
+  }
+];
+
+const EQUITY_MODELS_STORAGE_KEY = 'jobtrack_equity_models_v1';
+
+function getDemoEquityModels(): EquityModelDTO[] {
+  try {
+    const raw = localStorage.getItem(EQUITY_MODELS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return DEMO_EXECUTIVE_MODELS;
+}
+
+function saveDemoEquityModels(list: EquityModelDTO[]): void {
+  try {
+    localStorage.setItem(EQUITY_MODELS_STORAGE_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+export const equityRepository = {
+  async listModels(): Promise<EquityModelDTO[]> {
+    if (demoMode) {
+      return getDemoEquityModels();
+    }
+    try {
+      return await request<EquityModelDTO[]>('/equity/models');
+    } catch {
+      return getDemoEquityModels();
+    }
+  },
+
+  async getModel(id: string): Promise<EquityModelDTO | null> {
+    if (demoMode) {
+      const list = getDemoEquityModels();
+      return list.find(m => m.id === id) || null;
+    }
+    try {
+      return await request<EquityModelDTO>(`/equity/models/${encodeURIComponent(id)}`);
+    } catch {
+      const list = getDemoEquityModels();
+      return list.find(m => m.id === id) || null;
+    }
+  },
+
+  async saveModel(payload: EquityModelMutationDTO, existingId?: string): Promise<EquityModelDTO> {
+    if (demoMode) {
+      return this.saveModelDemo(payload, existingId);
+    }
+
+    try {
+      if (existingId) {
+        return await request<EquityModelDTO>(`/equity/models/${encodeURIComponent(existingId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify(payload)
+        });
+      }
+      return await request<EquityModelDTO>('/equity/models', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+    } catch {
+      return this.saveModelDemo(payload, existingId);
+    }
+  },
+
+  saveModelDemo(payload: EquityModelMutationDTO, existingId?: string): EquityModelDTO {
+    const list = getDemoEquityModels();
+    const grantId = existingId || `demo-grant-${Date.now()}`;
+    const modelId = existingId || `demo-model-${Date.now()}`;
+    const now = new Date().toISOString();
+
+    const dilutionResult = calculateDilutionPipeline(payload.capTable, payload.grant.shareCount, payload.dilutionRounds);
+    const exitScenarios = evaluateWaterfallMatrix(
+      payload.exitValuations,
+      dilutionResult.finalCapTable,
+      dilutionResult.executiveDilutedShares,
+      payload.grant.strikePrice,
+      payload.taxJurisdiction
+    );
+
+    const medianExit = exitScenarios[Math.floor(exitScenarios.length / 2)] || exitScenarios[0];
+    const targetFmv = medianExit ? medianExit.commonSharePrice : payload.grant.currentFmv;
+
+    const taxAnalysis = computeExerciseCostAndTax(
+      {
+        id: grantId,
+        ...payload.grant
+      },
+      targetFmv,
+      targetFmv,
+      payload.taxJurisdiction
+    );
+
+    const fullModel: EquityModelDTO = {
+      id: modelId,
+      modelName: payload.modelName,
+      applicationId: payload.applicationId,
+      grant: {
+        id: grantId,
+        ...payload.grant
+      },
+      capTable: payload.capTable,
+      dilutionRounds: payload.dilutionRounds,
+      exitScenarios,
+      taxAnalysis,
+      notes: payload.notes,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    const existingIndex = list.findIndex(m => m.id === modelId);
+    if (existingIndex >= 0) {
+      list[existingIndex] = fullModel;
+    } else {
+      list.unshift(fullModel);
+    }
+    saveDemoEquityModels(list);
+    return fullModel;
+  },
+
+  async deleteModel(id: string): Promise<void> {
+    if (demoMode) {
+      const list = getDemoEquityModels().filter(m => m.id !== id);
+      saveDemoEquityModels(list);
+      return;
+    }
+    try {
+      await request<void>(`/equity/models/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch {
+      const list = getDemoEquityModels().filter(m => m.id !== id);
+      saveDemoEquityModels(list);
+    }
+  },
+
+  async exportMarkdown(id: string): Promise<string> {
+    if (demoMode) {
+      const model = await this.getModel(id);
+      if (!model) throw new Error('Khong tim thay mo hinh co phan demo.');
+      return exportEquityModelToMarkdown(model);
+    }
+    try {
+      const res = await request<{ markdown: string }>(`/equity/models/${encodeURIComponent(id)}/export`);
+      return res.markdown;
+    } catch {
+      const model = await this.getModel(id);
+      if (!model) throw new Error('Khong tim thay mo hinh co phan demo.');
+      return exportEquityModelToMarkdown(model);
+    }
+  },
+
+  async compareModels(modelIdA: string, modelIdB: string): Promise<ExecutivePackageComparisonDTO | null> {
+    if (demoMode) {
+      const a = await this.getModel(modelIdA);
+      const b = await this.getModel(modelIdB);
+      if (!a || !b) return null;
+      return compareExecutiveEquityPackages(a, b);
+    }
+    try {
+      return await request<ExecutivePackageComparisonDTO>('/equity/compare', {
+        method: 'POST',
+        body: JSON.stringify({ modelIdA, modelIdB })
+      });
+    } catch {
+      const a = await this.getModel(modelIdA);
+      const b = await this.getModel(modelIdB);
+      if (!a || !b) return null;
+      return compareExecutiveEquityPackages(a, b);
+    }
+  }
+};
+
 
 export type {
   EmailCategory,
@@ -4905,7 +5362,23 @@ export type {
   SystemDesignEvaluationDTO,
   SystemDesignScenarioDTO,
   SystemDesignSessionDTO,
-  SystemDesignSessionMutationInputDTO
+  SystemDesignSessionMutationInputDTO,
+  EquityGrantType,
+  VestingScheduleType,
+  AccelerationClause,
+  LiquidationPreferenceType,
+  TaxJurisdiction,
+  PreferredTierDTO,
+  CapTableSnapshotDTO,
+  ExecutiveEquityGrantDTO,
+  DilutionRoundDTO,
+  DilutionSimulationResultDTO,
+  WaterfallBreakdownDTO,
+  TaxOptimizationAnalysisDTO,
+  EquityModelDTO,
+  ExecutiveEquityGrantMutationDTO,
+  EquityModelMutationDTO,
+  ExecutivePackageComparisonDTO
 };
 
 

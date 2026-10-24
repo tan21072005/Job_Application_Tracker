@@ -94,6 +94,7 @@ import { PipelineVelocityService } from './services/pipeline-velocity-service.ts
 import { CultureRadarService } from './services/culture-radar-service.ts';
 import { HeadhunterCrmService } from './services/headhunter-crm-service.ts';
 import { SystemDesignService } from './services/system-design-service.ts';
+import { EquityLiquidityService } from './services/equity-liquidity-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -111,7 +112,9 @@ import {
   validateRecruiterReplyDraftInput,
   validateCapacityInput,
   validateSystemDesignSessionInput,
-  validateSystemDesignBlueprintInput
+  validateSystemDesignBlueprintInput,
+  validateEquityGrantInput,
+  validateEquityModelMutationInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -171,6 +174,7 @@ export const pipelineVelocityService = new PipelineVelocityService(pool);
 export const cultureRadarService = new CultureRadarService(pool);
 export const headhunterCrmService = new HeadhunterCrmService(pool);
 export const systemDesignService = new SystemDesignService(pool);
+export const equityLiquidityService = new EquityLiquidityService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1366,7 +1370,7 @@ app.post('/api/outreach/campaigns', auth, async (req, res, next) => {
 app.get('/api/outreach/campaigns/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const campaign = await outreachService.getCampaign(userId, req.params.id);
+    const campaign = await outreachService.getCampaign(userId, String(req.params.id));
     if (!campaign) {
       return res.status(404).json({ code: 'not_found', message: 'Chiến dịch không tồn tại.' });
     }
@@ -1385,7 +1389,7 @@ app.post('/api/outreach/campaigns/:id/recipients', auth, async (req, res, next) 
     if (!req.body.company || typeof req.body.company !== 'string' || !req.body.company.trim()) {
       return res.status(422).json({ code: 'invalid_request', message: 'Công ty người nhận không được để trống.' });
     }
-    const recipient = await outreachService.addRecipient(userId, req.params.id, req.body);
+    const recipient = await outreachService.addRecipient(userId, String(req.params.id), req.body);
     res.status(201).json(recipient);
   } catch (error) {
     next(error);
@@ -1402,7 +1406,7 @@ app.patch('/api/outreach/recipients/:recipientId/step', auth, async (req, res, n
         message: val.errors.join(' ')
       });
     }
-    const updated = await outreachService.updateRecipientStep(userId, req.params.recipientId, req.body);
+    const updated = await outreachService.updateRecipientStep(userId, String(req.params.recipientId), req.body);
     res.json(updated);
   } catch (error) {
     next(error);
@@ -1412,7 +1416,7 @@ app.patch('/api/outreach/recipients/:recipientId/step', auth, async (req, res, n
 app.delete('/api/outreach/campaigns/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await outreachService.deleteCampaign(userId, req.params.id);
+    const deleted = await outreachService.deleteCampaign(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'not_found', message: 'Chiến dịch không tồn tại.' });
     }
@@ -1452,7 +1456,7 @@ app.post('/api/simulation/sessions', auth, async (req, res, next) => {
 app.get('/api/simulation/sessions/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const session = await simulationService.getSession(userId, req.params.id);
+    const session = await simulationService.getSession(userId, String(req.params.id));
     if (!session) {
       return res.status(404).json({ code: 'not_found', message: 'Phiên phỏng vấn không tồn tại.' });
     }
@@ -1472,7 +1476,7 @@ app.post('/api/simulation/sessions/:id/turn', auth, async (req, res, next) => {
         message: val.errors.join(' ')
       });
     }
-    const result = await simulationService.submitTurn(userId, req.params.id, req.body);
+    const result = await simulationService.submitTurn(userId, String(req.params.id), req.body);
     res.json(result);
   } catch (error) {
     next(error);
@@ -1482,7 +1486,7 @@ app.post('/api/simulation/sessions/:id/turn', auth, async (req, res, next) => {
 app.post('/api/simulation/sessions/:id/complete', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const session = await simulationService.completeSession(userId, req.params.id);
+    const session = await simulationService.completeSession(userId, String(req.params.id));
     res.json(session);
   } catch (error) {
     next(error);
@@ -1492,7 +1496,7 @@ app.post('/api/simulation/sessions/:id/complete', auth, async (req, res, next) =
 app.delete('/api/simulation/sessions/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await simulationService.deleteSession(userId, req.params.id);
+    const deleted = await simulationService.deleteSession(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'not_found', message: 'Phiên phỏng vấn không tồn tại.' });
     }
@@ -1616,7 +1620,7 @@ app.get('/api/compensation/benchmark', auth, async (req, res, next) => {
 app.delete('/api/compensation/forecasts/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await compensationService.deleteForecast(userId, req.params.id);
+    const deleted = await compensationService.deleteForecast(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy bản dự báo thu nhập.' });
     }
@@ -1720,7 +1724,7 @@ app.get('/api/resume/optimizations', auth, async (req, res, next) => {
 app.get('/api/resume/optimizations/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const opt = await resumeOptimizerService.getOptimization(userId, req.params.id);
+    const opt = await resumeOptimizerService.getOptimization(userId, String(req.params.id));
     if (!opt) {
       return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy bản tối ưu hóa CV.' });
     }
@@ -1742,7 +1746,7 @@ app.post('/api/resume/optimizations/:id/apply', auth, async (req, res, next) => 
       });
     }
     const injectedKeywords = Array.isArray(req.body?.injectedKeywords) ? req.body.injectedKeywords : [];
-    const updated = await resumeOptimizerService.applyRewrites(userId, req.params.id, {
+    const updated = await resumeOptimizerService.applyRewrites(userId, String(req.params.id), {
       acceptedBullets,
       injectedKeywords
     });
@@ -1755,7 +1759,7 @@ app.post('/api/resume/optimizations/:id/apply', auth, async (req, res, next) => 
 app.delete('/api/resume/optimizations/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await resumeOptimizerService.deleteOptimization(userId, req.params.id);
+    const deleted = await resumeOptimizerService.deleteOptimization(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy bản tối ưu hóa CV.' });
     }
@@ -1842,7 +1846,7 @@ app.post('/api/culture/questions', auth, async (req, res, next) => {
     };
     const questions = cultureRadarService.generateQuestions({
       dimensionScores: Array.isArray(b?.dimensionScores) ? b.dimensionScores : [],
-      targetRole: typeof b?.targetRole === 'string' ? b.targetRole : undefined
+      targetRole: typeof b?.targetRole === 'string' ? (b.targetRole as any) : undefined
     });
     res.json(questions);
   } catch (error) {
@@ -2068,6 +2072,125 @@ app.get('/api/system-design/sessions/:id/export', auth, async (req, res, next) =
     res.json({ markdown });
   } catch (error) {
     next(error);
+  }
+});
+
+app.get('/api/equity/grants', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const grants = await equityLiquidityService.listGrants(userId);
+    res.json(grants);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/equity/grants', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateEquityGrantInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const grant = await equityLiquidityService.createGrant(userId, val.data);
+    res.status(201).json(grant);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/equity/models', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const models = await equityLiquidityService.listModels(userId);
+    res.json(models);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/equity/models', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateEquityModelMutationInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const model = await equityLiquidityService.createModel(userId, val.data);
+    res.status(201).json(model);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/equity/models/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const model = await equityLiquidityService.getModel(userId, String(req.params.id));
+    if (!model) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay mo hinh co phan.' });
+    }
+    res.json(model);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.patch('/api/equity/models/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const updated = await equityLiquidityService.updateModel(userId, String(req.params.id), req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay mo hinh co phan.' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/equity/models/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await equityLiquidityService.deleteModel(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay mo hinh co phan.' });
+    }
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/equity/models/:id/export', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const markdown = await equityLiquidityService.exportMarkdown(userId, String(req.params.id));
+    if (markdown === null) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay mo hinh co phan.' });
+    }
+    res.json({ markdown });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/equity/compare', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const b = bodyObject(req.body);
+    const modelIdA = typeof b.modelIdA === 'string' ? b.modelIdA : '';
+    const modelIdB = typeof b.modelIdB === 'string' ? b.modelIdB : '';
+    if (!modelIdA || !modelIdB) {
+      throw new Problem(422, 'modelIdA va modelIdB la bat buoc.', 'invalid_request');
+    }
+    const comparison = await equityLiquidityService.compareModels(userId, modelIdA, modelIdB);
+    if (!comparison) {
+      return res.status(404).json({ code: 'not_found', message: 'Mot hoac ca hai mo hinh khong ton tai.' });
+    }
+    res.json(comparison);
+  } catch (err) {
+    next(err);
   }
 });
 

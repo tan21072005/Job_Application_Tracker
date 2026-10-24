@@ -173,7 +173,19 @@ import {
   exportBlueprintToMarkdown,
   validateCapacityInput,
   validateSystemDesignSessionInput,
-  validateSystemDesignBlueprintInput
+  validateSystemDesignBlueprintInput,
+  calculateDilutionPipeline,
+  resolveLiquidationWaterfall,
+  evaluateWaterfallMatrix,
+  computeExerciseCostAndTax,
+  compareExecutiveEquityPackages,
+  exportEquityModelToMarkdown,
+  validateEquityGrantInput,
+  validateEquityModelMutationInput,
+  type CapTableSnapshotDTO,
+  type DilutionRoundDTO,
+  type ExecutiveEquityGrantDTO,
+  type EquityModelDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -3805,6 +3817,253 @@ test('contract: validateCapacityInput, validateSystemDesignSessionInput, validat
 
   const invalidBlueprint = validateSystemDesignBlueprintInput({ scope: {} });
   assert.equal(invalidBlueprint.ok, false);
+});
+
+test('contract: calculateDilutionPipeline computes dilution across financing rounds and pool expansions', () => {
+  const initialCapTable: CapTableSnapshotDTO = {
+    totalFullyDilutedShares: 10000000,
+    commonShares: 6000000,
+    unallocatedOptionPoolShares: 1000000,
+    preferredTiers: [
+      {
+        tierName: 'Series A',
+        originalInvestmentAmount: 5000000,
+        sharesIssued: 3000000,
+        preferenceMultiple: 1.0,
+        participationType: 'non_participating',
+        seniorityRank: 1
+      }
+    ]
+  };
+
+  const rounds: DilutionRoundDTO[] = [
+    {
+      roundName: 'Series B',
+      preMoneyValuation: 50000000,
+      capitalRaised: 15000000,
+      newOptionPoolExpansionPercent: 5,
+      issuedShareCount: 3000000,
+      postMoneyValuation: 65000000,
+      investorSharePercentage: 23.08,
+      cumulativeDilutionFactor: 76.92
+    }
+  ];
+
+  const result = calculateDilutionPipeline(initialCapTable, 200000, rounds);
+  assert.equal(result.executiveDilutedShares, 200000);
+  assert.ok(result.finalCapTable.totalFullyDilutedShares > 10000000);
+  assert.ok(result.executiveOwnershipPercent < 2.0);
+  assert.equal(result.roundByRoundSummary.length, 1);
+  assert.equal(result.roundByRoundSummary[0].roundName, 'Series B');
+});
+
+test('contract: resolveLiquidationWaterfall handles downside hurdles and upside common conversion', () => {
+  const capTable: CapTableSnapshotDTO = {
+    totalFullyDilutedShares: 10000000,
+    commonShares: 7000000,
+    unallocatedOptionPoolShares: 1000000,
+    preferredTiers: [
+      {
+        tierName: 'Series A',
+        originalInvestmentAmount: 10000000,
+        sharesIssued: 2000000,
+        preferenceMultiple: 1.0,
+        participationType: 'non_participating',
+        seniorityRank: 1
+      }
+    ]
+  };
+
+  const downside = resolveLiquidationWaterfall(5000000, capTable, 200000, 0.50, 'us_federal_california');
+  assert.equal(downside.preferredPayoutTotal, 5000000);
+  assert.equal(downside.commonPayoutTotal, 0);
+  assert.equal(downside.executiveNetPreTax, 0);
+  assert.equal(downside.executiveNetPostTax, 0);
+
+  const upside = resolveLiquidationWaterfall(100000000, capTable, 200000, 0.50, 'us_federal_california');
+  assert.ok(upside.commonPayoutTotal > 0);
+  assert.ok(upside.executiveNetPreTax > 1000000);
+  assert.ok(upside.executiveNetPostTax > 500000);
+  assert.ok(upside.returnMultipleOnStrike > 10);
+});
+
+test('contract: computeExerciseCostAndTax accurately models US AMT, 83b election, and Vietnam PIT', () => {
+  const mockIsoGrant: ExecutiveEquityGrantDTO = {
+    id: 'grant-test-1',
+    company: 'Alpha Corp',
+    role: 'Staff Engineer',
+    grantType: 'iso',
+    shareCount: 100000,
+    strikePrice: 1.00,
+    currentFmv: 5.00,
+    preferredPrice: 10.00,
+    grantDate: '2024-01-01',
+    vestingStartDate: '2024-01-01',
+    vestingScheduleType: 'standard_4yr_1yr_cliff',
+    cliffMonths: 12,
+    vestingDurationMonths: 48,
+    postTerminationExerciseMonths: 90,
+    accelerationClause: 'none',
+    hasEarlyExercise: false,
+    section83bElected: false
+  };
+
+  const usIsoAnalysis = computeExerciseCostAndTax(mockIsoGrant, 5.00, 20.00, 'us_federal_california');
+  assert.equal(usIsoAnalysis.totalExerciseCost, 100000);
+  assert.equal(usIsoAnalysis.spreadAtExercise, 400000);
+  assert.ok(usIsoAnalysis.alternativeMinimumTaxAtExercise > 0);
+
+  const mockIso83b: ExecutiveEquityGrantDTO = {
+    ...mockIsoGrant,
+    hasEarlyExercise: true,
+    section83bElected: true
+  };
+  const usIso83bAnalysis = computeExerciseCostAndTax(mockIso83b, 5.00, 20.00, 'us_federal_california');
+  assert.equal(usIso83bAnalysis.alternativeMinimumTaxAtExercise, 0);
+  assert.ok(usIso83bAnalysis.capitalGainsTaxAtSale > 0);
+
+  const mockEsopGrant: ExecutiveEquityGrantDTO = {
+    ...mockIsoGrant,
+    grantType: 'esop'
+  };
+  const vnEsopAnalysis = computeExerciseCostAndTax(mockEsopGrant, 5.00, 20.00, 'vietnam_pit');
+  assert.equal(vnEsopAnalysis.ordinaryIncomeTaxAtExercise, 400000 * 0.35);
+  assert.equal(vnEsopAnalysis.capitalGainsTaxAtSale, 100000 * 20.00 * 0.001);
+});
+
+test('contract: compareExecutiveEquityPackages and exportEquityModelToMarkdown produce valid outputs', () => {
+  const modelA: EquityModelDTO = {
+    id: 'model-a',
+    modelName: 'Offer A',
+    grant: {
+      id: 'grant-a',
+      company: 'Company A',
+      role: 'VP Engineering',
+      grantType: 'iso',
+      shareCount: 100000,
+      strikePrice: 1.00,
+      currentFmv: 5.00,
+      preferredPrice: 10.00,
+      grantDate: '2024-01-01',
+      vestingStartDate: '2024-01-01',
+      vestingScheduleType: 'standard_4yr_1yr_cliff',
+      cliffMonths: 12,
+      vestingDurationMonths: 48,
+      postTerminationExerciseMonths: 90,
+      accelerationClause: 'none',
+      hasEarlyExercise: false,
+      section83bElected: false
+    },
+    capTable: {
+      totalFullyDilutedShares: 10000000,
+      commonShares: 7000000,
+      unallocatedOptionPoolShares: 1000000,
+      preferredTiers: []
+    },
+    dilutionRounds: [],
+    exitScenarios: [
+      {
+        exitValuation: 50000000,
+        preferredPayoutTotal: 0,
+        commonPayoutTotal: 50000000,
+        commonSharePrice: 5.00,
+        executiveShareCountDiluted: 100000,
+        executiveGrossPayout: 500000,
+        executiveExerciseCost: 100000,
+        executiveNetPreTax: 400000,
+        executiveNetPostTax: 250000,
+        effectiveTaxRatePercent: 37.5,
+        returnMultipleOnStrike: 5,
+        preferredParticipationSummary: []
+      }
+    ],
+    taxAnalysis: {
+      jurisdiction: 'us_federal_california',
+      totalExerciseCost: 100000,
+      spreadAtExercise: 400000,
+      ordinaryIncomeTaxAtExercise: 0,
+      alternativeMinimumTaxAtExercise: 112000,
+      capitalGainAtSale: 1500000,
+      capitalGainsTaxAtSale: 556500,
+      totalTaxLiability: 668500,
+      netCashRetained: 1231500,
+      effectiveOverallTaxRatePercent: 35.18,
+      optimalActionPlan: ['Action plan item 1']
+    },
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  };
+
+  const modelB: EquityModelDTO = {
+    ...modelA,
+    id: 'model-b',
+    modelName: 'Offer B Counter',
+    grant: {
+      ...modelA.grant,
+      postTerminationExerciseMonths: 120,
+      accelerationClause: 'double_trigger_acceleration'
+    },
+    exitScenarios: [
+      {
+        ...modelA.exitScenarios[0],
+        executiveNetPostTax: 300000
+      }
+    ]
+  };
+
+  const comparison = compareExecutiveEquityPackages(modelA, modelB);
+  assert.equal(comparison.recommendationVerdict.includes('Counter offer'), true);
+  assert.ok(comparison.keyDifferentiators.length >= 2);
+
+  const markdown = exportEquityModelToMarkdown(modelA);
+  assert.ok(markdown.includes('# Executive Equity & Liquidity Analysis: Offer A'));
+  assert.ok(markdown.includes('Alpha Corp') || markdown.includes('Company A'));
+  assert.ok(markdown.includes('| Total Grant Shares | 100,000 |'));
+});
+
+test('contract: validateEquityGrantInput and validateEquityModelMutationInput enforce rigorous schemas', () => {
+  const validGrant = validateEquityGrantInput({
+    company: 'FinFlow Global',
+    role: 'VP Engineering',
+    grantType: 'iso',
+    shareCount: 150000,
+    strikePrice: 2.00,
+    currentFmv: 6.00,
+    preferredPrice: 12.00
+  });
+  assert.equal(validGrant.ok, true);
+
+  const invalidGrant = validateEquityGrantInput({
+    company: '',
+    shareCount: -50
+  });
+  assert.equal(invalidGrant.ok, false);
+
+  const validModel = validateEquityModelMutationInput({
+    modelName: 'Series B Modeler',
+    grant: {
+      company: 'FinFlow Global',
+      role: 'VP Engineering',
+      grantType: 'iso',
+      shareCount: 150000,
+      strikePrice: 2.00,
+      currentFmv: 6.00,
+      preferredPrice: 12.00
+    },
+    capTable: {
+      totalFullyDilutedShares: 10000000,
+      commonShares: 6000000,
+      unallocatedOptionPoolShares: 1000000,
+      preferredTiers: []
+    }
+  });
+  assert.equal(validModel.ok, true);
+
+  const invalidModel = validateEquityModelMutationInput({
+    modelName: '',
+    grant: {}
+  });
+  assert.equal(invalidModel.ok, false);
 });
 
 
