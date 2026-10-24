@@ -44,7 +44,14 @@ import {
   validateInterviewEvaluateInput,
   parseApplicationsFromCsv,
   validateCsvImportRequest,
-  neutralizeFormula
+  neutralizeFormula,
+  calculateAnnualTotalCompensation,
+  evaluateOfferDetails,
+  compareOffers,
+  generateCounterOfferScript,
+  validateOfferEvaluationInput,
+  validateOfferComparisonInput,
+  validateCounterOfferInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -887,3 +894,200 @@ test('contract: validateCsvImportRequest strictly validates payload structure an
   assert.equal(invalidRowDate.ok, false);
 });
 
+
+test('contract: calculateAnnualTotalCompensation accurately calculates all cash and equity elements', () => {
+  const comp = calculateAnnualTotalCompensation({
+    baseSalaryMonthly: 50000000,
+    currency: 'VND',
+    bonusMonthsPerYear: 1.5,
+    annualBonusCash: 30000000,
+    stockOptionsOrEquityAnnual: 25000000,
+    allowanceMonthly: 2000000
+  });
+
+  assert.equal(comp.baseSalaryMonthly, 50000000);
+  assert.equal(comp.currency, 'VND');
+  assert.equal(comp.bonusMonthsPerYear, 1.5);
+  assert.equal(comp.annualBonusCash, 30000000);
+  assert.equal(comp.stockOptionsOrEquityAnnual, 25000000);
+  assert.equal(comp.allowanceMonthly, 2000000);
+
+  const expectedBase = 50000000 * 12;
+  const expectedBonusMonths = 50000000 * 1.5;
+  const expectedAllowance = 2000000 * 12;
+  const expectedTotal = expectedBase + expectedBonusMonths + expectedAllowance + 30000000 + 25000000;
+  assert.equal(comp.annualTotalCompensation, expectedTotal);
+});
+
+test('contract: evaluateOfferDetails computes weighted scores, grades, and pros/cons', () => {
+  const comp = calculateAnnualTotalCompensation({
+    baseSalaryMonthly: 60000000,
+    currency: 'VND',
+    bonusMonthsPerYear: 2,
+    annualBonusCash: 50000000,
+    stockOptionsOrEquityAnnual: 40000000,
+    allowanceMonthly: 3000000
+  });
+
+  const evaluation = evaluateOfferDetails({
+    company: 'VinAI',
+    position: 'Staff AI Engineer',
+    compensation: comp,
+    workplaceFactors: {
+      workLifeBalance: 8,
+      careerGrowth: 9,
+      teamAndCulture: 9,
+      remoteFlexibility: 8,
+      companyReputationAndStability: 9,
+      healthAndBenefits: 9
+    }
+  });
+
+  assert.equal(evaluation.company, 'VinAI');
+  assert.equal(evaluation.position, 'Staff AI Engineer');
+  assert.ok(evaluation.weightedScore >= 80);
+  assert.equal(evaluation.grade, 'Xuất sắc');
+  assert.ok(evaluation.pros.length > 0);
+  assert.equal(evaluation.breakdownSummary.annualTotal, comp.annualTotalCompensation);
+  assert.ok(evaluation.breakdownSummary.annualGuaranteed > 0);
+  assert.ok(evaluation.breakdownSummary.annualVariable > 0);
+});
+
+test('contract: compareOffers ranks offers, computes delta scores, and identifies category winners', () => {
+  const comp1 = calculateAnnualTotalCompensation({
+    baseSalaryMonthly: 70000000,
+    bonusMonthsPerYear: 1
+  });
+  const offer1 = evaluateOfferDetails({
+    applicationId: 'app-1',
+    company: 'Fintech Unicorn',
+    position: 'Lead Backend',
+    compensation: comp1,
+    workplaceFactors: { workLifeBalance: 5, careerGrowth: 9 }
+  });
+
+  const comp2 = calculateAnnualTotalCompensation({
+    baseSalaryMonthly: 55000000,
+    bonusMonthsPerYear: 2
+  });
+  const offer2 = evaluateOfferDetails({
+    applicationId: 'app-2',
+    company: 'Global Remote Corp',
+    position: 'Senior Backend',
+    compensation: comp2,
+    workplaceFactors: { workLifeBalance: 9, remoteFlexibility: 10 }
+  });
+
+  const matrix = compareOffers([offer1, offer2]);
+  assert.equal(matrix.offers.length, 2);
+  assert.equal(matrix.rankedOffers.length, 2);
+  assert.equal(matrix.rankedOffers[0]?.rank, 1);
+  assert.equal(matrix.rankedOffers[0]?.deltaScore, 0);
+  assert.ok(matrix.rankedOffers[1]!.deltaScore <= 0);
+  assert.equal(matrix.bestCompensationOfferId, 'app-1');
+  assert.equal(matrix.bestWorkLifeBalanceOfferId, 'app-2');
+  assert.ok(matrix.recommendationSummary.length > 0);
+});
+
+test('contract: generateCounterOfferScript produces customized negotiation drafts across all 3 tones', () => {
+  const comp = calculateAnnualTotalCompensation({
+    baseSalaryMonthly: 40000000,
+    currency: 'VND'
+  });
+  const offer = evaluateOfferDetails({
+    company: 'Shopee',
+    position: 'Senior Engineer',
+    compensation: comp
+  });
+
+  const polite = generateCounterOfferScript({
+    offer,
+    targetSalary: 48000000,
+    tone: 'polite_confident'
+  });
+  assert.equal(polite.tone, 'polite_confident');
+  assert.equal(polite.targetIncreasePercent, 20);
+  assert.ok(polite.emailSubject.includes('Shopee'));
+  assert.ok(polite.emailBody.includes('48.000.000 VND'));
+  assert.ok(polite.shortScriptForCall.includes('48.000.000 VND'));
+  assert.ok(polite.talkingPoints.length >= 2);
+  assert.ok(polite.leverageItems.length >= 2);
+
+  const collaborative = generateCounterOfferScript({
+    offer,
+    targetSalary: 45000000,
+    tone: 'collaborative'
+  });
+  assert.equal(collaborative.tone, 'collaborative');
+  assert.ok(collaborative.emailBody.includes('thảo luận linh hoạt'));
+
+  const firm = generateCounterOfferScript({
+    offer,
+    targetSalary: 52000000,
+    tone: 'firm_competitive',
+    competitiveOffer: {
+      company: 'Lazada',
+      position: 'Senior Engineer',
+      annualTotalCompensation: 700000000
+    }
+  });
+  assert.equal(firm.tone, 'firm_competitive');
+  assert.ok(firm.emailBody.includes('Lazada'));
+  assert.ok(firm.leverageItems.some(item => item.includes('Lazada')));
+});
+
+test('contract: offer validators enforce strict schema bounds and positive numbers', () => {
+  const valid = validateOfferEvaluationInput({
+    company: 'VNG',
+    position: 'Backend Developer',
+    compensation: {
+      baseSalaryMonthly: 45000000,
+      currency: 'VND',
+      bonusMonthsPerYear: 1
+    }
+  });
+  assert.equal(valid.ok, true);
+
+  const invalidSalary = validateOfferEvaluationInput({
+    company: 'VNG',
+    position: 'Backend Developer',
+    compensation: {
+      baseSalaryMonthly: -1000
+    }
+  });
+  assert.equal(invalidSalary.ok, false);
+
+  const invalidOffersCount = validateOfferComparisonInput({
+    offers: [
+      {
+        company: 'VNG',
+        position: 'Dev',
+        compensation: { baseSalaryMonthly: 40000000 }
+      }
+    ]
+  });
+  assert.equal(invalidOffersCount.ok, false);
+
+  const validComparison = validateOfferComparisonInput({
+    offers: [
+      {
+        company: 'VNG',
+        position: 'Dev',
+        compensation: { baseSalaryMonthly: 40000000 }
+      },
+      {
+        company: 'FPT',
+        position: 'Dev',
+        compensation: { baseSalaryMonthly: 42000000 }
+      }
+    ]
+  });
+  assert.equal(validComparison.ok, true);
+
+  const validCounter = validateCounterOfferInput({
+    offer: valid.ok ? evaluateOfferDetails({ company: 'VNG', position: 'Dev', compensation: calculateAnnualTotalCompensation({ baseSalaryMonthly: 45000000 }) }) : ({} as any),
+    targetSalary: 50000000,
+    tone: 'polite_confident'
+  });
+  assert.equal(validCounter.ok, true);
+});

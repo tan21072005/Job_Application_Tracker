@@ -19,7 +19,12 @@ import {
   type InterviewQuestionCategory,
   type DomainTrack,
   type CsvImportItemInput,
-  type CsvImportRequestDTO
+  type CsvImportRequestDTO,
+  type OfferEvaluationInput,
+  type OfferComparisonInput,
+  type CounterOfferNegotiationInput,
+  type NegotiationTone,
+  type OfferEvaluationDTO
 } from './types.ts';
 import { isValidCalendarDate, isValidIsoInstant, isValidIanaTimezone } from './time.ts';
 import { normalizeIdentityKey, normalizeUrl } from './normalization.ts';
@@ -1157,6 +1162,231 @@ export function validateCsvImportRequest(rawBody: unknown): ValidationResult<Csv
     data: {
       rows: validatedRows,
       skipDuplicates: body.skipDuplicates !== false
+    }
+  };
+}
+
+
+export function validateOfferEvaluationInput(rawBody: unknown): ValidationResult<OfferEvaluationInput> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu gửi lên phải là một đối tượng JSON.',
+      errors: { body: 'Đối tượng body không đúng định dạng.' }
+    };
+  }
+
+  const b = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  const allowedKeys = new Set(['applicationId', 'company', 'position', 'compensation', 'workplaceFactors', 'weights']);
+  for (const k of Object.keys(b)) {
+    if (!allowedKeys.has(k)) {
+      errors[k] = `Trường "${k}" không được phép trong yêu cầu đánh giá offer.`;
+    }
+  }
+
+  if (typeof b.company !== 'string' || !b.company.trim()) {
+    errors.company = 'Tên công ty là bắt buộc.';
+  } else if (b.company.trim().length > 250) {
+    errors.company = 'Tên công ty không được vượt quá 250 ký tự.';
+  }
+
+  if (typeof b.position !== 'string' || !b.position.trim()) {
+    errors.position = 'Vị trí công việc là bắt buộc.';
+  } else if (b.position.trim().length > 250) {
+    errors.position = 'Vị trí công việc không được vượt quá 250 ký tự.';
+  }
+
+  if (!b.compensation || typeof b.compensation !== 'object' || Array.isArray(b.compensation)) {
+    errors.compensation = 'Thông tin thù lao (compensation) là bắt buộc và phải là đối tượng.';
+  }
+
+  const comp = (b.compensation || {}) as Record<string, unknown>;
+  const baseSalary = Number(comp.baseSalaryMonthly);
+  if (isNaN(baseSalary) || baseSalary <= 0) {
+    errors['compensation.baseSalaryMonthly'] = 'Lương cơ bản hàng tháng phải là một số dương lớn hơn 0.';
+  } else if (baseSalary > 10000000000) {
+    errors['compensation.baseSalaryMonthly'] = 'Lương cơ bản vượt quá giới hạn hệ thống cho phép.';
+  }
+
+  let currency: 'VND' | 'USD' = 'VND';
+  if ('currency' in comp && comp.currency !== undefined && comp.currency !== null) {
+    if (comp.currency !== 'VND' && comp.currency !== 'USD') {
+      errors['compensation.currency'] = 'Loại tiền tệ chỉ chấp nhận "VND" hoặc "USD".';
+    } else {
+      currency = comp.currency;
+    }
+  }
+
+  let bonusMonths = 1;
+  if ('bonusMonthsPerYear' in comp && comp.bonusMonthsPerYear !== undefined && comp.bonusMonthsPerYear !== null) {
+    const bm = Number(comp.bonusMonthsPerYear);
+    if (isNaN(bm) || bm < 0 || bm > 12) {
+      errors['compensation.bonusMonthsPerYear'] = 'Số tháng thưởng hàng năm phải từ 0 đến 12 tháng.';
+    } else {
+      bonusMonths = bm;
+    }
+  }
+
+  let annualBonusCash = 0;
+  if ('annualBonusCash' in comp && comp.annualBonusCash !== undefined && comp.annualBonusCash !== null) {
+    const abc = Number(comp.annualBonusCash);
+    if (isNaN(abc) || abc < 0) {
+      errors['compensation.annualBonusCash'] = 'Thưởng tiền mặt hàng năm không được là số âm.';
+    } else {
+      annualBonusCash = abc;
+    }
+  }
+
+  let stockAnnual = 0;
+  if ('stockOptionsOrEquityAnnual' in comp && comp.stockOptionsOrEquityAnnual !== undefined && comp.stockOptionsOrEquityAnnual !== null) {
+    const sa = Number(comp.stockOptionsOrEquityAnnual);
+    if (isNaN(sa) || sa < 0) {
+      errors['compensation.stockOptionsOrEquityAnnual'] = 'Giá trị cổ phiếu/ESOP hàng năm không được là số âm.';
+    } else {
+      stockAnnual = sa;
+    }
+  }
+
+  let allowanceMonthly = 0;
+  if ('allowanceMonthly' in comp && comp.allowanceMonthly !== undefined && comp.allowanceMonthly !== null) {
+    const am = Number(comp.allowanceMonthly);
+    if (isNaN(am) || am < 0) {
+      errors['compensation.allowanceMonthly'] = 'Phụ cấp hàng tháng không được là số âm.';
+    } else {
+      allowanceMonthly = am;
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Dữ liệu đánh giá offer chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      applicationId: typeof b.applicationId === 'string' ? b.applicationId : undefined,
+      company: (b.company as string).trim(),
+      position: (b.position as string).trim(),
+      compensation: {
+        baseSalaryMonthly: baseSalary,
+        currency,
+        bonusMonthsPerYear: bonusMonths,
+        annualBonusCash,
+        stockOptionsOrEquityAnnual: stockAnnual,
+        allowanceMonthly
+      },
+      workplaceFactors: b.workplaceFactors as OfferEvaluationInput['workplaceFactors'],
+      weights: b.weights as OfferEvaluationInput['weights']
+    }
+  };
+}
+
+export function validateOfferComparisonInput(rawBody: unknown): ValidationResult<OfferComparisonInput> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu gửi lên phải là một đối tượng JSON.',
+      errors: { body: 'Đối tượng body không đúng định dạng.' }
+    };
+  }
+
+  const b = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  if (!('offers' in b) || !Array.isArray(b.offers)) {
+    errors.offers = 'Danh sách lời mời làm việc (offers) là bắt buộc và phải là một mảng.';
+    return { ok: false, message: 'Dữ liệu so sánh offer chưa hợp lệ.', errors };
+  }
+
+  const rawOffers = b.offers as unknown[];
+  if (rawOffers.length < 2) {
+    errors.offers = 'Cần ít nhất 2 lời mời làm việc để tiến hành so sánh đối chiếu.';
+  } else if (rawOffers.length > 5) {
+    errors.offers = 'Số lượng lời mời so sánh cùng lúc không được vượt quá 5.';
+  }
+
+  const validatedOffers: OfferEvaluationInput[] = [];
+  for (let i = 0; i < rawOffers.length; i++) {
+    const item = rawOffers[i];
+    const val = validateOfferEvaluationInput(item);
+    if (!val.ok) {
+      for (const [k, msg] of Object.entries(val.errors)) {
+        errors[`offers[${i}].${k}`] = msg;
+      }
+    } else {
+      validatedOffers.push(val.data);
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Danh sách offer so sánh có dữ liệu chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      offers: validatedOffers
+    }
+  };
+}
+
+export function validateCounterOfferInput(rawBody: unknown): ValidationResult<CounterOfferNegotiationInput> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu gửi lên phải là một đối tượng JSON.',
+      errors: { body: 'Đối tượng body không đúng định dạng.' }
+    };
+  }
+
+  const b = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  if (!b.offer || typeof b.offer !== 'object' || Array.isArray(b.offer)) {
+    errors.offer = 'Thông tin offer hiện tại là bắt buộc.';
+  }
+
+  const targetSalary = Number(b.targetSalary);
+  if (isNaN(targetSalary) || targetSalary <= 0) {
+    errors.targetSalary = 'Mức lương đàm phán kỳ vọng phải là số dương lớn hơn 0.';
+  }
+
+  const allowedTones: Set<NegotiationTone> = new Set(['polite_confident', 'collaborative', 'firm_competitive']);
+  let tone: NegotiationTone = 'polite_confident';
+  if ('tone' in b && b.tone !== undefined && b.tone !== null) {
+    if (typeof b.tone !== 'string' || !allowedTones.has(b.tone as NegotiationTone)) {
+      errors.tone = 'Phong cách đàm phán không hợp lệ.';
+    } else {
+      tone = b.tone as NegotiationTone;
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Dữ liệu yêu cầu tạo kịch bản đàm phán chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      offer: b.offer as OfferEvaluationDTO,
+      targetSalary,
+      tone,
+      competitiveOffer: b.competitiveOffer as CounterOfferNegotiationInput['competitiveOffer'],
+      keyStrengths: Array.isArray(b.keyStrengths) ? b.keyStrengths.map(String) : undefined
     }
   };
 }

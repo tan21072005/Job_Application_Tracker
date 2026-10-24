@@ -11,3 +11,4 @@ export * from './csv.ts';
 export * from './timeline.ts';
 export * from './interview-coach.ts';
 export * from './csv-parser.ts';
+export * from './offer-evaluator.ts';

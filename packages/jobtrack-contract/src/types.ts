@@ -540,3 +540,112 @@ export interface CsvImportResultDTO {
   insertedIds: string[];
   errors: CsvImportRowErrorDTO[];
 }
+
+export interface OfferCompensationDTO {
+  baseSalaryMonthly: number;
+  currency: 'VND' | 'USD';
+  bonusMonthsPerYear: number;
+  annualBonusCash: number;
+  stockOptionsOrEquityAnnual: number;
+  allowanceMonthly: number;
+  annualTotalCompensation: number;
+}
+
+export interface OfferWorkplaceFactorsDTO {
+  workLifeBalance: number;
+  careerGrowth: number;
+  teamAndCulture: number;
+  remoteFlexibility: number;
+  companyReputationAndStability: number;
+  healthAndBenefits: number;
+}
+
+export interface OfferWeightsDTO {
+  compensationWeight: number;
+  workLifeBalanceWeight: number;
+  careerGrowthWeight: number;
+  cultureWeight: number;
+  remoteWeight: number;
+  benefitsWeight: number;
+}
+
+export interface OfferEvaluationDTO {
+  applicationId?: string;
+  company: string;
+  position: string;
+  compensation: OfferCompensationDTO;
+  workplaceFactors: OfferWorkplaceFactorsDTO;
+  weights: OfferWeightsDTO;
+  weightedScore: number;
+  grade: 'Xuất sắc' | 'Tốt' | 'Cân nhắc' | 'Không khuyến nghị';
+  pros: string[];
+  cons: string[];
+  breakdownSummary: {
+    monthlyGross: number;
+    annualGuaranteed: number;
+    annualVariable: number;
+    annualTotal: number;
+  };
+}
+
+export interface OfferComparisonMatrixDTO {
+  offers: OfferEvaluationDTO[];
+  rankedOffers: Array<{
+    offer: OfferEvaluationDTO;
+    rank: number;
+    deltaScore: number;
+  }>;
+  bestOverallOfferId?: string;
+  bestCompensationOfferId?: string;
+  bestWorkLifeBalanceOfferId?: string;
+  recommendationSummary: string;
+}
+
+export type NegotiationTone =
+  | 'polite_confident'
+  | 'collaborative'
+  | 'firm_competitive';
+
+export interface CounterOfferScriptDTO {
+  tone: NegotiationTone;
+  targetSalary: number;
+  targetIncreasePercent: number;
+  emailSubject: string;
+  emailBody: string;
+  shortScriptForCall: string;
+  talkingPoints: string[];
+  leverageItems: string[];
+  walkAwayAdvice: string;
+}
+
+export interface OfferEvaluationInput {
+  applicationId?: string;
+  company: string;
+  position: string;
+  compensation: {
+    baseSalaryMonthly: number;
+    currency?: 'VND' | 'USD';
+    bonusMonthsPerYear?: number;
+    annualBonusCash?: number;
+    stockOptionsOrEquityAnnual?: number;
+    allowanceMonthly?: number;
+  };
+  workplaceFactors?: Partial<OfferWorkplaceFactorsDTO>;
+  weights?: Partial<OfferWeightsDTO>;
+}
+
+export interface OfferComparisonInput {
+  offers: OfferEvaluationInput[];
+}
+
+export interface CounterOfferNegotiationInput {
+  offer: OfferEvaluationDTO;
+  targetSalary: number;
+  competitiveOffer?: {
+    company: string;
+    position: string;
+    annualTotalCompensation: number;
+  };
+  keyStrengths?: string[];
+  tone?: NegotiationTone;
+}
