@@ -109,7 +109,13 @@ import {
   parseEmailContent,
   generateIngestionProposal,
   validateEmailParseInput,
-  validateEmailApplyInput
+  validateEmailApplyInput,
+  generateOutreachSequence,
+  personalizeMessage,
+  computeCampaignMetrics,
+  validateCreateCampaignInput,
+  validateUpdateRecipientStepInput,
+  type OutreachRecipientDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -2357,4 +2363,157 @@ test('contract: validateEmailParseInput and validateEmailApplyInput validate sch
 
   const invalidApply = validateEmailApplyInput({ actionType: 'unsupported_action' });
   assert.equal(invalidApply.ok, false);
+});
+
+test('contract: generateOutreachSequence generates 3 contextual steps with delays for all objectives', () => {
+  const referralSteps = generateOutreachSequence('referral_request', 'engineer', 'Backend Lead', 'Shopee');
+  assert.equal(referralSteps.length, 3);
+  assert.equal(referralSteps[0].delayDays, 0);
+  assert.equal(referralSteps[1].delayDays, 3);
+  assert.equal(referralSteps[2].delayDays, 6);
+  assert.ok(referralSteps[2].title.includes('Referral'));
+
+  const coffeeSteps = generateOutreachSequence('coffee_chat', 'alumni', 'Software Engineer', 'Grab');
+  assert.equal(coffeeSteps.length, 3);
+  assert.ok(coffeeSteps[0].title.includes('Coffee Chat') || coffeeSteps[0].title.includes('trò chuyện'));
+
+  const recruiterSteps = generateOutreachSequence('recruiter_intro', 'recruiter', 'DevOps Specialist', 'VNG');
+  assert.equal(recruiterSteps.length, 3);
+  assert.equal(recruiterSteps[1].channel, 'email');
+});
+
+test('contract: personalizeMessage replaces placeholders with provided recipient parameters', () => {
+  const template = 'Chào anh/chị {{name}}, em đang quan tâm vị trí {{role}} tại {{company}}. Em có thế mạnh về {{my_strength}}.';
+  const personalized = personalizeMessage(template, {
+    name: 'Phương Linh',
+    role: 'Staff Platform Engineer',
+    company: 'One Mount',
+    my_strength: 'Kubernetes và Golang'
+  });
+  assert.equal(
+    personalized,
+    'Chào anh/chị Phương Linh, em đang quan tâm vị trí Staff Platform Engineer tại One Mount. Em có thế mạnh về Kubernetes và Golang.'
+  );
+
+  const partial = personalizeMessage('Xin chào {{name}} - {{undefined_key}}', { name: 'Nam' });
+  assert.equal(partial, 'Xin chào Nam - ');
+});
+
+test('contract: computeCampaignMetrics calculates sent, reply rate, and referral rate percentages accurately', () => {
+  const emptyMetrics = computeCampaignMetrics([]);
+  assert.equal(emptyMetrics.totalRecipients, 0);
+  assert.equal(emptyMetrics.replyRate, 0);
+  assert.equal(emptyMetrics.referralRate, 0);
+
+  const mockRecipients: OutreachRecipientDTO[] = [
+    {
+      id: 'rec-1',
+      campaignId: 'camp-1',
+      contactId: null,
+      name: 'Nguyen Van A',
+      title: 'Senior Engineer',
+      company: 'Shopee',
+      channel: 'linkedin',
+      email: null,
+      linkedinUrl: null,
+      currentStepIndex: 1,
+      status: 'sent',
+      lastContactedAt: '2026-10-20T10:00:00Z',
+      notes: '',
+      createdAt: '2026-10-20T10:00:00Z',
+      updatedAt: '2026-10-20T10:00:00Z'
+    },
+    {
+      id: 'rec-2',
+      campaignId: 'camp-1',
+      contactId: null,
+      name: 'Tran Thi B',
+      title: 'Engineering Manager',
+      company: 'Shopee',
+      channel: 'linkedin',
+      email: null,
+      linkedinUrl: null,
+      currentStepIndex: 2,
+      status: 'replied',
+      lastContactedAt: '2026-10-22T14:00:00Z',
+      notes: '',
+      createdAt: '2026-10-20T10:00:00Z',
+      updatedAt: '2026-10-22T14:00:00Z'
+    },
+    {
+      id: 'rec-3',
+      campaignId: 'camp-1',
+      contactId: null,
+      name: 'Le Van C',
+      title: 'Principal Architect',
+      company: 'Shopee',
+      channel: 'linkedin',
+      email: null,
+      linkedinUrl: null,
+      currentStepIndex: 3,
+      status: 'referred',
+      lastContactedAt: '2026-10-24T16:00:00Z',
+      notes: '',
+      createdAt: '2026-10-20T10:00:00Z',
+      updatedAt: '2026-10-24T16:00:00Z'
+    },
+    {
+      id: 'rec-4',
+      campaignId: 'camp-1',
+      contactId: null,
+      name: 'Pham Van D',
+      title: 'Tech Lead',
+      company: 'Shopee',
+      channel: 'linkedin',
+      email: null,
+      linkedinUrl: null,
+      currentStepIndex: 0,
+      status: 'pending',
+      lastContactedAt: null,
+      notes: '',
+      createdAt: '2026-10-20T10:00:00Z',
+      updatedAt: '2026-10-20T10:00:00Z'
+    }
+  ];
+
+  const metrics = computeCampaignMetrics(mockRecipients);
+  assert.equal(metrics.totalRecipients, 4);
+  assert.equal(metrics.totalSent, 3);
+  assert.equal(metrics.totalReplied, 2);
+  assert.equal(metrics.totalReferred, 1);
+  assert.equal(metrics.replyRate, 66.7);
+  assert.equal(metrics.referralRate, 33.3);
+});
+
+test('contract: validateCreateCampaignInput and validateUpdateRecipientStepInput strictly enforce schemas', () => {
+  const validCampaign = validateCreateCampaignInput({
+    name: 'Chiến dịch Referral Shopee Q4',
+    objective: 'referral_request',
+    targetType: 'engineer',
+    targetCompany: 'Shopee Vietnam',
+    targetRole: 'Senior Frontend Engineer'
+  });
+  assert.equal(validCampaign.valid, true);
+
+  const invalidCampaign = validateCreateCampaignInput({
+    name: '',
+    objective: 'invalid_objective',
+    targetType: 'engineer',
+    targetCompany: '',
+    targetRole: ''
+  });
+  assert.equal(invalidCampaign.valid, false);
+  assert.ok(invalidCampaign.errors.length >= 3);
+
+  const validStep = validateUpdateRecipientStepInput({
+    currentStepIndex: 2,
+    status: 'replied'
+  });
+  assert.equal(validStep.valid, true);
+
+  const invalidStep = validateUpdateRecipientStepInput({
+    currentStepIndex: -1,
+    status: 'unknown_status'
+  });
+  assert.equal(invalidStep.valid, false);
 });
