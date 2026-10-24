@@ -438,18 +438,7 @@ export function validateCreateCompensationForecastInput(input: unknown): Validat
     return {
       ok: false,
       errors,
-      message: 'Thông tin gói đãi ngộ không hợp lệ.',
-      data: {
-        company,
-        role,
-        level,
-        package: {
-          baseSalaryMonthly: 0,
-          currency: 'VND',
-          hasMonth13: true,
-          performanceBonusAnnual: 0
-        }
-      }
+      message: 'Thông tin gói đãi ngộ không hợp lệ.'
     };
   }
 
@@ -500,14 +489,7 @@ export function validateCreateCompensationForecastInput(input: unknown): Validat
     return {
       ok: false,
       errors,
-      message: 'Dữ liệu dự báo chưa hợp lệ.',
-      data: {
-        company,
-        role,
-        level,
-        applicationId,
-        package: validatedPackage
-      }
+      message: 'Dữ liệu dự báo chưa hợp lệ.'
     };
   }
 

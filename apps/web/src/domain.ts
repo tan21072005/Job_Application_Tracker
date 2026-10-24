@@ -79,7 +79,25 @@ import {
   type GenerateTokenInputDTO,
   generateVerificationFingerprint,
   synthesizePublicDossier,
-  verifyDossierIntegrity
+  verifyDossierIntegrity,
+  type Currency,
+  type EquityType,
+  type SeniorityLevel,
+  type MarketComparisonStatus,
+  type EquityGrantDTO,
+  type CompensationPackageDTO,
+  type EquityVestingMilestoneDTO,
+  type AnnualCompensationBreakdownDTO,
+  type CompensationForecastScenarioDTO,
+  type CompensationBenchmarkDTO,
+  type NegotiationLeveragePointDTO,
+  type CompensationForecastDTO,
+  type CreateCompensationForecastInputDTO,
+  computeVestingSchedule,
+  calculateNetTakeHomeVnd,
+  forecastCompensationScenarios,
+  evaluateMarketBenchmark,
+  deriveNegotiationLeveragePoints
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -162,7 +180,25 @@ export {
   type GenerateTokenInputDTO,
   generateVerificationFingerprint,
   synthesizePublicDossier,
-  verifyDossierIntegrity
+  verifyDossierIntegrity,
+  type Currency,
+  type EquityType,
+  type SeniorityLevel,
+  type MarketComparisonStatus,
+  type EquityGrantDTO,
+  type CompensationPackageDTO,
+  type EquityVestingMilestoneDTO,
+  type AnnualCompensationBreakdownDTO,
+  type CompensationForecastScenarioDTO,
+  type CompensationBenchmarkDTO,
+  type NegotiationLeveragePointDTO,
+  type CompensationForecastDTO,
+  type CreateCompensationForecastInputDTO,
+  computeVestingSchedule,
+  calculateNetTakeHomeVnd,
+  forecastCompensationScenarios,
+  evaluateMarketBenchmark,
+  deriveNegotiationLeveragePoints
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {

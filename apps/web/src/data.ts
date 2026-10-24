@@ -168,7 +168,25 @@ import {
   type ShareTokenDTO,
   type UpdatePortfolioInputDTO,
   type GenerateTokenInputDTO,
-  synthesizePublicDossier
+  synthesizePublicDossier,
+  type Currency,
+  type EquityType,
+  type SeniorityLevel,
+  type MarketComparisonStatus,
+  type EquityGrantDTO,
+  type CompensationPackageDTO,
+  type EquityVestingMilestoneDTO,
+  type AnnualCompensationBreakdownDTO,
+  type CompensationForecastScenarioDTO,
+  type CompensationBenchmarkDTO,
+  type NegotiationLeveragePointDTO,
+  type CompensationForecastDTO,
+  type CreateCompensationForecastInputDTO,
+  computeVestingSchedule,
+  calculateNetTakeHomeVnd,
+  forecastCompensationScenarios,
+  evaluateMarketBenchmark,
+  deriveNegotiationLeveragePoints
 } from '@jobtrack/contract';
 
 export type {
@@ -3298,6 +3316,148 @@ export const portfolioRepository = {
   }
 };
 
+const COMPENSATION_STORAGE_KEY = 'jobtrack.compensation_forecasts.v1';
+
+function createDefaultDemoForecast(): CompensationForecastDTO {
+  const defaultPkg: CompensationPackageDTO = {
+    baseSalaryMonthly: 55000000,
+    currency: 'VND',
+    hasMonth13: true,
+    performanceBonusAnnual: 55000000,
+    equityGrant: {
+      type: 'esop',
+      totalShares: 20000,
+      strikePrice: 20000,
+      currentFairMarketValue: 60000,
+      vestingYears: 4,
+      cliffMonths: 12
+    }
+  };
+
+  const vestingSchedule = computeVestingSchedule(defaultPkg.equityGrant);
+  const scenarios = forecastCompensationScenarios(defaultPkg);
+  const baseAnnual = defaultPkg.baseSalaryMonthly * 12;
+  const m13 = defaultPkg.hasMonth13 ? defaultPkg.baseSalaryMonthly : 0;
+  const bonus = defaultPkg.performanceBonusAnnual || 0;
+  const annualCash = baseAnnual + m13 + bonus;
+  const benchmark = evaluateMarketBenchmark('Senior Frontend Engineer', 'senior', annualCash, 'VND');
+  const leveragePoints = deriveNegotiationLeveragePoints(defaultPkg, benchmark, 'Shopee Vietnam');
+
+  return {
+    id: 'demo-forecast-shopee-1',
+    company: 'Shopee Vietnam',
+    role: 'Senior Frontend Engineer',
+    level: 'senior',
+    package: defaultPkg,
+    vestingSchedule,
+    scenarios,
+    benchmark,
+    leveragePoints,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function loadDemoForecasts(): CompensationForecastDTO[] {
+  try {
+    const raw = localStorage.getItem(COMPENSATION_STORAGE_KEY);
+    if (!raw) {
+      const initial = [createDefaultDemoForecast()];
+      saveDemoForecasts(initial);
+      return initial;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [createDefaultDemoForecast()];
+  } catch {
+    return [createDefaultDemoForecast()];
+  }
+}
+
+function saveDemoForecasts(list: CompensationForecastDTO[]): void {
+  try {
+    localStorage.setItem(COMPENSATION_STORAGE_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+export const compensationRepository = {
+  async list(): Promise<CompensationForecastDTO[]> {
+    if (demoMode) {
+      return loadDemoForecasts();
+    }
+    return request<CompensationForecastDTO[]>('/compensation/forecasts');
+  },
+
+  async getById(id: string): Promise<CompensationForecastDTO | null> {
+    if (demoMode) {
+      const list = loadDemoForecasts();
+      return list.find(f => f.id === id) || null;
+    }
+    const list = await request<CompensationForecastDTO[]>('/compensation/forecasts');
+    return list.find(f => f.id === id) || null;
+  },
+
+  async create(input: CreateCompensationForecastInputDTO): Promise<CompensationForecastDTO> {
+    if (demoMode) {
+      const vestingSchedule = computeVestingSchedule(input.package.equityGrant);
+      const scenarios = forecastCompensationScenarios(input.package);
+      const baseAnnual = input.package.baseSalaryMonthly * 12;
+      const m13 = input.package.hasMonth13 ? input.package.baseSalaryMonthly : 0;
+      const bonus = input.package.performanceBonusAnnual || 0;
+      const annualCash = baseAnnual + m13 + bonus;
+      const benchmark = evaluateMarketBenchmark(input.role, input.level, annualCash, input.package.currency);
+      const leveragePoints = deriveNegotiationLeveragePoints(input.package, benchmark, input.company);
+
+      const forecast: CompensationForecastDTO = {
+        id: `demo-forecast-${Date.now()}`,
+        company: input.company,
+        role: input.role,
+        level: input.level,
+        applicationId: input.applicationId || null,
+        package: input.package,
+        vestingSchedule,
+        scenarios,
+        benchmark,
+        leveragePoints,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const list = loadDemoForecasts();
+      list.unshift(forecast);
+      saveDemoForecasts(list);
+      return forecast;
+    }
+    return request<CompensationForecastDTO>('/compensation/forecasts', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async delete(id: string): Promise<boolean> {
+    if (demoMode) {
+      const list = loadDemoForecasts().filter(f => f.id !== id);
+      saveDemoForecasts(list);
+      return true;
+    }
+    await request(`/compensation/forecasts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    return true;
+  },
+
+  async getBenchmark(
+    role: string,
+    level: SeniorityLevel,
+    annualCash: number,
+    currency: Currency = 'VND'
+  ): Promise<CompensationBenchmarkDTO> {
+    if (demoMode) {
+      return evaluateMarketBenchmark(role, level, annualCash, currency);
+    }
+    return request<CompensationBenchmarkDTO>(
+      `/compensation/benchmark?role=${encodeURIComponent(role)}&level=${encodeURIComponent(level)}&annualCash=${annualCash}&currency=${currency}`
+    );
+  }
+};
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
@@ -3331,7 +3491,20 @@ export type {
   PublicDossierViewDTO,
   ShareTokenDTO,
   UpdatePortfolioInputDTO,
-  GenerateTokenInputDTO
+  GenerateTokenInputDTO,
+  Currency,
+  EquityType,
+  SeniorityLevel,
+  MarketComparisonStatus,
+  EquityGrantDTO,
+  CompensationPackageDTO,
+  EquityVestingMilestoneDTO,
+  AnnualCompensationBreakdownDTO,
+  CompensationForecastScenarioDTO,
+  CompensationBenchmarkDTO,
+  NegotiationLeveragePointDTO,
+  CompensationForecastDTO,
+  CreateCompensationForecastInputDTO
 };
 
 
