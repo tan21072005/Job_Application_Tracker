@@ -58,6 +58,7 @@ import { AiProService, normalizeProPlan } from './services/ai-pro-service.ts';
 import { DatasetService } from './services/dataset-service.ts';
 import { AnalyticsService } from './services/analytics-service.ts';
 import { ResumeService } from './services/resume-service.ts';
+import { CompanyService } from './services/company-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -100,6 +101,7 @@ export const aiProService = new AiProService(pool);
 export const datasetService = new DatasetService(pool);
 export const analyticsService = new AnalyticsService(pool);
 export const resumeService = new ResumeService(pool);
+export const companyService = new CompanyService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1277,7 +1279,7 @@ app.post('/api/resumes', auth, async (req, res, next) => {
 app.get('/api/resumes/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const item = await resumeService.getResume(userId, req.params.id);
+    const item = await resumeService.getResume(userId, String(req.params.id));
     res.json(item);
   } catch (error) {
     next(error);
@@ -1287,7 +1289,7 @@ app.get('/api/resumes/:id', auth, async (req, res, next) => {
 app.put('/api/resumes/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const updated = await resumeService.updateResume(userId, req.params.id, req.body);
+    const updated = await resumeService.updateResume(userId, String(req.params.id), req.body);
     res.json(updated);
   } catch (error) {
     next(error);
@@ -1297,7 +1299,7 @@ app.put('/api/resumes/:id', auth, async (req, res, next) => {
 app.delete('/api/resumes/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    await resumeService.deleteResume(userId, req.params.id);
+    await resumeService.deleteResume(userId, String(req.params.id));
     res.status(204).end();
   } catch (error) {
     next(error);
@@ -1309,6 +1311,34 @@ app.post('/api/resumes/tailor', auth, async (req, res, next) => {
     const userId = (req as SessionRequest).userId;
     const result = await resumeService.tailorResume(userId, req.body);
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/companies/:name', auth, async (req, res, next) => {
+  try {
+    const profile = await companyService.getCompany(String(req.params.name));
+    res.json(profile);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/companies/:name/reviews', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const review = await companyService.addReview(userId, String(req.params.name), req.body);
+    res.status(201).json(review);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/companies/:name/salaries', auth, async (req, res, next) => {
+  try {
+    const salaries = await companyService.getSalaryBenchmarks(String(req.params.name));
+    res.json(salaries);
   } catch (error) {
     next(error);
   }
