@@ -68,7 +68,21 @@ import {
   evaluateConflictOfInterest,
   computeGovernanceQuotient,
   generateOutsideBoardWaiverLetter,
-  generateBoardDossierMarkdown
+  generateBoardDossierMarkdown,
+  type ExecutiveSeveranceCaseDTO,
+  type ExecutiveSeveranceCaseMutationDTO,
+  type GoodReasonEventDTO,
+  type GoodReasonEventMutationDTO,
+  type SeveranceCounterProposalDTO,
+  type SeveranceAuditParams,
+  type CicWaterfallParams,
+  type Tax280GParams,
+  type CounterProposalParams,
+  computeSeveranceAudit,
+  computeCicWaterfall,
+  compute280GTax,
+  computeExecutiveLeverageIndex,
+  generateExecutiveCounterMemoMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -8158,6 +8172,475 @@ export const boardAdvisoryNexusRepository = {
       return await request<BoardDossierDTO>('/board-advisory-nexus/dossier');
     } catch {
       return loadDemoBoardDossier();
+    }
+  }
+};
+
+const SEVERANCE_STORAGE_KEY = 'jobtrack.severance.v1';
+
+const DEFAULT_DEMO_SEVERANCE: ExecutiveSeveranceCaseDTO[] = [
+  {
+    id: 'case-demo-vp-eng',
+    companyName: 'Apex Cloud Systems',
+    roleTitle: 'VP of Engineering',
+    effectiveSeparationDate: '2026-11-15',
+    severanceParams: {
+      annualBaseSalaryUsd: 380000,
+      cashContinuationMonths: 6,
+      targetBonusPercentage: 35,
+      bonusProrationMode: 'target',
+      companyPerformanceMultiplier: 1.0,
+      daysWorkedInFiscalYear: 315,
+      monthlyCobraCostUsd: 2600,
+      cobraSubsidizedMonths: 6,
+      cobraTaxGrossedUp: true,
+      outplacementBudgetUsd: 15000,
+      accruedPtoDays: 18,
+      statutoryPtoVestingMandated: true,
+      unlimitedPtoForfeitureRisk: false,
+      ptewMonths: 3,
+      optionsHeldCount: 150000,
+      estimatedExerciseCostUsd: 225000
+    },
+    cicWaterfallParams: {
+      enterpriseValuationUsd: 250000000,
+      fundedDebtUsd: 20000000,
+      balanceSheetCashUsd: 15000000,
+      transactionFeePercent: 2.0,
+      escrowHoldbackPercent: 5.0,
+      preferredSharesStack: [
+        { seriesName: 'Series A', investedAmountUsd: 12000000, liquidationMultiple: 1.0, isParticipating: false },
+        { seriesName: 'Series B', investedAmountUsd: 28000000, liquidationMultiple: 1.0, isParticipating: false },
+        { seriesName: 'Series C', investedAmountUsd: 45000000, liquidationMultiple: 1.0, isParticipating: false }
+      ],
+      totalFullyDilutedCommonShares: 22000000,
+      unvestedOptionsCount: 120000,
+      unvestedOptionsStrikePriceUsd: 1.50,
+      unvestedRsuCount: 45000,
+      vestedOptionsCount: 180000,
+      vestedOptionsStrikePriceUsd: 1.50,
+      vestedRsuCount: 30000,
+      triggerMode: 'double_trigger',
+      accelerationExtent: 'full_100_percent',
+      cicProtectionWindowMonths: 18
+    },
+    tax280GParams: {
+      w2History5YearsUsd: [310000, 340000, 390000, 420000, 460000],
+      contingentCashSeveranceUsd: 190000,
+      contingentBonusUsd: 114945,
+      contingentEquityAccelerationUsd: 980000,
+      contingentOtherBenefitsUsd: 38400,
+      federalMarginalTaxRate: 37,
+      stateMarginalTaxRate: 13.3,
+      medicareMarginalTaxRate: 2.35,
+      corporateTaxRate: 21,
+      agreedSettlementType: 'best_net_valley_rule'
+    },
+    counterProposalParams: {
+      requestedCashMonths: 12,
+      requestedBonusPercent: 100,
+      requestedCobraMonths: 12,
+      requestedPtewYears: 7,
+      requestedAccelerationExtent: 'full_100_percent',
+      requestedLegalFeeAllowanceUsd: 25000,
+      requireMutualRelease: true,
+      requireMutualNonDisparagement: true,
+      statutoryWhistleblowerCarveoutsConfirmed: true,
+      leverageFactors: {
+        busFactorScore: 22,
+        keyPersonClosingCondition: true,
+        teamFlightRiskScore: 18,
+        patentInventorshipCount: 3,
+        constructiveDischargeMeritScore: 12
+      }
+    },
+    auditResult: computeSeveranceAudit({
+      annualBaseSalaryUsd: 380000,
+      cashContinuationMonths: 6,
+      targetBonusPercentage: 35,
+      bonusProrationMode: 'target',
+      companyPerformanceMultiplier: 1.0,
+      daysWorkedInFiscalYear: 315,
+      monthlyCobraCostUsd: 2600,
+      cobraSubsidizedMonths: 6,
+      cobraTaxGrossedUp: true,
+      outplacementBudgetUsd: 15000,
+      accruedPtoDays: 18,
+      statutoryPtoVestingMandated: true,
+      unlimitedPtoForfeitureRisk: false,
+      ptewMonths: 3,
+      optionsHeldCount: 150000,
+      estimatedExerciseCostUsd: 225000
+    }),
+    cicResult: computeCicWaterfall({
+      enterpriseValuationUsd: 250000000,
+      fundedDebtUsd: 20000000,
+      balanceSheetCashUsd: 15000000,
+      transactionFeePercent: 2.0,
+      escrowHoldbackPercent: 5.0,
+      preferredSharesStack: [
+        { seriesName: 'Series A', investedAmountUsd: 12000000, liquidationMultiple: 1.0, isParticipating: false },
+        { seriesName: 'Series B', investedAmountUsd: 28000000, liquidationMultiple: 1.0, isParticipating: false },
+        { seriesName: 'Series C', investedAmountUsd: 45000000, liquidationMultiple: 1.0, isParticipating: false }
+      ],
+      totalFullyDilutedCommonShares: 22000000,
+      unvestedOptionsCount: 120000,
+      unvestedOptionsStrikePriceUsd: 1.50,
+      unvestedRsuCount: 45000,
+      vestedOptionsCount: 180000,
+      vestedOptionsStrikePriceUsd: 1.50,
+      vestedRsuCount: 30000,
+      triggerMode: 'double_trigger',
+      accelerationExtent: 'full_100_percent',
+      cicProtectionWindowMonths: 18
+    }),
+    tax280GResult: compute280GTax({
+      w2History5YearsUsd: [310000, 340000, 390000, 420000, 460000],
+      contingentCashSeveranceUsd: 190000,
+      contingentBonusUsd: 114945,
+      contingentEquityAccelerationUsd: 980000,
+      contingentOtherBenefitsUsd: 38400,
+      federalMarginalTaxRate: 37,
+      stateMarginalTaxRate: 13.3,
+      medicareMarginalTaxRate: 2.35,
+      corporateTaxRate: 21,
+      agreedSettlementType: 'best_net_valley_rule'
+    }),
+    goodReasonEvents: [
+      {
+        id: 'event-demo-1',
+        caseId: 'case-demo-vp-eng',
+        category: 'diminution_of_duties',
+        title: 'Forced Reassignment of Core Infrastructure Teams',
+        factualDescription: 'Acquiring management transferred all cloud platform and site reliability teams without executive consent.',
+        dateConditionOccurred: '2026-10-20',
+        dateNoticeServed: '2026-10-24',
+        curePeriodDeadline: '2026-11-23',
+        status: 'cure_period_active',
+        evidenceUrls: ['https://corp.apex.internal/org-changes-memo.pdf'],
+        notes: 'Notice delivered via email and certified mail to General Counsel.',
+        createdAt: '2026-10-24T10:00:00.000Z',
+        updatedAt: '2026-10-24T10:00:00.000Z'
+      }
+    ],
+    counterProposals: [],
+    createdAt: '2026-10-20T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z'
+  }
+];
+
+function loadDemoSeveranceCases(): ExecutiveSeveranceCaseDTO[] {
+  if (typeof localStorage === 'undefined') return DEFAULT_DEMO_SEVERANCE;
+  try {
+    const raw = localStorage.getItem(SEVERANCE_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(SEVERANCE_STORAGE_KEY, JSON.stringify(DEFAULT_DEMO_SEVERANCE));
+      return DEFAULT_DEMO_SEVERANCE;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_DEMO_SEVERANCE;
+  } catch {
+    return DEFAULT_DEMO_SEVERANCE;
+  }
+}
+
+function saveDemoSeveranceCases(cases: ExecutiveSeveranceCaseDTO[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(SEVERANCE_STORAGE_KEY, JSON.stringify(cases));
+  } catch {
+  }
+}
+
+function getDemoSeveranceCase(id: string): ExecutiveSeveranceCaseDTO | null {
+  const list = loadDemoSeveranceCases();
+  return list.find(c => c.id === id) || null;
+}
+
+function createDemoSeveranceCase(input: ExecutiveSeveranceCaseMutationDTO): ExecutiveSeveranceCaseDTO {
+  const cases = loadDemoSeveranceCases();
+  const id = `case-demo-${Date.now()}`;
+  const auditResult = computeSeveranceAudit(input.severanceParams);
+  const cicResult = computeCicWaterfall(input.cicWaterfallParams);
+  const tax280GResult = compute280GTax(input.tax280GParams);
+
+  const newCase: ExecutiveSeveranceCaseDTO = {
+    id,
+    userId: 'demo-user',
+    companyName: input.companyName,
+    roleTitle: input.roleTitle,
+    effectiveSeparationDate: input.effectiveSeparationDate,
+    severanceParams: input.severanceParams,
+    cicWaterfallParams: input.cicWaterfallParams,
+    tax280GParams: input.tax280GParams,
+    counterProposalParams: input.counterProposalParams,
+    auditResult,
+    cicResult,
+    tax280GResult,
+    goodReasonEvents: [],
+    counterProposals: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  cases.unshift(newCase);
+  saveDemoSeveranceCases(cases);
+  return newCase;
+}
+
+function updateDemoSeveranceCase(
+  id: string,
+  input: Partial<ExecutiveSeveranceCaseMutationDTO>
+): ExecutiveSeveranceCaseDTO | null {
+  const cases = loadDemoSeveranceCases();
+  const idx = cases.findIndex(c => c.id === id);
+  if (idx === -1) return null;
+
+  const current = cases[idx];
+  const companyName = input.companyName ?? current.companyName;
+  const roleTitle = input.roleTitle ?? current.roleTitle;
+  const effectiveSeparationDate = input.effectiveSeparationDate ?? current.effectiveSeparationDate;
+  const severanceParams = input.severanceParams ?? current.severanceParams;
+  const cicWaterfallParams = input.cicWaterfallParams ?? current.cicWaterfallParams;
+  const tax280GParams = input.tax280GParams ?? current.tax280GParams;
+  const counterProposalParams = input.counterProposalParams ?? current.counterProposalParams;
+
+  const auditResult = computeSeveranceAudit(severanceParams);
+  const cicResult = computeCicWaterfall(cicWaterfallParams);
+  const tax280GResult = compute280GTax(tax280GParams);
+
+  const updated: ExecutiveSeveranceCaseDTO = {
+    ...current,
+    companyName,
+    roleTitle,
+    effectiveSeparationDate,
+    severanceParams,
+    cicWaterfallParams,
+    tax280GParams,
+    counterProposalParams,
+    auditResult,
+    cicResult,
+    tax280GResult,
+    updatedAt: new Date().toISOString()
+  };
+
+  cases[idx] = updated;
+  saveDemoSeveranceCases(cases);
+  return updated;
+}
+
+function deleteDemoSeveranceCase(id: string): boolean {
+  const cases = loadDemoSeveranceCases();
+  const filtered = cases.filter(c => c.id !== id);
+  if (filtered.length === cases.length) return false;
+  saveDemoSeveranceCases(filtered);
+  return true;
+}
+
+function addDemoGoodReasonEvent(
+  caseId: string,
+  input: GoodReasonEventMutationDTO
+): GoodReasonEventDTO {
+  const cases = loadDemoSeveranceCases();
+  const targetCase = cases.find(c => c.id === caseId);
+  const id = `event-demo-${Date.now()}`;
+  let cureDeadline: string | null = null;
+  if (input.dateNoticeServed) {
+    const noticeDate = new Date(input.dateNoticeServed);
+    noticeDate.setDate(noticeDate.getDate() + 30);
+    cureDeadline = noticeDate.toISOString().split('T')[0];
+  }
+
+  const newEvent: GoodReasonEventDTO = {
+    id,
+    caseId,
+    category: input.category,
+    title: input.title,
+    factualDescription: input.factualDescription,
+    dateConditionOccurred: input.dateConditionOccurred,
+    dateNoticeServed: input.dateNoticeServed || null,
+    curePeriodDeadline: cureDeadline,
+    status: input.status || 'condition_identified',
+    evidenceUrls: input.evidenceUrls || [],
+    notes: input.notes || '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (targetCase) {
+    if (!targetCase.goodReasonEvents) targetCase.goodReasonEvents = [];
+    targetCase.goodReasonEvents.unshift(newEvent);
+    targetCase.updatedAt = new Date().toISOString();
+    saveDemoSeveranceCases(cases);
+  }
+
+  return newEvent;
+}
+
+function deleteDemoGoodReasonEvent(eventId: string): boolean {
+  const cases = loadDemoSeveranceCases();
+  let found = false;
+  for (const c of cases) {
+    if (c.goodReasonEvents) {
+      const initialLen = c.goodReasonEvents.length;
+      c.goodReasonEvents = c.goodReasonEvents.filter(e => e.id !== eventId);
+      if (c.goodReasonEvents.length < initialLen) {
+        found = true;
+        c.updatedAt = new Date().toISOString();
+      }
+    }
+  }
+  if (found) saveDemoSeveranceCases(cases);
+  return found;
+}
+
+function createDemoCounterProposal(caseId: string): SeveranceCounterProposalDTO | null {
+  const cases = loadDemoSeveranceCases();
+  const c = cases.find(item => item.id === caseId);
+  if (!c) return null;
+
+  const counter = c.counterProposalParams;
+  const leverageIndex = computeExecutiveLeverageIndex(counter.leverageFactors);
+  const memo = generateExecutiveCounterMemoMarkdown(c, counter, leverageIndex);
+
+  const baselineVal = c.auditResult.totalSeverancePackageValueUsd;
+  const monthlySalary = c.severanceParams.annualBaseSalaryUsd / 12;
+  const proposedCash = monthlySalary * counter.requestedCashMonths;
+  const proposedBonus = c.severanceParams.annualBaseSalaryUsd * (counter.requestedBonusPercent / 100);
+  const proposedCobra = c.severanceParams.monthlyCobraCostUsd * counter.requestedCobraMonths;
+  const totalProposed = proposedCash + proposedBonus + proposedCobra + counter.requestedLegalFeeAllowanceUsd;
+  const delta = totalProposed - baselineVal;
+
+  const proposal: SeveranceCounterProposalDTO = {
+    id: `proposal-demo-${Date.now()}`,
+    caseId,
+    leverageIndex,
+    baselinePackageValueUsd: baselineVal,
+    proposedPackageValueUsd: totalProposed,
+    valueDeltaUsd: delta,
+    proposedCashMonths: counter.requestedCashMonths,
+    proposedBonusPercent: counter.requestedBonusPercent,
+    proposedCobraMonths: counter.requestedCobraMonths,
+    proposedPtewYears: counter.requestedPtewYears,
+    proposedAccelerationExtent: counter.requestedAccelerationExtent,
+    legalFeeAllowanceUsd: counter.requestedLegalFeeAllowanceUsd,
+    memoMarkdown: memo,
+    mutualReleaseClauseText: 'The Company hereby fully and unconditionally releases Executive from any and all known or unknown claims.',
+    nonDisparagementClauseText: 'The Company agrees to instruct its Board of Directors and Executive Officers to refrain from making any adverse or disparaging remarks.',
+    status: 'draft',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (!c.counterProposals) c.counterProposals = [];
+  c.counterProposals.unshift(proposal);
+  c.updatedAt = new Date().toISOString();
+  saveDemoSeveranceCases(cases);
+  return proposal;
+}
+
+export const executiveSeveranceRepository = {
+  async listCases(): Promise<ExecutiveSeveranceCaseDTO[]> {
+    if (demoMode) return loadDemoSeveranceCases();
+    try {
+      return await request<ExecutiveSeveranceCaseDTO[]>('/executive-severance');
+    } catch {
+      return loadDemoSeveranceCases();
+    }
+  },
+
+  async getCase(id: string): Promise<ExecutiveSeveranceCaseDTO | null> {
+    if (demoMode) return getDemoSeveranceCase(id);
+    try {
+      return await request<ExecutiveSeveranceCaseDTO>(`/executive-severance/${encodeURIComponent(id)}`);
+    } catch {
+      return getDemoSeveranceCase(id);
+    }
+  },
+
+  async createCase(input: ExecutiveSeveranceCaseMutationDTO): Promise<ExecutiveSeveranceCaseDTO> {
+    if (demoMode) return createDemoSeveranceCase(input);
+    try {
+      return await request<ExecutiveSeveranceCaseDTO>('/executive-severance', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return createDemoSeveranceCase(input);
+    }
+  },
+
+  async updateCase(
+    id: string,
+    input: Partial<ExecutiveSeveranceCaseMutationDTO>
+  ): Promise<ExecutiveSeveranceCaseDTO | null> {
+    if (demoMode) return updateDemoSeveranceCase(id, input);
+    try {
+      return await request<ExecutiveSeveranceCaseDTO>(`/executive-severance/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return updateDemoSeveranceCase(id, input);
+    }
+  },
+
+  async deleteCase(id: string): Promise<boolean> {
+    if (demoMode) return deleteDemoSeveranceCase(id);
+    try {
+      await request<void>(`/executive-severance/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      return deleteDemoSeveranceCase(id);
+    }
+  },
+
+  async addGoodReasonEvent(
+    caseId: string,
+    input: GoodReasonEventMutationDTO
+  ): Promise<GoodReasonEventDTO> {
+    if (demoMode) return addDemoGoodReasonEvent(caseId, input);
+    try {
+      return await request<GoodReasonEventDTO>(
+        `/executive-severance/${encodeURIComponent(caseId)}/good-reason-events`,
+        {
+          method: 'POST',
+          body: JSON.stringify(input)
+        }
+      );
+    } catch {
+      return addDemoGoodReasonEvent(caseId, input);
+    }
+  },
+
+  async deleteGoodReasonEvent(eventId: string): Promise<boolean> {
+    if (demoMode) return deleteDemoGoodReasonEvent(eventId);
+    try {
+      await request<void>(
+        `/executive-severance/good-reason-events/${encodeURIComponent(eventId)}`,
+        {
+          method: 'DELETE'
+        }
+      );
+      return true;
+    } catch {
+      return deleteDemoGoodReasonEvent(eventId);
+    }
+  },
+
+  async createCounterProposal(caseId: string): Promise<SeveranceCounterProposalDTO | null> {
+    if (demoMode) return createDemoCounterProposal(caseId);
+    try {
+      return await request<SeveranceCounterProposalDTO>(
+        `/executive-severance/${encodeURIComponent(caseId)}/counter-proposal`,
+        {
+          method: 'POST'
+        }
+      );
+    } catch {
+      return createDemoCounterProposal(caseId);
     }
   }
 };

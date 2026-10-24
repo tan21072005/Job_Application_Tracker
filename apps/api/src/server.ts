@@ -99,6 +99,7 @@ import { BackchannelService } from './services/backchannel-service.ts';
 import { ExecutiveContractService } from './services/executive-contract-service.ts';
 import { ExecutiveOnboardingService } from './services/executive-onboarding-service.ts';
 import { BoardAdvisoryNexusService } from './services/board-advisory-nexus-service.ts';
+import { ExecutiveSeveranceService } from './services/executive-severance-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -129,7 +130,9 @@ import {
   validateMilestoneInput,
   validateDiagnosticsInput,
   validateBoardMandateInput,
-  validateGovernanceMatrixInput
+  validateGovernanceMatrixInput,
+  validateSeveranceCaseInput,
+  validateGoodReasonEventInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -194,6 +197,7 @@ export const backchannelService = new BackchannelService(pool);
 export const executiveContractService = new ExecutiveContractService(pool);
 export const executiveOnboardingService = new ExecutiveOnboardingService(pool);
 export const boardAdvisoryNexusService = new BoardAdvisoryNexusService(pool);
+export const executiveSeveranceService = new ExecutiveSeveranceService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -2890,6 +2894,109 @@ app.get('/api/board-advisory-nexus/dossier', auth, async (req, res, next) => {
     const userId = (req as SessionRequest).userId;
     const dossier = await boardAdvisoryNexusService.getBoardDossier(userId);
     res.json(dossier);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/executive-severance', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const list = await executiveSeveranceService.listCases(userId);
+    res.json(list);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-severance', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateSeveranceCaseInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const created = await executiveSeveranceService.createCase(userId, validation.data);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/executive-severance/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const single = await executiveSeveranceService.getCase(userId, req.params.id);
+    if (!single) {
+      return res.status(404).json({ code: 'case_not_found', error: 'Executive severance case not found' });
+    }
+    res.json(single);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/executive-severance/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const updated = await executiveSeveranceService.updateCase(userId, req.params.id, req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'case_not_found', error: 'Executive severance case not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/executive-severance/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await executiveSeveranceService.deleteCase(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'case_not_found', error: 'Executive severance case not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-severance/:id/good-reason-events', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateGoodReasonEventInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const event = await executiveSeveranceService.addGoodReasonEvent(userId, req.params.id, validation.data);
+    res.status(201).json(event);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/executive-severance/good-reason-events/:eventId', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await executiveSeveranceService.deleteGoodReasonEvent(userId, req.params.eventId);
+    if (!deleted) {
+      return res.status(404).json({ code: 'event_not_found', error: 'Good reason event not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-severance/:id/counter-proposal', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const proposal = await executiveSeveranceService.createCounterProposal(userId, req.params.id);
+    if (!proposal) {
+      return res.status(404).json({ code: 'case_not_found', error: 'Executive severance case not found' });
+    }
+    res.status(201).json(proposal);
   } catch (err) {
     next(err);
   }

@@ -231,7 +231,18 @@ import {
   validateBoardMandateInput,
   validateGovernanceMatrixInput,
   type BoardMandateDTO,
-  type GovernanceMatrixDTO
+  type GovernanceMatrixDTO,
+  computeSeveranceAudit,
+  computeCicWaterfall,
+  compute280GTax,
+  computeExecutiveLeverageIndex,
+  generateExecutiveCounterMemoMarkdown,
+  validateSeveranceCaseInput,
+  validateGoodReasonEventInput,
+  type ExecutiveSeveranceCaseDTO,
+  type SeveranceAuditParams,
+  type CicWaterfallParams,
+  type Tax280GParams
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -5310,6 +5321,301 @@ test('contract: validateBoardMandateInput and validateGovernanceMatrixInput enfo
     verifiedCredentials: []
   });
   assert.equal(invalidMatrixScore.ok, false);
+});
+
+test('contract: computeSeveranceAudit evaluates executive package generosity and flags risks', () => {
+  const auditParams: SeveranceAuditParams = {
+    annualBaseSalaryUsd: 360000,
+    cashContinuationMonths: 12,
+    targetBonusPercentage: 40,
+    bonusProrationMode: 'target',
+    companyPerformanceMultiplier: 1.0,
+    daysWorkedInFiscalYear: 270,
+    monthlyCobraCostUsd: 2500,
+    cobraSubsidizedMonths: 12,
+    cobraTaxGrossedUp: true,
+    outplacementBudgetUsd: 20000,
+    accruedPtoDays: 15,
+    statutoryPtoVestingMandated: true,
+    unlimitedPtoForfeitureRisk: false,
+    ptewMonths: 60,
+    optionsHeldCount: 100000,
+    estimatedExerciseCostUsd: 150000
+  };
+
+  const result = computeSeveranceAudit(auditParams);
+  assert.equal(result.cashContinuationTotalUsd, 360000);
+  assert.ok(result.prorataBonusTotalUsd > 100000);
+  assert.equal(result.cobraBenefitTotalUsd, 45000);
+  assert.ok(result.ptoPayoutTotalUsd > 20000);
+  assert.equal(result.outplacementValueUsd, 20000);
+  assert.ok(result.generosityScore >= 75);
+  assert.equal(result.generosityTier, 'executive_favorable');
+  assert.equal(result.riskFindings.length, 0);
+
+  const goldAudit = computeSeveranceAudit({
+    ...auditParams,
+    cashContinuationMonths: 18,
+    cobraSubsidizedMonths: 18,
+    outplacementBudgetUsd: 25000,
+    ptewMonths: 120
+  });
+  assert.ok(goldAudit.generosityScore >= 85);
+  assert.equal(goldAudit.generosityTier, 'institutional_gold');
+
+  const substandardAudit = computeSeveranceAudit({
+    ...auditParams,
+    cashContinuationMonths: 3,
+    bonusProrationMode: 'none',
+    cobraSubsidizedMonths: 2,
+    ptewMonths: 3,
+    unlimitedPtoForfeitureRisk: true
+  });
+  assert.ok(substandardAudit.generosityScore < 45);
+  assert.equal(substandardAudit.generosityTier, 'substandard');
+  assert.ok(substandardAudit.riskFindings.length >= 4);
+});
+
+test('contract: computeCicWaterfall models liquidation stacks and double trigger acceleration', () => {
+  const waterfallParams: CicWaterfallParams = {
+    enterpriseValuationUsd: 200000000,
+    fundedDebtUsd: 10000000,
+    balanceSheetCashUsd: 5000000,
+    transactionFeePercent: 2.0,
+    escrowHoldbackPercent: 5.0,
+    preferredSharesStack: [
+      { seriesName: 'Series A', investedAmountUsd: 15000000, liquidationMultiple: 1.0, isParticipating: false },
+      { seriesName: 'Series B', investedAmountUsd: 35000000, liquidationMultiple: 1.0, isParticipating: false }
+    ],
+    totalFullyDilutedCommonShares: 20000000,
+    unvestedOptionsCount: 100000,
+    unvestedOptionsStrikePriceUsd: 1.00,
+    unvestedRsuCount: 50000,
+    vestedOptionsCount: 150000,
+    vestedOptionsStrikePriceUsd: 1.00,
+    vestedRsuCount: 25000,
+    triggerMode: 'double_trigger',
+    accelerationExtent: 'full_100_percent',
+    cicProtectionWindowMonths: 18
+  };
+
+  const result = computeCicWaterfall(waterfallParams);
+  assert.ok(result.distributableEquityProceedsUsd > 170000000);
+  assert.equal(result.preferredLiquidationTotalUsd, 50000000);
+  assert.ok(result.commonEquityPoolUsd > 120000000);
+  assert.ok(result.commonSharePriceUsd > 6.00);
+  assert.equal(result.acceleratedOptionsCount, 100000);
+  assert.equal(result.acceleratedRsuCount, 50000);
+  assert.ok(result.executiveNetLiquidProceedsUsd > 1800000);
+
+  const noAccelResult = computeCicWaterfall({
+    ...waterfallParams,
+    triggerMode: 'none'
+  });
+  assert.equal(noAccelResult.acceleratedOptionsCount, 0);
+  assert.equal(noAccelResult.acceleratedRsuCount, 0);
+  assert.ok(noAccelResult.executiveNetLiquidProceedsUsd < result.executiveNetLiquidProceedsUsd);
+});
+
+test('contract: compute280GTax calculates safe harbor, excess parachute, and valley crossover', () => {
+  const taxParams: Tax280GParams = {
+    w2History5YearsUsd: [300000, 320000, 360000, 400000, 420000],
+    contingentCashSeveranceUsd: 360000,
+    contingentBonusUsd: 140000,
+    contingentEquityAccelerationUsd: 800000,
+    contingentOtherBenefitsUsd: 40000,
+    federalMarginalTaxRate: 37,
+    stateMarginalTaxRate: 13.3,
+    medicareMarginalTaxRate: 2.35,
+    corporateTaxRate: 21,
+    agreedSettlementType: 'best_net_valley_rule'
+  };
+
+  const result = compute280GTax(taxParams);
+  assert.equal(result.historicalAverageBaseAmountUsd, 360000);
+  assert.equal(result.totalContingentParachutePaymentsUsd, 1340000);
+  assert.equal(result.isParachuteTaxTriggered, true);
+  assert.equal(result.excessParachutePaymentUsd, 1340000 - 360000);
+  assert.equal(result.exciseTax20PercentUsd, (1340000 - 360000) * 0.20);
+  assert.ok(result.breakEvenCrossoverPointUsd > 1500000);
+  assert.equal(result.isInValleyOfDeath, true);
+  assert.equal(result.recommendedSettlement, 'best_net_valley_rule');
+  assert.ok(result.netProceedsHardCutbackUsd > result.netProceedsFullPaymentUsd);
+  assert.equal(result.optimalNetTakeHomeUsd, result.netProceedsHardCutbackUsd);
+
+  const safeTaxParams: Tax280GParams = {
+    ...taxParams,
+    contingentEquityAccelerationUsd: 100000
+  };
+  const safeResult = compute280GTax(safeTaxParams);
+  assert.equal(safeResult.isParachuteTaxTriggered, false);
+  assert.equal(safeResult.exciseTax20PercentUsd, 0);
+  assert.equal(safeResult.isInValleyOfDeath, false);
+});
+
+test('contract: computeExecutiveLeverageIndex and counter-memo synthesis', () => {
+  const index = computeExecutiveLeverageIndex({
+    busFactorScore: 22,
+    keyPersonClosingCondition: true,
+    teamFlightRiskScore: 18,
+    patentInventorshipCount: 2,
+    constructiveDischargeMeritScore: 12
+  });
+  assert.ok(index >= 80);
+
+  const mockCase: ExecutiveSeveranceCaseDTO = {
+    id: 'case-test-1',
+    companyName: 'Nova Technologies',
+    roleTitle: 'Chief Technology Officer',
+    effectiveSeparationDate: '2026-12-01',
+    severanceParams: {
+      annualBaseSalaryUsd: 400000,
+      cashContinuationMonths: 6,
+      targetBonusPercentage: 40,
+      bonusProrationMode: 'target',
+      companyPerformanceMultiplier: 1.0,
+      daysWorkedInFiscalYear: 300,
+      monthlyCobraCostUsd: 2500,
+      cobraSubsidizedMonths: 6,
+      cobraTaxGrossedUp: false,
+      outplacementBudgetUsd: 10000,
+      accruedPtoDays: 10,
+      statutoryPtoVestingMandated: true,
+      unlimitedPtoForfeitureRisk: false,
+      ptewMonths: 3,
+      optionsHeldCount: 50000,
+      estimatedExerciseCostUsd: 50000
+    },
+    cicWaterfallParams: {
+      enterpriseValuationUsd: 100000000,
+      fundedDebtUsd: 0,
+      balanceSheetCashUsd: 5000000,
+      transactionFeePercent: 2,
+      escrowHoldbackPercent: 5,
+      preferredSharesStack: [],
+      totalFullyDilutedCommonShares: 10000000,
+      unvestedOptionsCount: 50000,
+      unvestedOptionsStrikePriceUsd: 1,
+      unvestedRsuCount: 20000,
+      vestedOptionsCount: 50000,
+      vestedOptionsStrikePriceUsd: 1,
+      vestedRsuCount: 10000,
+      triggerMode: 'double_trigger',
+      accelerationExtent: 'full_100_percent',
+      cicProtectionWindowMonths: 12
+    },
+    tax280GParams: {
+      w2History5YearsUsd: [350000, 380000, 400000],
+      contingentCashSeveranceUsd: 200000,
+      contingentBonusUsd: 130000,
+      contingentEquityAccelerationUsd: 500000,
+      contingentOtherBenefitsUsd: 25000,
+      federalMarginalTaxRate: 37,
+      stateMarginalTaxRate: 10,
+      medicareMarginalTaxRate: 2.35,
+      corporateTaxRate: 21,
+      agreedSettlementType: 'best_net_valley_rule'
+    },
+    counterProposalParams: {
+      requestedCashMonths: 12,
+      requestedBonusPercent: 100,
+      requestedCobraMonths: 12,
+      requestedPtewYears: 5,
+      requestedAccelerationExtent: 'full_100_percent',
+      requestedLegalFeeAllowanceUsd: 25000,
+      requireMutualRelease: true,
+      requireMutualNonDisparagement: true,
+      statutoryWhistleblowerCarveoutsConfirmed: true,
+      leverageFactors: {
+        busFactorScore: 22,
+        keyPersonClosingCondition: true,
+        teamFlightRiskScore: 18,
+        patentInventorshipCount: 2,
+        constructiveDischargeMeritScore: 12
+      }
+    },
+    auditResult: computeSeveranceAudit({
+      annualBaseSalaryUsd: 400000,
+      cashContinuationMonths: 6,
+      targetBonusPercentage: 40,
+      bonusProrationMode: 'target',
+      companyPerformanceMultiplier: 1.0,
+      daysWorkedInFiscalYear: 300,
+      monthlyCobraCostUsd: 2500,
+      cobraSubsidizedMonths: 6,
+      cobraTaxGrossedUp: false,
+      outplacementBudgetUsd: 10000,
+      accruedPtoDays: 10,
+      statutoryPtoVestingMandated: true,
+      unlimitedPtoForfeitureRisk: false,
+      ptewMonths: 3,
+      optionsHeldCount: 50000,
+      estimatedExerciseCostUsd: 50000
+    }),
+    cicResult: computeCicWaterfall({
+      enterpriseValuationUsd: 100000000,
+      fundedDebtUsd: 0,
+      balanceSheetCashUsd: 5000000,
+      transactionFeePercent: 2,
+      escrowHoldbackPercent: 5,
+      preferredSharesStack: [],
+      totalFullyDilutedCommonShares: 10000000,
+      unvestedOptionsCount: 50000,
+      unvestedOptionsStrikePriceUsd: 1,
+      unvestedRsuCount: 20000,
+      vestedOptionsCount: 50000,
+      vestedOptionsStrikePriceUsd: 1,
+      vestedRsuCount: 10000,
+      triggerMode: 'double_trigger',
+      accelerationExtent: 'full_100_percent',
+      cicProtectionWindowMonths: 12
+    }),
+    tax280GResult: compute280GTax({
+      w2History5YearsUsd: [350000, 380000, 400000],
+      contingentCashSeveranceUsd: 200000,
+      contingentBonusUsd: 130000,
+      contingentEquityAccelerationUsd: 500000,
+      contingentOtherBenefitsUsd: 25000,
+      federalMarginalTaxRate: 37,
+      stateMarginalTaxRate: 10,
+      medicareMarginalTaxRate: 2.35,
+      corporateTaxRate: 21,
+      agreedSettlementType: 'best_net_valley_rule'
+    }),
+    goodReasonEvents: [],
+    counterProposals: [],
+    createdAt: '2026-10-25T00:00:00.000Z',
+    updatedAt: '2026-10-25T00:00:00.000Z'
+  };
+
+  const memo = generateExecutiveCounterMemoMarkdown(mockCase, mockCase.counterProposalParams, index);
+  assert.ok(memo.includes('CONFIDENTIAL EXECUTIVE SEPARATION MEMORANDUM'));
+  assert.ok(memo.includes('Nova Technologies'));
+  assert.ok(memo.includes('Chief Technology Officer'));
+  assert.ok(memo.includes('18 U.S.C. §1833(b)'));
+});
+
+test('contract: validateSeveranceCaseInput and validateGoodReasonEventInput reject invalid payloads', () => {
+  const invalidCase = validateSeveranceCaseInput({
+    companyName: '',
+    roleTitle: 'CTO'
+  });
+  assert.equal(invalidCase.ok, false);
+
+  const invalidEvent = validateGoodReasonEventInput({
+    category: 'unknown_category',
+    title: 'Relocation'
+  });
+  assert.equal(invalidEvent.ok, false);
+
+  const validEvent = validateGoodReasonEventInput({
+    category: 'diminution_of_duties',
+    title: 'Stripped of Architecture Team Reporting Line',
+    factualDescription: 'CEO reassigned all principal architects to Chief Product Officer without consultation.',
+    dateConditionOccurred: '2026-10-15',
+    dateNoticeServed: '2026-10-18'
+  });
+  assert.equal(validEvent.ok, true);
 });
 
 
