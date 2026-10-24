@@ -193,7 +193,22 @@ import {
   validateReferenceAdvocateInput,
   validateBackchannelAuditInput,
   type ReferenceAdvocateDTO,
-  type TargetStakeholderNodeDTO
+  type TargetStakeholderNodeDTO,
+  computeNonCompeteSubScore,
+  computeIpAssignmentSubScore,
+  computeSeveranceSubScore,
+  computeChangeOfControlSubScore,
+  computeIndemnificationSubScore,
+  evaluateExecutiveContract,
+  generateSynthesizedRedlines,
+  generateExhibitAMarkdown,
+  generateExecutiveAddendumMarkdown,
+  validateExecutiveContractInput,
+  validatePriorInventionInput,
+  validateContractRedlineInput,
+  type ExecutiveContractDTO,
+  type PriorInventionItemDTO,
+  type ContractRedlineDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -4265,6 +4280,316 @@ test('contract: validateReferenceAdvocateInput and validateBackchannelAuditInput
   });
   assert.equal(invalidAudit.ok, false);
 });
+
+test('contract: computeNonCompeteSubScore evaluates jurisdiction statutory limits and garden leave', () => {
+  const caScore = computeNonCompeteSubScore({
+    durationMonths: 12,
+    scope: 'industry_vertical',
+    gardenLeavePercent: 0,
+    solicitationBreadth: 'all_employees_contractors',
+    explicitCaDisclaimer: false
+  }, 'us_california');
+  assert.ok(caScore.risks.some(r => r.includes('California')));
+  assert.ok(caScore.subScore >= 75);
+
+  const deScore = computeNonCompeteSubScore({
+    durationMonths: 6,
+    scope: 'narrow_named_competitors',
+    gardenLeavePercent: 100,
+    solicitationBreadth: 'senior_execs_only',
+    explicitCaDisclaimer: false
+  }, 'us_delaware_ny');
+  assert.ok(deScore.subScore <= 25);
+});
+
+test('contract: computeIpAssignmentSubScore handles prior invention carveouts and statutory protections', () => {
+  const protectedScore = computeIpAssignmentSubScore({
+    priorInventionsScheduleAttached: true,
+    priorInventionsCount: 3,
+    assignmentScope: 'narrow_company_business',
+    moonlightOpenSourcePermitted: true,
+    statutoryProtectionCited: true
+  }, 'us_california');
+  assert.ok(protectedScore.subScore <= 20);
+
+  const omnibusScore = computeIpAssignmentSubScore({
+    priorInventionsScheduleAttached: false,
+    priorInventionsCount: 0,
+    assignmentScope: 'omnibus_perpetual',
+    moonlightOpenSourcePermitted: false,
+    statutoryProtectionCited: false
+  }, 'us_delaware_ny');
+  assert.ok(omnibusScore.subScore >= 80);
+});
+
+test('contract: computeSeveranceSubScore, changeOfControl, and indemnification calculate correctly', () => {
+  const sevScore = computeSeveranceSubScore({
+    cashSalaryMonths: 12,
+    targetBonusIncluded: true,
+    healthBenefitMonths: 12,
+    goodReasonResignationCovered: true,
+    narrowCauseDefinition: true
+  }, 'us_delaware_ny');
+  assert.ok(sevScore.subScore <= 20);
+
+  const toxicSevScore = computeSeveranceSubScore({
+    cashSalaryMonths: 0,
+    targetBonusIncluded: false,
+    healthBenefitMonths: 0,
+    goodReasonResignationCovered: false,
+    narrowCauseDefinition: false
+  }, 'us_delaware_ny');
+  assert.equal(toxicSevScore.subScore, 100);
+
+  const cicScore = computeChangeOfControlSubScore({
+    accelerationType: 'double_trigger_full',
+    protectionWindowMonths: 18,
+    ptepMonths: 36,
+    goldenParachuteCutbackProtected: true
+  }, 'us_delaware_ny');
+  assert.ok(cicScore.subScore <= 20);
+
+  const indemScore = computeIndemnificationSubScore({
+    standaloneAgreementSigned: true,
+    policyCoverageAdequate: true,
+    mandatoryAdvancement: true,
+    tailCoverageSixYears: true
+  }, 'us_delaware_ny');
+  assert.ok(indemScore.subScore <= 20);
+});
+
+test('contract: evaluateExecutiveContract aggregates composite CRI and identifies toxic clauses', () => {
+  const evaluation = evaluateExecutiveContract({
+    non_compete_non_solicit: {
+      durationMonths: 24,
+      scope: 'worldwide_broad',
+      gardenLeavePercent: 0,
+      solicitationBreadth: 'all_customers_vendors',
+      explicitCaDisclaimer: false
+    },
+    ip_prior_inventions: {
+      priorInventionsScheduleAttached: false,
+      priorInventionsCount: 0,
+      assignmentScope: 'omnibus_perpetual',
+      moonlightOpenSourcePermitted: false,
+      statutoryProtectionCited: false
+    },
+    severance_without_cause: {
+      cashSalaryMonths: 2,
+      targetBonusIncluded: false,
+      healthBenefitMonths: 2,
+      goodReasonResignationCovered: false,
+      narrowCauseDefinition: false
+    },
+    double_trigger_cic: {
+      accelerationType: 'none',
+      protectionWindowMonths: 6,
+      ptepMonths: 3,
+      goldenParachuteCutbackProtected: false
+    },
+    indemnification_d_and_o: {
+      standaloneAgreementSigned: false,
+      policyCoverageAdequate: false,
+      mandatoryAdvancement: false,
+      tailCoverageSixYears: false
+    }
+  }, 'us_california');
+
+  assert.ok(evaluation.contractRiskIndex >= 70);
+  assert.equal(evaluation.riskTier, 'critical_toxic');
+  assert.ok(evaluation.activeHazards.length > 0);
+  assert.equal(evaluation.clauses.length, 5);
+  const toxicClauses = evaluation.clauses.filter(c => c.isToxic);
+  assert.ok(toxicClauses.length >= 3);
+});
+
+test('contract: generateSynthesizedRedlines produces prioritized actionable redlines', () => {
+  const evalResult = evaluateExecutiveContract({
+    non_compete_non_solicit: {
+      durationMonths: 18,
+      scope: 'worldwide_broad',
+      gardenLeavePercent: 0,
+      solicitationBreadth: 'all_employees_contractors',
+      explicitCaDisclaimer: false
+    },
+    ip_prior_inventions: {
+      priorInventionsScheduleAttached: false,
+      priorInventionsCount: 0,
+      assignmentScope: 'omnibus_perpetual',
+      moonlightOpenSourcePermitted: false,
+      statutoryProtectionCited: false
+    },
+    severance_without_cause: {
+      cashSalaryMonths: 3,
+      targetBonusIncluded: false,
+      healthBenefitMonths: 3,
+      goodReasonResignationCovered: false,
+      narrowCauseDefinition: false
+    },
+    double_trigger_cic: {
+      accelerationType: 'none',
+      protectionWindowMonths: 6,
+      ptepMonths: 3,
+      goldenParachuteCutbackProtected: false
+    },
+    indemnification_d_and_o: {
+      standaloneAgreementSigned: false,
+      policyCoverageAdequate: false,
+      mandatoryAdvancement: false,
+      tailCoverageSixYears: false
+    }
+  }, 'us_california');
+
+  const redlines = generateSynthesizedRedlines({
+    id: 'contract-test',
+    companyName: 'Acme Cloud Inc.',
+    roleTitle: 'VP of Engineering',
+    jurisdiction: 'us_california',
+    pillarScores: evalResult.pillarScores,
+    clauses: evalResult.clauses
+  });
+
+  assert.ok(redlines.length >= 4);
+  const ncRedline = redlines.find(r => r.pillarKey === 'non_compete_non_solicit');
+  assert.ok(ncRedline);
+  assert.ok(ncRedline.redlineText.includes('California'));
+  assert.ok(ncRedline.candidateJustification.length > 0);
+});
+
+test('contract: generateExhibitAMarkdown and generateExecutiveAddendumMarkdown format legal documents', () => {
+  const priorInventions: PriorInventionItemDTO[] = [
+    {
+      id: 'inv-1',
+      category: 'open_source_repo',
+      title: 'HyperQueue Distributed Broker',
+      identifierOrUrl: 'https://github.com/exec/hyperqueue',
+      creationDate: '2024-03-15',
+      technologyDescription: 'Zero-copy distributed log streaming framework in Rust.',
+      retainedRights: ['Full Commercial Copyright', 'Derivative Works Exclusive'],
+      confidentialExclusionConfirmed: true
+    }
+  ];
+
+  const exhibitA = generateExhibitAMarkdown({
+    companyName: 'Acme Cloud Inc.',
+    roleTitle: 'VP of Engineering'
+  }, priorInventions);
+
+  assert.ok(exhibitA.includes('EXHIBIT A: SCHEDULE OF PRIOR INVENTIONS'));
+  assert.ok(exhibitA.includes('HyperQueue Distributed Broker'));
+  assert.ok(exhibitA.includes('Zero-copy distributed log streaming framework'));
+
+  const redlines: ContractRedlineDTO[] = [
+    {
+      id: 'red-1',
+      contractId: 'contract-1',
+      pillarKey: 'non_compete_non_solicit',
+      clauseTitle: 'California Non-Compete Statutory Carve-Out',
+      originalText: 'Employee agrees not to compete.',
+      redlineText: 'Clause is void pursuant to Cal. Bus. & Prof. Code §16600.',
+      candidateJustification: 'Unenforceable under California law.',
+      fallbackCompromise: 'Trade secret protection only.',
+      statutoryCitation: 'Cal. Bus. & Prof. Code §16600',
+      status: 'proposed',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z'
+    }
+  ];
+
+  const addendum = generateExecutiveAddendumMarkdown({
+    companyName: 'Acme Cloud Inc.',
+    roleTitle: 'VP of Engineering',
+    jurisdiction: 'us_california'
+  }, redlines);
+
+  assert.ok(addendum.includes('EXECUTIVE COUNTER-AMENDMENT ADDENDUM'));
+  assert.ok(addendum.includes('Acme Cloud Inc.'));
+  assert.ok(addendum.includes('VP of Engineering'));
+});
+
+test('contract: validateExecutiveContractInput, validatePriorInventionInput, validateContractRedlineInput enforce schema validation', () => {
+  const validContract = validateExecutiveContractInput({
+    companyName: 'Acme Cloud Inc.',
+    roleTitle: 'VP of Engineering',
+    jurisdiction: 'us_delaware_ny',
+    clauseParameters: {
+      non_compete_non_solicit: {
+        durationMonths: 12,
+        scope: 'industry_vertical',
+        gardenLeavePercent: 50,
+        solicitationBreadth: 'senior_execs_only',
+        explicitCaDisclaimer: false
+      },
+      ip_prior_inventions: {
+        priorInventionsScheduleAttached: true,
+        priorInventionsCount: 1,
+        assignmentScope: 'narrow_company_business',
+        moonlightOpenSourcePermitted: true,
+        statutoryProtectionCited: true
+      },
+      severance_without_cause: {
+        cashSalaryMonths: 6,
+        targetBonusIncluded: true,
+        healthBenefitMonths: 6,
+        goodReasonResignationCovered: true,
+        narrowCauseDefinition: true
+      },
+      double_trigger_cic: {
+        accelerationType: 'double_trigger_partial',
+        protectionWindowMonths: 12,
+        ptepMonths: 12,
+        goldenParachuteCutbackProtected: true
+      },
+      indemnification_d_and_o: {
+        standaloneAgreementSigned: true,
+        policyCoverageAdequate: true,
+        mandatoryAdvancement: true,
+        tailCoverageSixYears: true
+      }
+    }
+  });
+  assert.equal(validContract.ok, true);
+
+  const invalidContract = validateExecutiveContractInput({
+    companyName: '',
+    roleTitle: ''
+  });
+  assert.equal(invalidContract.ok, false);
+
+  const validInvention = validatePriorInventionInput({
+    category: 'open_source_repo',
+    title: 'Distributed Actor Framework',
+    identifierOrUrl: 'https://github.com/test/actor-framework',
+    creationDate: '2025-01-01',
+    technologyDescription: 'Actor runtime with gossip clustering',
+    retainedRights: ['Full Commercial Copyright'],
+    confidentialExclusionConfirmed: true
+  });
+  assert.equal(validInvention.ok, true);
+
+  const invalidInvention = validatePriorInventionInput({
+    category: 'invalid_cat',
+    title: ''
+  });
+  assert.equal(invalidInvention.ok, false);
+
+  const validRedline = validateContractRedlineInput({
+    pillarKey: 'non_compete_non_solicit',
+    clauseTitle: 'Section 8: Restrictive Covenants',
+    originalText: 'Executive shall not compete globally for 24 months.',
+    redlineText: 'Clause is stricken in entirety per Cal. Bus. & Prof. Code §16600.',
+    candidateJustification: 'Unenforceable and unlawful in California.',
+    status: 'proposed'
+  });
+  assert.equal(validRedline.ok, true);
+
+  const invalidRedline = validateContractRedlineInput({
+    pillarKey: 'unknown_pillar',
+    clauseTitle: ''
+  });
+  assert.equal(invalidRedline.ok, false);
+});
+
 
 
 

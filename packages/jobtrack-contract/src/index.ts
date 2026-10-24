@@ -34,3 +34,4 @@ export * from './headhunter-crm.ts';
 export * from './system-design-studio.ts';
 export * from './equity-liquidity.ts';
 export * from './backchannel.ts';
+export * from './executive-contract.ts';

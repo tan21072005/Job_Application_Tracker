@@ -1,6 +1,26 @@
 import { request, ApiError } from './transport';
 import { validApplications } from './validation';
-import { emptyDraft, resolveLocalTime, deviceTimezone, type Application, type Draft, type Interview, type Status } from './domain';
+import {
+  emptyDraft,
+  resolveLocalTime,
+  deviceTimezone,
+  type Application,
+  type Draft,
+  type Interview,
+  type Status,
+  type ExecutiveContractDTO,
+  type ExecutiveContractMutationDTO,
+  type ContractRedlineDTO,
+  type ContractRedlineMutationDTO,
+  type PriorInventionItemDTO,
+  type PriorInventionMutationDTO,
+  type RedlineStatus,
+  type ClauseParametersMap,
+  evaluateExecutiveContract,
+  generateSynthesizedRedlines,
+  generateExhibitAMarkdown,
+  generateExecutiveAddendumMarkdown
+} from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
   wireApplicationToUI,
@@ -5959,7 +5979,867 @@ export type {
   BackchannelAuditMutationDTO
 };
 
-export { backchannelRepository };
+export { backchannelRepository, executiveContractRepository };
+
+const DEFAULT_DEMO_CONTRACTS: ExecutiveContractDTO[] = [
+  {
+    id: 'contract-demo-1',
+    companyName: 'Acme Cloud AI',
+    roleTitle: 'VP of Engineering',
+    jurisdiction: 'us_delaware_ny',
+    contractRiskIndex: 72,
+    riskTier: 'high_vulnerability',
+    clawbackPenalty: 10,
+    activeHazards: [
+      'Indentured Labor Trap: Draconian post-employment non-compete combined with zero severance.'
+    ],
+    pillarScores: {
+      non_compete_non_solicit: 85,
+      ip_prior_inventions: 70,
+      severance_without_cause: 65,
+      double_trigger_cic: 80,
+      indemnification_d_and_o: 50
+    },
+    clauses: [
+      {
+        pillarKey: 'non_compete_non_solicit',
+        title: 'Non-Compete & Non-Solicitation Covenants',
+        subScore: 85,
+        weight: 0.20,
+        isToxic: true,
+        summary: 'Non-compete duration: 18m, scope: worldwide_broad.',
+        identifiedRisks: [
+          'Excessive restriction duration (18 months exceeds standard 12-month executive threshold)',
+          'Overly broad geographic scope (worldwide/unlimited)',
+          'Inadequate or zero Garden Leave compensation during post-employment restriction'
+        ],
+        statutoryReference: 'Standard Common Law Reasonableness Doctrine',
+        parameters: {
+          durationMonths: 18,
+          scope: 'worldwide_broad',
+          gardenLeavePercent: 0,
+          solicitationBreadth: 'all_customers_vendors',
+          explicitCaDisclaimer: false
+        }
+      },
+      {
+        pillarKey: 'ip_prior_inventions',
+        title: 'IP Assignment & Prior Inventions Carve-out',
+        subScore: 70,
+        weight: 0.20,
+        isToxic: true,
+        summary: 'Assignment scope: broad_all_tech. Moonlight: false.',
+        identifiedRisks: [
+          'No Exhibit A / Prior Inventions Schedule attached to contract',
+          'Complete ban on non-conflicting open-source contributions or personal hobby coding'
+        ],
+        statutoryReference: 'Standard Uniform Trade Secrets Act (UTSA)',
+        parameters: {
+          priorInventionsScheduleAttached: false,
+          priorInventionsCount: 0,
+          assignmentScope: 'broad_all_tech',
+          moonlightOpenSourcePermitted: false,
+          statutoryProtectionCited: false
+        }
+      },
+      {
+        pillarKey: 'severance_without_cause',
+        title: 'Severance Without Cause & Good Reason',
+        subScore: 65,
+        weight: 0.25,
+        isToxic: true,
+        summary: 'Cash severance: 3m. Good reason covered: false.',
+        identifiedRisks: [
+          'Resignation for "Good Reason" (demotion, relocation, salary slash) forfeits severance',
+          'Inadequate severance duration (3 months; VP/Director benchmark is 9-12 months)'
+        ],
+        statutoryReference: 'Executive Employment Agreement Standard / ERISA Severance Plan',
+        parameters: {
+          cashSalaryMonths: 3,
+          targetBonusIncluded: false,
+          healthBenefitMonths: 3,
+          goodReasonResignationCovered: false,
+          narrowCauseDefinition: false
+        }
+      },
+      {
+        pillarKey: 'double_trigger_cic',
+        title: 'Double-Trigger Change of Control Equity Acceleration',
+        subScore: 80,
+        weight: 0.20,
+        isToxic: true,
+        summary: 'Acceleration: none. PTEP: 3m.',
+        identifiedRisks: [
+          'Standard 90-day PTEP cliff forces forfeiture of unexercised vested options upon termination',
+          'Zero Change of Control equity acceleration: acquiring company can terminate and seize unvested equity'
+        ],
+        statutoryReference: 'Internal Revenue Code §280G / §4999 & Delaware M&A Practice',
+        parameters: {
+          accelerationType: 'none',
+          protectionWindowMonths: 6,
+          ptepMonths: 3,
+          goldenParachuteCutbackProtected: false
+        }
+      },
+      {
+        pillarKey: 'indemnification_d_and_o',
+        title: 'Indemnification, D&O Insurance & Tail Coverage',
+        subScore: 50,
+        weight: 0.15,
+        isToxic: false,
+        summary: 'Standalone agreement: false. Mandatory advancement: false.',
+        identifiedRisks: [
+          'No standalone bilateral Indemnification Agreement (relies solely on revocable company bylaws)',
+          'Defense legal expenses not subject to mandatory advancement (executive must pay out-of-pocket)'
+        ],
+        statutoryReference: 'Delaware General Corporation Law §145 / Model Executive Indemnity Agreement',
+        parameters: {
+          standaloneAgreementSigned: false,
+          policyCoverageAdequate: false,
+          mandatoryAdvancement: false,
+          tailCoverageSixYears: false
+        }
+      }
+    ],
+    priorInventions: [
+      {
+        id: 'inv-demo-1',
+        category: 'open_source_repo',
+        title: 'HyperQueue Distributed Broker',
+        identifierOrUrl: 'https://github.com/exec/hyperqueue',
+        creationDate: '2024-03-15',
+        technologyDescription: 'Zero-copy distributed log streaming framework in Rust.',
+        retainedRights: ['Full Commercial Copyright', 'Derivative Works Exclusive'],
+        confidentialExclusionConfirmed: true
+      },
+      {
+        id: 'inv-demo-2',
+        category: 'saas_product',
+        title: 'CloudCost Sentinel Engine',
+        identifierOrUrl: 'https://cloudcost-sentinel.io',
+        creationDate: '2025-01-10',
+        technologyDescription: 'Automated AWS multi-account spot instance arbitrage controller.',
+        retainedRights: ['Patent Prosecution Rights', 'Source Code Ownership'],
+        confidentialExclusionConfirmed: true
+      }
+    ],
+    redlines: [
+      {
+        id: 'red-demo-1',
+        contractId: 'contract-demo-1',
+        pillarKey: 'non_compete_non_solicit',
+        clauseTitle: 'Narrow Competitor Non-Compete with 100% Garden Leave Pay',
+        originalText: 'Employee shall not engage in any competitive enterprise worldwide for eighteen (18) months following termination.',
+        redlineText: 'Employee shall not engage in any competitive enterprise [- worldwide for eighteen (18) months -] {+ within the direct market vertical for a period of six (6) months +} following termination{+, provided that Company continues to pay Employee one hundred percent (100%) of Employee final base salary as Garden Leave compensation for each month of said restriction +}.',
+        candidateJustification: 'Market standard for executives requires an equitable exchange of consideration: if the company restricts employment, it must provide monthly Garden Leave compensation.',
+        fallbackCompromise: 'Extend to 9 months provided Garden Leave is paid at 75% of base compensation.',
+        statutoryCitation: 'Restatement (Third) of Employment Law §8.06',
+        status: 'proposed',
+        createdAt: '2026-10-20T08:00:00Z',
+        updatedAt: '2026-10-20T08:00:00Z'
+      },
+      {
+        id: 'red-demo-2',
+        contractId: 'contract-demo-1',
+        pillarKey: 'severance_without_cause',
+        clauseTitle: '12-Month Executive Severance & Good Reason Trigger',
+        originalText: 'In the event of termination without Cause, Company may provide up to three (3) months base salary at Company sole discretion.',
+        redlineText: 'In the event of termination without Cause{+, or resignation by Executive for Good Reason (including material reduction in duties, compensation reduction, or relocation exceeding 30 miles), Executive shall receive: (a) twelve (12) months base salary continuation, (b) 100% of prorated target annual bonus, and (c) twelve (12) months company-paid COBRA premium reimbursement +}.',
+        candidateJustification: 'Vice President search cycles average 9 to 12 months. Standard executive governance packages mandate 12 months salary and bonus protection against unilateral termination.',
+        fallbackCompromise: 'Nine (9) months base salary continuation plus six (6) months health benefits.',
+        statutoryCitation: 'Market Executive Severance Standards (Equilar / FW Cook Benchmark)',
+        status: 'proposed',
+        createdAt: '2026-10-20T08:00:00Z',
+        updatedAt: '2026-10-20T08:00:00Z'
+      }
+    ],
+    createdAt: '2026-10-20T08:00:00Z',
+    updatedAt: '2026-10-20T08:00:00Z'
+  },
+  {
+    id: 'contract-demo-2',
+    companyName: 'Nexus Robotics',
+    roleTitle: 'Director of Autonomy',
+    jurisdiction: 'us_california',
+    contractRiskIndex: 44,
+    riskTier: 'moderate_asymmetry',
+    clawbackPenalty: 0,
+    activeHazards: [],
+    pillarScores: {
+      non_compete_non_solicit: 5,
+      ip_prior_inventions: 25,
+      severance_without_cause: 35,
+      double_trigger_cic: 45,
+      indemnification_d_and_o: 30
+    },
+    clauses: [
+      {
+        pillarKey: 'non_compete_non_solicit',
+        title: 'Non-Compete & Non-Solicitation Covenants',
+        subScore: 5,
+        weight: 0.20,
+        isToxic: false,
+        summary: 'California statutory disclaimer included. Non-compete voided.',
+        identifiedRisks: [],
+        statutoryReference: 'Cal. Bus. & Prof. Code §16600, §16600.1, §16600.5',
+        parameters: {
+          durationMonths: 0,
+          scope: 'narrow_named_competitors',
+          gardenLeavePercent: 0,
+          solicitationBreadth: 'senior_execs_only',
+          explicitCaDisclaimer: true
+        }
+      },
+      {
+        pillarKey: 'ip_prior_inventions',
+        title: 'IP Assignment & Prior Inventions Carve-out',
+        subScore: 25,
+        weight: 0.20,
+        isToxic: false,
+        summary: 'Schedule A attached. Statutory citation included.',
+        identifiedRisks: [],
+        statutoryReference: 'Cal. Labor Code §2870, §2872 (Mandatory Statutory Notice)',
+        parameters: {
+          priorInventionsScheduleAttached: true,
+          priorInventionsCount: 1,
+          assignmentScope: 'narrow_company_business',
+          moonlightOpenSourcePermitted: true,
+          statutoryProtectionCited: true
+        }
+      },
+      {
+        pillarKey: 'severance_without_cause',
+        title: 'Severance Without Cause & Good Reason',
+        subScore: 35,
+        weight: 0.25,
+        isToxic: false,
+        summary: 'Cash severance: 6m. Good reason covered: true.',
+        identifiedRisks: [
+          'Inadequate severance duration (6 months; VP/Director benchmark is 9-12 months)'
+        ],
+        statutoryReference: 'Executive Employment Agreement Standard / ERISA Severance Plan',
+        parameters: {
+          cashSalaryMonths: 6,
+          targetBonusIncluded: true,
+          healthBenefitMonths: 6,
+          goodReasonResignationCovered: true,
+          narrowCauseDefinition: true
+        }
+      },
+      {
+        pillarKey: 'double_trigger_cic',
+        title: 'Double-Trigger Change of Control Equity Acceleration',
+        subScore: 45,
+        weight: 0.20,
+        isToxic: false,
+        summary: 'Acceleration: double_trigger_partial. PTEP: 12m.',
+        identifiedRisks: [
+          'Limited option exercise window (12 months; executive benchmark is 24-36 months)'
+        ],
+        statutoryReference: 'Internal Revenue Code §280G / §4999 & Delaware M&A Practice',
+        parameters: {
+          accelerationType: 'double_trigger_partial',
+          protectionWindowMonths: 12,
+          ptepMonths: 12,
+          goldenParachuteCutbackProtected: true
+        }
+      },
+      {
+        pillarKey: 'indemnification_d_and_o',
+        title: 'Indemnification, D&O Insurance & Tail Coverage',
+        subScore: 30,
+        weight: 0.15,
+        isToxic: false,
+        summary: 'Mandatory advancement included. Tail coverage: false.',
+        identifiedRisks: [
+          'No guaranteed 6-year D&O tail / run-off coverage upon acquisition or exit'
+        ],
+        statutoryReference: 'Delaware General Corporation Law §145',
+        parameters: {
+          standaloneAgreementSigned: true,
+          policyCoverageAdequate: true,
+          mandatoryAdvancement: true,
+          tailCoverageSixYears: false
+        }
+      }
+    ],
+    priorInventions: [
+      {
+        id: 'inv-demo-3',
+        category: 'patented_invention',
+        title: 'LiDAR Point Cloud Segmentation Pipeline',
+        identifierOrUrl: 'US Patent App 18/492,019',
+        creationDate: '2023-11-20',
+        technologyDescription: 'Real-time sparse voxel convolution network for autonomous vehicle obstacle perception.',
+        retainedRights: ['Sole Inventor Title', 'Patent Prosecution Rights'],
+        confidentialExclusionConfirmed: true
+      }
+    ],
+    redlines: [],
+    createdAt: '2026-10-22T10:00:00Z',
+    updatedAt: '2026-10-22T10:00:00Z'
+  },
+  {
+    id: 'contract-demo-3',
+    companyName: 'Vortex Fintech',
+    roleTitle: 'Chief Technology Officer',
+    jurisdiction: 'vietnam',
+    contractRiskIndex: 84,
+    riskTier: 'critical_toxic',
+    clawbackPenalty: 18,
+    activeHazards: [
+      'Indentured Labor Trap: Draconian post-employment non-compete combined with zero severance.',
+      'Intellectual Property Ambush: Broad assignment claiming personal and pre-existing code.'
+    ],
+    pillarScores: {
+      non_compete_non_solicit: 90,
+      ip_prior_inventions: 85,
+      severance_without_cause: 80,
+      double_trigger_cic: 80,
+      indemnification_d_and_o: 75
+    },
+    clauses: [
+      {
+        pillarKey: 'non_compete_non_solicit',
+        title: 'Non-Compete & Non-Solicitation Covenants',
+        subScore: 90,
+        weight: 0.20,
+        isToxic: true,
+        summary: 'Non-compete duration: 24m, scope: worldwide_broad. Garden leave: 0%.',
+        identifiedRisks: [
+          'Excessive restriction duration (24 months exceeds standard 12-month executive threshold)',
+          'High dispute risk: Non-compete without financial compensation violates statutory freedom to work'
+        ],
+        statutoryReference: 'Vietnam Labor Code 2019 Art. 21 & Constitution 2013 Art. 35',
+        parameters: {
+          durationMonths: 24,
+          scope: 'worldwide_broad',
+          gardenLeavePercent: 0,
+          solicitationBreadth: 'all_employees_contractors',
+          explicitCaDisclaimer: false
+        }
+      },
+      {
+        pillarKey: 'ip_prior_inventions',
+        title: 'IP Assignment & Prior Inventions Carve-out',
+        subScore: 85,
+        weight: 0.20,
+        isToxic: true,
+        summary: 'Assignment scope: omnibus_perpetual. Schedule A: false.',
+        identifiedRisks: [
+          'No Exhibit A / Prior Inventions Schedule attached to contract',
+          'Complete ban on non-conflicting open-source contributions or personal hobby coding'
+        ],
+        statutoryReference: 'Vietnam Law on Intellectual Property Art. 73-75',
+        parameters: {
+          priorInventionsScheduleAttached: false,
+          priorInventionsCount: 0,
+          assignmentScope: 'omnibus_perpetual',
+          moonlightOpenSourcePermitted: false,
+          statutoryProtectionCited: false
+        }
+      },
+      {
+        pillarKey: 'severance_without_cause',
+        title: 'Severance Without Cause & Good Reason',
+        subScore: 80,
+        weight: 0.25,
+        isToxic: true,
+        summary: 'Cash severance: 0m. Discretionary only.',
+        identifiedRisks: [
+          'Resignation for "Good Reason" forfeits severance',
+          'Inadequate severance duration (0 months)'
+        ],
+        statutoryReference: 'Vietnam Labor Code 2019 Art. 46 / Executive Contract Standard',
+        parameters: {
+          cashSalaryMonths: 0,
+          targetBonusIncluded: false,
+          healthBenefitMonths: 0,
+          goodReasonResignationCovered: false,
+          narrowCauseDefinition: false
+        }
+      },
+      {
+        pillarKey: 'double_trigger_cic',
+        title: 'Double-Trigger Change of Control Equity Acceleration',
+        subScore: 80,
+        weight: 0.20,
+        isToxic: true,
+        summary: 'Acceleration: none. PTEP: 3m.',
+        identifiedRisks: [
+          'Zero Change of Control equity acceleration: acquiring company can terminate and seize unvested equity'
+        ],
+        statutoryReference: 'Vietnam Enterprise Law & Standard International M&A',
+        parameters: {
+          accelerationType: 'none',
+          protectionWindowMonths: 6,
+          ptepMonths: 3,
+          goldenParachuteCutbackProtected: false
+        }
+      },
+      {
+        pillarKey: 'indemnification_d_and_o',
+        title: 'Indemnification, D&O Insurance & Tail Coverage',
+        subScore: 75,
+        weight: 0.15,
+        isToxic: true,
+        summary: 'No D&O policy. No advancement.',
+        identifiedRisks: [
+          'No standalone bilateral Indemnification Agreement',
+          'Defense legal expenses not subject to mandatory advancement'
+        ],
+        statutoryReference: 'Model Executive Indemnity Agreement',
+        parameters: {
+          standaloneAgreementSigned: false,
+          policyCoverageAdequate: false,
+          mandatoryAdvancement: false,
+          tailCoverageSixYears: false
+        }
+      }
+    ],
+    priorInventions: [],
+    redlines: [],
+    createdAt: '2026-10-23T14:30:00Z',
+    updatedAt: '2026-10-23T14:30:00Z'
+  }
+];
+
+function loadDemoContracts(): ExecutiveContractDTO[] {
+  try {
+    const raw = localStorage.getItem('jobtrack_demo_executive_contracts_v1');
+    if (!raw) {
+      localStorage.setItem('jobtrack_demo_executive_contracts_v1', JSON.stringify(DEFAULT_DEMO_CONTRACTS));
+      return structuredClone(DEFAULT_DEMO_CONTRACTS);
+    }
+    return JSON.parse(raw);
+  } catch {
+    return structuredClone(DEFAULT_DEMO_CONTRACTS);
+  }
+}
+
+function saveDemoContracts(contracts: ExecutiveContractDTO[]): void {
+  try {
+    localStorage.setItem('jobtrack_demo_executive_contracts_v1', JSON.stringify(contracts));
+  } catch {
+  }
+}
+
+function createDemoContract(input: ExecutiveContractMutationDTO): ExecutiveContractDTO {
+  const list = loadDemoContracts();
+  const id = `contract-demo-${Date.now()}`;
+  const now = new Date().toISOString();
+
+  const priorInventions: PriorInventionItemDTO[] = (input.priorInventions || []).map((p) => ({
+    id: `inv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    category: p.category,
+    title: p.title,
+    identifierOrUrl: p.identifierOrUrl,
+    creationDate: p.creationDate || now.split('T')[0],
+    technologyDescription: p.technologyDescription || '',
+    retainedRights: p.retainedRights || ['Full Commercial Copyright'],
+    confidentialExclusionConfirmed: p.confidentialExclusionConfirmed ?? true
+  }));
+
+  const evalResult = evaluateExecutiveContract(
+    input.clauseParameters,
+    input.jurisdiction,
+    priorInventions
+  );
+
+  const generatedRedlines = generateSynthesizedRedlines({
+    id,
+    companyName: input.companyName,
+    roleTitle: input.roleTitle,
+    jurisdiction: input.jurisdiction,
+    pillarScores: evalResult.pillarScores,
+    clauses: evalResult.clauses
+  });
+
+  const redlines: ContractRedlineDTO[] = generatedRedlines.map((r, idx) => ({
+    id: `red-${Date.now()}-${idx}`,
+    contractId: id,
+    ...r,
+    status: r.status || 'proposed',
+    createdAt: now,
+    updatedAt: now
+  }));
+
+  const newContract: ExecutiveContractDTO = {
+    id,
+    applicationId: input.applicationId || null,
+    companyName: input.companyName,
+    roleTitle: input.roleTitle,
+    jurisdiction: input.jurisdiction,
+    contractRiskIndex: evalResult.contractRiskIndex,
+    riskTier: evalResult.riskTier,
+    pillarScores: evalResult.pillarScores,
+    clawbackPenalty: evalResult.clawbackPenalty,
+    activeHazards: evalResult.activeHazards,
+    clauses: evalResult.clauses,
+    priorInventions,
+    redlines,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  list.unshift(newContract);
+  saveDemoContracts(list);
+  return newContract;
+}
+
+function updateDemoContract(
+  id: string,
+  input: Partial<ExecutiveContractMutationDTO>
+): ExecutiveContractDTO | null {
+  const list = loadDemoContracts();
+  const idx = list.findIndex(c => c.id === id);
+  if (idx === -1) return null;
+  const existing = list[idx];
+
+  const companyName = input.companyName ?? existing.companyName;
+  const roleTitle = input.roleTitle ?? existing.roleTitle;
+  const jurisdiction = input.jurisdiction ?? existing.jurisdiction;
+
+  const currentParams = existing.clauses.reduce((acc, c) => {
+    acc[c.pillarKey] = c.parameters as never;
+    return acc;
+  }, {} as ClauseParametersMap);
+
+  const clauseParameters: ClauseParametersMap = input.clauseParameters ?? currentParams;
+  const evalResult = evaluateExecutiveContract(clauseParameters, jurisdiction, existing.priorInventions);
+  const now = new Date().toISOString();
+
+  const updated: ExecutiveContractDTO = {
+    ...existing,
+    companyName,
+    roleTitle,
+    jurisdiction,
+    contractRiskIndex: evalResult.contractRiskIndex,
+    riskTier: evalResult.riskTier,
+    pillarScores: evalResult.pillarScores,
+    clawbackPenalty: evalResult.clawbackPenalty,
+    activeHazards: evalResult.activeHazards,
+    clauses: evalResult.clauses,
+    updatedAt: now
+  };
+
+  list[idx] = updated;
+  saveDemoContracts(list);
+  return updated;
+}
+
+function generateDemoRedlines(contractId: string): ContractRedlineDTO[] {
+  const list = loadDemoContracts();
+  const idx = list.findIndex(c => c.id === contractId);
+  if (idx === -1) return [];
+  const contract = list[idx];
+  const generated = generateSynthesizedRedlines({
+    id: contract.id,
+    companyName: contract.companyName,
+    roleTitle: contract.roleTitle,
+    jurisdiction: contract.jurisdiction,
+    pillarScores: contract.pillarScores,
+    clauses: contract.clauses
+  });
+  const now = new Date().toISOString();
+  const redlines: ContractRedlineDTO[] = generated.map((r, idx2) => ({
+    id: `red-${Date.now()}-${idx2}`,
+    contractId,
+    ...r,
+    status: r.status || 'proposed',
+    createdAt: now,
+    updatedAt: now
+  }));
+  contract.redlines = redlines;
+  list[idx] = contract;
+  saveDemoContracts(list);
+  return redlines;
+}
+
+function addDemoPriorInvention(
+  contractId: string,
+  input: PriorInventionMutationDTO
+): ExecutiveContractDTO | null {
+  const list = loadDemoContracts();
+  const idx = list.findIndex(c => c.id === contractId);
+  if (idx === -1) return null;
+  const contract = list[idx];
+  const newItem: PriorInventionItemDTO = {
+    id: `inv-${Date.now()}`,
+    category: input.category,
+    title: input.title,
+    identifierOrUrl: input.identifierOrUrl,
+    creationDate: input.creationDate || new Date().toISOString().split('T')[0],
+    technologyDescription: input.technologyDescription || '',
+    retainedRights: input.retainedRights || ['Full Commercial Copyright'],
+    confidentialExclusionConfirmed: input.confidentialExclusionConfirmed ?? true
+  };
+  const updatedInventions = [...contract.priorInventions, newItem];
+  const currentParams = contract.clauses.reduce((acc, c) => {
+    acc[c.pillarKey] = c.parameters as never;
+    return acc;
+  }, {} as ClauseParametersMap);
+  const evalResult = evaluateExecutiveContract(currentParams, contract.jurisdiction, updatedInventions);
+  const updated: ExecutiveContractDTO = {
+    ...contract,
+    priorInventions: updatedInventions,
+    contractRiskIndex: evalResult.contractRiskIndex,
+    riskTier: evalResult.riskTier,
+    pillarScores: evalResult.pillarScores,
+    clawbackPenalty: evalResult.clawbackPenalty,
+    activeHazards: evalResult.activeHazards,
+    clauses: evalResult.clauses,
+    updatedAt: new Date().toISOString()
+  };
+  list[idx] = updated;
+  saveDemoContracts(list);
+  return updated;
+}
+
+function deleteDemoPriorInvention(
+  contractId: string,
+  itemId: string
+): ExecutiveContractDTO | null {
+  const list = loadDemoContracts();
+  const idx = list.findIndex(c => c.id === contractId);
+  if (idx === -1) return null;
+  const contract = list[idx];
+  const updatedInventions = contract.priorInventions.filter(i => i.id !== itemId);
+  const currentParams = contract.clauses.reduce((acc, c) => {
+    acc[c.pillarKey] = c.parameters as never;
+    return acc;
+  }, {} as ClauseParametersMap);
+  const evalResult = evaluateExecutiveContract(currentParams, contract.jurisdiction, updatedInventions);
+  const updated: ExecutiveContractDTO = {
+    ...contract,
+    priorInventions: updatedInventions,
+    contractRiskIndex: evalResult.contractRiskIndex,
+    riskTier: evalResult.riskTier,
+    pillarScores: evalResult.pillarScores,
+    clawbackPenalty: evalResult.clawbackPenalty,
+    activeHazards: evalResult.activeHazards,
+    clauses: evalResult.clauses,
+    updatedAt: new Date().toISOString()
+  };
+  list[idx] = updated;
+  saveDemoContracts(list);
+  return updated;
+}
+
+const executiveContractRepository = {
+  async listContracts(): Promise<ExecutiveContractDTO[]> {
+    if (demoMode) return loadDemoContracts();
+    try {
+      return await request<ExecutiveContractDTO[]>('/executive-contracts');
+    } catch {
+      return loadDemoContracts();
+    }
+  },
+
+  async getContract(id: string): Promise<ExecutiveContractDTO | null> {
+    if (demoMode) {
+      const list = loadDemoContracts();
+      return list.find(c => c.id === id) || null;
+    }
+    try {
+      return await request<ExecutiveContractDTO>(`/executive-contracts/${encodeURIComponent(id)}`);
+    } catch {
+      const list = loadDemoContracts();
+      return list.find(c => c.id === id) || null;
+    }
+  },
+
+  async createContract(input: ExecutiveContractMutationDTO): Promise<ExecutiveContractDTO> {
+    if (demoMode) {
+      return createDemoContract(input);
+    }
+
+    try {
+      return await request<ExecutiveContractDTO>('/executive-contracts', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return createDemoContract(input);
+    }
+  },
+
+  async updateContract(
+    id: string,
+    input: Partial<ExecutiveContractMutationDTO>
+  ): Promise<ExecutiveContractDTO | null> {
+    if (demoMode) {
+      return updateDemoContract(id, input);
+    }
+
+    try {
+      return await request<ExecutiveContractDTO>(`/executive-contracts/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return updateDemoContract(id, input);
+    }
+  },
+
+  async deleteContract(id: string): Promise<boolean> {
+    if (demoMode) {
+      const list = loadDemoContracts();
+      const next = list.filter(c => c.id !== id);
+      saveDemoContracts(next);
+      return true;
+    }
+    try {
+      await request<void>(`/executive-contracts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      const list = loadDemoContracts();
+      const next = list.filter(c => c.id !== id);
+      saveDemoContracts(next);
+      return true;
+    }
+  },
+
+  async listRedlines(contractId: string): Promise<ContractRedlineDTO[]> {
+    const contract = await this.getContract(contractId);
+    return contract?.redlines || [];
+  },
+
+  async generateRedlines(contractId: string): Promise<ContractRedlineDTO[]> {
+    if (demoMode) {
+      return generateDemoRedlines(contractId);
+    }
+    try {
+      return await request<ContractRedlineDTO[]>(`/executive-contracts/${encodeURIComponent(contractId)}/generate-redlines`, {
+        method: 'POST'
+      });
+    } catch {
+      return generateDemoRedlines(contractId);
+    }
+  },
+
+  async createRedline(contractId: string, input: ContractRedlineMutationDTO): Promise<ContractRedlineDTO> {
+    if (demoMode) {
+      const contract = await this.getContract(contractId);
+      const now = new Date().toISOString();
+      const newRedline: ContractRedlineDTO = {
+        id: `red-${Date.now()}`,
+        contractId,
+        ...input,
+        status: input.status || 'proposed',
+        createdAt: now,
+        updatedAt: now
+      };
+      if (contract) {
+        contract.redlines = [...(contract.redlines || []), newRedline];
+        const list = loadDemoContracts();
+        const idx = list.findIndex(c => c.id === contractId);
+        if (idx !== -1) {
+          list[idx] = contract;
+          saveDemoContracts(list);
+        }
+      }
+      return newRedline;
+    }
+    return await request<ContractRedlineDTO>(`/executive-contracts/${encodeURIComponent(contractId)}/redlines`, {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async updateRedline(
+    contractId: string,
+    redlineId: string,
+    status: RedlineStatus
+  ): Promise<ContractRedlineDTO | null> {
+    if (demoMode) {
+      const contract = await this.getContract(contractId);
+      if (!contract || !contract.redlines) return null;
+      const idx = contract.redlines.findIndex(r => r.id === redlineId);
+      if (idx === -1) return null;
+      contract.redlines[idx].status = status;
+      contract.redlines[idx].updatedAt = new Date().toISOString();
+      const list = loadDemoContracts();
+      const cIdx = list.findIndex(c => c.id === contractId);
+      if (cIdx !== -1) {
+        list[cIdx] = contract;
+        saveDemoContracts(list);
+      }
+      return contract.redlines[idx];
+    }
+    try {
+      return await request<ContractRedlineDTO>(
+        `/executive-contracts/${encodeURIComponent(contractId)}/redlines/${encodeURIComponent(redlineId)}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ status })
+        }
+      );
+    } catch {
+      return null;
+    }
+  },
+
+  async addPriorInvention(
+    contractId: string,
+    input: PriorInventionMutationDTO
+  ): Promise<ExecutiveContractDTO | null> {
+    if (demoMode) {
+      return addDemoPriorInvention(contractId, input);
+    }
+    try {
+      return await request<ExecutiveContractDTO>(`/executive-contracts/${encodeURIComponent(contractId)}/prior-inventions`, {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return addDemoPriorInvention(contractId, input);
+    }
+  },
+
+  async deletePriorInvention(
+    contractId: string,
+    itemId: string
+  ): Promise<ExecutiveContractDTO | null> {
+    if (demoMode) {
+      return deleteDemoPriorInvention(contractId, itemId);
+    }
+    try {
+      return await request<ExecutiveContractDTO>(
+        `/executive-contracts/${encodeURIComponent(contractId)}/prior-inventions/${encodeURIComponent(itemId)}`,
+        { method: 'DELETE' }
+      );
+    } catch {
+      return deleteDemoPriorInvention(contractId, itemId);
+    }
+  },
+
+  async exportExhibitA(contractId: string): Promise<{ markdown: string } | null> {
+    const contract = await this.getContract(contractId);
+    if (!contract) return null;
+    const markdown = generateExhibitAMarkdown(
+      { companyName: contract.companyName, roleTitle: contract.roleTitle },
+      contract.priorInventions
+    );
+    return { markdown };
+  },
+
+  async exportAddendum(contractId: string): Promise<{ markdown: string; cri: number } | null> {
+    const contract = await this.getContract(contractId);
+    if (!contract) return null;
+    const redlines = contract.redlines || (await this.listRedlines(contractId));
+    const markdown = generateExecutiveAddendumMarkdown(
+      {
+        companyName: contract.companyName,
+        roleTitle: contract.roleTitle,
+        jurisdiction: contract.jurisdiction
+      },
+      redlines
+    );
+    return { markdown, cri: contract.contractRiskIndex };
+  }
+};
+
 
 
 

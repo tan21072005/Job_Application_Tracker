@@ -96,6 +96,7 @@ import { HeadhunterCrmService } from './services/headhunter-crm-service.ts';
 import { SystemDesignService } from './services/system-design-service.ts';
 import { EquityLiquidityService } from './services/equity-liquidity-service.ts';
 import { BackchannelService } from './services/backchannel-service.ts';
+import { ExecutiveContractService } from './services/executive-contract-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -117,7 +118,10 @@ import {
   validateEquityGrantInput,
   validateEquityModelMutationInput,
   validateReferenceAdvocateInput,
-  validateBackchannelAuditInput
+  validateBackchannelAuditInput,
+  validateExecutiveContractInput,
+  validatePriorInventionInput,
+  validateContractRedlineInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -179,6 +183,7 @@ export const headhunterCrmService = new HeadhunterCrmService(pool);
 export const systemDesignService = new SystemDesignService(pool);
 export const equityLiquidityService = new EquityLiquidityService(pool);
 export const backchannelService = new BackchannelService(pool);
+export const executiveContractService = new ExecutiveContractService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -2352,6 +2357,182 @@ app.post('/api/backchannel/audits/:id/generate-briefing', auth, async (req, res,
       return res.status(404).json({ code: 'not_found', message: 'Khong tim thay dot kiem toan hoac nguoi bao chung.' });
     }
     res.status(201).json(packet);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/executive-contracts', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contracts = await executiveContractService.listContracts(userId);
+    res.json(contracts);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-contracts', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateExecutiveContractInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', message: validation.message, errors: validation.errors });
+    }
+    const created = await executiveContractService.createContract(userId, validation.data);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/executive-contracts/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contract = await executiveContractService.getContract(userId, String(req.params.id));
+    if (!contract) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong lanh dao.' });
+    }
+    res.json(contract);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.patch('/api/executive-contracts/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contractId = String(req.params.id);
+    const existing = await executiveContractService.getContract(userId, contractId);
+    if (!existing) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong lanh dao.' });
+    }
+    const updated = await executiveContractService.updateContract(userId, contractId, req.body);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/executive-contracts/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await executiveContractService.deleteContract(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong lanh dao.' });
+    }
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-contracts/:id/generate-redlines', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contract = await executiveContractService.getContract(userId, String(req.params.id));
+    if (!contract) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong lanh dao.' });
+    }
+    const redlines = await executiveContractService.generateRedlines(userId, contract.id);
+    res.json(redlines);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-contracts/:id/redlines', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contractId = String(req.params.id);
+    const existing = await executiveContractService.getContract(userId, contractId);
+    if (!existing) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong lanh dao.' });
+    }
+    const validation = validateContractRedlineInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', message: validation.message, errors: validation.errors });
+    }
+    const created = await executiveContractService.createRedline(userId, contractId, validation.data);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.patch('/api/executive-contracts/:id/redlines/:redlineId', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contractId = String(req.params.id);
+    const redlineId = String(req.params.redlineId);
+    const b = bodyObject(req.body);
+    const status = b.status as never;
+    const updated = await executiveContractService.updateRedline(userId, contractId, redlineId, status);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay dieu khoan sua doi.' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-contracts/:id/prior-inventions', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contractId = String(req.params.id);
+    const validation = validatePriorInventionInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', message: validation.message, errors: validation.errors });
+    }
+    const updated = await executiveContractService.addPriorInvention(userId, contractId, validation.data);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong lanh dao.' });
+    }
+    res.status(201).json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/executive-contracts/:id/prior-inventions/:itemId', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contractId = String(req.params.id);
+    const itemId = String(req.params.itemId);
+    const updated = await executiveContractService.deletePriorInvention(userId, contractId, itemId);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong hoac sang che.' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/executive-contracts/:id/export-addendum', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contractId = String(req.params.id);
+    const result = await executiveContractService.exportAddendum(userId, contractId);
+    if (!result) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong lanh dao.' });
+    }
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/executive-contracts/:id/export-exhibit-a', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const contractId = String(req.params.id);
+    const result = await executiveContractService.exportExhibitA(userId, contractId);
+    if (!result) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong lanh dao.' });
+    }
+    res.json(result);
   } catch (err) {
     next(err);
   }
