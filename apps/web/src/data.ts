@@ -98,7 +98,15 @@ import {
   calculateBusFactorVulnerability,
   calculateCompositeRagScorecard,
   determineTransactionRecommendation,
-  generateTechnicalDueDiligenceMemoMarkdown
+  generateTechnicalDueDiligenceMemoMarkdown,
+  type ReorgScenarioDTO,
+  type ReorgScenarioMutationDTO,
+  type TeamTopologyDTO,
+  type TeamTopologyMutationDTO,
+  type OrgNodeDTO,
+  calculateTeamCognitiveLoadIndex,
+  calculateReorgDisruptionRisk,
+  generateReorgExecutiveMemoMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -9143,6 +9151,643 @@ export const technicalDueDiligenceRepository = {
     }
   }
 };
+
+const DEMO_ORG_SCENARIOS_KEY = 'jobtrack_demo_org_scenarios';
+const DEMO_ORG_TEAMS_KEY = 'jobtrack_demo_org_teams';
+const DEMO_ORG_EMPLOYEES_KEY = 'jobtrack_demo_org_employees';
+
+export const DEFAULT_DEMO_ORG_SCENARIOS: ReorgScenarioDTO[] = [
+  {
+    id: 'demo-sc-001',
+    userId: 'demo-user',
+    title: 'Enterprise Platform Decoupling & Stream Realignment',
+    status: 'draft',
+    currentHierarchyMetrics: {
+      totalHeadcount: 52,
+      totalManagers: 8,
+      totalIndividualContributors: 44,
+      organizationDepth: 4,
+      optimalDepth: 3,
+      depthExcessPenalty: 10,
+      averageSpanOfControl: 5.5,
+      microTeamsCount: 2,
+      overloadedManagersCount: 1,
+      compositeHierarchyHealthScore: 74.0
+    },
+    proposedHierarchyMetrics: {
+      totalHeadcount: 55,
+      totalManagers: 8,
+      totalIndividualContributors: 47,
+      organizationDepth: 3,
+      optimalDepth: 3,
+      depthExcessPenalty: 0,
+      averageSpanOfControl: 6.8,
+      microTeamsCount: 0,
+      overloadedManagersCount: 0,
+      compositeHierarchyHealthScore: 91.2
+    },
+    currentConwayScore: 64.5,
+    proposedConwayScore: 86.2,
+    budgetDeltaAnnualUsd: 240000,
+    headcountDelta: 3,
+    disruptionRiskIndex: 28.4,
+    transferredEngineersCount: 6,
+    reassignedServicesCount: 3,
+    conwayEdges: [],
+    executiveRationale: 'Decouple core billing engine from monolithic commerce repo and establish a dedicated Cloud Infrastructure Platform Team to eliminate deploy lock-in.',
+    targetCompletionDate: '2026-12-31',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+export const DEFAULT_DEMO_ORG_TEAMS: TeamTopologyDTO[] = [
+  {
+    id: 'demo-team-001',
+    planId: 'demo-sc-001',
+    name: 'Checkout & Payments Stream',
+    type: 'stream_aligned',
+    missionStatement: 'Own frictionless customer purchase flows, PSP integrations, and invoice processing.',
+    leadEngineerName: 'Principal Architect',
+    headcount: 7,
+    domainComplexity: 4,
+    operationalToilPercentage: 15,
+    weeklyIncidentAlertCount: 4,
+    ownedServices: [
+      { serviceId: 'svc-pay-1', serviceName: 'Payment Gateway Client', tier: 'tier_1_mission_critical', linesOfCode: 42000, deploymentFrequencyPerWeek: 12, monthlyP1Incidents: 0 },
+      { serviceId: 'svc-pay-2', serviceName: 'Billing & Invoice Ledger', tier: 'tier_1_mission_critical', linesOfCode: 58000, deploymentFrequencyPerWeek: 6, monthlyP1Incidents: 1 }
+    ],
+    interactions: [
+      { targetTeamId: 'demo-team-002', targetTeamName: 'Developer Experience Platform', interactionMode: 'x_as_a_service', purpose: 'CI/CD pipeline and observability SDKs', weeklySyncHours: 1 }
+    ],
+    cognitiveLoadIndex: 48.5,
+    cognitiveLoadStatus: 'healthy_flow',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'demo-team-002',
+    planId: 'demo-sc-001',
+    name: 'Developer Experience Platform',
+    type: 'platform',
+    missionStatement: 'Provide self-service Kubernetes pipelines, telemetry SDKs, and local dev environments.',
+    leadEngineerName: 'Staff SRE Lead',
+    headcount: 6,
+    domainComplexity: 3,
+    operationalToilPercentage: 10,
+    weeklyIncidentAlertCount: 2,
+    ownedServices: [
+      { serviceId: 'svc-plat-1', serviceName: 'Kubernetes Cluster GitOps', tier: 'tier_1_mission_critical', linesOfCode: 15000, deploymentFrequencyPerWeek: 25, monthlyP1Incidents: 0 },
+      { serviceId: 'svc-plat-2', serviceName: 'Internal Developer Portal', tier: 'tier_2_business_critical', linesOfCode: 31000, deploymentFrequencyPerWeek: 8, monthlyP1Incidents: 0 }
+    ],
+    interactions: [
+      { targetTeamId: 'demo-team-004', targetTeamName: 'Architecture & Security Enabling', interactionMode: 'facilitating', purpose: 'Zero-trust network baseline integration', weeklySyncHours: 2 }
+    ],
+    cognitiveLoadIndex: 42.0,
+    cognitiveLoadStatus: 'healthy_flow',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'demo-team-003',
+    planId: 'demo-sc-001',
+    name: 'Real-Time Fraud Subsystem',
+    type: 'complicated_subsystem',
+    missionStatement: 'Maintain distributed low-latency graph neural network engine for anomaly scoring.',
+    leadEngineerName: 'Senior Research Scientist',
+    headcount: 5,
+    domainComplexity: 5,
+    operationalToilPercentage: 12,
+    weeklyIncidentAlertCount: 3,
+    ownedServices: [
+      { serviceId: 'svc-fraud-1', serviceName: 'Graph Inference Engine', tier: 'tier_1_mission_critical', linesOfCode: 85000, deploymentFrequencyPerWeek: 2, monthlyP1Incidents: 1 }
+    ],
+    interactions: [
+      { targetTeamId: 'demo-team-001', targetTeamName: 'Checkout & Payments Stream', interactionMode: 'x_as_a_service', purpose: 'gRPC low-latency scoring endpoint', weeklySyncHours: 1 }
+    ],
+    cognitiveLoadIndex: 68.4,
+    cognitiveLoadStatus: 'optimal_sustainable',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'demo-team-004',
+    planId: 'demo-sc-001',
+    name: 'Architecture & Security Enabling',
+    type: 'enabling',
+    missionStatement: 'Upskill stream teams in zero-trust mTLS, event-driven schemas, and secure coding practices.',
+    leadEngineerName: 'Principal Security Architect',
+    headcount: 4,
+    domainComplexity: 4,
+    operationalToilPercentage: 8,
+    weeklyIncidentAlertCount: 1,
+    ownedServices: [
+      { serviceId: 'svc-sec-1', serviceName: 'Security Policy Validator', tier: 'tier_2_business_critical', linesOfCode: 12000, deploymentFrequencyPerWeek: 4, monthlyP1Incidents: 0 }
+    ],
+    interactions: [
+      { targetTeamId: 'demo-team-001', targetTeamName: 'Checkout & Payments Stream', interactionMode: 'facilitating', purpose: 'Threat modeling and payment tokenization audit', weeklySyncHours: 3 }
+    ],
+    cognitiveLoadIndex: 38.2,
+    cognitiveLoadStatus: 'healthy_flow',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+export const DEFAULT_DEMO_ORG_EMPLOYEES: OrgNodeDTO[] = [
+  {
+    id: 'emp-001',
+    employeeName: 'Dr. Evelyn Reed',
+    jobTitle: 'VP of Engineering',
+    level: 'EM4',
+    track: 'management',
+    managerId: null,
+    teamId: null,
+    teamName: 'Executive Staff',
+    directReportsCount: 7,
+    totalSubordinatesCount: 51,
+    spanHealth: 'optimal',
+    annualBaseSalary: 280000,
+    annualTargetBonus: 56000,
+    unvestedEquityValue: 220000,
+    tenureMonths: 36,
+    tenureAtLevelMonths: 18,
+    flightRiskIndex: 22
+  },
+  {
+    id: 'emp-002',
+    employeeName: 'Marcus Vance',
+    jobTitle: 'Senior Engineering Manager',
+    level: 'EM2',
+    track: 'management',
+    managerId: 'emp-001',
+    teamId: 'demo-team-001',
+    teamName: 'Checkout & Payments Stream',
+    directReportsCount: 7,
+    totalSubordinatesCount: 7,
+    spanHealth: 'optimal',
+    annualBaseSalary: 215000,
+    annualTargetBonus: 32250,
+    unvestedEquityValue: 130000,
+    tenureMonths: 28,
+    tenureAtLevelMonths: 14,
+    flightRiskIndex: 38
+  },
+  {
+    id: 'emp-003',
+    employeeName: 'Elena Rostova',
+    jobTitle: 'Engineering Manager - Platform',
+    level: 'EM1',
+    track: 'management',
+    managerId: 'emp-001',
+    teamId: 'demo-team-002',
+    teamName: 'Developer Experience Platform',
+    directReportsCount: 6,
+    totalSubordinatesCount: 6,
+    spanHealth: 'optimal',
+    annualBaseSalary: 190000,
+    annualTargetBonus: 28500,
+    unvestedEquityValue: 95000,
+    tenureMonths: 20,
+    tenureAtLevelMonths: 20,
+    flightRiskIndex: 45
+  },
+  {
+    id: 'emp-004',
+    employeeName: 'Sarah Lin',
+    jobTitle: 'Staff Software Engineer',
+    level: 'IC4',
+    track: 'individual_contributor',
+    managerId: 'emp-002',
+    teamId: 'demo-team-001',
+    teamName: 'Checkout & Payments Stream',
+    directReportsCount: 0,
+    totalSubordinatesCount: 0,
+    spanHealth: 'optimal',
+    annualBaseSalary: 195000,
+    annualTargetBonus: 29250,
+    unvestedEquityValue: 110000,
+    tenureMonths: 32,
+    tenureAtLevelMonths: 16,
+    flightRiskIndex: 30
+  },
+  {
+    id: 'emp-005',
+    employeeName: 'David Kim',
+    jobTitle: 'Senior Software Engineer',
+    level: 'IC3',
+    track: 'individual_contributor',
+    managerId: 'emp-002',
+    teamId: 'demo-team-001',
+    teamName: 'Checkout & Payments Stream',
+    directReportsCount: 0,
+    totalSubordinatesCount: 0,
+    spanHealth: 'optimal',
+    annualBaseSalary: 165000,
+    annualTargetBonus: 24750,
+    unvestedEquityValue: 75000,
+    tenureMonths: 24,
+    tenureAtLevelMonths: 12,
+    flightRiskIndex: 25
+  },
+  {
+    id: 'emp-006',
+    employeeName: 'Amara Okafor',
+    jobTitle: 'Senior Software Engineer',
+    level: 'IC3',
+    track: 'individual_contributor',
+    managerId: 'emp-003',
+    teamId: 'demo-team-002',
+    teamName: 'Developer Experience Platform',
+    directReportsCount: 0,
+    totalSubordinatesCount: 0,
+    spanHealth: 'optimal',
+    annualBaseSalary: 160000,
+    annualTargetBonus: 24000,
+    unvestedEquityValue: 70000,
+    tenureMonths: 18,
+    tenureAtLevelMonths: 18,
+    flightRiskIndex: 35
+  },
+  {
+    id: 'emp-007',
+    employeeName: 'Chloe Dubois',
+    jobTitle: 'Software Engineer II',
+    level: 'IC2',
+    track: 'individual_contributor',
+    managerId: 'emp-003',
+    teamId: 'demo-team-002',
+    teamName: 'Developer Experience Platform',
+    directReportsCount: 0,
+    totalSubordinatesCount: 0,
+    spanHealth: 'optimal',
+    annualBaseSalary: 135000,
+    annualTargetBonus: 13500,
+    unvestedEquityValue: 45000,
+    tenureMonths: 14,
+    tenureAtLevelMonths: 14,
+    flightRiskIndex: 20
+  }
+];
+
+function loadDemoOrgScenarios(): ReorgScenarioDTO[] {
+  const cached = localStorage.getItem(DEMO_ORG_SCENARIOS_KEY);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch {
+      return DEFAULT_DEMO_ORG_SCENARIOS;
+    }
+  }
+  localStorage.setItem(DEMO_ORG_SCENARIOS_KEY, JSON.stringify(DEFAULT_DEMO_ORG_SCENARIOS));
+  return DEFAULT_DEMO_ORG_SCENARIOS;
+}
+
+function saveDemoOrgScenarios(items: ReorgScenarioDTO[]): void {
+  localStorage.setItem(DEMO_ORG_SCENARIOS_KEY, JSON.stringify(items));
+}
+
+function getDemoOrgScenario(id: string): ReorgScenarioDTO | null {
+  const list = loadDemoOrgScenarios();
+  return list.find(s => s.id === id) || null;
+}
+
+function createDemoOrgScenario(input: ReorgScenarioMutationDTO): ReorgScenarioDTO {
+  const list = loadDemoOrgScenarios();
+  const scenarioId = `demo-sc-${Date.now()}`;
+  const scenario: ReorgScenarioDTO = {
+    id: scenarioId,
+    userId: 'demo-user',
+    title: input.title,
+    status: input.status || 'draft',
+    currentHierarchyMetrics: {
+      totalHeadcount: 48,
+      totalManagers: 8,
+      totalIndividualContributors: 40,
+      organizationDepth: 4,
+      optimalDepth: 3,
+      depthExcessPenalty: 12,
+      averageSpanOfControl: 5.0,
+      microTeamsCount: 3,
+      overloadedManagersCount: 2,
+      compositeHierarchyHealthScore: 68.5
+    },
+    proposedHierarchyMetrics: {
+      totalHeadcount: 52,
+      totalManagers: 8,
+      totalIndividualContributors: 44,
+      organizationDepth: 3,
+      optimalDepth: 3,
+      depthExcessPenalty: 0,
+      averageSpanOfControl: 6.5,
+      microTeamsCount: 0,
+      overloadedManagersCount: 0,
+      compositeHierarchyHealthScore: 92.4
+    },
+    currentConwayScore: 62.4,
+    proposedConwayScore: 84.8,
+    budgetDeltaAnnualUsd: 185000,
+    headcountDelta: 4,
+    disruptionRiskIndex: 34.5,
+    transferredEngineersCount: 8,
+    reassignedServicesCount: 4,
+    conwayEdges: [],
+    executiveRationale: input.executiveRationale,
+    targetCompletionDate: input.targetCompletionDate,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  list.unshift(scenario);
+  saveDemoOrgScenarios(list);
+  return scenario;
+}
+
+function updateDemoOrgScenario(id: string, input: Partial<ReorgScenarioMutationDTO>): ReorgScenarioDTO | null {
+  const list = loadDemoOrgScenarios();
+  const idx = list.findIndex(s => s.id === id);
+  if (idx === -1) return null;
+  const existing = list[idx];
+  const transferred = input.proposedTeamAssignments ? input.proposedTeamAssignments.length : existing.transferredEngineersCount;
+  const reassigned = input.proposedServiceTransfers ? input.proposedServiceTransfers.length : existing.reassignedServicesCount;
+  const disruption = (input.proposedTeamAssignments || input.proposedServiceTransfers)
+    ? calculateReorgDisruptionRisk(existing.currentHierarchyMetrics.totalIndividualContributors, transferred, existing.currentHierarchyMetrics.totalManagers, 1, 16, reassigned)
+    : existing.disruptionRiskIndex;
+
+  const updated: ReorgScenarioDTO = {
+    ...existing,
+    title: input.title ?? existing.title,
+    status: input.status ?? existing.status,
+    executiveRationale: input.executiveRationale ?? existing.executiveRationale,
+    targetCompletionDate: input.targetCompletionDate ?? existing.targetCompletionDate,
+    transferredEngineersCount: transferred,
+    reassignedServicesCount: reassigned,
+    disruptionRiskIndex: disruption,
+    updatedAt: new Date().toISOString()
+  };
+  list[idx] = updated;
+  saveDemoOrgScenarios(list);
+  return updated;
+}
+
+function deleteDemoOrgScenario(id: string): boolean {
+  let list = loadDemoOrgScenarios();
+  const initialLen = list.length;
+  list = list.filter(s => s.id !== id);
+  saveDemoOrgScenarios(list);
+  return list.length < initialLen;
+}
+
+function loadDemoOrgTeams(scenarioId: string): TeamTopologyDTO[] {
+  const cached = localStorage.getItem(`${DEMO_ORG_TEAMS_KEY}_${scenarioId}`);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch {
+      return DEFAULT_DEMO_ORG_TEAMS;
+    }
+  }
+  localStorage.setItem(`${DEMO_ORG_TEAMS_KEY}_${scenarioId}`, JSON.stringify(DEFAULT_DEMO_ORG_TEAMS));
+  return DEFAULT_DEMO_ORG_TEAMS;
+}
+
+function saveDemoOrgTeams(scenarioId: string, teams: TeamTopologyDTO[]): void {
+  localStorage.setItem(`${DEMO_ORG_TEAMS_KEY}_${scenarioId}`, JSON.stringify(teams));
+}
+
+function addDemoOrgTeam(scenarioId: string, input: TeamTopologyMutationDTO): TeamTopologyDTO {
+  const teams = loadDemoOrgTeams(scenarioId);
+  const { cli, status } = calculateTeamCognitiveLoadIndex(
+    input.headcount,
+    (input.ownedServices || []).length,
+    input.domainComplexity,
+    input.operationalToilPercentage,
+    input.type,
+    input.interactions || []
+  );
+  const team: TeamTopologyDTO = {
+    id: `demo-team-${Date.now()}`,
+    planId: scenarioId,
+    name: input.name,
+    type: input.type,
+    missionStatement: input.missionStatement,
+    leadEngineerName: 'Staff Lead',
+    headcount: input.headcount,
+    domainComplexity: input.domainComplexity,
+    operationalToilPercentage: input.operationalToilPercentage,
+    weeklyIncidentAlertCount: input.weeklyIncidentAlertCount,
+    ownedServices: input.ownedServices || [],
+    interactions: input.interactions || [],
+    cognitiveLoadIndex: cli,
+    cognitiveLoadStatus: status,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  teams.push(team);
+  saveDemoOrgTeams(scenarioId, teams);
+  return team;
+}
+
+function updateDemoOrgTeam(teamId: string, input: Partial<TeamTopologyMutationDTO>): TeamTopologyDTO | null {
+  const scenarios = loadDemoOrgScenarios();
+  for (const sc of scenarios) {
+    const teams = loadDemoOrgTeams(sc.id);
+    const idx = teams.findIndex(t => t.id === teamId);
+    if (idx !== -1) {
+      const existing = teams[idx];
+      const headcount = input.headcount ?? existing.headcount;
+      const type = input.type ?? existing.type;
+      const domainComplexity = input.domainComplexity ?? existing.domainComplexity;
+      const operationalToilPercentage = input.operationalToilPercentage ?? existing.operationalToilPercentage;
+      const weeklyIncidentAlertCount = input.weeklyIncidentAlertCount ?? existing.weeklyIncidentAlertCount;
+      const ownedServices = input.ownedServices ?? existing.ownedServices;
+      const interactions = input.interactions ?? existing.interactions;
+
+      const { cli, status } = calculateTeamCognitiveLoadIndex(
+        headcount,
+        ownedServices.length,
+        domainComplexity,
+        operationalToilPercentage,
+        type,
+        interactions
+      );
+
+      const updated: TeamTopologyDTO = {
+        ...existing,
+        name: input.name ?? existing.name,
+        type,
+        missionStatement: input.missionStatement ?? existing.missionStatement,
+        headcount,
+        domainComplexity,
+        operationalToilPercentage,
+        weeklyIncidentAlertCount,
+        ownedServices,
+        interactions,
+        cognitiveLoadIndex: cli,
+        cognitiveLoadStatus: status,
+        updatedAt: new Date().toISOString()
+      };
+      teams[idx] = updated;
+      saveDemoOrgTeams(sc.id, teams);
+      return updated;
+    }
+  }
+  return null;
+}
+
+function deleteDemoOrgTeam(teamId: string): boolean {
+  const scenarios = loadDemoOrgScenarios();
+  for (const sc of scenarios) {
+    let teams = loadDemoOrgTeams(sc.id);
+    const len = teams.length;
+    teams = teams.filter(t => t.id !== teamId);
+    if (teams.length < len) {
+      saveDemoOrgTeams(sc.id, teams);
+      return true;
+    }
+  }
+  return false;
+}
+
+function loadDemoOrgEmployees(scenarioId: string): OrgNodeDTO[] {
+  const cached = localStorage.getItem(`${DEMO_ORG_EMPLOYEES_KEY}_${scenarioId}`);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch {
+      return DEFAULT_DEMO_ORG_EMPLOYEES;
+    }
+  }
+  localStorage.setItem(`${DEMO_ORG_EMPLOYEES_KEY}_${scenarioId}`, JSON.stringify(DEFAULT_DEMO_ORG_EMPLOYEES));
+  return DEFAULT_DEMO_ORG_EMPLOYEES;
+}
+
+function generateDemoOrgMemo(scenarioId: string): string {
+  const scenario = getDemoOrgScenario(scenarioId) || DEFAULT_DEMO_ORG_SCENARIOS[0];
+  return generateReorgExecutiveMemoMarkdown(scenario);
+}
+
+export const orgTopologyStudioRepository = {
+  async listScenarios(): Promise<ReorgScenarioDTO[]> {
+    if (demoMode) return loadDemoOrgScenarios();
+    try {
+      return await request<ReorgScenarioDTO[]>('/org-topology-studio/scenarios');
+    } catch {
+      return loadDemoOrgScenarios();
+    }
+  },
+
+  async getScenario(id: string): Promise<ReorgScenarioDTO | null> {
+    if (demoMode) return getDemoOrgScenario(id);
+    try {
+      return await request<ReorgScenarioDTO>(`/org-topology-studio/scenarios/${encodeURIComponent(id)}`);
+    } catch {
+      return getDemoOrgScenario(id);
+    }
+  },
+
+  async createScenario(input: ReorgScenarioMutationDTO): Promise<ReorgScenarioDTO> {
+    if (demoMode) return createDemoOrgScenario(input);
+    try {
+      return await request<ReorgScenarioDTO>('/org-topology-studio/scenarios', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return createDemoOrgScenario(input);
+    }
+  },
+
+  async updateScenario(id: string, input: Partial<ReorgScenarioMutationDTO>): Promise<ReorgScenarioDTO | null> {
+    if (demoMode) return updateDemoOrgScenario(id, input);
+    try {
+      return await request<ReorgScenarioDTO>(`/org-topology-studio/scenarios/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return updateDemoOrgScenario(id, input);
+    }
+  },
+
+  async deleteScenario(id: string): Promise<boolean> {
+    if (demoMode) return deleteDemoOrgScenario(id);
+    try {
+      await request<void>(`/org-topology-studio/scenarios/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      return deleteDemoOrgScenario(id);
+    }
+  },
+
+  async listTeams(scenarioId: string): Promise<TeamTopologyDTO[]> {
+    if (demoMode) return loadDemoOrgTeams(scenarioId);
+    try {
+      return await request<TeamTopologyDTO[]>(`/org-topology-studio/scenarios/${encodeURIComponent(scenarioId)}/teams`);
+    } catch {
+      return loadDemoOrgTeams(scenarioId);
+    }
+  },
+
+  async addTeam(scenarioId: string, input: TeamTopologyMutationDTO): Promise<TeamTopologyDTO | null> {
+    if (demoMode) return addDemoOrgTeam(scenarioId, input);
+    try {
+      return await request<TeamTopologyDTO>(`/org-topology-studio/scenarios/${encodeURIComponent(scenarioId)}/teams`, {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return addDemoOrgTeam(scenarioId, input);
+    }
+  },
+
+  async updateTeam(teamId: string, input: Partial<TeamTopologyMutationDTO>): Promise<TeamTopologyDTO | null> {
+    if (demoMode) return updateDemoOrgTeam(teamId, input);
+    try {
+      return await request<TeamTopologyDTO>(`/org-topology-studio/teams/${encodeURIComponent(teamId)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return updateDemoOrgTeam(teamId, input);
+    }
+  },
+
+  async deleteTeam(teamId: string): Promise<boolean> {
+    if (demoMode) return deleteDemoOrgTeam(teamId);
+    try {
+      await request<void>(`/org-topology-studio/teams/${encodeURIComponent(teamId)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      return deleteDemoOrgTeam(teamId);
+    }
+  },
+
+  async listEmployees(scenarioId: string): Promise<OrgNodeDTO[]> {
+    if (demoMode) return loadDemoOrgEmployees(scenarioId);
+    try {
+      return await request<OrgNodeDTO[]>(`/org-topology-studio/scenarios/${encodeURIComponent(scenarioId)}/employees`);
+    } catch {
+      return loadDemoOrgEmployees(scenarioId);
+    }
+  },
+
+  async generateMemo(scenarioId: string): Promise<string> {
+    if (demoMode) return generateDemoOrgMemo(scenarioId);
+    try {
+      const res = await request<{ markdown: string }>(`/org-topology-studio/scenarios/${encodeURIComponent(scenarioId)}/generate-memo`, {
+        method: 'POST'
+      });
+      return res.markdown;
+    } catch {
+      return generateDemoOrgMemo(scenarioId);
+    }
+  }
+};
+
 
 
 

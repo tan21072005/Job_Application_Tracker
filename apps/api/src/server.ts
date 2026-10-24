@@ -101,6 +101,7 @@ import { ExecutiveOnboardingService } from './services/executive-onboarding-serv
 import { BoardAdvisoryNexusService } from './services/board-advisory-nexus-service.ts';
 import { ExecutiveSeveranceService } from './services/executive-severance-service.ts';
 import { TechnicalDueDiligenceService } from './services/technical-due-diligence-service.ts';
+import { OrgTopologyStudioService } from './services/org-topology-studio-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -135,7 +136,9 @@ import {
   validateSeveranceCaseInput,
   validateGoodReasonEventInput,
   validateDueDiligenceAuditInput,
-  validateDiligenceFindingInput
+  validateDiligenceFindingInput,
+  validateTeamTopologyInput,
+  validateReorgScenarioInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -202,6 +205,7 @@ export const executiveOnboardingService = new ExecutiveOnboardingService(pool);
 export const boardAdvisoryNexusService = new BoardAdvisoryNexusService(pool);
 export const executiveSeveranceService = new ExecutiveSeveranceService(pool);
 export const technicalDueDiligenceService = new TechnicalDueDiligenceService(pool);
+export const orgTopologyStudioService = new OrgTopologyStudioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -3119,6 +3123,146 @@ app.post('/api/technical-due-diligence/audits/:id/generate-memo', auth, async (r
     const memo = await technicalDueDiligenceService.generateMemo(userId, req.params.id);
     if (!memo) {
       return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
+    }
+    res.json({ markdown: memo });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/org-topology-studio/scenarios', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const list = await orgTopologyStudioService.listScenarios(userId);
+    res.json(list);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/org-topology-studio/scenarios', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateReorgScenarioInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const scenario = await orgTopologyStudioService.createScenario(userId, req.body);
+    res.status(201).json(scenario);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/org-topology-studio/scenarios/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const scenario = await orgTopologyStudioService.getScenario(userId, req.params.id);
+    if (!scenario) {
+      return res.status(404).json({ code: 'scenario_not_found', error: 'Organization scenario not found' });
+    }
+    res.json(scenario);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/org-topology-studio/scenarios/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateReorgScenarioInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const updated = await orgTopologyStudioService.updateScenario(userId, req.params.id, req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'scenario_not_found', error: 'Organization scenario not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/org-topology-studio/scenarios/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await orgTopologyStudioService.deleteScenario(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'scenario_not_found', error: 'Organization scenario not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/org-topology-studio/scenarios/:id/teams', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const teams = await orgTopologyStudioService.listTeams(userId, req.params.id);
+    res.json(teams);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/org-topology-studio/scenarios/:id/teams', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateTeamTopologyInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const team = await orgTopologyStudioService.addTeam(userId, req.params.id, req.body);
+    res.status(201).json(team);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/org-topology-studio/teams/:teamId', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const updated = await orgTopologyStudioService.updateTeam(userId, req.params.teamId, req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'team_not_found', error: 'Team topology not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/org-topology-studio/teams/:teamId', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await orgTopologyStudioService.deleteTeam(userId, req.params.teamId);
+    if (!deleted) {
+      return res.status(404).json({ code: 'team_not_found', error: 'Team topology not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/org-topology-studio/scenarios/:id/employees', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const employees = await orgTopologyStudioService.listEmployees(userId, req.params.id);
+    res.json(employees);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/org-topology-studio/scenarios/:id/generate-memo', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const memo = await orgTopologyStudioService.generateMemo(userId, req.params.id);
+    if (!memo) {
+      return res.status(404).json({ code: 'scenario_not_found', error: 'Organization scenario not found' });
     }
     res.json({ markdown: memo });
   } catch (err) {

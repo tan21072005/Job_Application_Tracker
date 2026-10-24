@@ -258,7 +258,17 @@ import {
   validateDueDiligenceAuditInput,
   validateDiligenceFindingInput,
   type TechnicalDueDiligenceAuditDTO,
-  type TechnicalDueDiligenceMutationDTO
+  type TechnicalDueDiligenceMutationDTO,
+  calculateTeamCognitiveLoadIndex,
+  calculateSpanHealth,
+  calculateConwayAlignmentScore,
+  calculateReorgDisruptionRisk,
+  calculateFullyBurdenedCost,
+  validateTeamTopologyInput,
+  validateReorgScenarioInput,
+  generateReorgExecutiveMemoMarkdown,
+  type TeamTopologyDTO,
+  type ReorgScenarioDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -5902,6 +5912,215 @@ test('contract: validateDueDiligenceAuditInput and validateDiligenceFindingInput
   });
   assert.equal(validFinding.ok, true);
 });
+
+test('contract: calculateTeamCognitiveLoadIndex evaluates CLI and status bands accurately', () => {
+  const zeroHeadcount = calculateTeamCognitiveLoadIndex(0, 4, 3, 20, 'stream_aligned', []);
+  assert.equal(zeroHeadcount.cli, 100);
+  assert.equal(zeroHeadcount.status, 'cognitive_overload');
+
+  const streamTeam = calculateTeamCognitiveLoadIndex(7, 3, 2, 10, 'stream_aligned', [
+    { interactionMode: 'x_as_a_service' }
+  ]);
+  assert.ok(streamTeam.cli >= 0 && streamTeam.cli <= 100);
+  assert.equal(streamTeam.status, 'healthy_flow');
+
+  const complicatedSubsystem = calculateTeamCognitiveLoadIndex(4, 8, 5, 45, 'complicated_subsystem', [
+    { interactionMode: 'collaboration' },
+    { interactionMode: 'facilitating' }
+  ]);
+  assert.ok(complicatedSubsystem.cli > 72);
+  assert.ok(['saturation_warning', 'cognitive_overload'].includes(complicatedSubsystem.status));
+
+  const enablingTeam = calculateTeamCognitiveLoadIndex(5, 1, 2, 5, 'enabling', [
+    { interactionMode: 'facilitating' }
+  ]);
+  assert.ok(enablingTeam.cli < 55);
+  assert.equal(enablingTeam.status, 'healthy_flow');
+
+  const platformTeam = calculateTeamCognitiveLoadIndex(8, 12, 3, 25, 'platform', [
+    { interactionMode: 'x_as_a_service' },
+    { interactionMode: 'x_as_a_service' }
+  ]);
+  assert.ok(platformTeam.cli > 40 && platformTeam.cli < 85);
+});
+
+test('contract: calculateSpanHealth categorizes managerial spans correctly', () => {
+  assert.equal(calculateSpanHealth(0), 'optimal');
+  assert.equal(calculateSpanHealth(2), 'under_span_micro_team');
+  assert.equal(calculateSpanHealth(6), 'optimal');
+  assert.equal(calculateSpanHealth(8), 'optimal');
+  assert.equal(calculateSpanHealth(10), 'over_span_overload');
+  assert.equal(calculateSpanHealth(14), 'critical_bottleneck');
+});
+
+test('contract: calculateConwayAlignmentScore measures decoupling fidelity', () => {
+  const emptyEdges = calculateConwayAlignmentScore([]);
+  assert.equal(emptyEdges, 100);
+
+  const perfectAlignment = calculateConwayAlignmentScore([
+    {
+      sourceServiceId: 's1',
+      sourceServiceName: 'Auth Service',
+      targetServiceId: 's2',
+      targetServiceName: 'Token Store',
+      callVolumeWeekly: 50000,
+      isSynchronousRestOrGrpc: true,
+      crossesTeamBoundary: false,
+      interactionFrictionCoefficient: 0.1
+    }
+  ]);
+  assert.equal(perfectAlignment, 100);
+
+  const frictionCoupling = calculateConwayAlignmentScore([
+    {
+      sourceServiceId: 's1',
+      sourceServiceName: 'Checkout Web',
+      targetServiceId: 's2',
+      targetServiceName: 'Legacy Inventory',
+      callVolumeWeekly: 100000,
+      isSynchronousRestOrGrpc: true,
+      crossesTeamBoundary: true,
+      interactionFrictionCoefficient: 1.0
+    }
+  ]);
+  assert.equal(frictionCoupling, 0);
+
+  const mixedCoupling = calculateConwayAlignmentScore([
+    {
+      sourceServiceId: 's1',
+      sourceServiceName: 'Order API',
+      targetServiceId: 's2',
+      targetServiceName: 'Catalog API',
+      callVolumeWeekly: 80000,
+      isSynchronousRestOrGrpc: true,
+      crossesTeamBoundary: false,
+      interactionFrictionCoefficient: 0.1
+    },
+    {
+      sourceServiceId: 's1',
+      sourceServiceName: 'Order API',
+      targetServiceId: 's3',
+      targetServiceName: 'Tax Engine',
+      callVolumeWeekly: 20000,
+      isSynchronousRestOrGrpc: true,
+      crossesTeamBoundary: true,
+      interactionFrictionCoefficient: 0.5
+    }
+  ]);
+  assert.equal(mixedCoupling, 90);
+});
+
+test('contract: calculateReorgDisruptionRisk and calculateFullyBurdenedCost compute expected outputs', () => {
+  assert.equal(calculateReorgDisruptionRisk(0, 0, 0, 0, 0, 0), 0);
+
+  const disruption = calculateReorgDisruptionRisk(50, 10, 8, 2, 20, 4);
+  assert.ok(disruption > 15 && disruption < 50);
+
+  const burdenedStandard = calculateFullyBurdenedCost(150000);
+  assert.equal(burdenedStandard, 195000);
+
+  const burdenedCustom = calculateFullyBurdenedCost(200000, 1.35);
+  assert.equal(burdenedCustom, 270000);
+});
+
+test('contract: validateTeamTopologyInput and validateReorgScenarioInput reject invalid payloads', () => {
+  const invalidTeam = validateTeamTopologyInput({
+    name: '',
+    type: 'invalid_topology',
+    headcount: -5,
+    domainComplexity: 7,
+    operationalToilPercentage: 150
+  });
+  assert.equal(invalidTeam.ok, false);
+  assert.ok(invalidTeam.errors.name);
+  assert.ok(invalidTeam.errors.type);
+  assert.ok(invalidTeam.errors.headcount);
+  assert.ok(invalidTeam.errors.domainComplexity);
+  assert.ok(invalidTeam.errors.operationalToilPercentage);
+
+  const validTeam = validateTeamTopologyInput({
+    name: 'Growth & Monetization',
+    type: 'stream_aligned',
+    headcount: 8,
+    domainComplexity: 3,
+    operationalToilPercentage: 15
+  });
+  assert.equal(validTeam.ok, true);
+
+  const invalidReorg = validateReorgScenarioInput({
+    title: '',
+    executiveRationale: 'Short'
+  });
+  assert.equal(invalidReorg.ok, false);
+  assert.ok(invalidReorg.errors.title);
+  assert.ok(invalidReorg.errors.executiveRationale);
+  assert.ok(invalidReorg.errors.targetCompletionDate);
+
+  const validReorg = validateReorgScenarioInput({
+    title: 'Platform Decoupling & Stream Realignment',
+    targetCompletionDate: '2026-12-31',
+    executiveRationale: 'Establish dedicated core infrastructure platform teams to eliminate deployment train bottlenecks and reduce cross-team ticket ping pong.'
+  });
+  assert.equal(validReorg.ok, true);
+});
+
+test('contract: generateReorgExecutiveMemoMarkdown formats executive proposal memorandum', () => {
+  const scenario: ReorgScenarioDTO = {
+    id: 'sc-001',
+    userId: 'u-1',
+    title: 'H2 Strategic Reorganization',
+    status: 'board_approved',
+    currentHierarchyMetrics: {
+      totalHeadcount: 48,
+      totalManagers: 8,
+      totalIndividualContributors: 40,
+      organizationDepth: 4,
+      optimalDepth: 3,
+      depthExcessPenalty: 12,
+      averageSpanOfControl: 5.0,
+      microTeamsCount: 3,
+      overloadedManagersCount: 2,
+      compositeHierarchyHealthScore: 68.5
+    },
+    proposedHierarchyMetrics: {
+      totalHeadcount: 52,
+      totalManagers: 8,
+      totalIndividualContributors: 44,
+      organizationDepth: 3,
+      optimalDepth: 3,
+      depthExcessPenalty: 0,
+      averageSpanOfControl: 6.5,
+      microTeamsCount: 0,
+      overloadedManagersCount: 0,
+      compositeHierarchyHealthScore: 92.4
+    },
+    currentConwayScore: 62.4,
+    proposedConwayScore: 88.6,
+    budgetDeltaAnnualUsd: 320000,
+    headcountDelta: 4,
+    disruptionRiskIndex: 26.5,
+    transferredEngineersCount: 6,
+    reassignedServicesCount: 3,
+    conwayEdges: [],
+    executiveRationale: 'Realigning monolithic payment code into dedicated platform APIs and establishing self-service team topologies.',
+    targetCompletionDate: '2026-11-30',
+    createdAt: '2026-10-25T00:00:00.000Z',
+    updatedAt: '2026-10-25T00:00:00.000Z'
+  };
+
+  const memo = generateReorgExecutiveMemoMarkdown(scenario);
+  assert.ok(memo.includes('Executive Engineering Organization Reorganization Memorandum'));
+  assert.ok(memo.includes('H2 Strategic Reorganization'));
+  assert.ok(memo.includes('BOARD_APPROVED'));
+  assert.ok(memo.includes("Conway's Law Alignment"));
+  assert.ok(memo.includes('62.4% → 88.6%'));
+  assert.ok(memo.includes('Disruption Risk Index'));
+  assert.ok(memo.includes('26.5 / 100'));
+  assert.ok(memo.includes('Total Engineering Headcount'));
+  assert.ok(memo.includes('+$320,000'));
+  assert.ok(memo.includes('Board Committee Recommendation'));
+});
+
 
 
 

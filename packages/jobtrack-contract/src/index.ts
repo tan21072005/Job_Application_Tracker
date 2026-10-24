@@ -39,3 +39,4 @@ export * from './executive-onboarding.ts';
 export * from './board-advisory-nexus.ts';
 export * from './executive-severance.ts';
 export * from './technical-due-diligence.ts';
+export * from './org-topology-studio.ts';
