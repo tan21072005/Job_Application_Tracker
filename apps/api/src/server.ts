@@ -98,6 +98,7 @@ import { EquityLiquidityService } from './services/equity-liquidity-service.ts';
 import { BackchannelService } from './services/backchannel-service.ts';
 import { ExecutiveContractService } from './services/executive-contract-service.ts';
 import { ExecutiveOnboardingService } from './services/executive-onboarding-service.ts';
+import { BoardAdvisoryNexusService } from './services/board-advisory-nexus-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -126,7 +127,9 @@ import {
   validateExecutiveOnboardingPlanInput,
   validateStakeholderInput,
   validateMilestoneInput,
-  validateDiagnosticsInput
+  validateDiagnosticsInput,
+  validateBoardMandateInput,
+  validateGovernanceMatrixInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -190,6 +193,7 @@ export const equityLiquidityService = new EquityLiquidityService(pool);
 export const backchannelService = new BackchannelService(pool);
 export const executiveContractService = new ExecutiveContractService(pool);
 export const executiveOnboardingService = new ExecutiveOnboardingService(pool);
+export const boardAdvisoryNexusService = new BoardAdvisoryNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -2733,6 +2737,159 @@ app.get('/api/executive-onboarding/:id/memo/:memoType', auth, async (req, res, n
       return res.status(404).json({ code: 'not_found', message: 'Khong tim thay ke hoach de xuat executive memo.' });
     }
     res.json(memo);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/board-advisory-nexus/mandates', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const mandates = await boardAdvisoryNexusService.listMandates(userId);
+    res.json(mandates);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/board-advisory-nexus/mandates', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateBoardMandateInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const created = await boardAdvisoryNexusService.createMandate(userId, validation.data);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/board-advisory-nexus/mandates/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const mandate = await boardAdvisoryNexusService.getMandate(userId, String(req.params.id));
+    if (!mandate) {
+      return res.status(404).json({ code: 'not_found', message: 'Mandate not found.' });
+    }
+    res.json(mandate);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/board-advisory-nexus/mandates/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const mandateId = String(req.params.id);
+    const existing = await boardAdvisoryNexusService.getMandate(userId, mandateId);
+    if (!existing) {
+      return res.status(404).json({ code: 'not_found', message: 'Mandate not found.' });
+    }
+    const updated = await boardAdvisoryNexusService.updateMandate(userId, mandateId, req.body);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/board-advisory-nexus/mandates/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await boardAdvisoryNexusService.deleteMandate(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Mandate not found.' });
+    }
+    res.status(200).json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/board-advisory-nexus/mandates/:id/dilution-model', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const mandateId = String(req.params.id);
+    const stage = (req.query.stage as any) || 'seed_stage';
+    const impact = (req.query.impact as any) || 'standard';
+    const rounds = req.query.rounds ? Number(req.query.rounds) : 2;
+    const dilution = req.query.dilution ? Number(req.query.dilution) : 0.2;
+
+    const model = await boardAdvisoryNexusService.getDilutionModel(
+      userId,
+      mandateId,
+      stage,
+      impact,
+      rounds,
+      dilution
+    );
+    if (!model) {
+      return res.status(404).json({ code: 'not_found', message: 'Mandate not found.' });
+    }
+    res.json(model);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/board-advisory-nexus/mandates/:id/conflict-check', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const mandateId = String(req.params.id);
+    const check = await boardAdvisoryNexusService.checkConflict(userId, mandateId, req.body || {});
+    if (!check) {
+      return res.status(404).json({ code: 'not_found', message: 'Mandate not found.' });
+    }
+    res.json(check);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/board-advisory-nexus/mandates/:id/waiver-letter', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const mandateId = String(req.params.id);
+    const letter = await boardAdvisoryNexusService.generateWaiverLetter(userId, mandateId, req.body || {});
+    if (!letter) {
+      return res.status(404).json({ code: 'not_found', message: 'Mandate not found.' });
+    }
+    res.json(letter);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/board-advisory-nexus/governance-matrix', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const matrix = await boardAdvisoryNexusService.getGovernanceMatrix(userId);
+    res.json(matrix);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/board-advisory-nexus/governance-matrix', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateGovernanceMatrixInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const updated = await boardAdvisoryNexusService.updateGovernanceMatrix(userId, validation.data);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/board-advisory-nexus/dossier', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const dossier = await boardAdvisoryNexusService.getBoardDossier(userId);
+    res.json(dossier);
   } catch (err) {
     next(err);
   }

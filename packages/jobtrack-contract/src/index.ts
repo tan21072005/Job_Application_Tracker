@@ -36,3 +36,4 @@ export * from './equity-liquidity.ts';
 export * from './backchannel.ts';
 export * from './executive-contract.ts';
 export * from './executive-onboarding.ts';
+export * from './board-advisory-nexus.ts';

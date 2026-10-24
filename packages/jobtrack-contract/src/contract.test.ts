@@ -220,7 +220,18 @@ import {
   validateDiagnosticsInput,
   type StakeholderDTO,
   type OnboardingMilestoneDTO,
-  type ExecutiveOnboardingPlanDTO
+  type ExecutiveOnboardingPlanDTO,
+  getFastEquityBenchmark,
+  computeRetainedEquity,
+  computeFastEquityDilutionModel,
+  evaluateConflictOfInterest,
+  computeGovernanceQuotient,
+  generateOutsideBoardWaiverLetter,
+  generateBoardDossierMarkdown,
+  validateBoardMandateInput,
+  validateGovernanceMatrixInput,
+  type BoardMandateDTO,
+  type GovernanceMatrixDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -5040,6 +5051,265 @@ test('contract: executive onboarding input validators enforce schemas and bounds
     architectureTechDebt: { score: 150 }
   });
   assert.equal(invalidDiag.ok, false);
+});
+
+test('contract: getFastEquityBenchmark and computeRetainedEquity evaluate stages and dilution rounds', () => {
+  assert.equal(getFastEquityBenchmark('idea_stage', 'standard'), 0.25);
+  assert.equal(getFastEquityBenchmark('idea_stage', 'expert_intensive'), 1.0);
+  assert.equal(getFastEquityBenchmark('seed_stage', 'strategic'), 0.3);
+  assert.equal(getFastEquityBenchmark('series_a', 'standard'), 0.1);
+  assert.equal(getFastEquityBenchmark('series_b_plus', 'strategic'), 0.1);
+
+  const retainedNoDilution = computeRetainedEquity(0.5, 0, 0.2);
+  assert.equal(retainedNoDilution, 0.5);
+
+  const retainedTwoRounds = computeRetainedEquity(0.5, 2, 0.2);
+  assert.equal(retainedTwoRounds, 0.32);
+
+  const retainedFourRounds = computeRetainedEquity(1.0, 4, 0.2);
+  assert.equal(retainedFourRounds, 0.4096);
+});
+
+test('contract: computeFastEquityDilutionModel models exit scenarios and hourly yields', () => {
+  const mockMandate: BoardMandateDTO = {
+    id: 'man-1',
+    userId: 'u-1',
+    targetCompanyName: 'Nexar AI',
+    mandateType: 'advisory_board',
+    stage: 'offer_term_sheet',
+    annualCashRetainer: 12000,
+    meetingFeePerBoardMeeting: 1000,
+    meetingFeePerCommitteeMeeting: 500,
+    expectedBoardMeetingsPerYear: 4,
+    expectedCommitteeMeetingsPerYear: 4,
+    equityPercentage: 0.5,
+    equityGrantType: 'nso_options',
+    vestingSchedule: 'two_year_monthly_no_cliff',
+    accelerationClause: 'single_trigger_change_of_control',
+    optionStrikePrice: 2000,
+    timeCommitmentHoursPerMonth: 5,
+    termLengthYears: 2,
+    committeeAssignments: ['tech_cybersecurity'],
+    hasDAndOInsurance: true,
+    dAndOPolicyLimitMillions: 5,
+    hasSideADicCoverage: true,
+    hasIndemnificationAgreement: true,
+    notes: 'Strategic cloud architecture advisory',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const model = computeFastEquityDilutionModel(mockMandate, 'seed_stage', 'strategic', 2, 0.2, 0.2);
+  assert.equal(model.mandateId, 'man-1');
+  assert.equal(model.retainedEquityPercentage, 0.32);
+  assert.equal(model.totalInvestedHours, 120);
+  assert.equal(model.benchmark.benchmarkPercentage, 0.3);
+  assert.equal(model.benchmark.variancePercentage, 0.2);
+  assert.equal(model.benchmark.isFairMarketOrAbove, true);
+  assert.equal(model.scenarios.length, 4);
+
+  const baseScenario = model.scenarios.find(s => s.scenarioName === 'base');
+  assert.ok(baseScenario);
+  assert.equal(baseScenario.exitValuationMillions, 100);
+  assert.equal(baseScenario.grossProceedsUsd, 320000);
+  assert.ok(baseScenario.netProceedsUsd > 250000);
+  assert.ok(baseScenario.effectiveHourlyYieldUsd > 2000);
+});
+
+test('contract: evaluateConflictOfInterest and generateOutsideBoardWaiverLetter handle Clayton Act and safe harbors', () => {
+  const mockDirectorMandate: BoardMandateDTO = {
+    id: 'man-dir-1',
+    userId: 'u-1',
+    targetCompanyName: 'Rival Cloud Inc',
+    mandateType: 'board_of_directors',
+    stage: 'board_diligence',
+    annualCashRetainer: 45000,
+    meetingFeePerBoardMeeting: 2000,
+    meetingFeePerCommitteeMeeting: 1000,
+    expectedBoardMeetingsPerYear: 6,
+    expectedCommitteeMeetingsPerYear: 4,
+    equityPercentage: 0.4,
+    equityGrantType: 'rsu',
+    vestingSchedule: 'four_year_one_year_cliff',
+    accelerationClause: 'double_trigger_change_and_termination',
+    optionStrikePrice: 0,
+    timeCommitmentHoursPerMonth: 10,
+    termLengthYears: 3,
+    committeeAssignments: ['audit_risk', 'tech_cybersecurity'],
+    hasDAndOInsurance: true,
+    dAndOPolicyLimitMillions: 20,
+    hasSideADicCoverage: true,
+    hasIndemnificationAgreement: true,
+    notes: 'Direct competitor evaluation',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const interlockCheck = evaluateConflictOfInterest(
+    mockDirectorMandate,
+    'Enterprise Cloud Global',
+    true,
+    false,
+    65.0,
+    75.0,
+    true,
+    false
+  );
+  assert.equal(interlockCheck.claytonActSection8ThresholdExceeded, true);
+  assert.equal(interlockCheck.claytonActViolationRisk, true);
+  assert.equal(interlockCheck.coiTier, 'prohibited_interlock');
+  assert.ok(interlockCheck.prohibitedReason?.includes('Clayton Act Section 8'));
+
+  const benignMandate: BoardMandateDTO = {
+    ...mockDirectorMandate,
+    mandateType: 'advisory_board',
+    timeCommitmentHoursPerMonth: 4
+  };
+  const benignCheck = evaluateConflictOfInterest(
+    benignMandate,
+    'Enterprise Cloud Global',
+    false,
+    true,
+    30.0,
+    15.0,
+    false,
+    true
+  );
+  assert.equal(benignCheck.claytonActViolationRisk, false);
+  assert.equal(benignCheck.coiTier, 'low_risk');
+  assert.equal(benignCheck.waiverLetterRequired, true);
+
+  const waiverLetter = generateOutsideBoardWaiverLetter(
+    benignCheck,
+    'Alex Rivera',
+    'Eleanor Vance, Esq.',
+    'VP of Engineering'
+  );
+  assert.ok(waiverLetter.includes('Alex Rivera'));
+  assert.ok(waiverLetter.includes('Eleanor Vance, Esq.'));
+  assert.ok(waiverLetter.includes('Enterprise Cloud Global'));
+  assert.ok(waiverLetter.includes('Strict Separation of Assets, Code & Intellectual Property'));
+});
+
+test('contract: computeGovernanceQuotient and generateBoardDossierMarkdown score readiness and format dossier', () => {
+  const highScoringInput = {
+    fiduciaryAcumenScore: 88,
+    cyberAuditOversightScore: 92,
+    aiGovernanceEthicsScore: 86,
+    executiveCompensationScore: 82,
+    boardroomPresenceDissentScore: 84,
+    verifiedCredentials: ['NACD Directorship Certified', 'Stanford Directors College']
+  };
+
+  const gqResult = computeGovernanceQuotient(highScoringInput);
+  assert.ok(gqResult.governanceQuotient >= 85);
+  assert.equal(gqResult.tier, 'boardroom_luminary');
+  assert.ok(gqResult.qualifiedCommittees.includes('audit_risk'));
+  assert.ok(gqResult.qualifiedCommittees.includes('tech_cybersecurity'));
+  assert.ok(gqResult.qualifiedCommittees.includes('nominating_governance'));
+  assert.ok(gqResult.qualifiedCommittees.includes('compensation'));
+  assert.ok(gqResult.qualifiedCommittees.includes('ai_ethics_data'));
+
+  const apprenticeInput = {
+    fiduciaryAcumenScore: 40,
+    cyberAuditOversightScore: 45,
+    aiGovernanceEthicsScore: 50,
+    executiveCompensationScore: 35,
+    boardroomPresenceDissentScore: 40,
+    verifiedCredentials: []
+  };
+  const apprenticeResult = computeGovernanceQuotient(apprenticeInput);
+  assert.ok(apprenticeResult.governanceQuotient < 50);
+  assert.equal(apprenticeResult.tier, 'governance_apprentice');
+  assert.equal(apprenticeResult.qualifiedCommittees.length, 0);
+
+  const mockMatrix: GovernanceMatrixDTO = {
+    id: 'mat-1',
+    userId: 'u-1',
+    ...highScoringInput,
+    governanceQuotient: gqResult.governanceQuotient,
+    tier: gqResult.tier,
+    qualifiedCommittees: gqResult.qualifiedCommittees,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const dossier = generateBoardDossierMarkdown(
+    'Sarah Chen',
+    'Chief Technology Officer',
+    mockMatrix,
+    []
+  );
+  assert.ok(dossier.includes('Sarah Chen'));
+  assert.ok(dossier.includes('Chief Technology Officer'));
+  assert.ok(dossier.includes('BOARDROOM LUMINARY'));
+  assert.ok(dossier.includes('Audit & Risk Oversight'));
+  assert.ok(dossier.includes('Technology & Cybersecurity Committee (SEC Item 106)'));
+});
+
+test('contract: validateBoardMandateInput and validateGovernanceMatrixInput enforce schema bounds', () => {
+  const validMandate = validateBoardMandateInput({
+    targetCompanyName: 'Synthetix Core',
+    mandateType: 'advisory_board',
+    stage: 'initial_dialogue',
+    annualCashRetainer: 20000,
+    meetingFeePerBoardMeeting: 1000,
+    meetingFeePerCommitteeMeeting: 500,
+    expectedBoardMeetingsPerYear: 4,
+    expectedCommitteeMeetingsPerYear: 4,
+    equityPercentage: 0.35,
+    equityGrantType: 'nso_options',
+    vestingSchedule: 'two_year_monthly_no_cliff',
+    accelerationClause: 'single_trigger_change_of_control',
+    optionStrikePrice: 1500,
+    timeCommitmentHoursPerMonth: 6,
+    termLengthYears: 2,
+    committeeAssignments: ['tech_cybersecurity'],
+    hasDAndOInsurance: true,
+    dAndOPolicyLimitMillions: 5,
+    hasSideADicCoverage: true,
+    hasIndemnificationAgreement: true,
+    notes: 'Advising on ML cluster scaling'
+  });
+  assert.equal(validMandate.ok, true);
+
+  const invalidMandateMissingName = validateBoardMandateInput({
+    targetCompanyName: '   ',
+    mandateType: 'advisory_board',
+    stage: 'initial_dialogue',
+    equityPercentage: 0.35,
+    timeCommitmentHoursPerMonth: 6
+  });
+  assert.equal(invalidMandateMissingName.ok, false);
+
+  const invalidMandateExcessiveEquity = validateBoardMandateInput({
+    targetCompanyName: 'Tech Co',
+    mandateType: 'advisory_board',
+    stage: 'initial_dialogue',
+    equityPercentage: 45.0,
+    timeCommitmentHoursPerMonth: 6
+  });
+  assert.equal(invalidMandateExcessiveEquity.ok, false);
+
+  const validMatrix = validateGovernanceMatrixInput({
+    fiduciaryAcumenScore: 80,
+    cyberAuditOversightScore: 85,
+    aiGovernanceEthicsScore: 75,
+    executiveCompensationScore: 70,
+    boardroomPresenceDissentScore: 78,
+    verifiedCredentials: ['CERT Cyber Oversight']
+  });
+  assert.equal(validMatrix.ok, true);
+
+  const invalidMatrixScore = validateGovernanceMatrixInput({
+    fiduciaryAcumenScore: 120,
+    cyberAuditOversightScore: 85,
+    aiGovernanceEthicsScore: 75,
+    executiveCompensationScore: 70,
+    boardroomPresenceDissentScore: 78,
+    verifiedCredentials: []
+  });
+  assert.equal(invalidMatrixScore.ok, false);
 });
 
 

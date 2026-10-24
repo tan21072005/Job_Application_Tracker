@@ -42,7 +42,33 @@ import {
   computeDiagnosticHealthIndex,
   createDefaultExecutiveDiagnostics,
   computeTransitionMomentum,
-  generateExecutiveMemoMarkdown
+  generateExecutiveMemoMarkdown,
+  type BoardMandateDTO,
+  type BoardMandateMutationDTO,
+  type FastEquityBenchmarkDTO,
+  type DilutionExitScenarioDTO,
+  type FastEquityDilutionModelDTO,
+  type ConflictOfInterestCheckDTO,
+  type OutsideBoardWaiverLetterDTO,
+  type GovernanceMatrixDTO,
+  type GovernanceMatrixMutationDTO,
+  type BoardDossierDTO,
+  type CompanyGrowthStage,
+  type AdvisoryImpactLevel,
+  type BoardMandateType,
+  type MandatePipelineStage,
+  type BoardEquityGrantType,
+  type BoardVestingScheduleType,
+  type AccelerationClauseType,
+  type BoardCommitteeKey,
+  type GovernanceQuotientTier,
+  getFastEquityBenchmark,
+  computeRetainedEquity,
+  computeFastEquityDilutionModel,
+  evaluateConflictOfInterest,
+  computeGovernanceQuotient,
+  generateOutsideBoardWaiverLetter,
+  generateBoardDossierMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -7727,6 +7753,411 @@ const executiveOnboardingRepository = {
       );
     } catch {
       return generateDemoMemo(planId, memoType);
+    }
+  }
+};
+
+const DEFAULT_DEMO_BOARD_MANDATES: BoardMandateDTO[] = [
+  {
+    id: 'man-demo-1',
+    userId: 'demo-user',
+    targetCompanyName: 'Datacore Systems (Series B AI)',
+    mandateType: 'advisory_board',
+    stage: 'offer_term_sheet',
+    annualCashRetainer: 15000,
+    meetingFeePerBoardMeeting: 1000,
+    meetingFeePerCommitteeMeeting: 500,
+    expectedBoardMeetingsPerYear: 4,
+    expectedCommitteeMeetingsPerYear: 4,
+    equityPercentage: 0.35,
+    equityGrantType: 'nso_options',
+    vestingSchedule: 'two_year_monthly_no_cliff',
+    accelerationClause: 'single_trigger_change_of_control',
+    optionStrikePrice: 2500,
+    timeCommitmentHoursPerMonth: 5,
+    termLengthYears: 2,
+    committeeAssignments: ['tech_cybersecurity', 'ai_ethics_data'],
+    hasDAndOInsurance: true,
+    dAndOPolicyLimitMillions: 10,
+    hasSideADicCoverage: true,
+    hasIndemnificationAgreement: true,
+    notes: 'Advising founders on enterprise scale, SOC 2 compliance, and agentic LLM security perimeter.',
+    createdAt: '2026-09-15T08:00:00.000Z',
+    updatedAt: '2026-10-20T10:00:00.000Z'
+  },
+  {
+    id: 'man-demo-2',
+    userId: 'demo-user',
+    targetCompanyName: 'Apex Defense Cloud (Growth PE)',
+    mandateType: 'board_of_directors',
+    stage: 'board_diligence',
+    annualCashRetainer: 50000,
+    meetingFeePerBoardMeeting: 2500,
+    meetingFeePerCommitteeMeeting: 1500,
+    expectedBoardMeetingsPerYear: 6,
+    expectedCommitteeMeetingsPerYear: 6,
+    equityPercentage: 0.5,
+    equityGrantType: 'rsu',
+    vestingSchedule: 'four_year_one_year_cliff',
+    accelerationClause: 'double_trigger_change_and_termination',
+    optionStrikePrice: 0,
+    timeCommitmentHoursPerMonth: 10,
+    termLengthYears: 3,
+    committeeAssignments: ['audit_risk', 'tech_cybersecurity'],
+    hasDAndOInsurance: true,
+    dAndOPolicyLimitMillions: 25,
+    hasSideADicCoverage: true,
+    hasIndemnificationAgreement: true,
+    notes: 'Prospective Independent Director and Technology Committee Chair. Fiduciary vetting underway.',
+    createdAt: '2026-08-10T09:00:00.000Z',
+    updatedAt: '2026-10-18T14:30:00.000Z'
+  }
+];
+
+const DEFAULT_DEMO_GOVERNANCE_MATRIX: GovernanceMatrixDTO = {
+  id: 'gov-matrix-demo-1',
+  userId: 'demo-user',
+  fiduciaryAcumenScore: 88,
+  cyberAuditOversightScore: 92,
+  aiGovernanceEthicsScore: 86,
+  executiveCompensationScore: 78,
+  boardroomPresenceDissentScore: 84,
+  governanceQuotient: 87,
+  tier: 'boardroom_luminary',
+  qualifiedCommittees: ['audit_risk', 'tech_cybersecurity', 'nominating_governance', 'ai_ethics_data'],
+  verifiedCredentials: [
+    'NACD Directorship Certified (National Association of Corporate Directors)',
+    'Stanford Directors College (Stanford Law School Executive Education)',
+    'Carnegie Mellon Software Engineering Institute CERT Board Cyber Oversight'
+  ],
+  createdAt: '2026-07-01T00:00:00.000Z',
+  updatedAt: '2026-10-24T18:00:00.000Z'
+};
+
+function loadDemoBoardMandates(): BoardMandateDTO[] {
+  try {
+    const raw = localStorage.getItem('jobtrack_demo_board_mandates');
+    if (!raw) return DEFAULT_DEMO_BOARD_MANDATES;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_DEMO_BOARD_MANDATES;
+  } catch {
+    return DEFAULT_DEMO_BOARD_MANDATES;
+  }
+}
+
+function saveDemoBoardMandates(mandates: BoardMandateDTO[]): void {
+  try {
+    localStorage.setItem('jobtrack_demo_board_mandates', JSON.stringify(mandates));
+  } catch {}
+}
+
+function loadDemoGovernanceMatrix(): GovernanceMatrixDTO {
+  try {
+    const raw = localStorage.getItem('jobtrack_demo_governance_matrix');
+    if (!raw) return DEFAULT_DEMO_GOVERNANCE_MATRIX;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : DEFAULT_DEMO_GOVERNANCE_MATRIX;
+  } catch {
+    return DEFAULT_DEMO_GOVERNANCE_MATRIX;
+  }
+}
+
+function saveDemoGovernanceMatrix(matrix: GovernanceMatrixDTO): void {
+  try {
+    localStorage.setItem('jobtrack_demo_governance_matrix', JSON.stringify(matrix));
+  } catch {}
+}
+
+function createDemoBoardMandate(input: BoardMandateMutationDTO): BoardMandateDTO {
+  const current = loadDemoBoardMandates();
+  const created: BoardMandateDTO = {
+    id: `man-${Date.now()}`,
+    userId: 'demo-user',
+    targetCompanyName: input.targetCompanyName,
+    mandateType: input.mandateType,
+    stage: input.stage,
+    annualCashRetainer: input.annualCashRetainer,
+    meetingFeePerBoardMeeting: input.meetingFeePerBoardMeeting,
+    meetingFeePerCommitteeMeeting: input.meetingFeePerCommitteeMeeting,
+    expectedBoardMeetingsPerYear: input.expectedBoardMeetingsPerYear,
+    expectedCommitteeMeetingsPerYear: input.expectedCommitteeMeetingsPerYear,
+    equityPercentage: input.equityPercentage,
+    equityGrantType: input.equityGrantType,
+    vestingSchedule: input.vestingSchedule,
+    accelerationClause: input.accelerationClause,
+    optionStrikePrice: input.optionStrikePrice,
+    timeCommitmentHoursPerMonth: input.timeCommitmentHoursPerMonth,
+    termLengthYears: input.termLengthYears,
+    committeeAssignments: input.committeeAssignments || [],
+    hasDAndOInsurance: input.hasDAndOInsurance,
+    dAndOPolicyLimitMillions: input.dAndOPolicyLimitMillions,
+    hasSideADicCoverage: input.hasSideADicCoverage,
+    hasIndemnificationAgreement: input.hasIndemnificationAgreement,
+    notes: input.notes,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  saveDemoBoardMandates([created, ...current]);
+  return created;
+}
+
+function updateDemoBoardMandate(id: string, input: Partial<BoardMandateMutationDTO>): BoardMandateDTO | null {
+  const current = loadDemoBoardMandates();
+  const idx = current.findIndex(m => m.id === id);
+  if (idx === -1) return null;
+  const updated: BoardMandateDTO = {
+    ...current[idx],
+    ...input,
+    updatedAt: new Date().toISOString()
+  };
+  current[idx] = updated;
+  saveDemoBoardMandates([...current]);
+  return updated;
+}
+
+function deleteDemoBoardMandate(id: string): boolean {
+  const current = loadDemoBoardMandates();
+  const filtered = current.filter(m => m.id !== id);
+  saveDemoBoardMandates(filtered);
+  return filtered.length < current.length;
+}
+
+function computeDemoDilutionModel(
+  mandateId: string,
+  stage: CompanyGrowthStage = 'seed_stage',
+  impact: AdvisoryImpactLevel = 'standard',
+  futureRounds: number = 2,
+  dilution: number = 0.2
+): FastEquityDilutionModelDTO | null {
+  const current = loadDemoBoardMandates();
+  const mandate = current.find(m => m.id === mandateId);
+  if (!mandate) return null;
+  return computeFastEquityDilutionModel(mandate, stage, impact, futureRounds, dilution);
+}
+
+function computeDemoConflictCheck(mandateId: string, payload: any): ConflictOfInterestCheckDTO | null {
+  const current = loadDemoBoardMandates();
+  const mandate = current.find(m => m.id === mandateId);
+  if (!mandate) return null;
+  return evaluateConflictOfInterest(
+    mandate,
+    payload?.primaryEmployerName || 'Acme Cloud Platform',
+    Boolean(payload?.isDirectCompetitor),
+    Boolean(payload?.isAdjacentMarket),
+    Number(payload?.primaryCapitalMillions) || 0,
+    Number(payload?.targetCapitalMillions) || 0,
+    Boolean(payload?.hasIpOverlap),
+    Boolean(payload?.hasHardwareSegregation)
+  );
+}
+
+function generateDemoWaiverLetter(mandateId: string, payload: any): OutsideBoardWaiverLetterDTO | null {
+  const current = loadDemoBoardMandates();
+  const mandate = current.find(m => m.id === mandateId);
+  if (!mandate) return null;
+  const check = evaluateConflictOfInterest(
+    mandate,
+    payload?.primaryEmployerName || 'Acme Cloud Platform',
+    Boolean(payload?.isDirectCompetitor),
+    Boolean(payload?.isAdjacentMarket),
+    Number(payload?.primaryCapitalMillions) || 0,
+    Number(payload?.targetCapitalMillions) || 0,
+    Boolean(payload?.hasIpOverlap),
+    Boolean(payload?.hasHardwareSegregation)
+  );
+  const letterMarkdown = generateOutsideBoardWaiverLetter(
+    check,
+    payload?.executiveName || 'Executive Candidate',
+    payload?.generalCounselName || 'General Counsel',
+    payload?.roleTitle || 'VP of Engineering'
+  );
+  return {
+    mandateId: mandate.id,
+    executiveFullName: payload?.executiveName || 'Executive Candidate',
+    primaryEmployerName: check.primaryEmployerName,
+    primaryEmployerGeneralCounselName: payload?.generalCounselName || 'General Counsel',
+    targetCompanyName: mandate.targetCompanyName,
+    targetCompanyDescription: mandate.notes,
+    mandateRoleTitle: mandate.mandateType.replace(/_/g, ' '),
+    monthlyHoursCommitment: mandate.timeCommitmentHoursPerMonth,
+    generatedDate: new Date().toISOString().split('T')[0],
+    letterMarkdown
+  };
+}
+
+function updateDemoGovernanceMatrix(input: GovernanceMatrixMutationDTO): GovernanceMatrixDTO {
+  const computed = computeGovernanceQuotient(input);
+  const updated: GovernanceMatrixDTO = {
+    id: 'gov-matrix-demo-1',
+    userId: 'demo-user',
+    fiduciaryAcumenScore: input.fiduciaryAcumenScore,
+    cyberAuditOversightScore: input.cyberAuditOversightScore,
+    aiGovernanceEthicsScore: input.aiGovernanceEthicsScore,
+    executiveCompensationScore: input.executiveCompensationScore,
+    boardroomPresenceDissentScore: input.boardroomPresenceDissentScore,
+    governanceQuotient: computed.governanceQuotient,
+    tier: computed.tier,
+    qualifiedCommittees: computed.qualifiedCommittees,
+    verifiedCredentials: input.verifiedCredentials || [],
+    createdAt: '2026-07-01T00:00:00.000Z',
+    updatedAt: new Date().toISOString()
+  };
+  saveDemoGovernanceMatrix(updated);
+  return updated;
+}
+
+function loadDemoBoardDossier(): BoardDossierDTO {
+  const matrix = loadDemoGovernanceMatrix();
+  const mandates = loadDemoBoardMandates();
+  const executiveName = 'Alex Rivera';
+  const roleTitle = 'VP of Engineering & Technology Fellow';
+  const boardDossierMarkdown = generateBoardDossierMarkdown(
+    executiveName,
+    roleTitle,
+    matrix,
+    mandates
+  );
+  return {
+    userId: 'demo-user',
+    executiveFullName: executiveName,
+    executiveRoleTitle: roleTitle,
+    boardValueProposition: 'Technology Executive with Enterprise Cloud & AI Governance Specialization',
+    governanceQuotient: matrix.governanceQuotient,
+    qualifiedCommittees: matrix.qualifiedCommittees,
+    activeMandatesCount: mandates.length,
+    totalBoardSeatsCount: mandates.filter(m => m.mandateType === 'board_of_directors').length,
+    primarySpecializations: ['Enterprise SaaS Architecture', 'SEC Cyber Risk Oversight', 'AI Model Governance'],
+    boardDossierMarkdown,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+export const boardAdvisoryNexusRepository = {
+  async listMandates(): Promise<BoardMandateDTO[]> {
+    if (demoMode) return loadDemoBoardMandates();
+    try {
+      return await request<BoardMandateDTO[]>('/board-advisory-nexus/mandates');
+    } catch {
+      return loadDemoBoardMandates();
+    }
+  },
+
+  async getMandate(id: string): Promise<BoardMandateDTO | null> {
+    if (demoMode) {
+      const list = loadDemoBoardMandates();
+      return list.find(m => m.id === id) || null;
+    }
+    try {
+      return await request<BoardMandateDTO>(`/board-advisory-nexus/mandates/${encodeURIComponent(id)}`);
+    } catch {
+      const list = loadDemoBoardMandates();
+      return list.find(m => m.id === id) || null;
+    }
+  },
+
+  async createMandate(input: BoardMandateMutationDTO): Promise<BoardMandateDTO> {
+    if (demoMode) return createDemoBoardMandate(input);
+    try {
+      return await request<BoardMandateDTO>('/board-advisory-nexus/mandates', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return createDemoBoardMandate(input);
+    }
+  },
+
+  async updateMandate(id: string, input: Partial<BoardMandateMutationDTO>): Promise<BoardMandateDTO | null> {
+    if (demoMode) return updateDemoBoardMandate(id, input);
+    try {
+      return await request<BoardMandateDTO>(`/board-advisory-nexus/mandates/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return updateDemoBoardMandate(id, input);
+    }
+  },
+
+  async deleteMandate(id: string): Promise<boolean> {
+    if (demoMode) return deleteDemoBoardMandate(id);
+    try {
+      const res = await request<{ success: boolean }>(`/board-advisory-nexus/mandates/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return Boolean(res?.success);
+    } catch {
+      return deleteDemoBoardMandate(id);
+    }
+  },
+
+  async getDilutionModel(
+    mandateId: string,
+    stage: CompanyGrowthStage = 'seed_stage',
+    impact: AdvisoryImpactLevel = 'standard',
+    futureRounds: number = 2,
+    dilution: number = 0.2
+  ): Promise<FastEquityDilutionModelDTO | null> {
+    if (demoMode) return computeDemoDilutionModel(mandateId, stage, impact, futureRounds, dilution);
+    try {
+      const qs = `?stage=${stage}&impact=${impact}&rounds=${futureRounds}&dilution=${dilution}`;
+      return await request<FastEquityDilutionModelDTO>(`/board-advisory-nexus/mandates/${encodeURIComponent(mandateId)}/dilution-model${qs}`);
+    } catch {
+      return computeDemoDilutionModel(mandateId, stage, impact, futureRounds, dilution);
+    }
+  },
+
+  async checkConflict(mandateId: string, payload: any): Promise<ConflictOfInterestCheckDTO | null> {
+    if (demoMode) return computeDemoConflictCheck(mandateId, payload);
+    try {
+      return await request<ConflictOfInterestCheckDTO>(`/board-advisory-nexus/mandates/${encodeURIComponent(mandateId)}/conflict-check`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+    } catch {
+      return computeDemoConflictCheck(mandateId, payload);
+    }
+  },
+
+  async generateWaiverLetter(mandateId: string, payload: any): Promise<OutsideBoardWaiverLetterDTO | null> {
+    if (demoMode) return generateDemoWaiverLetter(mandateId, payload);
+    try {
+      return await request<OutsideBoardWaiverLetterDTO>(`/board-advisory-nexus/mandates/${encodeURIComponent(mandateId)}/waiver-letter`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+    } catch {
+      return generateDemoWaiverLetter(mandateId, payload);
+    }
+  },
+
+  async getGovernanceMatrix(): Promise<GovernanceMatrixDTO> {
+    if (demoMode) return loadDemoGovernanceMatrix();
+    try {
+      return await request<GovernanceMatrixDTO>('/board-advisory-nexus/governance-matrix');
+    } catch {
+      return loadDemoGovernanceMatrix();
+    }
+  },
+
+  async updateGovernanceMatrix(input: GovernanceMatrixMutationDTO): Promise<GovernanceMatrixDTO> {
+    if (demoMode) return updateDemoGovernanceMatrix(input);
+    try {
+      return await request<GovernanceMatrixDTO>('/board-advisory-nexus/governance-matrix', {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return updateDemoGovernanceMatrix(input);
+    }
+  },
+
+  async getBoardDossier(): Promise<BoardDossierDTO> {
+    if (demoMode) return loadDemoBoardDossier();
+    try {
+      return await request<BoardDossierDTO>('/board-advisory-nexus/dossier');
+    } catch {
+      return loadDemoBoardDossier();
     }
   }
 };
