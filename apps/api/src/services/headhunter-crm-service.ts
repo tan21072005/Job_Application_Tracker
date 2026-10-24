@@ -137,7 +137,20 @@ export class HeadhunterCrmService {
 
     const nowIso = new Date().toISOString();
 
-    if (existingId) {
+    let targetId = existingId;
+    if (!targetId) {
+      const match = await this.pool.query(
+        `SELECT id FROM headhunter_leads
+         WHERE user_id = $1 AND LOWER(TRIM(name)) = LOWER(TRIM($2)) AND LOWER(TRIM(agency)) = LOWER(TRIM($3))
+         LIMIT 1`,
+        [userId, input.name, input.agency]
+      );
+      if (match.rows.length > 0) {
+        targetId = match.rows[0].id;
+      }
+    }
+
+    if (targetId) {
       const res = await this.pool.query(
         `UPDATE headhunter_leads
          SET name = $1, agency = $2, agency_tier = $3, role = $4, email = $5, phone = $6,
@@ -159,7 +172,7 @@ export class HeadhunterCrmService {
           input.notes || null,
           input.lastContactedAt ? new Date(input.lastContactedAt).toISOString() : null,
           nowIso,
-          existingId,
+          targetId,
           userId
         ]
       );

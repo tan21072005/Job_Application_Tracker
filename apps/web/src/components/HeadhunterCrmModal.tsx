@@ -115,7 +115,15 @@ export function HeadhunterCrmModal({
       setLeads(leadsData);
       setMandates(mandatesData);
     } catch {
-      notify?.('Không thể tải danh bạ headhunter.', true);
+      try {
+        const demoLeads = await headhunterCrmRepository.listLeads();
+        const demoMandates = await headhunterCrmRepository.listMandates();
+        setLeads(demoLeads);
+        setMandates(demoMandates);
+      } catch {
+        setLeads([]);
+        setMandates([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -268,77 +276,65 @@ export function HeadhunterCrmModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto headhunter-crm-modal-overlay">
-      <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden headhunter-crm-modal">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-amber-50 via-orange-50 to-indigo-50">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-amber-600 text-white rounded-xl shadow-md">
+    <div className="hh-modal-overlay headhunter-crm-modal-overlay">
+      <div className="hh-modal headhunter-crm-modal">
+        <div className="hh-header">
+          <div className="hh-header-left">
+            <div className="hh-icon-box">
               <UserCheck className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-gray-900">
+              <div className="hh-title-row">
+                <h2 className="hh-title">
                   Executive Headhunter CRM & Quản lý Mandate
                 </h2>
-                <span className="text-xs px-2.5 py-0.5 font-semibold bg-amber-100 text-amber-800 rounded-full border border-amber-200">
+                <span className="hh-title-badge">
                   Recruiter Intelligence & Anti-Lockout
                 </span>
               </div>
-              <p className="text-xs text-gray-600 mt-0.5">
+              <p className="hh-subtitle">
                 Quản lý đối tác săn đầu người, bóc tách InMail tự động, phòng ngừa Double-Submission và phản hồi chiến lược
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors headhunter-modal-close-btn"
+            className="hh-close-btn headhunter-modal-close-btn"
             title="Đóng"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex border-b border-gray-200 px-6 bg-white">
+        <div className="hh-nav-tabs">
           <button
             onClick={() => setActiveTab('directory')}
-            className={`py-3 px-4 font-semibold text-sm border-b-2 flex items-center gap-2 transition ${
-              activeTab === 'directory'
-                ? 'border-amber-600 text-amber-700'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
-            }`}
+            className={`hh-tab-btn ${activeTab === 'directory' ? 'active' : ''}`}
           >
             <UserCheck className="w-4 h-4" />
             Danh bạ Headhunter
-            <span className="ml-1.5 px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded-full font-bold">
+            <span className="hh-tab-badge">
               {leads.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab('ingest')}
-            className={`py-3 px-4 font-semibold text-sm border-b-2 flex items-center gap-2 transition ${
-              activeTab === 'ingest'
-                ? 'border-amber-600 text-amber-700'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
-            }`}
+            className={`hh-tab-btn ${activeTab === 'ingest' ? 'active' : ''}`}
           >
             <Sparkles className="w-4 h-4" />
             Bóc tách Pitch & Soạn thư (Inbound Studio)
           </button>
           <button
             onClick={() => setActiveTab('mandates')}
-            className={`py-3 px-4 font-semibold text-sm border-b-2 flex items-center gap-2 transition ${
-              activeTab === 'mandates'
-                ? 'border-amber-600 text-amber-700'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
-            }`}
+            className={`hh-tab-btn ${activeTab === 'mandates' ? 'active' : ''}`}
           >
             <Briefcase className="w-4 h-4" />
             Mandate Guard & Chống Xung Đột
-            <span className="ml-1.5 px-2 py-0.5 text-xs bg-indigo-100 text-indigo-800 rounded-full font-bold">
+            <span className="hh-tab-badge">
               {mandates.length}
             </span>
             {duplicateMandates.length > 0 && (
-              <span className="px-1.5 py-0.5 text-xs bg-rose-100 text-rose-800 rounded-full font-bold flex items-center gap-1">
+              <span className="hh-tab-badge-conflict">
                 <AlertTriangle className="w-3 h-3" />
                 Xung đột
               </span>
@@ -346,26 +342,26 @@ export function HeadhunterCrmModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div className="hh-body">
           {activeTab === 'directory' && (
-            <div className="space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <div className="flex items-center gap-2 flex-1 min-w-[280px]">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="hh-toolbar">
+                <div className="hh-search-box">
                   <Search className="w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Tìm headhunter theo tên, agency, chuyên môn..."
-                    className="w-full text-sm bg-transparent outline-none text-gray-800 font-medium headhunter-search-input"
+                    className="hh-search-input headhunter-search-input"
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="hh-actions-row">
                   <select
                     value={tierFilter}
                     onChange={e => setTierFilter(e.target.value)}
-                    className="text-xs px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 font-medium outline-none"
+                    className="hh-select"
                   >
                     <option value="all">Tất cả mối quan hệ</option>
                     <option value="trusted_advisor">Đối tác chiến lược (Trusted)</option>
@@ -377,7 +373,7 @@ export function HeadhunterCrmModal({
 
                   <button
                     onClick={() => setShowAddLead(!showAddLead)}
-                    className="px-3.5 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition shadow-sm flex items-center gap-1.5"
+                    className="hh-btn-primary"
                   >
                     <Plus className="w-4 h-4" />
                     Thêm Headhunter
@@ -386,64 +382,64 @@ export function HeadhunterCrmModal({
               </div>
 
               {showAddLead && (
-                <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-md space-y-4">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                <div className="hh-add-form">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <UserCheck className="w-4 h-4 text-amber-600" />
                       Thêm Chuyên Viên Săn Đầu Người (Recruiter) Mới
                     </h4>
-                    <button onClick={() => setShowAddLead(false)} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={() => setShowAddLead(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">Họ và tên</label>
+                  <div className="hh-form-grid">
+                    <div className="hh-form-field">
+                      <label className="hh-form-label">Họ và tên</label>
                       <input
                         type="text"
                         value={newLeadName}
                         onChange={e => setNewLeadName(e.target.value)}
                         placeholder="VD: Mai Hoàng"
-                        className="w-full text-xs p-2 border border-gray-300 rounded-lg outline-none"
+                        className="hh-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">Agency / Công ty</label>
+                    <div className="hh-form-field">
+                      <label className="hh-form-label">Agency / Công ty</label>
                       <input
                         type="text"
                         value={newLeadAgency}
                         onChange={e => setNewLeadAgency(e.target.value)}
                         placeholder="VD: Robert Walters"
-                        className="w-full text-xs p-2 border border-gray-300 rounded-lg outline-none"
+                        className="hh-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">Chức danh</label>
+                    <div className="hh-form-field">
+                      <label className="hh-form-label">Chức danh</label>
                       <input
                         type="text"
                         value={newLeadRole}
                         onChange={e => setNewLeadRole(e.target.value)}
                         placeholder="VD: Director of Tech Practice"
-                        className="w-full text-xs p-2 border border-gray-300 rounded-lg outline-none"
+                        className="hh-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">Email liên hệ</label>
+                    <div className="hh-form-field">
+                      <label className="hh-form-label">Email liên hệ</label>
                       <input
                         type="email"
                         value={newLeadEmail}
                         onChange={e => setNewLeadEmail(e.target.value)}
                         placeholder="VD: recruiter@agency.com"
-                        className="w-full text-xs p-2 border border-gray-300 rounded-lg outline-none"
+                        className="hh-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">Mức độ tin cậy</label>
+                    <div className="hh-form-field">
+                      <label className="hh-form-label">Mức độ tin cậy</label>
                       <select
                         value={newLeadTier}
                         onChange={e => setNewLeadTier(e.target.value as RecruiterRelationshipTier)}
-                        className="w-full text-xs p-2 border border-gray-300 rounded-lg outline-none bg-white"
+                        className="hh-select"
                       >
                         <option value="trusted_advisor">Đối tác chiến lược (Trusted)</option>
                         <option value="preferred_partner">Ưu tiên hợp tác (Preferred)</option>
@@ -452,10 +448,11 @@ export function HeadhunterCrmModal({
                         <option value="blacklisted">Cảnh báo rủi ro (Blacklist)</option>
                       </select>
                     </div>
-                    <div className="flex items-end">
+                    <div className="hh-form-field" style={{ justifyContent: 'flex-end' }}>
                       <button
                         onClick={handleCreateLead}
-                        className="w-full py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition shadow-sm"
+                        className="hh-btn-primary"
+                        style={{ width: '100%', justifyContent: 'center' }}
                       >
                         Lưu vào Danh bạ
                       </button>
@@ -465,56 +462,56 @@ export function HeadhunterCrmModal({
               )}
 
               {loading ? (
-                <div className="py-12 text-center text-gray-500 font-medium">Đang tải danh bạ...</div>
+                <div style={{ padding: '40px 0', textAlign: 'center', color: '#64748b' }}>Đang tải danh bạ...</div>
               ) : filteredLeads.length === 0 ? (
-                <div className="py-12 text-center text-gray-500 font-medium">
+                <div style={{ padding: '40px 0', textAlign: 'center', color: '#64748b' }}>
                   Không tìm thấy headhunter nào phù hợp với bộ lọc.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="hh-grid">
                   {filteredLeads.map(lead => {
                     const tierInfo = RELATIONSHIP_LABELS[lead.tier];
                     return (
                       <div
                         key={lead.id}
-                        className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between recruiter-card"
+                        className="hh-card recruiter-card"
                       >
                         <div>
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="text-base font-bold text-gray-900">{lead.name}</h4>
-                                <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-gray-100 text-gray-700">
+                          <div className="hh-card-header">
+                            <div className="hh-card-title-group">
+                              <div className="hh-card-name-row">
+                                <h4 className="hh-card-name">{lead.name}</h4>
+                                <span className="hh-card-agency">
                                   {lead.agency}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-500 mt-0.5">{lead.role}</p>
+                              <p className="hh-card-role">{lead.role}</p>
                             </div>
                             <span
-                              className="text-xs px-2.5 py-0.5 rounded-full font-bold border"
+                              className="hh-tier-badge"
                               style={{ color: tierInfo.color, backgroundColor: tierInfo.bg, borderColor: tierInfo.color + '40' }}
                             >
                               {tierInfo.label}
                             </span>
                           </div>
 
-                          <div className="my-3 p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
-                            <div>
-                              <span className="text-xs text-gray-500 block">Chỉ số Quan hệ & Tương tác</span>
-                              <span className="text-xs font-bold text-gray-800">
+                          <div className="hh-health-box">
+                            <div className="hh-health-desc">
+                              <span className="hh-health-label">Chỉ số Quan hệ & Tương tác</span>
+                              <span className="hh-health-sug">
                                 {lead.nextActionSuggestion}
                               </span>
                             </div>
-                            <div className="text-right">
-                              <span className="text-lg font-black text-amber-700">{lead.healthScore}</span>
-                              <span className="text-xs text-gray-400">/100</span>
+                            <div className="hh-health-score-group">
+                              <span className="hh-health-score">{lead.healthScore}</span>
+                              <span className="hh-health-max">/100</span>
                             </div>
                           </div>
 
                           {lead.specialties && lead.specialties.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mb-3">
+                            <div className="hh-specialties-row">
                               {lead.specialties.map((s, idx) => (
-                                <span key={idx} className="text-xs px-2 py-0.5 bg-amber-50 text-amber-800 rounded font-medium">
+                                <span key={idx} className="hh-specialty-tag">
                                   {s}
                                 </span>
                               ))}
@@ -522,34 +519,34 @@ export function HeadhunterCrmModal({
                           )}
 
                           {lead.notes && (
-                            <p className="text-xs text-gray-600 line-clamp-2 italic mb-3">
+                            <p className="hh-card-notes">
                               "{lead.notes}"
                             </p>
                           )}
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                          <div className="flex items-center gap-3">
-                            <span>Mandates: <strong className="text-gray-800">{lead.mandatesCount}</strong></span>
-                            <div className="flex items-center gap-0.5 text-amber-500">
+                        <div className="hh-card-footer">
+                          <div className="hh-footer-left">
+                            <span>Mandates: <strong style={{ color: '#0f172a' }}>{lead.mandatesCount}</strong></span>
+                            <div className="hh-stars">
                               {[...Array(lead.rating || 4)].map((_, i) => (
                                 <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
                               ))}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="hh-footer-right">
                             <button
                               onClick={() => {
-                                setPitchText(`Chào bạn, tôi là ${lead.name} từ ${lead.agency}. Bên mình đang có cơ hội Tech Lead...`);
+                                setPitchText(`Chào bạn, tôi là ${lead.name} từ ${lead.agency}. Bên mình đang có cơ hội Tech Leader...`);
                                 setActiveTab('ingest');
                               }}
-                              className="px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50 rounded transition"
+                              className="hh-btn-ghost"
                             >
                               Soạn thư
                             </button>
                             <button
                               onClick={() => handleDeleteLead(lead.id, lead.name)}
-                              className="p-1 text-gray-400 hover:text-rose-600 rounded transition"
+                              className="hh-btn-icon-del"
                               title="Xóa headhunter"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -565,53 +562,49 @@ export function HeadhunterCrmModal({
           )}
 
           {activeTab === 'ingest' && (
-            <div className="space-y-6">
-              <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="hh-inbound-card">
+                <div className="hh-inbound-top">
                   <div>
-                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Sparkles className="w-4 h-4 text-amber-600" />
                       Bóc Tách Tin Nhắn Săn Đầu Người (Inbound Pitch Ingestion)
                     </h3>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>
                       Dán tin nhắn từ LinkedIn InMail, Email hoặc Zalo để AI nhận diện mức lương, độc quyền và tín hiệu cảnh báo
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Gợi ý mẫu:</span>
+                  <div className="hh-presets-row">
+                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>Gợi ý mẫu:</span>
                     <button
                       onClick={() => setPitchText(SAMPLE_PITCH_PRESETS.robert_walters_retained)}
-                      className="text-xs px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-medium transition"
+                      className="hh-chip-btn"
                     >
                       Robert Walters Retained
                     </button>
                     <button
                       onClick={() => setPitchText(SAMPLE_PITCH_PRESETS.michael_page_head)}
-                      className="text-xs px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-medium transition"
+                      className="hh-chip-btn"
                     >
                       Michael Page VN
                     </button>
                     <button
                       onClick={() => setPitchText(SAMPLE_PITCH_PRESETS.navigos_contingency)}
-                      className="text-xs px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-medium transition"
+                      className="hh-chip-btn"
                     >
                       Navigos Contingency
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pb-1">
-                  <span className="text-xs font-semibold text-gray-700">Kênh tiếp cận:</span>
+                <div className="hh-channel-row">
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Kênh tiếp cận:</span>
                   {(['linkedin_inmail', 'email', 'zalo', 'telegram'] as const).map(ch => (
                     <button
                       key={ch}
                       onClick={() => setPitchChannel(ch)}
-                      className={`text-xs px-2.5 py-1 rounded-md font-medium capitalize transition ${
-                        pitchChannel === ch
-                          ? 'bg-amber-600 text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
+                      className={`hh-channel-btn ${pitchChannel === ch ? 'active' : ''}`}
                     >
                       {ch.replace('_', ' ')}
                     </button>
@@ -623,17 +616,17 @@ export function HeadhunterCrmModal({
                   value={pitchText}
                   onChange={e => setPitchText(e.target.value)}
                   placeholder="Dán toàn bộ nội dung tin nhắn hoặc email của headhunter vào đây..."
-                  className="w-full p-3.5 text-xs bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-mono text-gray-800 leading-relaxed pitch-textarea"
+                  className="hh-textarea pitch-textarea"
                 />
 
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">
+                <div className="hh-inbound-action-row">
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
                     Hệ thống tự động phát hiện dải lương, công ty stealth và rủi ro tranh chấp hồ sơ
                   </span>
                   <button
                     onClick={handleParsePitch}
                     disabled={parsing}
-                    className="px-5 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-sm transition flex items-center gap-2 headhunter-parse-btn disabled:opacity-50"
+                    className="hh-btn-primary headhunter-parse-btn"
                   >
                     <Sparkles className="w-4 h-4" />
                     {parsing ? 'Đang phân tích...' : 'Phân tích Pitch bằng AI'}
@@ -642,27 +635,30 @@ export function HeadhunterCrmModal({
               </div>
 
               {parsedPitch && (
-                <div className="space-y-6">
-                  <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  <div className="hh-parsed-card">
+                    <div className="hh-parsed-header">
                       <div>
-                        <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">
+                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
                           Kết Quả Trích Xuất Thông Minh
                         </span>
-                        <h3 className="text-base font-extrabold text-gray-900 mt-0.5">
+                        <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', margin: '2px 0 0' }}>
                           {parsedPitch.targetRole} @ {parsedPitch.targetCompany}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold px-3 py-1 bg-amber-100 text-amber-800 rounded-full">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: '#fef3c7', color: '#92400e' }}>
                           Độ tin cậy: {parsedPitch.confidenceScore}%
                         </span>
                         <span
-                          className="text-xs font-bold px-3 py-1 rounded-full border"
                           style={{
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            padding: '3px 10px',
+                            borderRadius: '12px',
+                            border: `1px solid ${EXCLUSIVITY_LABELS[parsedPitch.mandateExclusivity].color}40`,
                             color: EXCLUSIVITY_LABELS[parsedPitch.mandateExclusivity].color,
-                            borderColor: EXCLUSIVITY_LABELS[parsedPitch.mandateExclusivity].color + '40',
-                            backgroundColor: EXCLUSIVITY_LABELS[parsedPitch.mandateExclusivity].color + '10'
+                            backgroundColor: `${EXCLUSIVITY_LABELS[parsedPitch.mandateExclusivity].color}15`
                           }}
                         >
                           {EXCLUSIVITY_LABELS[parsedPitch.mandateExclusivity].label}
@@ -670,49 +666,49 @@ export function HeadhunterCrmModal({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <span className="text-xs text-gray-500 block mb-1">Recruiter & Agency:</span>
-                        <strong className="text-sm text-gray-900 block">
+                    <div className="hh-parsed-grid">
+                      <div className="hh-parsed-stat-box">
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>Recruiter & Agency:</span>
+                        <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>
                           {parsedPitch.recruiterName || 'Chưa rõ tên'}
                         </strong>
-                        <span className="text-xs text-amber-700 font-semibold">
+                        <span style={{ fontSize: '11.5px', color: '#b45309', fontWeight: 600 }}>
                           {parsedPitch.agencyName} ({AGENCY_TIER_LABELS[parsedPitch.agencyTier]})
                         </span>
                       </div>
 
-                      <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <span className="text-xs text-gray-500 block mb-1">Dải Đãi Ngộ Dự Kiến:</span>
-                        <strong className="text-sm text-emerald-700 block flex items-center gap-1">
+                      <div className="hh-parsed-stat-box">
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>Dải Đãi Ngộ Dự Kiến:</span>
+                        <strong style={{ fontSize: '13.5px', color: '#047857', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <DollarSign className="w-4 h-4" />
                           {parsedPitch.salaryClue || 'Không công khai (Cần hỏi sàn)'}
                         </strong>
-                        <span className="text-xs text-gray-500">
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>
                           {parsedPitch.currency ? `Đơn vị: ${parsedPitch.currency}` : 'Chưa rõ đơn vị'}
                         </span>
                       </div>
 
-                      <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <span className="text-xs text-gray-500 block mb-1">Địa điểm & Chế độ:</span>
-                        <strong className="text-sm text-gray-900 block">
+                      <div className="hh-parsed-stat-box">
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>Địa điểm & Chế độ:</span>
+                        <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>
                           {parsedPitch.location || 'TP. Hồ Chí Minh / Hybrid'}
                         </strong>
-                        <span className="text-xs text-gray-500">
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>
                           {parsedPitch.isConfidentialCompany ? 'Doanh nghiệp bảo mật' : 'Doanh nghiệp công khai'}
                         </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                    <div className="hh-flags-grid">
                       {parsedPitch.greenFlags.length > 0 && (
-                        <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-100">
-                          <div className="text-xs font-bold text-emerald-900 mb-1.5 flex items-center gap-1.5">
+                        <div className="hh-flags-box-green">
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#14532d', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                             Điểm sáng & Tín hiệu tích cực (Green Flags):
                           </div>
-                          <ul className="space-y-1 pl-4">
+                          <ul className="hh-flags-list">
                             {parsedPitch.greenFlags.map((flag, idx) => (
-                              <li key={idx} className="text-xs text-emerald-800 list-disc font-medium">
+                              <li key={idx} className="hh-flags-item-green">
                                 {flag}
                               </li>
                             ))}
@@ -721,14 +717,14 @@ export function HeadhunterCrmModal({
                       )}
 
                       {parsedPitch.redFlags.length > 0 && (
-                        <div className="bg-rose-50/70 p-3.5 rounded-xl border border-rose-100">
-                          <div className="text-xs font-bold text-rose-900 mb-1.5 flex items-center gap-1.5">
+                        <div className="hh-flags-box-red">
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#881337', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <AlertTriangle className="w-4 h-4 text-rose-600" />
                             Dấu hiệu cảnh báo nguy cơ (Red Flags):
                           </div>
-                          <ul className="space-y-1 pl-4">
+                          <ul className="hh-flags-list">
                             {parsedPitch.redFlags.map((flag, idx) => (
-                              <li key={idx} className="text-xs text-rose-800 list-disc font-medium">
+                              <li key={idx} className="hh-flags-item-red">
                                 {flag}
                               </li>
                             ))}
@@ -739,28 +735,24 @@ export function HeadhunterCrmModal({
                   </div>
 
                   {replyDraft && (
-                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                    <div className="hh-reply-card">
+                      <div className="hh-reply-header">
                         <div>
-                          <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                          <h4 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Send className="w-4 h-4 text-amber-600" />
                             Soạn Thảo Phản Hồi Chiến Lược (1-Click Strategic Reply)
                           </h4>
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>
                             {replyDraft.strategyNotes}
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="hh-intents-row">
                           {(['explore_with_criteria', 'salary_first', 'exclusive_mandate_check', 'polite_pass'] as RecruiterReplyIntent[]).map(intent => (
                             <button
                               key={intent}
                               onClick={() => handleIntentChange(intent)}
-                              className={`text-xs px-3 py-1.5 rounded-lg font-bold transition intent-btn ${
-                                replyIntent === intent
-                                  ? 'bg-amber-600 text-white shadow-sm'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
+                              className={`hh-intent-btn intent-btn ${replyIntent === intent ? 'active' : ''}`}
                             >
                               {intent === 'explore_with_criteria' && 'Khảo sát kèm tiêu chí'}
                               {intent === 'salary_first' && 'Hỏi sàn lương'}
@@ -771,31 +763,33 @@ export function HeadhunterCrmModal({
                         </div>
                       </div>
 
-                      <div className="space-y-2">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         <div>
-                          <label className="block text-xs font-semibold text-gray-600 mb-1">Tiêu đề thư:</label>
+                          <label className="hh-form-label">Tiêu đề thư:</label>
                           <input
                             type="text"
                             value={replyDraft.subject}
                             onChange={e => setReplyDraft({ ...replyDraft, subject: e.target.value })}
-                            className="w-full p-2 text-xs font-semibold bg-gray-50 border border-gray-200 rounded-lg outline-none text-gray-900"
+                            className="hh-input"
+                            style={{ width: '100%', boxSizing: 'border-box' }}
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-gray-600 mb-1">Nội dung phản hồi:</label>
+                          <label className="hh-form-label">Nội dung phản hồi:</label>
                           <textarea
                             rows={8}
                             value={replyDraft.body}
                             onChange={e => setReplyDraft({ ...replyDraft, body: e.target.value })}
-                            className="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl outline-none font-sans text-gray-800 leading-relaxed"
+                            className="hh-textarea"
                           />
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-2">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px' }}>
                         <button
                           onClick={handleSaveParsedLeadAndMandate}
-                          className="px-4 py-2 text-xs font-bold bg-gray-900 hover:bg-black text-white rounded-xl shadow-sm transition flex items-center gap-1.5 save-lead-btn"
+                          className="hh-btn-primary save-lead-btn"
+                          style={{ background: '#0f172a' }}
                         >
                           <Plus className="w-4 h-4" />
                           Lưu vào Danh bạ & Tạo Mandate
@@ -803,7 +797,7 @@ export function HeadhunterCrmModal({
 
                         <button
                           onClick={handleCopyReply}
-                          className="px-4 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-sm transition flex items-center gap-1.5 copy-reply-btn"
+                          className="hh-btn-primary copy-reply-btn"
                         >
                           {copiedReply ? (
                             <>
@@ -826,15 +820,15 @@ export function HeadhunterCrmModal({
           )}
 
           {activeTab === 'mandates' && (
-            <div className="space-y-5">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {duplicateMandates.length > 0 && (
-                <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-start gap-3">
-                  <AlertOctagon className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div className="hh-conflict-banner">
+                  <AlertOctagon className="w-5 h-5 text-rose-600 shrink-0" style={{ marginTop: '2px' }} />
                   <div>
-                    <h4 className="text-xs font-bold text-rose-900">
+                    <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#881337', margin: 0 }}>
                       Cảnh Báo Xung Đột Quyền Đại Diện (Double-Submission Risk)!
                     </h4>
-                    <p className="text-xs text-rose-800 mt-1 leading-relaxed">
+                    <p style={{ fontSize: '12px', color: '#9f1239', margin: '4px 0 0', lineHeight: 1.5 }}>
                       Phát hiện nhiều hơn một headhunter cùng tiếp cận cho vị trí tại cùng một khách hàng doanh nghiệp ({duplicateMandates.map(m => m.clientCompany).join(', ')}). 
                       Vui lòng yêu cầu văn bản xác nhận quyền đại diện độc quyền trước khi cho phép nộp CV để tránh bị hệ thống ATS của doanh nghiệp khóa hồ sơ 6-12 tháng.
                     </p>
@@ -842,39 +836,42 @@ export function HeadhunterCrmModal({
                 </div>
               )}
 
-              <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div style={{ background: '#ffffff', padding: '20px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
                   <div>
-                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Briefcase className="w-4 h-4 text-indigo-600" />
                       Danh Sách Mandate Tuyển Dụng Đang Theo Dõi
                     </h3>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>
                       Theo dõi nguồn tiếp cận, hợp đồng độc quyền và phòng tránh nộp trùng hồ sơ
                     </p>
                   </div>
                 </div>
 
                 {mandates.length === 0 ? (
-                  <div className="py-8 text-center text-gray-500 text-xs">
+                  <div style={{ padding: '32px 0', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>
                     Chưa có mandate nào được ghi nhận. Hãy bóc tách InMail tại tab Inbound Studio để tạo mandate mới.
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {mandates.map(m => (
                       <div
                         key={m.id}
-                        className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-wrap items-center justify-between gap-4 mandate-card"
+                        className="hh-mandate-card mandate-card"
                       >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-bold text-gray-900">{m.roleTitle}</h4>
-                            <span className="text-xs px-2 py-0.5 bg-white border border-gray-200 rounded font-semibold text-gray-700">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <h4 style={{ fontSize: '13.5px', fontWeight: 800, color: '#0f172a', margin: 0 }}>{m.roleTitle}</h4>
+                            <span style={{ fontSize: '11.5px', padding: '2px 7px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontWeight: 600, color: '#334155' }}>
                               {m.clientCompany}
                             </span>
                             <span
-                              className="text-xs px-2 py-0.5 rounded-full font-bold"
                               style={{
+                                fontSize: '11px',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontWeight: 700,
                                 color: EXCLUSIVITY_LABELS[m.exclusivity].color,
                                 backgroundColor: EXCLUSIVITY_LABELS[m.exclusivity].color + '15'
                               }}
@@ -882,21 +879,21 @@ export function HeadhunterCrmModal({
                               {EXCLUSIVITY_LABELS[m.exclusivity].label}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500">
-                            Đại diện bởi: <strong className="text-gray-800">{m.recruiterName}</strong> ({m.agencyName}) · Tiếp cận: {new Date(m.pitchedAt).toLocaleDateString('vi-VN')}
+                          <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                            Đại diện bởi: <strong style={{ color: '#1e293b' }}>{m.recruiterName}</strong> ({m.agencyName}) · Tiếp cận: {new Date(m.pitchedAt).toLocaleDateString('vi-VN')}
                           </p>
                           {m.salaryRange && (
-                            <span className="text-xs font-semibold text-emerald-700">
+                            <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#047857' }}>
                               Ngân sách: {m.salaryRange}
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div>
                           <select
                             value={m.status}
                             onChange={e => handleUpdateMandateStatus(m.id, e.target.value as MandateStatus)}
-                            className="text-xs px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-800 font-semibold outline-none"
+                            className="hh-select"
                           >
                             <option value="pitched">Mới tiếp cận (Pitched)</option>
                             <option value="screening">Đang khảo sát (Screening)</option>
@@ -916,13 +913,13 @@ export function HeadhunterCrmModal({
           )}
         </div>
 
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">
-          <div className="text-xs text-gray-500">
+        <div className="hh-modal-footer">
+          <div style={{ fontSize: '12px', color: '#64748b' }}>
             Hệ thống CRM cá nhân bảo vệ quyền lợi và vị thế thương lượng của ứng viên cấp cao
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition"
+            className="hh-btn-secondary"
           >
             Đóng
           </button>

@@ -4166,7 +4166,7 @@ export const headhunterCrmRepository = {
           l.name.toLowerCase().includes(q) ||
           l.agency.toLowerCase().includes(q) ||
           l.role.toLowerCase().includes(q) ||
-          l.specialties.some(s => s.toLowerCase().includes(q))
+          (l.specialties || []).some(s => s.toLowerCase().includes(q))
         );
       }
       return leads.map(l => {
@@ -4185,7 +4185,36 @@ export const headhunterCrmRepository = {
     if (filters?.tier) params.set('tier', filters.tier);
     if (filters?.query) params.set('q', filters.query);
     const qs = params.toString();
-    return request<RecruiterLeadDTO[]>(`/headhunters${qs ? `?${qs}` : ''}`);
+    try {
+      return await request<RecruiterLeadDTO[]>(`/headhunters${qs ? `?${qs}` : ''}`);
+    } catch {
+      let leads = getDemoHeadhunterLeads();
+      if (filters?.tier) {
+        leads = leads.filter(l => l.tier === filters.tier);
+      }
+      if (filters?.agency && filters.agency.trim()) {
+        const ag = filters.agency.toLowerCase().trim();
+        leads = leads.filter(l => l.agency.toLowerCase().includes(ag));
+      }
+      if (filters?.query && filters.query.trim()) {
+        const q = filters.query.toLowerCase().trim();
+        leads = leads.filter(l =>
+          l.name.toLowerCase().includes(q) ||
+          l.agency.toLowerCase().includes(q) ||
+          l.role.toLowerCase().includes(q) ||
+          (l.specialties || []).some(s => s.toLowerCase().includes(q))
+        );
+      }
+      return leads.map(l => {
+        const health = computeRecruiterRelationshipHealth(l);
+        return {
+          ...l,
+          healthScore: health.healthScore,
+          healthStatus: health.healthStatus,
+          nextActionSuggestion: health.nextActionSuggestion
+        };
+      });
+    }
   },
 
   async getLead(id: string): Promise<RecruiterLeadDTO | null> {
@@ -4217,32 +4246,35 @@ export const headhunterCrmRepository = {
         lastContactedAt: input.lastContactedAt
       });
 
-      if (existingId) {
-        const idx = leads.findIndex(l => l.id === existingId);
-        if (idx !== -1) {
-          const updated: RecruiterLeadDTO = {
-            ...leads[idx],
-            name: input.name,
-            agency: input.agency,
-            agencyTier: input.agencyTier || leads[idx].agencyTier,
-            role: input.role || leads[idx].role,
-            email: input.email || leads[idx].email,
-            phone: input.phone || leads[idx].phone,
-            linkedinUrl: input.linkedinUrl || leads[idx].linkedinUrl,
-            tier,
-            rating,
-            specialties: input.specialties || leads[idx].specialties,
-            notes: input.notes || leads[idx].notes,
-            lastContactedAt: input.lastContactedAt || leads[idx].lastContactedAt,
-            healthScore: health.healthScore,
-            healthStatus: health.healthStatus,
-            nextActionSuggestion: health.nextActionSuggestion,
-            updatedAt: nowIso
-          };
-          leads[idx] = updated;
-          saveDemoHeadhunterLeads(leads);
-          return updated;
-        }
+      const matchedIdx = existingId
+        ? leads.findIndex(l => l.id === existingId)
+        : leads.findIndex(l => l.name.trim().toLowerCase() === input.name.trim().toLowerCase() && l.agency.trim().toLowerCase() === input.agency.trim().toLowerCase());
+
+      if (matchedIdx !== -1) {
+        const existing = leads[matchedIdx];
+        const mergedSpecialties = Array.from(new Set([...(existing.specialties || []), ...(input.specialties || [])]));
+        const updated: RecruiterLeadDTO = {
+          ...existing,
+          name: input.name,
+          agency: input.agency,
+          agencyTier: input.agencyTier || existing.agencyTier,
+          role: input.role || existing.role,
+          email: input.email || existing.email,
+          phone: input.phone || existing.phone,
+          linkedinUrl: input.linkedinUrl || existing.linkedinUrl,
+          tier,
+          rating,
+          specialties: mergedSpecialties,
+          notes: input.notes || existing.notes,
+          lastContactedAt: input.lastContactedAt || existing.lastContactedAt,
+          healthScore: health.healthScore,
+          healthStatus: health.healthStatus,
+          nextActionSuggestion: health.nextActionSuggestion,
+          updatedAt: nowIso
+        };
+        leads[matchedIdx] = updated;
+        saveDemoHeadhunterLeads(leads);
+        return updated;
       }
 
       const newLead: RecruiterLeadDTO = {
@@ -4297,7 +4329,15 @@ export const headhunterCrmRepository = {
       return mandates;
     }
     const query = leadId ? `?leadId=${encodeURIComponent(leadId)}` : '';
-    return request<HeadhunterMandateDTO[]>(`/headhunters/mandates${query}`);
+    try {
+      return await request<HeadhunterMandateDTO[]>(`/headhunters/mandates${query}`);
+    } catch {
+      let mandates = getDemoHeadhunterMandates();
+      if (leadId) {
+        mandates = mandates.filter(m => m.leadId === leadId);
+      }
+      return mandates;
+    }
   },
 
   async createMandate(input: HeadhunterMandateMutationInputDTO): Promise<HeadhunterMandateDTO> {
@@ -4365,10 +4405,14 @@ export const headhunterCrmRepository = {
     if (demoMode) {
       return parseInboundRecruiterPitch(input.rawText, input.channel);
     }
-    return request<InboundPitchParseResultDTO>('/headhunters/parse-pitch', {
-      method: 'POST',
-      body: JSON.stringify(input)
-    });
+    try {
+      return await request<InboundPitchParseResultDTO>('/headhunters/parse-pitch', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return parseInboundRecruiterPitch(input.rawText, input.channel);
+    }
   },
 
   async generateReply(input: {
@@ -4378,10 +4422,14 @@ export const headhunterCrmRepository = {
     if (demoMode) {
       return generateRecruiterReplyDraft(input.pitch, input.intent);
     }
-    return request<RecruiterResponseDraftDTO>('/headhunters/reply-draft', {
-      method: 'POST',
-      body: JSON.stringify(input)
-    });
+    try {
+      return await request<RecruiterResponseDraftDTO>('/headhunters/reply-draft', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return generateRecruiterReplyDraft(input.pitch, input.intent);
+    }
   }
 };
 
