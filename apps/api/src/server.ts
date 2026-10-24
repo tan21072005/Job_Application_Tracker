@@ -59,6 +59,7 @@ import { DatasetService } from './services/dataset-service.ts';
 import { AnalyticsService } from './services/analytics-service.ts';
 import { ResumeService } from './services/resume-service.ts';
 import { CompanyService } from './services/company-service.ts';
+import { FollowUpService } from './services/follow-up-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -102,6 +103,7 @@ export const datasetService = new DatasetService(pool);
 export const analyticsService = new AnalyticsService(pool);
 export const resumeService = new ResumeService(pool);
 export const companyService = new CompanyService(pool);
+export const followUpService = new FollowUpService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1339,6 +1341,46 @@ app.get('/api/companies/:name/salaries', auth, async (req, res, next) => {
   try {
     const salaries = await companyService.getSalaryBenchmarks(String(req.params.name));
     res.json(salaries);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/applications/:id/follow-ups', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const summary = await followUpService.getFollowUpsForApplication(userId, String(req.params.id));
+    res.json(summary);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/applications/:id/follow-ups/generate', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const draft = await followUpService.generateDraft(userId, String(req.params.id), req.body || {});
+    res.json(draft);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/applications/:id/follow-ups/logs', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const log = await followUpService.createLog(userId, String(req.params.id), req.body);
+    res.status(201).json(log);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/follow-ups/due', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const dueList = await followUpService.getDueFollowUps(userId);
+    res.json(dueList);
   } catch (error) {
     next(error);
   }
