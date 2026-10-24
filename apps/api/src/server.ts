@@ -27,7 +27,10 @@ import {
   validateBulkTrashInput,
   validateInterviewPrepInput,
   validateInterviewEvaluateInput,
-  validateCsvImportRequest
+  validateCsvImportRequest,
+  validateOfferEvaluationInput,
+  validateOfferComparisonInput,
+  validateCounterOfferInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -1434,6 +1437,48 @@ app.post('/api/ai/pro/interview-evaluate', auth, async (req, res, next) => {
       throw new Problem(422, val.message, 'invalid_request', val.errors);
     }
     const result = await aiProService.evaluateInterviewAnswer(val.data);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/ai/pro/offer-evaluate', auth, async (req, res, next) => {
+  try {
+    const val = validateOfferEvaluationInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const result = await aiProService.evaluateOffer(userId, val.data);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/ai/pro/offer-compare', auth, async (req, res, next) => {
+  try {
+    const val = validateOfferComparisonInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const result = await aiProService.compareOfferList(userId, val.data);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/ai/pro/counter-offer', auth, async (req, res, next) => {
+  try {
+    const val = validateCounterOfferInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const result = await aiProService.generateCounterOffer(userId, val.data);
     res.json(result);
   } catch (error) {
     next(error);

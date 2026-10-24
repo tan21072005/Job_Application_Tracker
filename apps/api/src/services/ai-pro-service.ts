@@ -17,7 +17,17 @@ import type {
 } from '@jobtrack/contract';
 import {
   generateInterviewQuestions,
-  evaluateStarAnswer
+  evaluateStarAnswer,
+  calculateAnnualTotalCompensation,
+  evaluateOfferDetails,
+  compareOffers,
+  generateCounterOfferScript,
+  type OfferEvaluationInput,
+  type OfferComparisonInput,
+  type CounterOfferNegotiationInput,
+  type OfferEvaluationDTO,
+  type OfferComparisonMatrixDTO,
+  type CounterOfferScriptDTO
 } from '@jobtrack/contract';
 
 export type AtsMatchResult = AtsMatchResultDTO;
@@ -549,5 +559,46 @@ export class AiProService {
     input: InterviewEvaluateRequestDTO
   ): Promise<InterviewEvaluateResultDTO> {
     return evaluateStarAnswer(input);
+  }
+
+  async evaluateOffer(
+    userId: string,
+    input: OfferEvaluationInput
+  ): Promise<OfferEvaluationDTO> {
+    const comp = calculateAnnualTotalCompensation({
+      baseSalaryMonthly: input.compensation.baseSalaryMonthly,
+      currency: input.compensation.currency || 'VND',
+      bonusMonthsPerYear: input.compensation.bonusMonthsPerYear,
+      annualBonusCash: input.compensation.annualBonusCash,
+      stockOptionsOrEquityAnnual: input.compensation.stockOptionsOrEquityAnnual,
+      allowanceMonthly: input.compensation.allowanceMonthly
+    });
+
+    return evaluateOfferDetails({
+      applicationId: input.applicationId,
+      company: input.company,
+      position: input.position,
+      compensation: comp,
+      workplaceFactors: input.workplaceFactors,
+      weights: input.weights
+    });
+  }
+
+  async compareOfferList(
+    userId: string,
+    input: OfferComparisonInput
+  ): Promise<OfferComparisonMatrixDTO> {
+    const evaluated: OfferEvaluationDTO[] = [];
+    for (const item of input.offers) {
+      evaluated.push(await this.evaluateOffer(userId, item));
+    }
+    return compareOffers(evaluated);
+  }
+
+  async generateCounterOffer(
+    userId: string,
+    input: CounterOfferNegotiationInput
+  ): Promise<CounterOfferScriptDTO> {
+    return generateCounterOfferScript(input);
   }
 }
