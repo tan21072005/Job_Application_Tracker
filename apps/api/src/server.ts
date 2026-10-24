@@ -46,7 +46,9 @@ import {
   validateEmailParseInput,
   validateEmailApplyInput,
   validateCreateCampaignInput,
-  validateUpdateRecipientStepInput
+  validateUpdateRecipientStepInput,
+  validateStartSimulationInput,
+  validateSubmitTurnInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -81,6 +83,7 @@ import { ChatService } from './services/chat-service.ts';
 import { RoadmapService } from './services/roadmap-service.ts';
 import { EmailIngestService } from './services/email-ingest-service.ts';
 import { OutreachService } from './services/outreach-service.ts';
+import { SimulationService } from './services/simulation-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -132,6 +135,7 @@ export const chatService = new ChatService(pool);
 export const roadmapService = new RoadmapService(pool);
 export const emailIngestService = new EmailIngestService(pool);
 export const outreachService = new OutreachService(pool);
+export const simulationService = new SimulationService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1378,6 +1382,86 @@ app.delete('/api/outreach/campaigns/:id', auth, async (req, res, next) => {
       return res.status(404).json({ code: 'not_found', message: 'Chiến dịch không tồn tại.' });
     }
     res.json({ success: true, message: 'Đã xóa chiến dịch.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/simulation/sessions', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const sessions = await simulationService.listSessions(userId);
+    res.json(sessions);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/simulation/sessions', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateStartSimulationInput(req.body);
+    if (!val.valid) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.errors.join(' ')
+      });
+    }
+    const session = await simulationService.startSession(userId, req.body);
+    res.status(201).json(session);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/simulation/sessions/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const session = await simulationService.getSession(userId, req.params.id);
+    if (!session) {
+      return res.status(404).json({ code: 'not_found', message: 'Phiên phỏng vấn không tồn tại.' });
+    }
+    res.json(session);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/simulation/sessions/:id/turn', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateSubmitTurnInput(req.body);
+    if (!val.valid) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.errors.join(' ')
+      });
+    }
+    const result = await simulationService.submitTurn(userId, req.params.id, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/simulation/sessions/:id/complete', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const session = await simulationService.completeSession(userId, req.params.id);
+    res.json(session);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/simulation/sessions/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await simulationService.deleteSession(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Phiên phỏng vấn không tồn tại.' });
+    }
+    res.json({ success: true, message: 'Đã xóa phiên phỏng vấn.' });
   } catch (error) {
     next(error);
   }
