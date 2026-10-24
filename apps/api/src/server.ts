@@ -44,7 +44,9 @@ import {
   validateMilestoneUpdateInput,
   validateRoadmapGenerateInput,
   validateEmailParseInput,
-  validateEmailApplyInput
+  validateEmailApplyInput,
+  validateCreateCampaignInput,
+  validateUpdateRecipientStepInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -78,6 +80,7 @@ import { DecisionService } from './services/decision-service.ts';
 import { ChatService } from './services/chat-service.ts';
 import { RoadmapService } from './services/roadmap-service.ts';
 import { EmailIngestService } from './services/email-ingest-service.ts';
+import { OutreachService } from './services/outreach-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -128,6 +131,7 @@ export const decisionService = new DecisionService(pool);
 export const chatService = new ChatService(pool);
 export const roadmapService = new RoadmapService(pool);
 export const emailIngestService = new EmailIngestService(pool);
+export const outreachService = new OutreachService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1288,6 +1292,92 @@ app.post('/api/ingest/email/apply', auth, async (req, res, next) => {
     }
     const result = await emailIngestService.applyProposal(userId, val.data);
     res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/outreach/campaigns', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const campaigns = await outreachService.listCampaigns(userId);
+    res.json(campaigns);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/outreach/campaigns', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateCreateCampaignInput(req.body);
+    if (!val.valid) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.errors.join(' ')
+      });
+    }
+    const created = await outreachService.createCampaign(userId, req.body);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/outreach/campaigns/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const campaign = await outreachService.getCampaign(userId, req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ code: 'not_found', message: 'Chiến dịch không tồn tại.' });
+    }
+    res.json(campaign);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/outreach/campaigns/:id/recipients', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    if (!req.body || typeof req.body.name !== 'string' || !req.body.name.trim()) {
+      return res.status(422).json({ code: 'invalid_request', message: 'Tên người nhận không được để trống.' });
+    }
+    if (!req.body.company || typeof req.body.company !== 'string' || !req.body.company.trim()) {
+      return res.status(422).json({ code: 'invalid_request', message: 'Công ty người nhận không được để trống.' });
+    }
+    const recipient = await outreachService.addRecipient(userId, req.params.id, req.body);
+    res.status(201).json(recipient);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/api/outreach/recipients/:recipientId/step', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateUpdateRecipientStepInput(req.body);
+    if (!val.valid) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.errors.join(' ')
+      });
+    }
+    const updated = await outreachService.updateRecipientStep(userId, req.params.recipientId, req.body);
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/outreach/campaigns/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await outreachService.deleteCampaign(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Chiến dịch không tồn tại.' });
+    }
+    res.json({ success: true, message: 'Đã xóa chiến dịch.' });
   } catch (error) {
     next(error);
   }
