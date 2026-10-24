@@ -97,7 +97,12 @@ import {
   type RelationshipHealthDTO,
   calculateRelationshipHealth,
   validateContactInput,
-  validateInteractionInput
+  validateInteractionInput,
+  type ApplicationPriority,
+  type StageSlaStatus,
+  type PipelineMetadataInput,
+  calculateStageSla,
+  validatePipelineMetadataInput
 } from '@jobtrack/contract';
 
 export type {
@@ -139,7 +144,12 @@ function load(): Application[] {
   if (!stored) return fixture();
   const value: unknown = JSON.parse(stored);
   if (!validApplications(value)) throw Error('Dữ liệu xem trước bị lỗi. Hãy dùng nút khôi phục dữ liệu mẫu.');
-  return value;
+  return value.map(a => ({
+    ...a,
+    priority: a.priority || 'target',
+    tags: Array.isArray(a.tags) ? a.tags : [],
+    statusUpdatedAt: a.statusUpdatedAt || a.appliedAt || a.createdAt
+  }));
 }
 
 function store(data: Application[]) {
@@ -2110,6 +2120,122 @@ export const contactRepository = {
         .sort((a, b) => b.health.daysSinceLastContact - a.health.daysSinceLastContact);
     }
     return request<(ContactDTO & { health: RelationshipHealthDTO })[]>('/contacts/reconnect-due');
+  }
+};
+
+export interface StagnantApplicationItemDTO {
+  applicationId: string;
+  company: string;
+  position: string;
+  status: Status;
+  priority: ApplicationPriority;
+  tags: string[];
+  sla: StageSlaStatus;
+}
+
+export interface PipelineSummaryDTO {
+  totalApplications: number;
+  statusCounts: Record<string, number>;
+  priorityCounts: Record<string, number>;
+  tagCounts: Record<string, number>;
+  stagnantCount: number;
+}
+
+export const pipelineRepository = {
+  async update(applicationId: string, input: PipelineMetadataInput): Promise<Application> {
+    const val = validatePipelineMetadataInput(input);
+    if (!val.ok) {
+      throw new ApiError(val.message || 'Dữ liệu tiến độ không hợp lệ.', 422);
+    }
+    if (demoMode) {
+      const apps = await repository.list();
+      const idx = apps.findIndex(a => a.id === applicationId);
+      if (idx === -1) throw new ApiError('Không tìm thấy hồ sơ.', 404);
+      const current = apps[idx];
+      const updated: Application = {
+        ...current,
+        priority: val.data.priority !== undefined ? val.data.priority : (current.priority || 'target'),
+        tags: val.data.tags !== undefined ? val.data.tags : (current.tags || []),
+        statusUpdatedAt: val.data.statusUpdatedAt || current.statusUpdatedAt || new Date().toISOString()
+      };
+      apps[idx] = updated;
+      store(apps);
+      return updated;
+    }
+    const res = await request<ApplicationWireDTO>(`/applications/${encodeURIComponent(applicationId)}/pipeline`, {
+      method: 'PATCH',
+      body: JSON.stringify(input)
+    });
+    return wireApplicationToUI(res) as Application;
+  },
+
+  async getStagnant(): Promise<StagnantApplicationItemDTO[]> {
+    if (demoMode) {
+      const apps = await repository.list();
+      const stagnantList: StagnantApplicationItemDTO[] = [];
+      for (const a of apps) {
+        if (a.status === 'Rejected' || a.status === 'Withdrawn' || a.deletedAt) continue;
+        const refDate = a.statusUpdatedAt || (a.appliedAt ? `${a.appliedAt}T00:00:00Z` : a.createdAt);
+        const sla = calculateStageSla(a.status, refDate);
+        if (sla.isStagnant) {
+          stagnantList.push({
+            applicationId: a.id,
+            company: a.company,
+            position: a.position,
+            status: a.status,
+            priority: a.priority || 'target',
+            tags: a.tags || [],
+            sla
+          });
+        }
+      }
+      return stagnantList.sort((a, b) => {
+        if (a.sla.slaSeverity === 'critical' && b.sla.slaSeverity !== 'critical') return -1;
+        if (b.sla.slaSeverity === 'critical' && a.sla.slaSeverity !== 'critical') return 1;
+        return b.sla.daysInStage - a.sla.daysInStage;
+      });
+    }
+    return request<StagnantApplicationItemDTO[]>('/applications/stagnant');
+  },
+
+  async getSummary(): Promise<PipelineSummaryDTO> {
+    if (demoMode) {
+      const apps = await repository.list();
+      const activeApps = apps.filter(a => !a.deletedAt);
+      const statusCounts: Record<string, number> = {};
+      const priorityCounts: Record<string, number> = { urgent: 0, target: 0, safety: 0, backlog: 0 };
+      const tagCounts: Record<string, number> = {};
+      let stagnantCount = 0;
+
+      for (const a of activeApps) {
+        statusCounts[a.status] = (statusCounts[a.status] || 0) + 1;
+        const p = a.priority || 'target';
+        if (priorityCounts[p] !== undefined) {
+          priorityCounts[p]++;
+        }
+        if (Array.isArray(a.tags)) {
+          for (const t of a.tags) {
+            tagCounts[t] = (tagCounts[t] || 0) + 1;
+          }
+        }
+        if (a.status !== 'Rejected' && a.status !== 'Withdrawn') {
+          const refDate = a.statusUpdatedAt || (a.appliedAt ? `${a.appliedAt}T00:00:00Z` : a.createdAt);
+          const sla = calculateStageSla(a.status, refDate);
+          if (sla.isStagnant) {
+            stagnantCount++;
+          }
+        }
+      }
+
+      return {
+        totalApplications: activeApps.length,
+        statusCounts,
+        priorityCounts,
+        tagCounts,
+        stagnantCount
+      };
+    }
+    return request<PipelineSummaryDTO>('/pipeline/summary');
   }
 };
 

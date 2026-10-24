@@ -1,4 +1,4 @@
-import { emptyDraft, type Application, type Status } from './domain';
+import { emptyDraft, type Application, type Status, type ApplicationPriority } from './domain';
 import type { DatasetWireDTO, DatasetRecordWireDTO } from '@jobtrack/contract';
 
 const rows = [
@@ -16,6 +16,36 @@ const rows = [
   ['FPT Software', 'Junior Developer', 'Withdrawn', 'Hà Nội', '', 'FPT Careers', 'JR-31'],
 ];
 
+const demoPriorities: ApplicationPriority[] = [
+  'urgent',
+  'target',
+  'urgent',
+  'urgent',
+  'target',
+  'safety',
+  'backlog',
+  'target',
+  'safety',
+  'target',
+  'backlog',
+  'backlog'
+];
+
+const demoTags: string[][] = [
+  ['react', 'frontend', 'enterprise'],
+  ['react', 'gaming', 'high-traffic'],
+  ['e-commerce', 'fullstack'],
+  ['e-commerce', 'offer-pending'],
+  ['fintech', 'mobile-web'],
+  ['outsourcing', 'english'],
+  ['da-nang'],
+  ['fintech', 'vietnam'],
+  ['ride-hailing'],
+  ['social', 'chat'],
+  ['logistics'],
+  ['junior']
+];
+
 export function fixture(): Application[] {
   const now = new Date();
   function day(offset: number, hour = 10, minute = 0) {
@@ -29,7 +59,7 @@ export function fixture(): Application[] {
     ...emptyDraft, id: `demo-${index}`, company: row[0], position: row[1], status: row[2] as Status,
     location: row[3], nextAction: row[4], source: row[5], jobCode: row[6], workMode: index % 2 ? 'Hybrid' : 'On-site',
     url: `https://example.com/jobs/${row[6]}`, appliedAt: row[2] === 'Saved' ? '' : local(day(-2 - index % 6)).slice(0, 10),
-    createdAt: day(-index).toISOString(), salary: index === 0 ? '20–25 triệu/tháng' : '',
+    createdAt: day(-index).toISOString(), priority: demoPriorities[index] || 'target', tags: demoTags[index] || [], statusUpdatedAt: (index === 1 ? day(-18) : index === 2 ? day(-12) : day(-index)).toISOString(), salary: index === 0 ? '20–25 triệu/tháng' : '',
     notes: index === 0 ? 'Ôn React hooks và TypeScript. Chuẩn bị một ví dụ tối ưu hiệu năng từ dự án cá nhân.' : '',
     deadline: row[4] ? local(day(index === 0 ? 0 : 2 + index % 3, 18)) : '',
     interviews: index === 0 ? [

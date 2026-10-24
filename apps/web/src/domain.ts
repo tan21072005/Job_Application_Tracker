@@ -1,8 +1,37 @@
+import {
+  type ApplicationPriority,
+  type StageSlaStatus,
+  calculateStageSla,
+  DEFAULT_STAGE_SLAS,
+  APPLICATION_PRIORITIES
+} from '@jobtrack/contract';
+export {
+  type ApplicationPriority,
+  type StageSlaStatus,
+  calculateStageSla,
+  DEFAULT_STAGE_SLAS,
+  APPLICATION_PRIORITIES
+};
+
+export const priorityLabels: Record<ApplicationPriority, string> = {
+  urgent: 'Khẩn cấp',
+  target: 'Mục tiêu',
+  safety: 'Dự phòng',
+  backlog: 'Xem xét sau'
+};
+
+export const priorityPillColors: Record<ApplicationPriority, { bg: string; color: string; border: string }> = {
+  urgent: { bg: '#fef2f2', color: '#991b1b', border: '#fecaca' },
+  target: { bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
+  safety: { bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
+  backlog: { bg: '#f9fafb', color: '#4b5563', border: '#e5e7eb' }
+};
+
 export const statuses = ['Saved', 'Applied', 'Screening', 'Interview', 'Offer', 'Rejected', 'Withdrawn'] as const;
 export type Status = typeof statuses[number];
 export const labels: Record<Status, string> = {Saved:'Đã lưu',Applied:'Đã nộp',Screening:'Sàng lọc',Interview:'Phỏng vấn',Offer:'Offer',Rejected:'Từ chối',Withdrawn:'Đã rút'};
 export type Interview = {id:string;title:string;at:string;timezone:string;format:string;location:string;preparation:string;notes:string;status:'Scheduled'|'Completed'|'Cancelled'};
-export type Application = {id:string;version?:number;company:string;position:string;url:string;source:string;jobCode:string;location:string;workMode:string;appliedAt:string;salary:string;notes:string;nextAction:string;deadline:string;status:Status;createdAt:string;interviews:Interview[];deletedAt?:string|null};
+export type Application = {id:string;version?:number;company:string;position:string;url:string;source:string;jobCode:string;location:string;workMode:string;appliedAt:string;salary:string;notes:string;nextAction:string;deadline:string;status:Status;createdAt:string;interviews:Interview[];deletedAt?:string|null;priority?:ApplicationPriority;tags?:string[];statusUpdatedAt?:string};
 export type Draft = Omit<Application,'id'|'createdAt'|'interviews'|'deletedAt'>;
 export const emptyDraft: Draft = {company:'',position:'',url:'',source:'',jobCode:'',location:'',workMode:'',appliedAt:'',salary:'',notes:'',nextAction:'',deadline:'',status:'Saved'};
 export function metrics(apps:Application[], now=Date.now()) {
@@ -41,9 +70,9 @@ export function duplicate(apps:Application[],draft:Draft,exclude=''){
  return matches.find(a=>!['Rejected','Withdrawn'].includes(a.status))||matches[0];
 }
 export function actionable(apps:Application[]){return apps.filter(a=>a.nextAction.trim()).sort((a,b)=>(a.deadline||'z').localeCompare(b.deadline||'z')||a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id));}
-export function filtered(apps:Application[],query:string,status:string,sort:string){
- const term=query.trim().toLocaleLowerCase('vi');
- return apps.filter(a=>(!term||`${a.company} ${a.position}`.toLocaleLowerCase('vi').includes(term))&&(status==='all'||a.status===status)).sort((a,b)=>{const key=sort.startsWith('applied')?'appliedAt':'createdAt';const sign=sort.endsWith('asc')?1:-1;if(!a[key])return b[key]?1:0;if(!b[key])return -1;return a[key].localeCompare(b[key])*sign;});
+export function filtered(apps:Application[],query:string,status:string,sort:string,priority?:string,tag?:string){
+ const term=query.trim().toLocaleLowerCase('vi'); const cleanTag=tag?tag.trim().toLowerCase().replace(/^#/,''):'';
+ return apps.filter(a=>(!term||`${a.company} ${a.position}`.toLocaleLowerCase('vi').includes(term))&&(status==='all'||a.status===status)&&(!priority||priority==='all'||(a.priority||'target')===priority)&&(!cleanTag||(Array.isArray(a.tags)&&a.tags.some(t=>t.toLowerCase().includes(cleanTag))))).sort((a,b)=>{const key=sort.startsWith('applied')?'appliedAt':'createdAt';const sign=sort.endsWith('asc')?1:-1;if(!a[key])return b[key]?1:0;if(!b[key])return -1;return a[key].localeCompare(b[key])*sign;});
 }
 export function formatDate(value:string){return value?new Intl.DateTimeFormat('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(value.length===10?`${value}T12:00:00`:value)):'Chưa đặt';}
 export function formatTime(value:string,timezone?:string){return new Intl.DateTimeFormat('vi-VN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',...(timezone?{timeZone:timezone}:{})}).format(new Date(value));}
