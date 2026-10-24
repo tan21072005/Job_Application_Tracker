@@ -140,7 +140,15 @@ import {
   evaluatePromotionReadiness,
   simulateCareerTrajectory,
   validateSimulateTrajectoryInput,
-  validateUpdateCompetenciesInput
+  validateUpdateCompetenciesInput,
+  ATS_KEYWORD_DICTIONARY,
+  extractKeywordsFromText,
+  extractBulletsFromResume,
+  diagnoseAtsKeywordGaps,
+  rewriteBulletPointsXyz,
+  synthesizeOptimizedResume,
+  validateOptimizeResumeInput,
+  validateRewriteBulletInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -3041,5 +3049,119 @@ test('contract: validateSimulateTrajectoryInput and validateUpdateCompetenciesIn
   assert.equal(invalidComp.ok, false);
   assert.ok(invalidComp.errors.scores);
 });
+
+test('contract: extractKeywordsFromText detects standard dictionary and capitalized tech terms', () => {
+  const jdText = 'We are hiring a Senior Engineer with deep TypeScript, Docker, and Kubernetes experience. Familiarity with GraphQL and ArgoCD is a plus.';
+  const keywords = extractKeywordsFromText(jdText);
+  assert.ok(keywords.length >= 3);
+  assert.ok(keywords.some(k => k.keyword === 'TypeScript'));
+  assert.ok(keywords.some(k => k.keyword === 'Docker'));
+  assert.ok(keywords.some(k => k.keyword === 'Kubernetes'));
+  assert.ok(keywords.some(k => k.keyword === 'GraphQL'));
+});
+
+test('contract: extractBulletsFromResume extracts bullet points and clean descriptions', () => {
+  const resume = `
+# John Doe
+## Experience
+- Spearheaded migration of frontend monolith to Next.js micro-frontends, reducing initial page load by 45%.
+- Architected distributed caching layer with Redis, handling 15,000 requests per second.
+* Led a team of 6 engineers across 3 time zones.
+1. Implemented end-to-end testing with Playwright.
+  `;
+  const bullets = extractBulletsFromResume(resume);
+  assert.equal(bullets.length, 4);
+  assert.ok(bullets[0].includes('monolith to Next.js'));
+  assert.ok(bullets[1].includes('distributed caching layer'));
+  assert.ok(bullets[2].includes('Led a team of 6'));
+  assert.ok(bullets[3].includes('end-to-end testing'));
+});
+
+test('contract: diagnoseAtsKeywordGaps computes ATS score, keyword breakdown, and recommendations', () => {
+  const jd = 'Seeking Senior Backend Engineer proficient in Node.js, PostgreSQL, Docker, Kubernetes, CI/CD, and System Design.';
+  const resume = `
+Experienced Software Engineer.
+- Built REST API services with Node.js and PostgreSQL.
+- Containerized microservices using Docker.
+- Improved latency by 35% across 20+ microservices.
+  `;
+  const diagnostic = diagnoseAtsKeywordGaps(resume, jd);
+  assert.ok(diagnostic.atsScore >= 40 && diagnostic.atsScore <= 100);
+  assert.ok(diagnostic.matchedKeywordsCount >= 3);
+  assert.ok(diagnostic.missingKeywordsCount >= 1);
+  assert.ok(diagnostic.keywordGaps.length >= 4);
+  assert.ok(diagnostic.scoreBreakdown.keywordRelevance > 0);
+  assert.ok(diagnostic.recommendations.length > 0);
+
+  const missingK8s = diagnostic.keywordGaps.find(k => k.keyword === 'Kubernetes');
+  assert.ok(missingK8s);
+  assert.equal(missingK8s.matched, false);
+});
+
+test('contract: rewriteBulletPointsXyz creates 3 Google X-Y-Z variants with explicit breakdown', () => {
+  const bullets = [
+    'Responsible for building APIs and maintaining backend database.',
+    'Worked on frontend user interface and fixed UI bugs.'
+  ];
+  const proposals = rewriteBulletPointsXyz(bullets, ['TypeScript', 'PostgreSQL', 'Docker']);
+  assert.equal(proposals.length, 2);
+
+  const first = proposals[0];
+  assert.equal(first.variants.length, 3);
+  assert.equal(first.variants[0].variantType, 'metric_driven');
+  assert.equal(first.variants[1].variantType, 'leadership');
+  assert.equal(first.variants[2].variantType, 'tech_depth');
+
+  assert.ok(first.variants[0].xyzBreakdown.accomplishmentX.length > 0);
+  assert.ok(first.variants[0].xyzBreakdown.metricY.length > 0);
+  assert.ok(first.variants[0].xyzBreakdown.actionZ.length > 0);
+});
+
+test('contract: synthesizeOptimizedResume replaces bullets and injects supplemental ATS keywords', () => {
+  const original = `
+## Experience
+- Responsible for building APIs.
+## Skills
+- JavaScript, Node.js
+  `;
+  const acceptedBullets = {
+    'Responsible for building APIs.': 'Engineered high-throughput REST APIs reducing P99 latency by 40% with Node.js.'
+  };
+  const injectedKeywords = ['Docker', 'Kubernetes', 'PostgreSQL'];
+
+  const synthesized = synthesizeOptimizedResume(original, acceptedBullets, injectedKeywords);
+  assert.ok(!synthesized.includes('Responsible for building APIs.'));
+  assert.ok(synthesized.includes('Engineered high-throughput REST APIs'));
+  assert.ok(synthesized.includes('Docker, Kubernetes, PostgreSQL'));
+});
+
+test('contract: validateOptimizeResumeInput and validateRewriteBulletInput validate payload schemas', () => {
+  const validOpt = validateOptimizeResumeInput({
+    resumeText: 'Experienced Software Engineer with 5 years building scalable web services in Node.js and TypeScript.',
+    jobDescription: 'Looking for a Senior Fullstack Engineer with expertise in React, Next.js, and PostgreSQL.'
+  });
+  assert.equal(validOpt.ok, true);
+
+  const invalidOpt = validateOptimizeResumeInput({
+    resumeText: 'Too short',
+    jobDescription: ''
+  });
+  assert.equal(invalidOpt.ok, false);
+  assert.ok(invalidOpt.errors.resumeText);
+  assert.ok(invalidOpt.errors.jobDescription);
+
+  const validRewrite = validateRewriteBulletInput({
+    bullets: ['Built search feature', 'Maintained cluster'],
+    targetKeywords: ['Elasticsearch', 'Kubernetes']
+  });
+  assert.equal(validRewrite.ok, true);
+
+  const invalidRewrite = validateRewriteBulletInput({
+    bullets: []
+  });
+  assert.equal(invalidRewrite.ok, false);
+  assert.ok(invalidRewrite.errors.bullets);
+});
+
 
 
