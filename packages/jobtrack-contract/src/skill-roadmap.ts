@@ -31,10 +31,12 @@ export interface SkillGapAnalysisDTO {
   generatedAt: string;
 }
 
+export type ResourceType = 'article' | 'course' | 'project' | 'documentation';
+
 export interface LearningResourceDTO {
   title: string;
   url: string;
-  type: 'article' | 'course' | 'project' | 'documentation';
+  type: ResourceType;
 }
 
 export interface LearningMilestoneDTO {
@@ -176,6 +178,24 @@ export const KNOWN_SKILL_CATALOG: SkillDefinition[] = [
     curatedResources: [
       { title: 'Playwright End-to-End Automation', url: 'https://playwright.dev/docs/intro', type: 'documentation' },
       { title: 'Testing JavaScript Applications', url: 'https://martinfowler.com/articles/practical-test-pyramid.html', type: 'article' }
+    ]
+  },
+  {
+    name: 'Go',
+    category: 'backend',
+    aliases: ['go', 'golang'],
+    curatedResources: [
+      { title: 'A Tour of Go', url: 'https://go.dev/tour/', type: 'course' },
+      { title: 'Effective Go', url: 'https://go.dev/doc/effective_go', type: 'documentation' }
+    ]
+  },
+  {
+    name: 'AWS',
+    category: 'devops',
+    aliases: ['aws', 'amazon web services', 'cloud'],
+    curatedResources: [
+      { title: 'AWS Skill Builder Core Fundamentals', url: 'https://explore.skillbuilder.aws', type: 'course' },
+      { title: 'AWS Well-Architected Framework', url: 'https://aws.amazon.com/architecture/well-architected/', type: 'article' }
     ]
   }
 ];

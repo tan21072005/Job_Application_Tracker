@@ -116,7 +116,15 @@ import {
   type ChatActionReceiptDTO,
   type ChatResponseDTO,
   type ChatHistoryDTO,
-  DEFAULT_SUGGESTED_CHAT_PROMPTS
+  DEFAULT_SUGGESTED_CHAT_PROMPTS,
+  type SkillDemandItemDTO,
+  type SkillGapAnalysisDTO,
+  type LearningMilestoneDTO,
+  type CareerRoadmapDTO,
+  type MilestoneStatus,
+  extractSkillsFromApplications,
+  generateCareerRoadmap,
+  calculateRoadmapProgress
 } from '@jobtrack/contract';
 
 export type {
@@ -2506,8 +2514,96 @@ export type {
   ChatMessageDTO,
   ChatActionReceiptDTO,
   ChatResponseDTO,
-  ChatHistoryDTO
+  ChatHistoryDTO,
+  SkillDemandItemDTO,
+  SkillGapAnalysisDTO,
+  LearningMilestoneDTO,
+  CareerRoadmapDTO,
+  MilestoneStatus
 };
+
+const CAREER_ROADMAP_STORAGE_KEY = 'jobtrack.career_roadmap.v1';
+
+export const careerRoadmapRepository = {
+  async getGapAnalysis(): Promise<SkillGapAnalysisDTO> {
+    if (demoMode) {
+      const apps = await repository.list();
+      const profile = await profileRepository.get();
+      const appsForAnalysis = apps.map(a => ({
+        company: a.company,
+        position: a.position,
+        notes: a.notes || null
+      }));
+      return extractSkillsFromApplications(appsForAnalysis, profile?.skills || []);
+    }
+    return request<SkillGapAnalysisDTO>('/career/skill-gap');
+  },
+
+  async getRoadmap(): Promise<CareerRoadmapDTO> {
+    if (demoMode) {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(CAREER_ROADMAP_STORAGE_KEY);
+        if (raw) {
+          try {
+            return JSON.parse(raw);
+          } catch {}
+        }
+      }
+      const gap = await this.getGapAnalysis();
+      const generated = generateCareerRoadmap(gap);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(CAREER_ROADMAP_STORAGE_KEY, JSON.stringify(generated));
+      }
+      return generated;
+    }
+    return request<CareerRoadmapDTO>('/career/roadmap');
+  },
+
+  async generateRoadmap(options: { targetRole?: string; focusSkills?: string[] } = {}): Promise<CareerRoadmapDTO> {
+    if (demoMode) {
+      const gap = await this.getGapAnalysis();
+      if (options.focusSkills && options.focusSkills.length > 0) {
+        gap.recommendedFocusSkills = options.focusSkills;
+      }
+      const targetRole = options.targetRole?.trim() || 'Senior Software Specialist';
+      const generated = generateCareerRoadmap(gap, targetRole);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(CAREER_ROADMAP_STORAGE_KEY, JSON.stringify(generated));
+      }
+      return generated;
+    }
+    return request<CareerRoadmapDTO>('/career/roadmap/generate', {
+      method: 'POST',
+      body: JSON.stringify(options)
+    });
+  },
+
+  async updateMilestone(milestoneId: string, status: MilestoneStatus): Promise<CareerRoadmapDTO> {
+    if (demoMode) {
+      const current = await this.getRoadmap();
+      const idx = current.milestones.findIndex(m => m.id === milestoneId);
+      if (idx !== -1) {
+        current.milestones[idx] = {
+          ...current.milestones[idx],
+          status,
+          completedAt: status === 'completed' ? new Date().toISOString() : null
+        };
+        current.overallProgressPercent = calculateRoadmapProgress(current.milestones);
+        current.updatedAt = new Date().toISOString();
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(CAREER_ROADMAP_STORAGE_KEY, JSON.stringify(current));
+        }
+      }
+      return current;
+    }
+    return request<CareerRoadmapDTO>(`/career/roadmap/milestones/${encodeURIComponent(milestoneId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+  }
+};
+
+export const roadmapRepository = careerRoadmapRepository;
 
 
 

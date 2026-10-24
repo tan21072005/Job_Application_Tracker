@@ -1147,7 +1147,80 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .dm-score-notes{display:flex;flex-direction:column;gap:6px}
 .dm-score-notes label{font-size:12px;font-weight:600;color:var(--ink)}
 .dm-textarea{padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit;resize:vertical}
-.dm-scorecard-actions{display:flex;justify-content:flex-end;border-top:1px solid var(--line);padding-top:12px}
+.career-roadmap-view{display:flex;flex-direction:column;gap:24px;padding:24px}
+.career-roadmap-view .view-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.career-roadmap-view .view-title-group{display:flex;align-items:flex-start;gap:14px}
+.roadmap-header-icon{width:42px;height:42px;border-radius:10px;background:#e0e7ff;color:#4338ca;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.career-roadmap-view h1{margin:0 0 4px;font-size:22px;font-weight:700;color:var(--ink)}
+.roadmap-subtitle{margin:0;font-size:13.5px;color:var(--muted);line-height:1.4}
+.roadmap-header-actions{display:flex;align-items:center;gap:10px}
+.roadmap-refresh-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;background:#ffffff;cursor:pointer}
+.roadmap-loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:60px 20px;color:var(--muted);font-size:14px}
+.roadmap-content{display:flex;flex-direction:column;gap:24px}
+.roadmap-top-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:20px}
+.roadmap-card{background:#ffffff;border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px;box-shadow:0 1px 3px rgba(0,0,0,0.03)}
+.roadmap-card .card-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.roadmap-card .card-title-group{display:flex;align-items:center;gap:8px}
+.roadmap-card .card-title-group h3{margin:0;font-size:15px;font-weight:700;color:var(--ink)}
+.coverage-badge{padding:4px 10px;border-radius:20px;background:#ecfdf5;color:#047857;font-weight:700;font-size:14px}
+.missing-count-badge{padding:4px 10px;border-radius:20px;background:#fffbeb;color:#b45309;font-weight:700;font-size:12px}
+.coverage-meter-wrapper{display:flex;flex-direction:column;gap:8px}
+.coverage-meter-bar{width:100%;height:10px;border-radius:5px;background:#f1f5f9;overflow:hidden}
+.coverage-meter-fill{height:100%;border-radius:5px;background:linear-gradient(90deg, #10b981, #059669);transition:width 0.4s ease}
+.coverage-meta-text{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.skills-section{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.skills-section h4{margin:0;font-size:12.5px;font-weight:600;color:var(--muted)}
+.skill-pills-list{display:flex;flex-wrap:wrap;gap:8px}
+.skill-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600}
+.skill-pill.matched{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.skill-demands-list{display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;padding-right:4px}
+.demand-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;background:#f8fafc;border:1px solid var(--line)}
+.demand-skill-name{display:flex;align-items:center;gap:8px}
+.demand-skill-name strong{font-size:13px;color:var(--ink)}
+.demand-category-tag{font-size:10.5px;padding:1px 6px;border-radius:4px;background:#e2e8f0;color:#475569;text-transform:uppercase}
+.demand-meta{display:flex;align-items:center;gap:8px}
+.demand-count-tag{font-size:11.5px;color:var(--muted)}
+.proficiency-tag{font-size:10.5px;padding:2px 6px;border-radius:4px;font-weight:600}
+.proficiency-tag.required{background:#fee2e2;color:#991b1b}
+.proficiency-tag.preferred{background:#fef3c7;color:#92400e}
+.empty-gap-notice{display:flex;align-items:center;gap:8px;padding:16px;background:#f0fdf4;border-radius:8px;color:#166534;font-size:13px}
+.roadmap-timeline-section{background:#ffffff;border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:20px;box-shadow:0 1px 3px rgba(0,0,0,0.03)}
+.roadmap-timeline-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;border-bottom:1px solid var(--line);padding-bottom:18px}
+.roadmap-timeline-header h2{margin:0 0 4px;font-size:18px;font-weight:700;color:var(--ink)}
+.target-role-sub{margin:0;font-size:13px;color:var(--muted)}
+.overall-progress-box{display:flex;flex-direction:column;gap:6px;min-width:200px}
+.progress-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--ink)}
+.overall-progress-bar{width:100%;height:8px;border-radius:4px;background:#f1f5f9;overflow:hidden}
+.overall-progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg, #3b82f6, #2563eb);transition:width 0.4s ease}
+.milestones-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px}
+.milestone-card{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:border-color 0.2s, box-shadow 0.2s}
+.milestone-card.status-completed{border-color:#10b981;background:#f0fdf4}
+.milestone-card.status-in_progress{border-color:#3b82f6;background:#eff6ff}
+.milestone-top-bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.week-badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:3px 8px;border-radius:4px;background:#e2e8f0;color:#334155}
+.milestone-card.status-completed .week-badge{background:#dcfce7;color:#15803d}
+.milestone-card.status-in_progress .week-badge{background:#dbeafe;color:#1e40af}
+.status-select{font-size:11.5px;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:#ffffff;color:var(--ink);cursor:pointer;outline:none}
+.status-select.completed{border-color:#10b981;color:#047857;font-weight:600}
+.status-select.in_progress{border-color:#3b82f6;color:#1d4ed8;font-weight:600}
+.milestone-title{margin:0;font-size:14px;font-weight:700;color:var(--ink);line-height:1.35}
+.milestone-desc{margin:0;font-size:12px;color:var(--muted);line-height:1.4}
+.milestone-meta-row{display:flex;align-items:center;gap:12px;font-size:11.5px}
+.skill-focus-tag{display:inline-flex;align-items:center;gap:4px;color:#4338ca;font-weight:600;background:#e0e7ff;padding:2px 8px;border-radius:4px}
+.hours-tag{display:inline-flex;align-items:center;gap:4px;color:var(--muted)}
+.milestone-resources{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px;margin-top:auto}
+.milestone-resources h4{margin:0;font-size:11.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:5px}
+.resources-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.resource-link{display:flex;align-items:center;gap:6px;text-decoration:none;padding:5px 8px;border-radius:6px;background:#ffffff;border:1px solid var(--line);color:var(--ink);font-size:11.5px;transition:background-color 0.15s}
+.resource-link:hover{background:#f1f5f9;color:#2563eb}
+.resource-type-pill{font-size:9.5px;padding:1px 5px;border-radius:3px;background:#f1f5f9;color:var(--muted);text-transform:uppercase;font-weight:600}
+.resource-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ext-icon{color:var(--muted);flex-shrink:0}
+.generate-roadmap-form{display:flex;flex-direction:column;gap:16px;padding:8px 0}
+.generate-roadmap-form .form-group{display:flex;flex-direction:column;gap:6px}
+.generate-roadmap-form label{font-size:13px;font-weight:600;color:var(--ink)}
+.field-hint{font-size:11.5px;color:var(--muted);line-height:1.3}
+
 
 
 

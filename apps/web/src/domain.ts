@@ -23,7 +23,17 @@ import {
   type ChatResponseDTO,
   type ChatHistoryDTO,
   parseChatMarkdown,
-  DEFAULT_SUGGESTED_CHAT_PROMPTS
+  DEFAULT_SUGGESTED_CHAT_PROMPTS,
+  type SkillDemandItemDTO,
+  type SkillGapAnalysisDTO,
+  type LearningMilestoneDTO,
+  type CareerRoadmapDTO,
+  type MilestoneStatus,
+  type ResourceType,
+  extractSkillsFromText,
+  extractSkillsFromApplications,
+  generateCareerRoadmap,
+  calculateRoadmapProgress
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -50,7 +60,17 @@ export {
   type ChatResponseDTO,
   type ChatHistoryDTO,
   parseChatMarkdown,
-  DEFAULT_SUGGESTED_CHAT_PROMPTS
+  DEFAULT_SUGGESTED_CHAT_PROMPTS,
+  type SkillDemandItemDTO,
+  type SkillGapAnalysisDTO,
+  type LearningMilestoneDTO,
+  type CareerRoadmapDTO,
+  type MilestoneStatus,
+  type ResourceType,
+  extractSkillsFromText,
+  extractSkillsFromApplications,
+  generateCareerRoadmap,
+  calculateRoadmapProgress
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {
