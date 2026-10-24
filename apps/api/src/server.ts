@@ -91,6 +91,7 @@ import { CompensationService } from './services/compensation-service.ts';
 import { TrajectoryService } from './services/trajectory-service.ts';
 import { ResumeOptimizerService } from './services/resume-optimizer-service.ts';
 import { PipelineVelocityService } from './services/pipeline-velocity-service.ts';
+import { CultureRadarService } from './services/culture-radar-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -100,7 +101,8 @@ import {
   validateOptimizeResumeInput,
   validateRewriteBulletInput,
   rewriteBulletPointsXyz,
-  validateCalculateVelocityReportInput
+  validateCalculateVelocityReportInput,
+  validateAnalyzeCultureInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -157,6 +159,7 @@ export const compensationService = new CompensationService(pool);
 export const trajectoryService = new TrajectoryService(pool);
 export const resumeOptimizerService = new ResumeOptimizerService(pool);
 export const pipelineVelocityService = new PipelineVelocityService(pool);
+export const cultureRadarService = new CultureRadarService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1790,6 +1793,47 @@ app.post('/api/pipeline/velocity/simulate', auth, async (req, res, next) => {
       stageMetrics: Array.isArray(b?.stageMetrics) ? b.stageMetrics : undefined
     });
     res.json(simulation);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/culture/radar', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const company = typeof req.query.company === 'string' ? req.query.company : undefined;
+    const report = await cultureRadarService.getLatestRadar(userId, company);
+    res.json(report);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/culture/analyze', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateAnalyzeCultureInput(req.body);
+    if (!validation.ok) {
+      throw new Problem(422, validation.message, 'invalid_request', validation.errors);
+    }
+    const report = await cultureRadarService.analyzeCulture(userId, validation.data);
+    res.json(report);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/culture/questions', auth, async (req, res, next) => {
+  try {
+    const b = req.body as {
+      dimensionScores?: any[];
+      targetRole?: any;
+    };
+    const questions = cultureRadarService.generateQuestions({
+      dimensionScores: Array.isArray(b?.dimensionScores) ? b.dimensionScores : [],
+      targetRole: typeof b?.targetRole === 'string' ? b.targetRole : undefined
+    });
+    res.json(questions);
   } catch (error) {
     next(error);
   }
