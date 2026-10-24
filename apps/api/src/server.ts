@@ -88,8 +88,14 @@ import { OutreachService } from './services/outreach-service.ts';
 import { SimulationService } from './services/simulation-service.ts';
 import { PortfolioService } from './services/portfolio-service.ts';
 import { CompensationService } from './services/compensation-service.ts';
+import { TrajectoryService } from './services/trajectory-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
-import { parseVietnameseCurrency, validateCreateCompensationForecastInput } from '@jobtrack/contract';
+import {
+  parseVietnameseCurrency,
+  validateCreateCompensationForecastInput,
+  validateSimulateTrajectoryInput,
+  validateUpdateCompetenciesInput
+} from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
 const isTest = process.env.NODE_ENV === 'test';
@@ -142,6 +148,7 @@ export const outreachService = new OutreachService(pool);
 export const simulationService = new SimulationService(pool);
 export const portfolioService = new PortfolioService(pool);
 export const compensationService = new CompensationService(pool);
+export const trajectoryService = new TrajectoryService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1592,6 +1599,52 @@ app.delete('/api/compensation/forecasts/:id', auth, async (req, res, next) => {
       return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy bản dự báo thu nhập.' });
     }
     res.json({ success: true, message: 'Đã xóa bản dự báo thu nhập.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/trajectory', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const trajectory = await trajectoryService.getTrajectory(userId);
+    res.json(trajectory);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/trajectory/simulate', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateSimulateTrajectoryInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({
+        code: 'validation_error',
+        message: validation.message || 'Dữ liệu không hợp lệ.',
+        errors: validation.errors
+      });
+    }
+    const simulation = await trajectoryService.simulate(userId, validation.data);
+    res.status(200).json(simulation);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/trajectory/competencies', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateUpdateCompetenciesInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({
+        code: 'validation_error',
+        message: validation.message || 'Dữ liệu không hợp lệ.',
+        errors: validation.errors
+      });
+    }
+    const updated = await trajectoryService.updateCompetencies(userId, validation.data);
+    res.status(200).json(updated);
   } catch (error) {
     next(error);
   }
