@@ -22,6 +22,9 @@ export interface UIApplicationModel {
   deadline: string;
   status: ApplicationWireDTO['status'];
   deletedAt?: string | null;
+  priority?: ApplicationWireDTO['priority'];
+  tags?: string[];
+  statusUpdatedAt?: string;
   createdAt: string;
   updatedAt?: string;
   interviews: UIInterviewModel[];
@@ -77,6 +80,9 @@ export function wireApplicationToUI(wire: ApplicationWireDTO): UIApplicationMode
     deadline: wire.deadline || '',
     status: wire.status,
     deletedAt: wire.deletedAt || null,
+    priority: wire.priority || 'target',
+    tags: wire.tags || [],
+    statusUpdatedAt: wire.statusUpdatedAt || wire.createdAt,
     createdAt: wire.createdAt,
     updatedAt: wire.updatedAt,
     interviews: (wire.interviews || []).map(wireInterviewToUI)
