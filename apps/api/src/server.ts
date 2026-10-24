@@ -89,12 +89,16 @@ import { SimulationService } from './services/simulation-service.ts';
 import { PortfolioService } from './services/portfolio-service.ts';
 import { CompensationService } from './services/compensation-service.ts';
 import { TrajectoryService } from './services/trajectory-service.ts';
+import { ResumeOptimizerService } from './services/resume-optimizer-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
   validateCreateCompensationForecastInput,
   validateSimulateTrajectoryInput,
-  validateUpdateCompetenciesInput
+  validateUpdateCompetenciesInput,
+  validateOptimizeResumeInput,
+  validateRewriteBulletInput,
+  rewriteBulletPointsXyz
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -149,6 +153,7 @@ export const simulationService = new SimulationService(pool);
 export const portfolioService = new PortfolioService(pool);
 export const compensationService = new CompensationService(pool);
 export const trajectoryService = new TrajectoryService(pool);
+export const resumeOptimizerService = new ResumeOptimizerService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1645,6 +1650,99 @@ app.put('/api/trajectory/competencies', auth, async (req, res, next) => {
     }
     const updated = await trajectoryService.updateCompetencies(userId, validation.data);
     res.status(200).json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/resume/diagnose', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateOptimizeResumeInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({
+        code: 'validation_error',
+        message: validation.message || 'Dữ liệu không hợp lệ.',
+        errors: validation.errors
+      });
+    }
+    const result = await resumeOptimizerService.diagnoseAndOptimize(userId, validation.data);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/resume/rewrite-bullets', auth, async (req, res, next) => {
+  try {
+    const validation = validateRewriteBulletInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({
+        code: 'validation_error',
+        message: validation.message || 'Dữ liệu không hợp lệ.',
+        errors: validation.errors
+      });
+    }
+    const proposals = rewriteBulletPointsXyz(validation.data.bullets, validation.data.targetKeywords);
+    res.status(200).json(proposals);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/resume/optimizations', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const list = await resumeOptimizerService.listOptimizations(userId);
+    res.json(list);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/resume/optimizations/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const opt = await resumeOptimizerService.getOptimization(userId, req.params.id);
+    if (!opt) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy bản tối ưu hóa CV.' });
+    }
+    res.json(opt);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/resume/optimizations/:id/apply', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const acceptedBullets = req.body?.acceptedBullets;
+    if (!acceptedBullets || typeof acceptedBullets !== 'object') {
+      return res.status(400).json({
+        code: 'validation_error',
+        message: 'Danh sách bullet point được chọn là bắt buộc.',
+        errors: { acceptedBullets: 'Bắt buộc' }
+      });
+    }
+    const injectedKeywords = Array.isArray(req.body?.injectedKeywords) ? req.body.injectedKeywords : [];
+    const updated = await resumeOptimizerService.applyRewrites(userId, req.params.id, {
+      acceptedBullets,
+      injectedKeywords
+    });
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/resume/optimizations/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await resumeOptimizerService.deleteOptimization(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy bản tối ưu hóa CV.' });
+    }
+    res.json({ success: true, message: 'Đã xóa bản tối ưu hóa CV.' });
   } catch (error) {
     next(error);
   }
