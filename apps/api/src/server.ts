@@ -90,6 +90,7 @@ import { PortfolioService } from './services/portfolio-service.ts';
 import { CompensationService } from './services/compensation-service.ts';
 import { TrajectoryService } from './services/trajectory-service.ts';
 import { ResumeOptimizerService } from './services/resume-optimizer-service.ts';
+import { PipelineVelocityService } from './services/pipeline-velocity-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -98,7 +99,8 @@ import {
   validateUpdateCompetenciesInput,
   validateOptimizeResumeInput,
   validateRewriteBulletInput,
-  rewriteBulletPointsXyz
+  rewriteBulletPointsXyz,
+  validateCalculateVelocityReportInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -154,6 +156,7 @@ export const portfolioService = new PortfolioService(pool);
 export const compensationService = new CompensationService(pool);
 export const trajectoryService = new TrajectoryService(pool);
 export const resumeOptimizerService = new ResumeOptimizerService(pool);
+export const pipelineVelocityService = new PipelineVelocityService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1743,6 +1746,50 @@ app.delete('/api/resume/optimizations/:id', auth, async (req, res, next) => {
       return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy bản tối ưu hóa CV.' });
     }
     res.json({ success: true, message: 'Đã xóa bản tối ưu hóa CV.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/pipeline/velocity/report', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const report = await pipelineVelocityService.getLatestReport(userId);
+    res.json(report);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/pipeline/velocity/report', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCalculateVelocityReportInput(req.body);
+    if (!validation.ok) {
+      throw new Problem(422, validation.message, 'invalid_request', validation.errors);
+    }
+    const report = await pipelineVelocityService.generateReport(userId, validation.data);
+    res.json(report);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/pipeline/velocity/simulate', auth, async (req, res, next) => {
+  try {
+    const b = req.body as {
+      weeklyVelocity?: number;
+      weeksHorizon?: number;
+      stageMetrics?: any;
+    };
+    const weeklyVelocity = typeof b?.weeklyVelocity === 'number' ? b.weeklyVelocity : 5;
+    const weeksHorizon = typeof b?.weeksHorizon === 'number' ? b.weeksHorizon : 12;
+    const simulation = pipelineVelocityService.simulate({
+      weeklyVelocity,
+      weeksHorizon,
+      stageMetrics: Array.isArray(b?.stageMetrics) ? b.stageMetrics : undefined
+    });
+    res.json(simulation);
   } catch (error) {
     next(error);
   }
