@@ -16,3 +16,4 @@ export * from './analytics.ts';
 export * from './resume.ts';
 export * from './company.ts';
 export * from './follow-up.ts';
+export * from './contact.ts';

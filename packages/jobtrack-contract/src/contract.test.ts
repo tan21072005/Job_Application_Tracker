@@ -74,7 +74,12 @@ import {
   calculateFollowUpCadence,
   generateFollowUpEmail,
   validateFollowUpLogInput,
-  DEFAULT_FOLLOW_UP_TEMPLATES
+  DEFAULT_FOLLOW_UP_TEMPLATES,
+  validateContactInput,
+  validateInteractionInput,
+  calculateRelationshipHealth,
+  deriveRecommendedReconnectDays,
+  type ContactDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -1692,4 +1697,106 @@ test('contract: validateFollowUpLogInput validates schema bounds and required fi
   assert.ok(invalid.errors?.applicationId);
   assert.ok(invalid.errors?.subject);
   assert.ok(invalid.errors?.body);
+});
+
+test('contract: deriveRecommendedReconnectDays calculates expected cadence based on relationship strength and type', () => {
+  assert.equal(deriveRecommendedReconnectDays('advocate', 'referrer'), 30);
+  assert.equal(deriveRecommendedReconnectDays('in_touch', 'peer'), 45);
+  assert.equal(deriveRecommendedReconnectDays('connected', 'peer'), 60);
+  assert.equal(deriveRecommendedReconnectDays('lead', 'recruiter'), 45);
+  assert.equal(deriveRecommendedReconnectDays('lead', 'peer'), 90);
+});
+
+test('contract: calculateRelationshipHealth flags dormant and due contacts with actionable suggestions', () => {
+  const now = new Date();
+  const fortyDaysAgo = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000).toISOString();
+  const hundredDaysAgo = new Date(now.getTime() - 100 * 24 * 60 * 60 * 1000).toISOString();
+
+  const advocateContact: ContactDTO = {
+    id: 'cnt-01',
+    name: 'Anh Hoàng Tech Lead',
+    company: 'VNG',
+    type: 'referrer',
+    relationshipStrength: 'advocate',
+    lastContactedAt: fortyDaysAgo,
+    createdAt: hundredDaysAgo,
+    updatedAt: fortyDaysAgo
+  };
+
+  const healthAdvocate = calculateRelationshipHealth(advocateContact);
+  assert.equal(healthAdvocate.isReconnectDue, true);
+  assert.equal(healthAdvocate.isDormant, false);
+  assert.equal(healthAdvocate.healthStatus, 'due');
+  assert.ok(healthAdvocate.suggestedAction.includes('người giới thiệu'));
+
+  const dormantContact: ContactDTO = {
+    id: 'cnt-02',
+    name: 'Chị Mai Recruiter',
+    company: 'Shopee',
+    type: 'recruiter',
+    relationshipStrength: 'connected',
+    lastContactedAt: hundredDaysAgo,
+    createdAt: hundredDaysAgo,
+    updatedAt: hundredDaysAgo
+  };
+
+  const healthDormant = calculateRelationshipHealth(dormantContact);
+  assert.equal(healthDormant.isDormant, true);
+  assert.equal(healthDormant.healthStatus, 'dormant');
+  assert.ok(healthDormant.suggestedAction.includes('hâm nóng quan hệ'));
+});
+
+test('contract: validateContactInput enforces required name and company and validates email and url', () => {
+  const valid = validateContactInput({
+    name: 'Trần Văn B',
+    company: 'FPT Software',
+    role: 'Engineering Manager',
+    type: 'hiring_manager',
+    email: 'b.tran@fpt.com',
+    phone: '0901234567',
+    linkedinUrl: 'https://linkedin.com/in/vantran',
+    relationshipStrength: 'in_touch'
+  });
+
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.name, 'Trần Văn B');
+    assert.equal(valid.data.company, 'FPT Software');
+    assert.equal(valid.data.type, 'hiring_manager');
+  }
+
+  const invalid = validateContactInput({
+    name: '',
+    company: '',
+    email: 'not-an-email',
+    linkedinUrl: 'ftp://bad-scheme.com'
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors?.name);
+  assert.ok(invalid.errors?.company);
+  assert.ok(invalid.errors?.email);
+  assert.ok(invalid.errors?.linkedinUrl);
+});
+
+test('contract: validateInteractionInput validates channel and required summary', () => {
+  const valid = validateInteractionInput({
+    channel: 'coffee',
+    summary: 'Gặp gỡ trao đổi về văn hóa đội ngũ kỹ thuật',
+    details: 'Anh B chia sẻ định hướng mở rộng team Golang trong quý tới.'
+  });
+
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.channel, 'coffee');
+    assert.ok(valid.data.summary.includes('văn hóa'));
+  }
+
+  const invalid = validateInteractionInput({
+    channel: 'invalid_channel',
+    summary: ''
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors?.summary);
 });
