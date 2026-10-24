@@ -28,3 +28,4 @@ export * from './portfolio-dossier.ts';
 export * from './compensation-forecaster.ts';
 export * from './career-trajectory.ts';
 export * from './resume-optimizer.ts';
+export * from './pipeline-velocity.ts';

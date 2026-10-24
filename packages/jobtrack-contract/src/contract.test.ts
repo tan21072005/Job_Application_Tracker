@@ -148,7 +148,12 @@ import {
   rewriteBulletPointsXyz,
   synthesizeOptimizedResume,
   validateOptimizeResumeInput,
-  validateRewriteBulletInput
+  validateRewriteBulletInput,
+  computeStageConversionMetrics,
+  detectPipelineBottlenecks,
+  calculateVelocityTargets,
+  simulatePipelineOutcomes,
+  validateCalculateVelocityReportInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -3162,6 +3167,227 @@ test('contract: validateOptimizeResumeInput and validateRewriteBulletInput valid
   assert.equal(invalidRewrite.ok, false);
   assert.ok(invalidRewrite.errors.bullets);
 });
+
+test('contract: computeStageConversionMetrics calculates funnel metrics accurately', () => {
+  const mockApps = [
+    {
+      status: 'Offer' as const,
+      appliedAt: '2026-09-01T00:00:00Z',
+      createdAt: '2026-09-01T00:00:00Z',
+      statusUpdatedAt: '2026-10-01T00:00:00Z',
+      interviews: [{ id: 'i1', status: 'Completed', at: '2026-09-15T00:00:00Z' }]
+    },
+    {
+      status: 'Interview' as const,
+      appliedAt: '2026-09-10T00:00:00Z',
+      createdAt: '2026-09-10T00:00:00Z',
+      statusUpdatedAt: '2026-09-25T00:00:00Z',
+      interviews: [{ id: 'i2', status: 'Scheduled', at: '2026-09-20T00:00:00Z' }]
+    },
+    {
+      status: 'Rejected' as const,
+      appliedAt: '2026-09-05T00:00:00Z',
+      createdAt: '2026-09-05T00:00:00Z',
+      statusUpdatedAt: '2026-09-12T00:00:00Z',
+      interviews: []
+    }
+  ];
+
+  const metrics = computeStageConversionMetrics(mockApps);
+  assert.equal(metrics.length, 4);
+
+  const appliedStage = metrics.find(m => m.stage === 'Applied');
+  assert.ok(appliedStage);
+  assert.equal(appliedStage.totalEntered, 3);
+  assert.equal(appliedStage.passed, 2);
+  assert.equal(appliedStage.dropped, 1);
+  assert.equal(appliedStage.conversionRate, 66.7);
+
+  const interviewStage = metrics.find(m => m.stage === 'Interview');
+  assert.ok(interviewStage);
+  assert.equal(interviewStage.totalEntered, 2);
+  assert.equal(interviewStage.passed, 1);
+
+  const offerStage = metrics.find(m => m.stage === 'Offer');
+  assert.ok(offerStage);
+  assert.equal(offerStage.totalEntered, 1);
+  assert.equal(offerStage.passed, 1);
+});
+
+test('contract: detectPipelineBottlenecks classifies stage risks correctly', () => {
+  const stageMetrics = [
+    {
+      stage: 'Applied' as const,
+      totalEntered: 10,
+      passed: 1,
+      dropped: 9,
+      conversionRate: 10.0,
+      avgDaysInStage: 7
+    },
+    {
+      stage: 'Screening' as const,
+      totalEntered: 10,
+      passed: 5,
+      dropped: 5,
+      conversionRate: 50.0,
+      avgDaysInStage: 5
+    },
+    {
+      stage: 'Interview' as const,
+      totalEntered: 10,
+      passed: 9,
+      dropped: 1,
+      conversionRate: 90.0,
+      avgDaysInStage: 12
+    },
+    {
+      stage: 'Offer' as const,
+      totalEntered: 5,
+      passed: 5,
+      dropped: 0,
+      conversionRate: 100.0,
+      avgDaysInStage: 4
+    }
+  ];
+
+  const bottlenecks = detectPipelineBottlenecks(stageMetrics);
+  assert.equal(bottlenecks.length, 4);
+
+  const appliedBottleneck = bottlenecks.find(b => b.stage === 'Applied');
+  assert.ok(appliedBottleneck);
+  assert.equal(appliedBottleneck.severity, 'critical');
+  assert.equal(appliedBottleneck.dropOffRate, 90.0);
+  assert.ok(appliedBottleneck.diagnosticMessage.includes('Cảnh báo nghiêm trọng'));
+
+  const screeningBottleneck = bottlenecks.find(b => b.stage === 'Screening');
+  assert.ok(screeningBottleneck);
+  assert.equal(screeningBottleneck.severity, 'moderate');
+  assert.equal(screeningBottleneck.dropOffRate, 50.0);
+
+  const interviewBottleneck = bottlenecks.find(b => b.stage === 'Interview');
+  assert.ok(interviewBottleneck);
+  assert.equal(interviewBottleneck.severity, 'healthy');
+});
+
+test('contract: calculateVelocityTargets calculates target weekly velocity and forecasts', () => {
+  const stageMetrics = [
+    {
+      stage: 'Applied' as const,
+      totalEntered: 20,
+      passed: 10,
+      dropped: 10,
+      conversionRate: 50.0,
+      avgDaysInStage: 7
+    },
+    {
+      stage: 'Screening' as const,
+      totalEntered: 10,
+      passed: 6,
+      dropped: 4,
+      conversionRate: 60.0,
+      avgDaysInStage: 5
+    },
+    {
+      stage: 'Interview' as const,
+      totalEntered: 6,
+      passed: 3,
+      dropped: 3,
+      conversionRate: 50.0,
+      avgDaysInStage: 14
+    },
+    {
+      stage: 'Offer' as const,
+      totalEntered: 3,
+      passed: 2,
+      dropped: 1,
+      conversionRate: 66.7,
+      avgDaysInStage: 5
+    }
+  ];
+
+  const futureDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const targets = calculateVelocityTargets(stageMetrics, futureDate, 2, 4);
+
+  assert.equal(targets.currentWeeklyApplications, 4);
+  assert.ok(targets.recommendedWeeklyApplications >= 1);
+  assert.ok(targets.projectedOffersIn30Days >= 0);
+  assert.ok(targets.projectedOffersIn60Days >= targets.projectedOffersIn30Days);
+  assert.ok(targets.confidenceScore >= 80);
+});
+
+test('contract: simulatePipelineOutcomes runs deterministic Monte Carlo simulations', () => {
+  const stageMetrics = [
+    {
+      stage: 'Applied' as const,
+      totalEntered: 10,
+      passed: 5,
+      dropped: 5,
+      conversionRate: 50.0,
+      avgDaysInStage: 7
+    },
+    {
+      stage: 'Screening' as const,
+      totalEntered: 5,
+      passed: 3,
+      dropped: 2,
+      conversionRate: 60.0,
+      avgDaysInStage: 5
+    },
+    {
+      stage: 'Interview' as const,
+      totalEntered: 3,
+      passed: 2,
+      dropped: 1,
+      conversionRate: 66.7,
+      avgDaysInStage: 14
+    },
+    {
+      stage: 'Offer' as const,
+      totalEntered: 2,
+      passed: 2,
+      dropped: 0,
+      conversionRate: 100.0,
+      avgDaysInStage: 4
+    }
+  ];
+
+  const sim = simulatePipelineOutcomes(5, stageMetrics, 12);
+  assert.equal(sim.simulatedApplicationsPerWeek, 5);
+  assert.equal(sim.simulationDays, 84);
+  assert.ok(sim.p90Offers >= sim.p50Offers);
+  assert.ok(sim.p50Offers >= sim.p10Offers);
+  assert.ok(typeof sim.estimatedDaysToFirstOffer === 'number' || sim.estimatedDaysToFirstOffer === null);
+});
+
+test('contract: validateCalculateVelocityReportInput enforces schema constraints', () => {
+  const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const valid = validateCalculateVelocityReportInput({
+    targetOfferDate: futureDate,
+    targetOfferCount: 2,
+    simulatedWeeklyVelocity: 6,
+    simulationHorizonWeeks: 8
+  });
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.targetOfferDate, futureDate);
+    assert.equal(valid.data.targetOfferCount, 2);
+    assert.equal(valid.data.simulatedWeeklyVelocity, 6);
+    assert.equal(valid.data.simulationHorizonWeeks, 8);
+  }
+
+  const invalid = validateCalculateVelocityReportInput({
+    targetOfferDate: '2020-01-01',
+    targetOfferCount: 0,
+    simulationHorizonWeeks: 100
+  });
+  assert.equal(invalid.ok, false);
+  if (!invalid.ok) {
+    assert.ok(invalid.errors.targetOfferDate);
+    assert.ok(invalid.errors.targetOfferCount);
+    assert.ok(invalid.errors.simulationHorizonWeeks);
+  }
+});
+
 
 
 
