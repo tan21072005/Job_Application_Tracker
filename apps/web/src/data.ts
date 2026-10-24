@@ -77,7 +77,16 @@ import {
   type CompanyInterviewQuestionDTO,
   calculateCompanyAggregates,
   validateCompanyReviewInput,
-  synthesizeCompanyIntelligence
+  synthesizeCompanyIntelligence,
+  type FollowUpLogDTO,
+  type FollowUpCadenceStatusDTO,
+  type FollowUpTemplateDTO,
+  type GenerateFollowUpInput,
+  type GeneratedFollowUpDraftDTO,
+  DEFAULT_FOLLOW_UP_TEMPLATES,
+  calculateFollowUpCadence,
+  generateFollowUpEmail,
+  validateFollowUpLogInput
 } from '@jobtrack/contract';
 
 export type {
@@ -92,7 +101,12 @@ export type {
   CompanyReviewDTO,
   CompanySalaryBenchmarkDTO,
   CompanyCultureScoresDTO,
-  CompanyInterviewQuestionDTO
+  CompanyInterviewQuestionDTO,
+  FollowUpLogDTO,
+  FollowUpCadenceStatusDTO,
+  FollowUpTemplateDTO,
+  GenerateFollowUpInput,
+  GeneratedFollowUpDraftDTO
 };
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
@@ -1626,6 +1640,141 @@ export const companyRepository = {
     return request<CompanySalaryBenchmarkDTO[]>(`/companies/${encodeURIComponent(cleanName)}/salaries`);
   }
 };
+
+const FOLLOW_UP_STORAGE_KEY = 'jobtrack.follow_ups.v1';
+
+function loadDemoFollowUpLogs(): Record<string, FollowUpLogDTO[]> {
+  if (typeof localStorage === 'undefined') return {};
+  const stored = localStorage.getItem(FOLLOW_UP_STORAGE_KEY);
+  if (!stored) return {};
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return {};
+  }
+}
+
+function saveDemoFollowUpLogs(map: Record<string, FollowUpLogDTO[]>): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(FOLLOW_UP_STORAGE_KEY, JSON.stringify(map));
+  }
+}
+
+export const followUpRepository = {
+  async getFollowUps(appId: string): Promise<{ cadence: FollowUpCadenceStatusDTO; templates: FollowUpTemplateDTO[]; logs: FollowUpLogDTO[] }> {
+    if (demoMode) {
+      const apps = load();
+      const app = apps.find(a => a.id === appId);
+      if (!app) throw new ApiError('Hồ sơ không tồn tại hoặc đã bị xóa.', 404);
+      const allLogs = loadDemoFollowUpLogs();
+      const logs = allLogs[appId] || [];
+      const lastDate = logs[0]?.sentAt || app.interviews?.[0]?.at || app.appliedAt || app.createdAt;
+      const cadence = calculateFollowUpCadence(app.id, app.status as any, lastDate);
+      return {
+        cadence,
+        templates: DEFAULT_FOLLOW_UP_TEMPLATES,
+        logs
+      };
+    }
+    return request<{ cadence: FollowUpCadenceStatusDTO; templates: FollowUpTemplateDTO[]; logs: FollowUpLogDTO[] }>(
+      `/applications/${encodeURIComponent(appId)}/follow-ups`
+    );
+  },
+
+  async generateDraft(appId: string, input: Partial<GenerateFollowUpInput>): Promise<GeneratedFollowUpDraftDTO> {
+    if (demoMode) {
+      const apps = load();
+      const app = apps.find(a => a.id === appId);
+      if (!app) throw new ApiError('Hồ sơ không tồn tại hoặc đã bị xóa.', 404);
+      const fullInput: GenerateFollowUpInput = {
+        company: app.company,
+        position: app.position,
+        stage: (input.stage || app.status) as any,
+        tone: input.tone || 'polite_check_in',
+        candidateName: input.candidateName || 'Ứng viên',
+        recruiterName: input.recruiterName,
+        interviewRound: input.interviewRound,
+        discussionHighlight: input.discussionHighlight,
+        additionalNotes: input.additionalNotes
+      };
+      return generateFollowUpEmail(fullInput);
+    }
+    return request<GeneratedFollowUpDraftDTO>(
+      `/applications/${encodeURIComponent(appId)}/follow-ups/generate`,
+      {
+        method: 'POST',
+        body: JSON.stringify(input)
+      }
+    );
+  },
+
+  async createLog(
+    appId: string,
+    input: {
+      stage: string;
+      tone: string;
+      recipientEmail?: string;
+      subject: string;
+      body: string;
+      notes?: string;
+    }
+  ): Promise<FollowUpLogDTO> {
+    const val = validateFollowUpLogInput({ applicationId: appId, ...input });
+    if (!val.ok) {
+      throw new ApiError(val.message || 'Dữ liệu nhật ký follow-up chưa hợp lệ.', 422);
+    }
+    if (demoMode) {
+      const allLogs = loadDemoFollowUpLogs();
+      const existing = allLogs[appId] || [];
+      const newLog: FollowUpLogDTO = {
+        id: `ful-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        applicationId: appId,
+        userId: 'demo-user',
+        stage: val.data.stage,
+        tone: val.data.tone,
+        recipientEmail: val.data.recipientEmail || undefined,
+        subject: val.data.subject,
+        body: val.data.body,
+        notes: val.data.notes || undefined,
+        sentAt: val.data.sentAt || new Date().toISOString()
+      };
+      allLogs[appId] = [newLog, ...existing];
+      saveDemoFollowUpLogs(allLogs);
+      return newLog;
+    }
+    return request<FollowUpLogDTO>(
+      `/applications/${encodeURIComponent(appId)}/follow-ups/logs`,
+      {
+        method: 'POST',
+        body: JSON.stringify(input)
+      }
+    );
+  },
+
+  async getDueFollowUps(): Promise<FollowUpCadenceStatusDTO[]> {
+    if (demoMode) {
+      const apps = load();
+      const activeApps = apps.filter(a => !['rejected', 'withdrawn', 'archived'].includes(a.status.toLowerCase()));
+      const allLogs = loadDemoFollowUpLogs();
+      const dueList: FollowUpCadenceStatusDTO[] = [];
+      for (const app of activeApps) {
+        const logs = allLogs[app.id] || [];
+        const lastDate = logs[0]?.sentAt || app.interviews?.[0]?.at || app.appliedAt || app.createdAt;
+        const cadence = calculateFollowUpCadence(app.id, app.status as any, lastDate);
+        if (cadence.urgency === 'due' || cadence.urgency === 'overdue') {
+          dueList.push(cadence);
+        }
+      }
+      return dueList.sort((a, b) => {
+        if (a.urgency === 'overdue' && b.urgency !== 'overdue') return -1;
+        if (b.urgency === 'overdue' && a.urgency !== 'overdue') return 1;
+        return b.daysSinceLastInteraction - a.daysSinceLastInteraction;
+      });
+    }
+    return request<FollowUpCadenceStatusDTO[]>('/follow-ups/due');
+  }
+};
+
 
 
 

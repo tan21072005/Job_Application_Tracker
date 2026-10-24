@@ -54,18 +54,19 @@ async function main() {
   }
 
   ws.send(JSON.stringify({ jsonrpc: '2.0', method: 'hello', params: { client: 'jobtrack-e2e', pid: process.pid } }));
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise(r => setTimeout(r, 400));
 
   try {
-    await call('tabs_list');
-  } catch (err) {
-    const errMsg = String(err?.message || '');
-    const match = errMsg.match(/Dang ket noi:[^=]*=([a-zA-Z0-9_-]+)/);
-    if (match) {
-      targetBrowser = match[1];
-      console.log(`Auto-detected active browser: ${targetBrowser}`);
+    const browsersRes = await new Promise(resolve => {
+      const id = nextId++;
+      pending.set(id, { resolve, reject: () => resolve(null) });
+      ws.send(JSON.stringify({ jsonrpc: '2.0', id, method: 'browsers' }));
+    });
+    if (Array.isArray(browsersRes) && browsersRes.length > 0) {
+      targetBrowser = browsersRes[0].id || browsersRes[0].label;
+      console.log(`Auto-detected active browser: ${browsersRes[0].label} (${browsersRes[0].id})`);
     }
-  }
+  } catch {}
 
   console.log('Discovering open tabs...');
   const tabsListRes = await call('tabs_list');
@@ -1402,6 +1403,121 @@ async function main() {
       return JSON.stringify({ exists: Boolean(sidebarBtn) });
     })()`);
     record('Sidebar Company Explorer Launcher', 'Nút truy cập Hồ sơ công ty tích hợp thường trực trên thanh điều hướng bên (Sidebar)', sidebarExplorerCheck.exists);
+
+    console.log('\n--- GIAI ĐOẠN 16: Milestone 14 - Điều phối Follow-up & Kết nối Tuyển dụng (Cadence, Templates, Draft, Logs) ---');
+    await ensureActiveTab();
+
+    console.log('Kiểm tra nút kích hoạt Follow-up Sequencer trong chi tiết hồ sơ...');
+    const followUpBtnCheck = await evaluate(`(() => {
+      const btn = document.querySelector('.follow-up-sequencer-btn');
+      return JSON.stringify({ exists: Boolean(btn), text: btn ? btn.textContent.trim() : '' });
+    })()`);
+    record('Follow-Up Sequencer Launcher', 'Nút Gửi Follow-up khả dụng trong giao diện chi tiết hồ sơ ứng tuyển', followUpBtnCheck.exists, followUpBtnCheck.text);
+
+    console.log('Nhấp nút mở modal Điều phối Follow-up...');
+    await evaluate(`(() => {
+      const btn = document.querySelector('.follow-up-sequencer-btn');
+      if (btn) btn.click();
+    })()`);
+    await wait(800);
+
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.follow-up-modal-card'))`);
+      if (ready) break;
+      await wait(150);
+    }
+
+    console.log('Kiểm tra banner nhịp độ liên hệ (Cadence Banner) và cấp độ khẩn cấp...');
+    const cadenceBannerCheck = await evaluate(`(() => {
+      const card = document.querySelector('.follow-up-modal-card');
+      if (!card) return JSON.stringify({ exists: false });
+      const banner = card.querySelector('.cadence-status-banner');
+      const urgencyBadge = card.querySelector('.urgency-badge');
+      const daysCounter = card.querySelector('.days-counter');
+      return JSON.stringify({
+        exists: Boolean(banner),
+        urgency: urgencyBadge ? urgencyBadge.textContent.trim() : '',
+        daysText: daysCounter ? daysCounter.textContent.trim() : ''
+      });
+    })()`);
+    record('Follow-up Cadence & Urgency Calculator', 'Hệ thống tự động tính toán nhịp độ follow-up, số ngày đã trôi qua và cấp độ khẩn cấp (Scheduled/Due/Overdue)', cadenceBannerCheck.exists && Boolean(cadenceBannerCheck.urgency), `${cadenceBannerCheck.urgency} - ${cadenceBannerCheck.daysText}`);
+
+    console.log('Chuyển đổi tone sang Thư cảm ơn và điền thông tin cá nhân hoá...');
+    await evaluate(`(() => {
+      const pills = Array.from(document.querySelectorAll('.tone-pill-btn'));
+      const thankYouPill = pills.find(p => p.textContent.includes('Thư cảm ơn') || p.textContent.includes('24h'));
+      if (thankYouPill) thankYouPill.click();
+
+      window.__setReactInput('.input-candidate-name', 'Nguyễn Văn A');
+      window.__setReactInput('.input-recruiter-name', 'Chị Lan - HR Manager');
+      window.__setReactInput('.input-discussion-highlight', 'Kinh nghiệm triển khai kiến trúc Clean Architecture và Vitest');
+    })()`);
+    await wait(600);
+
+    console.log('Tạo bản nháp với AI...');
+    await evaluate(`(() => {
+      const genBtn = document.querySelector('.generate-draft-btn');
+      if (genBtn) genBtn.click();
+    })()`);
+    await wait(1000);
+
+    const draftCheck = await evaluate(`(() => {
+      const subjectInput = document.querySelector('.follow-up-subject-input');
+      const bodyTextarea = document.querySelector('.follow-up-body-textarea');
+      const suggestions = document.querySelectorAll('.follow-up-suggestions-list li');
+      return JSON.stringify({
+        hasSubject: Boolean(subjectInput && subjectInput.value.length > 5),
+        subjectVal: subjectInput ? subjectInput.value.slice(0, 50) : '',
+        hasBody: Boolean(bodyTextarea && bodyTextarea.value.length > 20),
+        suggestionsCount: suggestions.length
+      });
+    })()`);
+    record('Dynamic AI Draft Generation & Tone Adaptation', 'Tạo bản nháp email follow-up cá nhân hoá theo từng giai đoạn và giọng điệu mong muốn', draftCheck.hasSubject && draftCheck.hasBody, `Tiêu đề: ${draftCheck.subjectVal}, Gợi ý: ${draftCheck.suggestionsCount}`);
+
+    console.log('Kiểm tra nút 1-Click Sao chép nội dung email...');
+    const copyCheck = await evaluate(`(() => {
+      const copyBtn = document.querySelector('.copy-email-btn');
+      if (copyBtn) copyBtn.click();
+      return JSON.stringify({ exists: Boolean(copyBtn) });
+    })()`);
+    await wait(500);
+    record('1-Click Copy & Practical Advice', 'Sao chép nhanh nội dung thư và hiển thị danh sách mẹo vàng khi gửi follow-up', copyCheck.exists && draftCheck.suggestionsCount > 0);
+
+    console.log('Mở form ghi nhận lịch sử gửi thư (Log Outreach)...');
+    await evaluate(`(() => {
+      const toggleBtn = document.querySelector('.log-outreach-toggle-btn');
+      if (toggleBtn) toggleBtn.click();
+    })()`);
+    await wait(400);
+
+    console.log('Điền thông tin nhật ký gửi thư và bấm lưu...');
+    await evaluate(`(() => {
+      window.__setReactInput('.input-recipient-email', 'lan.hr@vietnamtech.io');
+      window.__setReactInput('.input-log-notes', 'Đã gửi qua Gmail cá nhân lúc 9h sáng kèm link demo project');
+      const saveBtn = document.querySelector('.log-sent-outreach-btn');
+      if (saveBtn) saveBtn.click();
+    })()`);
+    await wait(1500);
+
+    const logHistoryCheck = await evaluate(`(() => {
+      const items = document.querySelectorAll('.follow-up-history-item');
+      const firstItem = items[0];
+      const subjectText = firstItem ? firstItem.querySelector('.history-subject')?.textContent || '' : '';
+      const notesText = firstItem ? firstItem.querySelector('.history-notes')?.textContent || '' : '';
+      return JSON.stringify({
+        count: items.length,
+        subjectText: subjectText.slice(0, 45),
+        notesText: notesText.slice(0, 45)
+      });
+    })()`);
+    record('Outreach History & Cadence Recalculation', 'Ghi nhận lịch sử gửi thư thành công, lưu vết thời gian và tự động cập nhật nhịp độ liên hệ', logHistoryCheck.count > 0, `Số bản ghi: ${logHistoryCheck.count}, Ghi chú: ${logHistoryCheck.notesText}`);
+
+    console.log('Đóng modal Điều phối Follow-up...');
+    await evaluate(`(() => {
+      const closeBtn = document.querySelector('.follow-up-modal-card .close-btn') || document.querySelector('.follow-up-modal-card .modal-footer button');
+      if (closeBtn) closeBtn.click();
+    })()`);
+    await wait(600);
 
 
 
