@@ -70,7 +70,11 @@ import {
   tailorResumeForJob,
   calculateCompanyAggregates,
   validateCompanyReviewInput,
-  synthesizeCompanyIntelligence
+  synthesizeCompanyIntelligence,
+  calculateFollowUpCadence,
+  generateFollowUpEmail,
+  validateFollowUpLogInput,
+  DEFAULT_FOLLOW_UP_TEMPLATES
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -1619,4 +1623,73 @@ test('contract: synthesizeCompanyIntelligence returns rich presets for known com
   assert.ok(custom.salaryBenchmarks.length >= 3);
   assert.ok(custom.interviewQuestions.length >= 1);
   assert.ok(custom.cultureScores.overall >= 3.5);
+});
+
+test('contract: calculateFollowUpCadence calculates schedule, due, and overdue urgency accurately', () => {
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString();
+  const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString();
+  const eightDaysAgo = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString();
+
+  const scheduled = calculateFollowUpCadence('app-1', 'Applied', oneDayAgo, 5);
+  assert.equal(scheduled.urgency, 'scheduled');
+  assert.equal(scheduled.isDue, false);
+  assert.equal(scheduled.isOverdue, false);
+
+  const due = calculateFollowUpCadence('app-1', 'Applied', fiveDaysAgo, 5);
+  assert.equal(due.urgency, 'due');
+  assert.equal(due.isDue, true);
+  assert.equal(due.isOverdue, false);
+
+  const overdue = calculateFollowUpCadence('app-1', 'Applied', eightDaysAgo, 5);
+  assert.equal(overdue.urgency, 'overdue');
+  assert.equal(overdue.isDue, true);
+  assert.equal(overdue.isOverdue, true);
+});
+
+test('contract: generateFollowUpEmail interpolates variables and provides stage-appropriate advice', () => {
+  const result = generateFollowUpEmail({
+    company: 'Grab Vietnam',
+    position: 'Staff Platform Engineer',
+    stage: 'Interview',
+    tone: 'post_interview_thank_you',
+    candidateName: 'Nguyễn Văn A',
+    recruiterName: 'Chị Lan HR',
+    discussionHighlight: 'kiến trúc Distributed Tracing và High Throughput Kafka'
+  });
+
+  assert.ok(result.subject.includes('Grab Vietnam'));
+  assert.ok(result.subject.includes('Staff Platform Engineer'));
+  assert.ok(result.subject.includes('Nguyễn Văn A'));
+  assert.ok(result.body.includes('Chị Lan HR'));
+  assert.ok(result.body.includes('Distributed Tracing'));
+  assert.ok(!result.body.includes('{{'));
+  assert.ok(result.keySuggestions.length > 0);
+});
+
+test('contract: validateFollowUpLogInput validates schema bounds and required fields', () => {
+  const valid = validateFollowUpLogInput({
+    applicationId: 'app-999',
+    stage: 'Interview',
+    tone: 'post_interview_thank_you',
+    subject: 'Cảm ơn buổi phỏng vấn ngày hôm nay',
+    body: 'Tôi xin chân thành cảm ơn quý công ty đã dành thời gian trao đổi...',
+    recipientEmail: 'recruiter@example.com',
+    notes: 'Đã gửi qua email lúc 14:00'
+  });
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.applicationId, 'app-999');
+    assert.equal(valid.data.tone, 'post_interview_thank_you');
+  }
+
+  const invalid = validateFollowUpLogInput({
+    applicationId: '',
+    subject: '',
+    body: 'Ngắn'
+  });
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors?.applicationId);
+  assert.ok(invalid.errors?.subject);
+  assert.ok(invalid.errors?.body);
 });
