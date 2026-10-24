@@ -80,7 +80,7 @@ export function PipelineVelocityModal({
     return () => {
       mounted = false;
     };
-  }, [notify]);
+  }, []);
 
   const handleRecalculate = async () => {
     setRecalculating(true);
