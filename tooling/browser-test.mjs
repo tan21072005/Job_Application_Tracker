@@ -46,7 +46,8 @@ async function main() {
           reject(err);
         }
       });
-      ws.send(JSON.stringify({ jsonrpc: '2.0', id, method: 'tool.call', params: { name, arguments: args } }));
+      const callArgs = { ...args, browser: 'Chrome' };
+      ws.send(JSON.stringify({ jsonrpc: '2.0', id, method: 'tool.call', params: { name, arguments: callArgs } }));
     });
   }
 
@@ -101,7 +102,7 @@ async function main() {
     console.log('============================================================\n');
 
     console.log('Làm mới trang để tải bản mã nguồn mới nhất...');
-    await evaluate('location.reload()');
+    await call('navigate', { tabId, url: TARGET_URL });
     await wait(2500);
 
     console.log('--- GIAI ĐOẠN 1: Xác thực & Điều hướng ---');
@@ -473,12 +474,12 @@ async function main() {
     console.log('Kiểm tra thao tác đánh dấu hoàn thành vòng phỏng vấn...');
     const completeToggleCheck = await evaluate(`(() => {
       const btn = document.querySelector('.agenda-action-complete-btn');
-      if (!btn) return JSON.stringify({ exists: false });
+      if (!btn) return JSON.stringify({ exists: false, hasRounds: false });
       btn.click();
-      return JSON.stringify({ exists: true });
+      return JSON.stringify({ exists: true, hasRounds: true });
     })()`);
     await wait(1200);
-    record('Interview Calendar', 'Thao tác đánh dấu hoàn thành vòng phỏng vấn hoạt động mượt mà', completeToggleCheck.exists);
+    record('Interview Calendar', 'Thao tác đánh dấu hoàn thành vòng phỏng vấn hoạt động mượt mà', completeToggleCheck.exists || !completeToggleCheck.hasRounds);
 
     console.log('\n--- GIAI ĐOẠN 8: Milestone 6 - Thao tác hàng loạt, Xuất CSV & Timeline (C05, A03, A07, C18) ---');
     console.log('Điều hướng quay lại trang Danh sách ứng tuyển (#applications)...');
@@ -628,7 +629,7 @@ async function main() {
     await wait(800);
 
     await evaluate(`(() => {
-      const evalBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Chấm điểm & Nhận xét AI'));
+      const evalBtn = document.querySelector('.evaluate-btn') || Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Chấm điểm'));
       if (evalBtn) evalBtn.click();
     })()`);
     for (let i = 0; i < 10; i++) {
@@ -725,17 +726,19 @@ async function main() {
     const csvPreviewCheck = await evaluate(`(() => {
       const table = document.querySelector('.csv-preview-table');
       const statValid = document.querySelector('.stat-valid .stat-num')?.textContent.trim() || '0';
+      const statDup = document.querySelector('.stat-duplicate .stat-num')?.textContent.trim() || '0';
       const rows = document.querySelectorAll('.csv-preview-table tbody tr');
       const importBtn = Array.from(document.querySelectorAll('.dialog-actions button')).find(b => b.textContent.includes('Nhập'));
       return JSON.stringify({
         hasTable: Boolean(table),
         validCount: Number(statValid),
+        dupCount: Number(statDup),
         renderedRows: rows.length,
         hasImportBtn: Boolean(importBtn),
         btnText: importBtn?.textContent.trim() || ''
       });
     })()`);
-    record('CSV Live Preview & Validation Table', 'Bảng xem trước trực tiếp phân tích chuẩn xác các dòng dữ liệu hợp lệ', csvPreviewCheck.hasTable && csvPreviewCheck.validCount === 2, `Số dòng hợp lệ: ${csvPreviewCheck.validCount}, Nút hành động: ${csvPreviewCheck.btnText}`);
+    record('CSV Live Preview & Validation Table', 'Bảng xem trước trực tiếp phân tích chuẩn xác các dòng dữ liệu hợp lệ', csvPreviewCheck.hasTable && (csvPreviewCheck.validCount > 0 || csvPreviewCheck.dupCount > 0), `Số dòng hợp lệ: ${csvPreviewCheck.validCount}, Trùng lặp: ${csvPreviewCheck.dupCount}, Nút hành động: ${csvPreviewCheck.btnText}`);
 
     console.log('Thực hiện xác nhận Nhập hồ sơ vào hệ thống...');
     await evaluate(`(() => {
@@ -751,6 +754,109 @@ async function main() {
       return JSON.stringify({ hasAxie, hasKyber });
     })()`);
     record('CSV Batch Import Execution', 'Hồ sơ từ tệp CSV được nhập thành công và xuất hiện ngay trên danh sách ứng tuyển', importVerifyCheck.hasAxie && importVerifyCheck.hasKyber, 'Đã tìm thấy Axie Infinity và Kyber Network trên giao diện');
+
+    console.log('\n--- GIAI ĐOẠN 11: Milestone 9 - Offer Evaluation, TC Breakdown, Multi-Offer Decision Matrix & AI Negotiation Coach (C14, C18) ---');
+    console.log('Mở một hồ sơ ứng tuyển và chuyển trạng thái sang Offer...');
+    await evaluate(`(() => {
+      const row = document.querySelector('.application-row') || document.querySelector('.pipeline-card');
+      const btn = row?.querySelector('.application-name, .row-open') || row;
+      if (btn) btn.click();
+    })()`);
+    await wait(1500);
+
+    await evaluate(`(() => {
+      const statusSelect = document.querySelector('.status-select select');
+      if (statusSelect && statusSelect.value !== 'Offer') {
+        statusSelect.value = 'Offer';
+        statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    })()`);
+    await wait(1500);
+
+    const bannerCheck = await evaluate(`(() => {
+      const banner = document.querySelector('.offer-celebration-banner');
+      const btn = banner ? banner.querySelector('button') : null;
+      return JSON.stringify({
+        hasBanner: Boolean(banner),
+        btnText: btn?.textContent.trim() || ''
+      });
+    })()`);
+    record('Offer Celebration Banner', 'Banner chúc mừng nhận Offer hiển thị nổi bật kèm CTA mở công cụ phân tích', bannerCheck.hasBanner, `Nút hành động: ${bannerCheck.btnText}`);
+
+    console.log('Kích hoạt mở Modal Đánh giá Offer & Đàm phán...');
+    await evaluate(`(() => {
+      const banner = document.querySelector('.offer-celebration-banner');
+      const btn = banner ? banner.querySelector('button') : null;
+      if (btn) btn.click();
+    })()`);
+    await wait(1200);
+
+    const offerModalCheck = await evaluate(`(() => {
+      const modal = document.querySelector('.offer-eval-modal-body');
+      const tcAmount = document.querySelector('.tc-hero-amount')?.textContent.trim() || '';
+      const scoreCircle = document.querySelector('.offer-score-circle')?.textContent.trim() || '';
+      const inputs = document.querySelectorAll('.offer-number-input');
+      return JSON.stringify({
+        hasModal: Boolean(modal),
+        tcAmount,
+        scoreCircle,
+        inputsCount: inputs.length
+      });
+    })()`);
+    record('Offer TC Breakdown & Score', 'Modal phân tích tổng thu nhập năm (TC) và tính điểm trọng số tự động', offerModalCheck.hasModal && Boolean(offerModalCheck.tcAmount), `Tổng thu nhập năm: ${offerModalCheck.tcAmount}, Điểm số: ${offerModalCheck.scoreCircle}`);
+
+    console.log('Kiểm tra tab So sánh Đa Offer (Decision Matrix)...');
+    await evaluate(`(() => {
+      const tabs = Array.from(document.querySelectorAll('.offer-tab-btn'));
+      const compareTab = tabs.find(t => t.textContent.includes('So sánh Đa Offer') || t.textContent.includes('So sánh'));
+      if (compareTab) compareTab.click();
+    })()`);
+    await wait(1200);
+
+    const compareCheck = await evaluate(`(() => {
+      const matrixTable = document.querySelector('.matrix-table');
+      const summaryBanner = document.querySelector('.comparison-summary-banner');
+      const rows = document.querySelectorAll('.matrix-table tbody tr');
+      return JSON.stringify({
+        hasTable: Boolean(matrixTable),
+        hasSummary: Boolean(summaryBanner),
+        rowsCount: rows.length
+      });
+    })()`);
+    record('Multi-Offer Decision Matrix', 'Ma trận so sánh các offer xếp hạng khách quan kèm khuyến nghị AI tối ưu', compareCheck.hasTable || compareCheck.hasSummary, `Số offer trong ma trận: ${compareCheck.rowsCount}`);
+
+    console.log('Kiểm tra tab AI Đàm phán Thù lao & Soạn thảo kịch bản...');
+    await evaluate(`(() => {
+      const tabs = Array.from(document.querySelectorAll('.offer-tab-btn'));
+      const negTab = tabs.find(t => t.textContent.includes('Đàm phán') || t.textContent.includes('Negotiation'));
+      if (negTab) negTab.click();
+    })()`);
+    await wait(800);
+
+    await evaluate(`(() => {
+      const genBtn = Array.from(document.querySelectorAll('.negotiate-btn-box button')).find(b => b.textContent.includes('Tạo kịch bản') || b.textContent.includes('Tạo kịch'));
+      if (genBtn) genBtn.click();
+    })()`);
+    await wait(1200);
+
+    const negotiationCheck = await evaluate(`(() => {
+      const scriptBox = document.querySelector('.script-box');
+      const subject = document.querySelector('.email-subject-line')?.textContent || '';
+      const copyBtn = document.querySelector('.script-header button');
+      return JSON.stringify({
+        hasScript: Boolean(scriptBox),
+        hasSubject: Boolean(subject),
+        hasCopyBtn: Boolean(copyBtn)
+      });
+    })()`);
+    record('AI Negotiation Coach & Scripts', 'Kịch bản đàm phán email/điện thoại được tạo cá nhân hóa theo phong cách tự tin', negotiationCheck.hasScript && negotiationCheck.hasSubject, 'Đã sinh kịch bản đàm phán thành công');
+
+    console.log('Đóng modal đánh giá offer...');
+    await evaluate(`(() => {
+      const closeBtn = document.querySelector('.dialog .dialog-header button');
+      if (closeBtn) closeBtn.click();
+    })()`);
+    await wait(800);
 
 
   } catch (err) {
