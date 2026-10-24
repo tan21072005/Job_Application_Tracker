@@ -9,7 +9,15 @@ import type {
   ProOrderStatus,
   AtsMatchResultDTO,
   CoverLetterResultDTO,
-  AtsKeywordBreakdown
+  AtsKeywordBreakdown,
+  InterviewPrepRequestDTO,
+  InterviewPrepResultDTO,
+  InterviewEvaluateRequestDTO,
+  InterviewEvaluateResultDTO
+} from '@jobtrack/contract';
+import {
+  generateInterviewQuestions,
+  evaluateStarAnswer
 } from '@jobtrack/contract';
 
 export type AtsMatchResult = AtsMatchResultDTO;
@@ -518,5 +526,28 @@ export class AiProService {
       orderId: tx.orderId,
       plan: tx.plan
     };
+  }
+
+  async generateInterviewPrep(
+    input: InterviewPrepRequestDTO,
+    profile: CandidateProfile | null
+  ): Promise<InterviewPrepResultDTO> {
+    const candidateSkills = profile?.skills || [];
+    const mergedSkills = [...new Set([...candidateSkills, ...(input.skills || [])])];
+
+    return generateInterviewQuestions({
+      company: input.company,
+      position: input.position,
+      notes: input.notes,
+      roundTitle: input.roundTitle,
+      skills: mergedSkills,
+      domainTrack: input.domainTrack
+    });
+  }
+
+  async evaluateInterviewAnswer(
+    input: InterviewEvaluateRequestDTO
+  ): Promise<InterviewEvaluateResultDTO> {
+    return evaluateStarAnswer(input);
   }
 }

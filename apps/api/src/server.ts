@@ -24,7 +24,9 @@ import {
   generateIcsCalendar,
   formatApplicationsAsCsv,
   validateBulkStatusInput,
-  validateBulkTrashInput
+  validateBulkTrashInput,
+  validateInterviewPrepInput,
+  validateInterviewEvaluateInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -1388,6 +1390,34 @@ app.post('/api/ai/pro/cover-letter', auth, async (req, res, next) => {
 
     const profile = await candidateProfileService.getProfile(userId);
     const result = await aiProService.generateCoverLetter({ company, position, notes }, profile, { language });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/ai/pro/interview-prep', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateInterviewPrepInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const profile = await candidateProfileService.getProfile(userId);
+    const result = await aiProService.generateInterviewPrep(val.data, profile);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/ai/pro/interview-evaluate', auth, async (req, res, next) => {
+  try {
+    const val = validateInterviewEvaluateInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const result = await aiProService.evaluateInterviewAnswer(val.data);
     res.json(result);
   } catch (error) {
     next(error);
