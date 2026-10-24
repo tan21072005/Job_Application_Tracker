@@ -134,7 +134,13 @@ import {
   deriveNegotiationLeveragePoints,
   validateCreateCompensationForecastInput,
   type EquityGrantDTO,
-  type CompensationPackageDTO
+  type CompensationPackageDTO,
+  PROMOTION_DIMENSION_METADATA,
+  recommendPromotionInitiatives,
+  evaluatePromotionReadiness,
+  simulateCareerTrajectory,
+  validateSimulateTrajectoryInput,
+  validateUpdateCompetenciesInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -2908,4 +2914,132 @@ test('contract: validateCreateCompensationForecastInput validates input payload'
   assert.ok(invalid.errors.role);
   assert.ok(invalid.errors['package.baseSalaryMonthly']);
 });
+
+test('contract: evaluatePromotionReadiness computes dimensions, gaps, readiness score, and estimated months', () => {
+  const readinessIC = evaluatePromotionReadiness('Senior', 'Staff', 'ic', {
+    technical_breadth: 85,
+    system_scale: 80,
+    org_influence: 55,
+    mentorship_culture: 70,
+    business_impact: 65
+  });
+
+  assert.equal(readinessIC.currentLevel, 'Senior');
+  assert.equal(readinessIC.targetLevel, 'Staff');
+  assert.equal(readinessIC.track, 'ic');
+  assert.equal(readinessIC.competencies.length, 5);
+  assert.ok(readinessIC.overallReadinessScore > 70 && readinessIC.overallReadinessScore <= 100);
+  assert.ok(readinessIC.estimatedMonthsToReadiness >= 3 && readinessIC.estimatedMonthsToReadiness <= 12);
+
+  const orgGap = readinessIC.competencies.find(c => c.dimension === 'org_influence');
+  assert.ok(orgGap);
+  assert.equal(orgGap.gapLevel, 'critical');
+  assert.ok(orgGap.evidenceCriteria.length > 0);
+
+  const readinessMgmt = evaluatePromotionReadiness('Senior', 'Engineering Manager', 'management', {
+    technical_breadth: 80,
+    system_scale: 75,
+    org_influence: 70,
+    mentorship_culture: 60,
+    business_impact: 65
+  });
+  assert.equal(readinessMgmt.track, 'management');
+  assert.equal(readinessMgmt.targetLevel, 'Engineering Manager');
+  const mentorGap = readinessMgmt.competencies.find(c => c.dimension === 'mentorship_culture');
+  assert.ok(mentorGap);
+  assert.equal(mentorGap.gapLevel, 'critical');
+});
+
+test('contract: recommendPromotionInitiatives generates actionable high-impact initiatives for critical/moderate gaps in both tracks', () => {
+  const icReadiness = evaluatePromotionReadiness('Senior', 'Staff', 'ic', {
+    org_influence: 50,
+    system_scale: 60
+  });
+  const icInitiatives = recommendPromotionInitiatives('ic', icReadiness.competencies);
+  assert.ok(icInitiatives.length > 0);
+  assert.ok(icInitiatives.some(i => i.focusDimension === 'org_influence'));
+
+  const mgmtReadiness = evaluatePromotionReadiness('Senior', 'Tech Lead', 'management', {
+    mentorship_culture: 50
+  });
+  const mgmtInitiatives = recommendPromotionInitiatives('management', mgmtReadiness.competencies);
+  assert.ok(mgmtInitiatives.length > 0);
+  assert.ok(mgmtInitiatives.some(i => i.focusDimension === 'mentorship_culture'));
+});
+
+test('contract: simulateCareerTrajectory builds multi-year career roadmap and compensation ladder', () => {
+  const sim = simulateCareerTrajectory({
+    currentRole: 'Senior Frontend Engineer',
+    currentLevel: 'Senior',
+    targetTrack: 'ic',
+    targetRole: 'Staff',
+    horizonYears: 4,
+    userScores: {
+      technical_breadth: 85,
+      system_scale: 85,
+      org_influence: 80,
+      mentorship_culture: 80,
+      business_impact: 80
+    }
+  });
+
+  assert.ok(sim.id.startsWith('sim-'));
+  assert.equal(sim.currentRole, 'Senior Frontend Engineer');
+  assert.equal(sim.targetTrack, 'ic');
+  assert.equal(sim.targetRole, 'Staff');
+  assert.equal(sim.horizonYears, 4);
+  assert.equal(sim.roadmapSteps.length, 4);
+  assert.equal(sim.roadmapSteps[0].year, 1);
+  assert.equal(sim.roadmapSteps[0].level, 'Senior');
+  assert.ok(sim.roadmapSteps[0].estimatedAnnualCompVnd > 700000000);
+  assert.ok(sim.roadmapSteps[3].estimatedAnnualCompVnd > sim.roadmapSteps[0].estimatedAnnualCompVnd);
+  assert.ok(sim.readiness.overallReadinessScore >= 80);
+});
+
+test('contract: validateSimulateTrajectoryInput and validateUpdateCompetenciesInput strictly validate input structures', () => {
+  const validSim = validateSimulateTrajectoryInput({
+    currentRole: 'Backend Engineer',
+    currentLevel: 'Senior',
+    targetTrack: 'management',
+    targetRole: 'Tech Lead',
+    horizonYears: 4,
+    userScores: {
+      technical_breadth: 75
+    }
+  });
+  assert.equal(validSim.ok, true);
+  if (validSim.ok) {
+    assert.equal(validSim.data.currentRole, 'Backend Engineer');
+    assert.equal(validSim.data.targetTrack, 'management');
+    assert.equal(validSim.data.horizonYears, 4);
+  }
+
+  const invalidSim = validateSimulateTrajectoryInput({
+    currentRole: '',
+    currentLevel: ''
+  });
+  assert.equal(invalidSim.ok, false);
+  assert.ok(invalidSim.errors.currentRole);
+  assert.ok(invalidSim.errors.currentLevel);
+
+  const validComp = validateUpdateCompetenciesInput({
+    scores: {
+      technical_breadth: 80,
+      system_scale: 85,
+      org_influence: 70,
+      mentorship_culture: 75,
+      business_impact: 90
+    }
+  });
+  assert.equal(validComp.ok, true);
+  if (validComp.ok) {
+    assert.equal(validComp.data.scores.technical_breadth, 80);
+    assert.equal(validComp.data.scores.system_scale, 85);
+  }
+
+  const invalidComp = validateUpdateCompetenciesInput({});
+  assert.equal(invalidComp.ok, false);
+  assert.ok(invalidComp.errors.scores);
+});
+
 
