@@ -51,7 +51,9 @@ import {
   generateCounterOfferScript,
   validateOfferEvaluationInput,
   validateOfferComparisonInput,
-  validateCounterOfferInput
+  validateCounterOfferInput,
+  validateCheckoutInput,
+  validateSimulateWebhookInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -1090,4 +1092,54 @@ test('contract: offer validators enforce strict schema bounds and positive numbe
     tone: 'polite_confident'
   });
   assert.equal(validCounter.ok, true);
+});
+
+test('contract: validateCheckoutInput and validateSimulateWebhookInput validate properly', () => {
+  const nullCheck = validateCheckoutInput(null);
+  assert.equal(nullCheck.ok, false);
+
+  const arrayCheck = validateCheckoutInput([]);
+  assert.equal(arrayCheck.ok, false);
+
+  const emptyCheck = validateCheckoutInput({});
+  assert.equal(emptyCheck.ok, true);
+  if (emptyCheck.ok) {
+    assert.equal(emptyCheck.data.plan, 'monthly');
+  }
+
+  const invalidPlan = validateCheckoutInput({ plan: 'lifetime' });
+  assert.equal(invalidPlan.ok, true);
+  if (invalidPlan.ok) {
+    assert.equal(invalidPlan.data.plan, 'monthly');
+  }
+
+  const validMonthly = validateCheckoutInput({ plan: 'monthly' });
+  assert.equal(validMonthly.ok, true);
+  if (validMonthly.ok) {
+    assert.equal(validMonthly.data.plan, 'monthly');
+  }
+
+  const validQuarterly = validateCheckoutInput({ plan: 'quarterly' });
+  assert.equal(validQuarterly.ok, true);
+
+  const validYearly = validateCheckoutInput({ plan: 'yearly' });
+  assert.equal(validYearly.ok, true);
+
+  const nullSimulate = validateSimulateWebhookInput(null);
+  assert.equal(nullSimulate.ok, false);
+
+  const emptySimulate = validateSimulateWebhookInput({});
+  assert.equal(emptySimulate.ok, false);
+  if (!emptySimulate.ok) {
+    assert.ok(emptySimulate.errors.orderId);
+  }
+
+  const whitespaceSimulate = validateSimulateWebhookInput({ orderId: '   ' });
+  assert.equal(whitespaceSimulate.ok, false);
+
+  const validSimulate = validateSimulateWebhookInput({ orderId: '  ord_12345  ' });
+  assert.equal(validSimulate.ok, true);
+  if (validSimulate.ok) {
+    assert.equal(validSimulate.data.orderId, 'ord_12345');
+  }
 });

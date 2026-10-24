@@ -26,6 +26,7 @@ import {
   type NegotiationTone,
   type OfferEvaluationDTO
 } from './types.ts';
+import { type CheckoutInputDTO, type SimulateWebhookInputDTO, type ProPlan } from './payment.ts';
 import { isValidCalendarDate, isValidIsoInstant, isValidIanaTimezone } from './time.ts';
 import { normalizeIdentityKey, normalizeUrl } from './normalization.ts';
 
@@ -1387,6 +1388,58 @@ export function validateCounterOfferInput(rawBody: unknown): ValidationResult<Co
       tone,
       competitiveOffer: b.competitiveOffer as CounterOfferNegotiationInput['competitiveOffer'],
       keyStrengths: Array.isArray(b.keyStrengths) ? b.keyStrengths.map(String) : undefined
+    }
+  };
+}
+
+export function validateCheckoutInput(rawBody: unknown): ValidationResult<CheckoutInputDTO> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu yêu cầu thanh toán không hợp lệ.',
+      errors: { _root: 'Request body phải là JSON object.' }
+    };
+  }
+
+  const b = rawBody as Record<string, unknown>;
+  const plan: ProPlan = (b.plan === 'quarterly' || b.plan === 'yearly') ? b.plan : 'monthly';
+
+  return {
+    ok: true,
+    data: {
+      plan
+    }
+  };
+}
+
+export function validateSimulateWebhookInput(rawBody: unknown): ValidationResult<SimulateWebhookInputDTO> {
+  if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    return {
+      ok: false,
+      message: 'Dữ liệu kiểm thử webhook không hợp lệ.',
+      errors: { _root: 'Request body phải là JSON object.' }
+    };
+  }
+
+  const b = rawBody as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  if (!b.orderId || typeof b.orderId !== 'string' || b.orderId.trim() === '') {
+    errors.orderId = 'Mã đơn hàng không được để trống.';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      message: 'Thông tin đơn hàng kiểm thử chưa hợp lệ.',
+      errors
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      orderId: (b.orderId as string).trim()
     }
   };
 }
