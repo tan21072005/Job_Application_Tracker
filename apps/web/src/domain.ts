@@ -14,7 +14,16 @@ import {
   type ApplicationScorecardInput,
   normalizeWeights,
   calculateCompositeScore,
-  evaluateDecisionMatrix
+  evaluateDecisionMatrix,
+  type ChatMessageSender,
+  type ChatProvenance,
+  type ChatActionReceiptDTO,
+  type ChatMessageDTO,
+  type ChatInputDTO,
+  type ChatResponseDTO,
+  type ChatHistoryDTO,
+  parseChatMarkdown,
+  DEFAULT_SUGGESTED_CHAT_PROMPTS
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -32,7 +41,16 @@ export {
   type ApplicationScorecardInput,
   normalizeWeights,
   calculateCompositeScore,
-  evaluateDecisionMatrix
+  evaluateDecisionMatrix,
+  type ChatMessageSender,
+  type ChatProvenance,
+  type ChatActionReceiptDTO,
+  type ChatMessageDTO,
+  type ChatInputDTO,
+  type ChatResponseDTO,
+  type ChatHistoryDTO,
+  parseChatMarkdown,
+  DEFAULT_SUGGESTED_CHAT_PROMPTS
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {

@@ -19,7 +19,7 @@ describe('AI repository methods and endpoints', () => {
   it('chat returns grounded assistance reply', async () => {
     const reply = await repository.chat('Hôm nay tôi cần làm gì?');
     expect(reply).toBeDefined();
-    expect(reply.output || reply.text).toContain('chế độ dữ liệu mẫu');
+    expect(reply.output || reply.text).toContain('Kế hoạch');
   });
 
   it('grants management list, create and revoke operations work', async () => {

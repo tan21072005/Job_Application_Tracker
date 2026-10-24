@@ -111,7 +111,12 @@ import {
   type CategoryWinner,
   DEFAULT_WEIGHT_PROFILE,
   normalizeWeights,
-  evaluateDecisionMatrix
+  evaluateDecisionMatrix,
+  type ChatMessageDTO,
+  type ChatActionReceiptDTO,
+  type ChatResponseDTO,
+  type ChatHistoryDTO,
+  DEFAULT_SUGGESTED_CHAT_PROMPTS
 } from '@jobtrack/contract';
 
 export type {
@@ -556,16 +561,13 @@ export const repository = {
     });
   },
 
-  async chat(message: string, sessionId?: string): Promise<{ output?: string; text?: string }> {
-    if (demoMode) {
-      return {
-        output: `[Demo AI] Bạn vừa hỏi: "${message}". Trong chế độ dữ liệu mẫu, bạn có thể xem các tính năng quản lý hồ sơ và thử nghiệm nhập tin từ link tuyển dụng.`
-      };
-    }
-    return request<{ output?: string; text?: string }>('/ai/chat', {
-      method: 'POST',
-      body: JSON.stringify({ chatInput: message, sessionId })
-    });
+  async chat(message: string, sessionId?: string): Promise<{ output?: string; text?: string; reply?: string }> {
+    const res = await chatRepository.chat(message, sessionId);
+    return {
+      output: res.reply,
+      text: res.reply,
+      ...res
+    };
   },
 
   async listGrants(): Promise<Array<{ id: string; client: string; scopes: string[]; createdAt: string; expiresAt: string }>> {
@@ -2375,6 +2377,136 @@ export const decisionRepository = {
     const query = applicationIds && applicationIds.length > 0 ? `?ids=${applicationIds.join(',')}` : '';
     return request<DecisionMatrixComparison>(`/decision-matrix${query}`);
   }
+};
+
+const CHAT_HISTORY_KEY = 'jobtrack.chat_history.v1';
+
+export const chatRepository = {
+  async chat(message: string, sessionId = 'default', context?: Record<string, unknown>): Promise<ChatResponseDTO> {
+    if (demoMode) {
+      const apps = load();
+      const lower = message.toLowerCase();
+      let reply = '';
+      const receipts: ChatActionReceiptDTO[] = [];
+
+      if (lower.includes('hôm nay') || lower.includes('làm gì') || lower.includes('deadline')) {
+        const withDeadline = apps.filter(a => a.deadline);
+        const interviews = apps.flatMap(a => (a.interviews || []).map(i => ({ ...i, company: a.company, position: a.position })));
+        reply = `📋 **Kế hoạch công việc hôm nay (Demo):**\n\n` +
+          `• Tổng quan: Bạn có **${apps.length} hồ sơ** đang theo dõi.\n`;
+        if (interviews.length > 0) {
+          reply += `\n🎯 **Lịch phỏng vấn sắp tới:**\n` +
+            interviews.slice(0, 3).map(i => `  - **${i.company}** (${i.position}): ${i.title} vào lúc ${i.at}`).join('\n') + '\n';
+        }
+        if (withDeadline.length > 0) {
+          reply += `\n⏰ **Deadline & Bước tiếp theo:**\n` +
+            withDeadline.slice(0, 3).map(a => `  - **${a.company}**: "${a.nextAction || 'Cần cập nhật'}" (Hạn chót: ${a.deadline})`).join('\n') + '\n';
+        }
+      } else if (lower.includes('phỏng vấn') || lower.includes('chuẩn bị')) {
+        reply = `🎯 **Chuẩn bị phỏng vấn (Demo):**\n\n` +
+          `1. Xem lại JD và các dự án liên quan.\n` +
+          `2. Chuẩn bị 2-3 câu chuyện STAR thực tế.\n` +
+          `3. Đặt câu hỏi về lộ trình phát triển và kỳ vọng trong 90 ngày đầu.`;
+      } else if (lower.includes('so sánh') || lower.includes('đánh giá') || lower.includes('cơ hội')) {
+        reply = `⚖️ **So sánh cơ hội (Demo):** Bạn có thể nhấn vào nút "So sánh cơ hội" trên thanh công cụ để xem ma trận xếp hạng các công ty theo 7 tiêu chí quan trọng nhất!`;
+      } else {
+        reply = `[JobTrack AI Demo] Tôi đã nhận được tin nhắn: "${message}". Bạn đang quản lý ${apps.length} hồ sơ ứng tuyển trong hệ thống.`;
+      }
+
+      const userMsg: ChatMessageDTO = {
+        id: `demo-msg-${Date.now()}-u`,
+        sender: 'user',
+        message,
+        createdAt: new Date().toISOString()
+      };
+      const botMsg: ChatMessageDTO = {
+        id: `demo-msg-${Date.now()}-b`,
+        sender: 'assistant',
+        message: reply,
+        receipts,
+        provenance: 'local_fallback',
+        createdAt: new Date().toISOString()
+      };
+
+      if (typeof localStorage !== 'undefined') {
+        const existingRaw = localStorage.getItem(CHAT_HISTORY_KEY);
+        let historyMap: Record<string, ChatMessageDTO[]> = {};
+        try {
+          if (existingRaw) historyMap = JSON.parse(existingRaw);
+        } catch {
+          historyMap = {};
+        }
+        if (!historyMap[sessionId]) historyMap[sessionId] = [];
+        historyMap[sessionId].push(userMsg, botMsg);
+        localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(historyMap));
+      }
+
+      return {
+        reply,
+        sessionId,
+        receipts,
+        provenance: 'local_fallback',
+        suggestedPrompts: [...DEFAULT_SUGGESTED_CHAT_PROMPTS],
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    return request<ChatResponseDTO>('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, sessionId, context })
+    });
+  },
+
+  async getHistory(sessionId = 'default'): Promise<ChatHistoryDTO> {
+    if (demoMode) {
+      if (typeof localStorage === 'undefined') {
+        return { sessionId, messages: [], total: 0 };
+      }
+      const existingRaw = localStorage.getItem(CHAT_HISTORY_KEY);
+      let historyMap: Record<string, ChatMessageDTO[]> = {};
+      try {
+        if (existingRaw) historyMap = JSON.parse(existingRaw);
+      } catch {
+        historyMap = {};
+      }
+      const messages = historyMap[sessionId] || [];
+      return {
+        sessionId,
+        messages,
+        total: messages.length
+      };
+    }
+    return request<ChatHistoryDTO>(`/ai/chat/history?sessionId=${encodeURIComponent(sessionId)}`);
+  },
+
+  async clearHistory(sessionId = 'default'): Promise<{ success: boolean; cleared: number }> {
+    if (demoMode) {
+      if (typeof localStorage === 'undefined') {
+        return { success: true, cleared: 0 };
+      }
+      const existingRaw = localStorage.getItem(CHAT_HISTORY_KEY);
+      let historyMap: Record<string, ChatMessageDTO[]> = {};
+      try {
+        if (existingRaw) historyMap = JSON.parse(existingRaw);
+      } catch {
+        historyMap = {};
+      }
+      const count = (historyMap[sessionId] || []).length;
+      delete historyMap[sessionId];
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(historyMap));
+      return { success: true, cleared: count };
+    }
+    return request<{ success: boolean; cleared: number }>(`/ai/chat/history?sessionId=${encodeURIComponent(sessionId)}`, {
+      method: 'DELETE'
+    });
+  }
+};
+
+export type {
+  ChatMessageDTO,
+  ChatActionReceiptDTO,
+  ChatResponseDTO,
+  ChatHistoryDTO
 };
 
 
