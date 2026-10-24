@@ -48,7 +48,12 @@ import {
   type CounterOfferNegotiationInput,
   type OfferEvaluationDTO,
   type OfferComparisonMatrixDTO,
-  type CounterOfferScriptDTO
+  type CounterOfferScriptDTO,
+  type ProPlan,
+  type ProOrderDTO,
+  type ProPlanDTO,
+  type ProStatusDTO,
+  type CheckoutResultDTO
 } from '@jobtrack/contract';
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
@@ -1056,6 +1061,189 @@ export function downloadApplicationsCsv(apps: Application[], filename = 'jobtrac
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+const PRO_STORAGE_KEY = 'jobtrack.pro.status.v1';
+const PRO_ORDERS_KEY = 'jobtrack.pro.orders.v1';
+
+export const proRepository = {
+  async getStatus(): Promise<ProStatusDTO> {
+    if (demoMode) {
+      if (typeof localStorage === 'undefined') {
+        return { tier: 'free', isPro: false, expiresAt: null };
+      }
+      const raw = localStorage.getItem(PRO_STORAGE_KEY);
+      if (!raw) return { tier: 'free', isPro: false, expiresAt: null };
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.expiresAt && new Date(parsed.expiresAt).getTime() <= Date.now()) {
+          return { tier: 'free', isPro: false, expiresAt: null };
+        }
+        return parsed;
+      } catch {
+        return { tier: 'free', isPro: false, expiresAt: null };
+      }
+    }
+    return request<ProStatusDTO>('/pro/status');
+  },
+
+  async getPlans(): Promise<ProPlanDTO[]> {
+    if (demoMode) {
+      return [
+        {
+          plan: 'monthly',
+          name: 'Gói 1 Tháng',
+          amount: 99000,
+          currency: 'VND',
+          durationDays: 30,
+          features: [
+            'Không giới hạn quản lý hồ sơ ứng tuyển',
+            'AI phân tích độ khớp ATS & gợi ý từ khóa',
+            'AI tạo Cover Letter cá nhân hóa không giới hạn',
+            'AI Luyện phỏng vấn STAR & chấm điểm chi tiết',
+            'So sánh đa offer & AI Đàm phán mức lương'
+          ]
+        },
+        {
+          plan: 'quarterly',
+          name: 'Gói 3 Tháng',
+          amount: 249000,
+          currency: 'VND',
+          durationDays: 90,
+          highlightBadge: 'Phổ biến nhất',
+          savingsPercent: 16,
+          features: [
+            'Tất cả tính năng của gói 1 tháng',
+            'Tiết kiệm 16% so với thanh toán từng tháng',
+            'Đồng hành trọn vẹn chu kỳ tìm việc và thử việc',
+            'Ưu tiên tài nguyên AI phản hồi nhanh nhất'
+          ]
+        },
+        {
+          plan: 'yearly',
+          name: 'Gói 1 Năm',
+          amount: 799000,
+          currency: 'VND',
+          durationDays: 365,
+          highlightBadge: 'Tiết kiệm nhất',
+          savingsPercent: 33,
+          features: [
+            'Tất cả đặc quyền Pro trọn vẹn 365 ngày',
+            'Tiết kiệm 33% chi phí (chỉ ~66.000đ/tháng)',
+            'Job Radar AI tự động quét cơ hội mới định kỳ',
+            'Trải nghiệm sớm nhất các tính năng AI thế hệ mới'
+          ]
+        }
+      ];
+    }
+    const res = await request<{ plans: ProPlanDTO[] }>('/pro/plans');
+    return res.plans;
+  },
+
+  async createCheckout(plan: ProPlan): Promise<CheckoutResultDTO> {
+    if (demoMode) {
+      const codeSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const transferCode = `JTPRO${codeSuffix}`;
+      const orderId = `demo_ord_${Date.now()}`;
+      const prices: Record<ProPlan, number> = { monthly: 99000, quarterly: 249000, yearly: 799000 };
+      const amount = prices[plan] || 99000;
+      const order: ProOrderDTO = {
+        orderId,
+        plan,
+        amount,
+        currency: 'VND',
+        transferCode,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        completedAt: null,
+        failureReason: null
+      };
+
+      if (typeof localStorage !== 'undefined') {
+        const ordersRaw = localStorage.getItem(PRO_ORDERS_KEY);
+        const orders = ordersRaw ? JSON.parse(ordersRaw) : {};
+        orders[orderId] = order;
+        localStorage.setItem(PRO_ORDERS_KEY, JSON.stringify(orders));
+      }
+
+      return {
+        orderId,
+        plan,
+        amount,
+        currency: 'VND',
+        transferCode,
+        mode: 'test',
+        testNotice: 'Thanh toán đang ở chế độ thử nghiệm: hệ thống chưa kết nối cổng thanh toán thật. Bạn có thể sử dụng nút Mô phỏng Webhook để kích hoạt gói Pro.',
+        bankName: null,
+        accountNo: null,
+        accountName: null,
+        vietQrUrl: null,
+        instructions: `Đơn hàng ${transferCode} đã được tạo ở chế độ thử nghiệm với số tiền ${amount.toLocaleString('vi-VN')} VND.`
+      };
+    }
+    return request<CheckoutResultDTO>('/pro/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ plan })
+    });
+  },
+
+  async getOrder(orderId: string): Promise<ProOrderDTO> {
+    if (demoMode) {
+      if (typeof localStorage !== 'undefined') {
+        const ordersRaw = localStorage.getItem(PRO_ORDERS_KEY);
+        const orders = ordersRaw ? JSON.parse(ordersRaw) : {};
+        if (orders[orderId]) return orders[orderId];
+      }
+      throw new ApiError('Không tìm thấy đơn hàng.', 404);
+    }
+    return request<ProOrderDTO>(`/pro/orders/${encodeURIComponent(orderId)}`);
+  },
+
+  async simulatePaid(orderId: string): Promise<{ success: boolean; replayed?: boolean; orderId: string; plan: ProPlan }> {
+    if (demoMode) {
+      if (typeof localStorage !== 'undefined') {
+        const ordersRaw = localStorage.getItem(PRO_ORDERS_KEY);
+        const orders = ordersRaw ? JSON.parse(ordersRaw) : {};
+        const order = orders[orderId] as ProOrderDTO | undefined;
+        if (!order) throw new ApiError('Không tìm thấy đơn hàng.', 404);
+        if (order.status === 'paid') {
+          return { success: true, replayed: true, orderId: order.orderId, plan: order.plan };
+        }
+        order.status = 'paid';
+        order.completedAt = new Date().toISOString();
+        orders[orderId] = order;
+        localStorage.setItem(PRO_ORDERS_KEY, JSON.stringify(orders));
+
+        const days: Record<ProPlan, number> = { monthly: 30, quarterly: 90, yearly: 365 };
+        const durationDays = days[order.plan] || 30;
+        const currentProRaw = localStorage.getItem(PRO_STORAGE_KEY);
+        let baseTime = Date.now();
+        if (currentProRaw) {
+          try {
+            const cur = JSON.parse(currentProRaw);
+            if (cur.expiresAt && new Date(cur.expiresAt).getTime() > baseTime) {
+              baseTime = new Date(cur.expiresAt).getTime();
+            }
+          } catch {}
+        }
+        const expiresAt = new Date(baseTime + durationDays * 24 * 60 * 60 * 1000).toISOString();
+        const proStatus: ProStatusDTO = {
+          tier: 'pro',
+          isPro: true,
+          expiresAt,
+          plan: order.plan
+        };
+        localStorage.setItem(PRO_STORAGE_KEY, JSON.stringify(proStatus));
+        return { success: true, replayed: false, orderId: order.orderId, plan: order.plan };
+      }
+      return { success: true, orderId, plan: 'monthly' };
+    }
+    return request<{ success: boolean; replayed?: boolean; orderId: string; plan: ProPlan }>('/pro/test/simulate-webhook', {
+      method: 'POST',
+      body: JSON.stringify({ orderId })
+    });
+  }
+};
 
 
 
