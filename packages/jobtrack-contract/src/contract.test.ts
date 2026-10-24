@@ -67,7 +67,10 @@ import {
   validateResumeTailorInput,
   calculateResumeAtsScore,
   generateResumeDiff,
-  tailorResumeForJob
+  tailorResumeForJob,
+  calculateCompanyAggregates,
+  validateCompanyReviewInput,
+  synthesizeCompanyIntelligence
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -1523,4 +1526,97 @@ test('contract: tailorResumeForJob synthesizes tailored variant and boosts score
   assert.ok(result.tailoringNotes.length >= 3);
   assert.ok(result.tailoredResume.name.includes('Grab'));
   assert.ok(result.tailoredResume.summary.includes('Grab'));
+});
+
+test('contract: calculateCompanyAggregates accurately calculates averages and recommendation rates', () => {
+  const reviews = [
+    {
+      id: 'rev-1',
+      companyName: 'TechCorp',
+      role: 'Backend Engineer',
+      rating: 5,
+      workLifeBalance: 4,
+      compensationRating: 5,
+      careerGrowth: 4,
+      managementRating: 5,
+      recommend: true,
+      pros: 'Môi trường rất tốt và lương thưởng cạnh tranh.',
+      cons: 'Quy trình họp hành tương đối nhiều.',
+      createdAt: '2026-10-20T00:00:00Z'
+    },
+    {
+      id: 'rev-2',
+      companyName: 'TechCorp',
+      role: 'Frontend Engineer',
+      rating: 3,
+      workLifeBalance: 2,
+      compensationRating: 4,
+      careerGrowth: 3,
+      managementRating: 3,
+      recommend: false,
+      pros: 'Dự án quy mô lớn phục vụ hàng triệu người dùng.',
+      cons: 'Thời gian OT nhiều vào các tuần phát hành bản cập nhật.',
+      createdAt: '2026-10-21T00:00:00Z'
+    }
+  ];
+
+  const scores = calculateCompanyAggregates(reviews);
+  assert.equal(scores.overall, 4.0);
+  assert.equal(scores.workLife, 3.0);
+  assert.equal(scores.compensation, 4.5);
+  assert.equal(scores.recommendRate, 50);
+  assert.equal(scores.totalReviews, 2);
+
+  const emptyScores = calculateCompanyAggregates([]);
+  assert.equal(emptyScores.totalReviews, 0);
+  assert.ok(emptyScores.overall >= 3.5);
+});
+
+test('contract: validateCompanyReviewInput enforces required fields, rating bounds, and text length', () => {
+  const valid = validateCompanyReviewInput({
+    companyName: 'FPT Software',
+    role: 'Senior Java Developer',
+    rating: 5,
+    workLifeBalance: 4,
+    compensationRating: 4,
+    careerGrowth: 5,
+    managementRating: 4,
+    recommend: true,
+    pros: 'Chế độ đào tạo bài bản và môi trường đồng nghiệp thân thiện.',
+    cons: 'Dự án chuyển đổi nhiều nên cần thích ứng linh hoạt.'
+  });
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.companyName, 'FPT Software');
+    assert.equal(valid.data.rating, 5);
+  }
+
+  const invalid = validateCompanyReviewInput({
+    companyName: '',
+    role: '',
+    rating: 6,
+    pros: 'Quá ngắn',
+    cons: 'Ngắn'
+  });
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors?.companyName);
+  assert.ok(invalid.errors?.role);
+  assert.ok(invalid.errors?.rating);
+  assert.ok(invalid.errors?.pros);
+  assert.ok(invalid.errors?.cons);
+});
+
+test('contract: synthesizeCompanyIntelligence returns rich presets for known companies and algorithms for custom ones', () => {
+  const fpt = synthesizeCompanyIntelligence('FPT Software');
+  assert.equal(fpt.name, 'FPT Software');
+  assert.ok(fpt.salaryBenchmarks.length >= 3);
+  assert.ok(fpt.interviewQuestions.length >= 2);
+  assert.ok(fpt.keyPros.length >= 2);
+  assert.ok(fpt.techStack.includes('Java'));
+
+  const custom = synthesizeCompanyIntelligence('Fintech Startup X');
+  assert.equal(custom.name, 'Fintech Startup X');
+  assert.ok(custom.salaryBenchmarks.length >= 3);
+  assert.ok(custom.interviewQuestions.length >= 1);
+  assert.ok(custom.cultureScores.overall >= 3.5);
 });
