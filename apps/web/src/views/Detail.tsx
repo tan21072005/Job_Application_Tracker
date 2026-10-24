@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowUpRight, Award, CalendarDays, ExternalLink, Pencil, Plus, Trash2, Sparkles, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Award, CalendarDays, ExternalLink, Pencil, Plus, Trash2, Sparkles, FileText, Building2 } from 'lucide-react';
 import { deviceTimezone, formatDate, formatTime, labels, statuses, type Application, type Interview, type Status } from '../domain';
 import { Button, Empty, Monogram, StatusBadge } from '../components/ui';
 import { interviewLabels } from '../components/forms';
@@ -8,6 +8,7 @@ import AiAssistantPanel from '../components/AiAssistantPanel';
 import ActivityTimeline from '../components/ActivityTimeline';
 import OfferEvaluationModal from '../components/OfferEvaluationModal';
 import { ResumeTailorModal } from '../components/ResumeTailorModal';
+import { CompanyIntelligenceModal } from '../components/CompanyIntelligenceModal';
 
 export default function Detail({
   app,
@@ -40,6 +41,7 @@ export default function Detail({
 }) {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showTailorModal, setShowTailorModal] = useState(false);
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
   const tabs: ('info' | 'interviews' | 'ai')[] = ['info', 'interviews', 'ai'];
 
   return (
@@ -54,6 +56,9 @@ export default function Detail({
           <h1>{app.position}</h1>
           <p>{app.company}{app.location ? ` · ${app.location}` : ''}{app.workMode ? ` · ${app.workMode}` : ''}</p>
         </div>
+        <Button kind="secondary" className="company-intelligence-btn" onClick={() => setShowCompanyModal(true)}>
+          <Building2 size={16} />Hồ sơ công ty
+        </Button>
         <Button kind="secondary" className="tailor-resume-btn" onClick={() => setShowTailorModal(true)}>
           <FileText size={16} />May đo CV (ATS)
         </Button>
@@ -272,6 +277,14 @@ export default function Detail({
           onSavedVariant={(variant) => {
             if (notify) notify(`Đã lưu phiên bản CV "${variant.name}" thành công!`);
           }}
+        />
+      )}
+
+      {showCompanyModal && (
+        <CompanyIntelligenceModal
+          isOpen={showCompanyModal}
+          companyName={app.company}
+          onClose={() => setShowCompanyModal(false)}
         />
       )}
     </>

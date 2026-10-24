@@ -69,7 +69,15 @@ import {
   type KeywordCoverageDTO,
   tailorResumeForJob,
   validateResumeInput,
-  validateResumeTailorInput
+  validateResumeTailorInput,
+  type CompanyProfileDTO,
+  type CompanyReviewDTO,
+  type CompanySalaryBenchmarkDTO,
+  type CompanyCultureScoresDTO,
+  type CompanyInterviewQuestionDTO,
+  calculateCompanyAggregates,
+  validateCompanyReviewInput,
+  synthesizeCompanyIntelligence
 } from '@jobtrack/contract';
 
 export type {
@@ -79,7 +87,12 @@ export type {
   ResumeTailorInput,
   ResumeTailorResultDTO,
   ResumeDiffItem,
-  KeywordCoverageDTO
+  KeywordCoverageDTO,
+  CompanyProfileDTO,
+  CompanyReviewDTO,
+  CompanySalaryBenchmarkDTO,
+  CompanyCultureScoresDTO,
+  CompanyInterviewQuestionDTO
 };
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
@@ -1527,6 +1540,93 @@ export const resumeRepository = {
     });
   }
 };
+
+const COMPANIES_STORAGE_KEY = 'jobtrack.companies.v1';
+
+function loadDemoCompanies(): Record<string, CompanyProfileDTO> {
+  if (typeof localStorage === 'undefined') return {};
+  const stored = localStorage.getItem(COMPANIES_STORAGE_KEY);
+  if (!stored) return {};
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return {};
+  }
+}
+
+function saveDemoCompanies(map: Record<string, CompanyProfileDTO>): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(COMPANIES_STORAGE_KEY, JSON.stringify(map));
+  }
+}
+
+export const companyRepository = {
+  async get(name: string): Promise<CompanyProfileDTO> {
+    const cleanName = (name || '').trim();
+    if (demoMode) {
+      const map = loadDemoCompanies();
+      const existing = map[cleanName.toLowerCase()];
+      if (existing) return existing;
+      const synthesized = synthesizeCompanyIntelligence(cleanName);
+      map[cleanName.toLowerCase()] = synthesized;
+      saveDemoCompanies(map);
+      return synthesized;
+    }
+    return request<CompanyProfileDTO>(`/companies/${encodeURIComponent(cleanName)}`);
+  },
+
+  async addReview(name: string, input: unknown): Promise<CompanyReviewDTO> {
+    const cleanName = (name || '').trim();
+    const payload = (typeof input === 'object' && input !== null) ? { companyName: cleanName, ...input } : input;
+    const val = validateCompanyReviewInput(payload);
+    if (!val.ok) {
+      throw new ApiError(val.message || 'Thông tin đánh giá chưa hợp lệ.', 422);
+    }
+
+    if (demoMode) {
+      const map = loadDemoCompanies();
+      let profile = map[cleanName.toLowerCase()];
+      if (!profile) {
+        profile = synthesizeCompanyIntelligence(cleanName);
+      }
+      const newReview: CompanyReviewDTO = {
+        id: `rev-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        companyName: cleanName,
+        role: val.data.role,
+        rating: val.data.rating,
+        workLifeBalance: val.data.workLifeBalance,
+        compensationRating: val.data.compensationRating,
+        careerGrowth: val.data.careerGrowth,
+        managementRating: val.data.managementRating,
+        recommend: val.data.recommend,
+        pros: val.data.pros,
+        cons: val.data.cons,
+        advice: val.data.advice,
+        createdAt: new Date().toISOString()
+      };
+      profile.recentReviews = [newReview, ...(profile.recentReviews || [])];
+      profile.cultureScores = calculateCompanyAggregates(profile.recentReviews);
+      map[cleanName.toLowerCase()] = profile;
+      saveDemoCompanies(map);
+      return newReview;
+    }
+
+    return request<CompanyReviewDTO>(`/companies/${encodeURIComponent(cleanName)}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async getSalaries(name: string): Promise<CompanySalaryBenchmarkDTO[]> {
+    const cleanName = (name || '').trim();
+    if (demoMode) {
+      const prof = await this.get(cleanName);
+      return prof.salaryBenchmarks;
+    }
+    return request<CompanySalaryBenchmarkDTO[]>(`/companies/${encodeURIComponent(cleanName)}/salaries`);
+  }
+};
+
 
 
 

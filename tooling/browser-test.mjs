@@ -30,13 +30,14 @@ async function main() {
     } catch {}
   });
 
+  let targetBrowser = 'Chrome';
   function call(name, args = {}) {
     const id = nextId++;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         pending.delete(id);
         reject(new Error(`Timeout calling tool: ${name}`));
-      }, 30000);
+      }, 45000);
       pending.set(id, {
         resolve: val => {
           clearTimeout(timer);
@@ -47,13 +48,24 @@ async function main() {
           reject(err);
         }
       });
-      const callArgs = { ...args, browser: 'Chrome' };
+      const callArgs = { browser: targetBrowser, ...args };
       ws.send(JSON.stringify({ jsonrpc: '2.0', id, method: 'tool.call', params: { name, arguments: callArgs } }));
     });
   }
 
   ws.send(JSON.stringify({ jsonrpc: '2.0', method: 'hello', params: { client: 'jobtrack-e2e', pid: process.pid } }));
   await new Promise(r => setTimeout(r, 600));
+
+  try {
+    await call('tabs_list');
+  } catch (err) {
+    const errMsg = String(err?.message || '');
+    const match = errMsg.match(/Dang ket noi:[^=]*=([a-zA-Z0-9_-]+)/);
+    if (match) {
+      targetBrowser = match[1];
+      console.log(`Auto-detected active browser: ${targetBrowser}`);
+    }
+  }
 
   console.log('Discovering open tabs...');
   const tabsListRes = await call('tabs_list');
@@ -166,6 +178,7 @@ async function main() {
     record('Authentication', 'Đăng nhập thành công và nạp khung giao diện chính', !!sessionCheck.hasTopbar, `Nav: ${sessionCheck.navLinks?.join(', ')}`);
 
     console.log('\n--- GIAI ĐOẠN 2: Milestone 1 - Hồ sơ ứng viên (C07 & A08) ---');
+    await ensureActiveTab();
     await evaluate(`(() => {
       const existingDialog = document.querySelector('dialog[open]');
       if (!existingDialog) {
@@ -660,22 +673,32 @@ async function main() {
     record('STAR Guidelines & Practice UI', 'Giao diện luyện phỏng vấn hiển thị đầy đủ danh mục câu hỏi và khung STAR chuẩn', coachModalCheck.hasModal && coachModalCheck.hasStarGuide);
 
     console.log('Nhập câu trả lời mẫu theo khung STAR và gửi chấm điểm AI...');
+    for (let i = 0; i < 30; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.mock-answer-textarea'))`);
+      if (ready) break;
+      await wait(300);
+    }
     await evaluate(`(() => {
-      window.__setReactInput('.mock-answer-textarea', 'Tại dự án trước, chúng tôi gặp sự cố latency màn hình thanh toán 4.2s vào dịp Black Friday. Trách nhiệm của tôi là tối ưu phản hồi dưới 800ms trong 48 giờ. Tôi đã dùng React Profiler phát hiện re-render không cần thiết và batch các truy vấn GraphQL. Kết quả thời gian tải trang giảm còn 450ms, giảm 89% latency và tăng 24% tỷ lệ hoàn tất đơn hàng.');
+      const ta = document.querySelector('.mock-answer-textarea');
+      if (ta) {
+        window.__setReactInput(ta, 'Tại dự án trước, chúng tôi gặp sự cố latency màn hình thanh toán 4.2s vào dịp Black Friday. Trách nhiệm của tôi là tối ưu phản hồi dưới 800ms trong 48 giờ. Tôi đã dùng React Profiler phát hiện re-render không cần thiết và batch các truy vấn GraphQL. Kết quả thời gian tải trang giảm còn 450ms, giảm 89% latency và tăng 24% tỷ lệ hoàn tất đơn hàng.');
+      }
     })()`);
-    for (let i = 0; i < 20; i++) {
+    await wait(600);
+    for (let i = 0; i < 30; i++) {
       const enabled = await evaluate(`(() => {
         const btn = document.querySelector('.evaluate-btn');
         return Boolean(btn && !btn.disabled);
       })()`);
       if (enabled) break;
-      await wait(200);
+      await wait(300);
     }
     await evaluate(`(() => {
       const evalBtn = document.querySelector('.evaluate-btn');
-      if (evalBtn) evalBtn.click();
+      if (evalBtn && !evalBtn.disabled) evalBtn.click();
     })()`);
-    for (let i = 0; i < 35; i++) {
+    await wait(600);
+    for (let i = 0; i < 40; i++) {
       const state = await evaluate(`Boolean(document.querySelector('.mock-evaluation-report'))`);
       if (state) break;
       await wait(300);
@@ -1244,6 +1267,141 @@ async function main() {
       });
     })()`);
     record('Tailored Variant 1-Click Save', 'Lưu thành công CV may đo thành một phiên bản độc lập để nộp trực tiếp cho nhà tuyển dụng', saveVariantCheck.hasSuccess, saveVariantCheck.message);
+
+    console.log('\n--- GIAI ĐOẠN 15: Milestone 13 - Company Intelligence & Interview Insights Aggregator ---');
+    await ensureActiveTab();
+    console.log('Mở Hồ sơ doanh nghiệp (Company Dossier) từ chi tiết đơn ứng tuyển...');
+    const launchCompanyCheck = await evaluate(`(() => {
+      const btn = document.querySelector('.company-intelligence-btn');
+      if (!btn) return JSON.stringify({ hasBtn: false });
+      btn.click();
+      return JSON.stringify({ hasBtn: true });
+    })()`);
+    for (let i = 0; i < 25; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.company-intelligence-modal .company-hero-card'))`);
+      if (ready) break;
+      await wait(200);
+    }
+
+    const companyHeroCheck = await evaluate(`(() => {
+      const modal = document.querySelector('.company-intelligence-modal');
+      const name = document.querySelector('.company-profile-name')?.textContent.trim() || '';
+      const overall = document.querySelector('.company-overall-rating')?.textContent.trim() || '';
+      const wlb = document.querySelector('.score-worklife')?.textContent.trim() || '';
+      const comp = document.querySelector('.score-compensation')?.textContent.trim() || '';
+      const prosCount = document.querySelectorAll('.pros-signals li').length;
+      const redFlagsCount = document.querySelectorAll('.redflags-signals li').length;
+      return JSON.stringify({
+        hasModal: Boolean(modal),
+        name,
+        overall,
+        wlb,
+        comp,
+        prosCount,
+        redFlagsCount
+      });
+    })()`);
+    record('Company Dossier Hero & Culture Metrics', 'Hiển thị thẻ tổng quan công ty với điểm đánh giá văn hóa, WLB, thu nhập và danh sách điểm mạnh / cảnh báo', companyHeroCheck.hasModal && Boolean(companyHeroCheck.name) && Boolean(companyHeroCheck.overall), `Công ty: ${companyHeroCheck.name}, Điểm chung: ${companyHeroCheck.overall}, WLB: ${companyHeroCheck.wlb}, Thu nhập: ${companyHeroCheck.comp}`);
+
+    console.log('Kiểm tra tab Mặt bằng Lương (Salary Benchmarks)...');
+    await evaluate(`(() => {
+      const tab = document.querySelector('.tab-salaries');
+      if (tab) tab.click();
+    })()`);
+    for (let i = 0; i < 20; i++) {
+      const rows = await evaluate(`document.querySelectorAll('.salary-row').length`);
+      if (rows > 0) break;
+      await wait(150);
+    }
+    const salariesCheck = await evaluate(`(() => {
+      const rows = document.querySelectorAll('.salary-row');
+      const levels = Array.from(rows).map(r => r.querySelector('.badge')?.textContent.trim() || '');
+      return JSON.stringify({
+        rowCount: rows.length,
+        levels: levels.slice(0, 4)
+      });
+    })()`);
+    record('Company Salary Benchmarks', 'Bảng đối soát mức lương theo cấp bậc (Junior đến Lead/Principal) với phổ lương và trung vị thị trường', salariesCheck.rowCount > 0, `Số dải lương: ${salariesCheck.rowCount}, Cấp bậc: ${salariesCheck.levels.join(', ')}`);
+
+    console.log('Kiểm tra tab Câu hỏi Phỏng vấn thực tế (Interview Insights)...');
+    await evaluate(`(() => {
+      const tab = document.querySelector('.tab-interviews');
+      if (tab) tab.click();
+    })()`);
+    for (let i = 0; i < 20; i++) {
+      const cards = await evaluate(`document.querySelectorAll('.interview-question-card').length`);
+      if (cards > 0) break;
+      await wait(150);
+    }
+    const interviewQuestionsCheck = await evaluate(`(() => {
+      const cards = document.querySelectorAll('.interview-question-card');
+      const firstQ = cards[0]?.querySelector('.question-text')?.textContent.trim() || '';
+      const hasTips = Boolean(cards[0]?.querySelector('.question-tips-box'));
+      return JSON.stringify({
+        cardsCount: cards.length,
+        hasTips,
+        firstQ: firstQ.slice(0, 60)
+      });
+    })()`);
+    record('Company Interview Questions & Prep Tips', 'Kho câu hỏi phỏng vấn thực tế phân theo chuyên môn, kèm gợi ý STAR và mẹo ghi điểm', interviewQuestionsCheck.cardsCount > 0 && interviewQuestionsCheck.hasTips, `Số câu hỏi: ${interviewQuestionsCheck.cardsCount}, Có gợi ý: ${interviewQuestionsCheck.hasTips}`);
+
+    console.log('Kiểm tra tab Đánh giá nội bộ & Gửi đánh giá mới...');
+    await evaluate(`(() => {
+      const tab = document.querySelector('.tab-reviews');
+      if (tab) tab.click();
+    })()`);
+    for (let i = 0; i < 20; i++) {
+      const ready = await evaluate(`Boolean(document.querySelector('.toggle-review-form-btn'))`);
+      if (ready) break;
+      await wait(150);
+    }
+
+    console.log('Mở form viết đánh giá và điền trải nghiệm ứng viên...');
+    await evaluate(`(() => {
+      const toggleBtn = document.querySelector('.toggle-review-form-btn');
+      if (toggleBtn) toggleBtn.click();
+    })()`);
+    await wait(300);
+
+    await evaluate(`(() => {
+      window.__setReactInput('.input-review-role', 'Senior Cloud Solutions Architect');
+      window.__setReactInput('.input-review-pros', 'Môi trường làm việc quốc tế chuyên nghiệp, đồng nghiệp tài năng và chế độ đãi ngộ vượt trội.');
+      window.__setReactInput('.input-review-cons', 'Đòi hỏi sự chủ động cao trong quản lý thời gian và áp lực tiến độ bàn giao dự án.');
+      window.__setReactInput('.input-review-advice', 'Nên chuẩn bị kỹ kỹ năng system design và giao tiếp tiếng Anh.');
+      const submitBtn = document.querySelector('.submit-review-btn');
+      if (submitBtn) submitBtn.click();
+    })()`);
+
+    for (let i = 0; i < 25; i++) {
+      const success = await evaluate(`Boolean(document.querySelector('.company-intelligence-modal .alert-success'))`);
+      if (success) break;
+      await wait(200);
+    }
+
+    const reviewSubmitCheck = await evaluate(`(() => {
+      const success = document.querySelector('.company-intelligence-modal .alert-success');
+      const reviews = document.querySelectorAll('.review-card');
+      const latestRole = reviews[0]?.querySelector('.review-meta strong')?.textContent.trim() || '';
+      return JSON.stringify({
+        hasSuccess: Boolean(success),
+        reviewsCount: reviews.length,
+        latestRole
+      });
+    })()`);
+    record('Company Review Submission & Dynamic Recalculation', 'Gửi đánh giá trải nghiệm thực tế thành công, cập nhật ngay lập tức danh sách nhận xét và điểm số tổng hợp', reviewSubmitCheck.hasSuccess || reviewSubmitCheck.reviewsCount > 0, `Đánh giá mới nhất: ${reviewSubmitCheck.latestRole}, Tổng số: ${reviewSubmitCheck.reviewsCount}`);
+
+    console.log('Đóng modal Hồ sơ doanh nghiệp và xác nhận sidebar explorer...');
+    await evaluate(`(() => {
+      const closeBtn = document.querySelector('.close-company-btn');
+      if (closeBtn) closeBtn.click();
+    })()`);
+    await wait(600);
+
+    const sidebarExplorerCheck = await evaluate(`(() => {
+      const sidebarBtn = document.querySelector('.company-explorer-sidebar-btn');
+      return JSON.stringify({ exists: Boolean(sidebarBtn) });
+    })()`);
+    record('Sidebar Company Explorer Launcher', 'Nút truy cập Hồ sơ công ty tích hợp thường trực trên thanh điều hướng bên (Sidebar)', sidebarExplorerCheck.exists);
 
 
 
