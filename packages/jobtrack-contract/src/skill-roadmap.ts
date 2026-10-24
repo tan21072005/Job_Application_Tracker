@@ -240,7 +240,7 @@ export function extractSkillsFromApplications(
       skill: entry.skillDef.name,
       category: entry.skillDef.category,
       count: entry.count,
-      proficiency: entry.count >= 2 ? 'required' : 'preferred',
+      proficiency: (entry.count >= 2 ? 'required' : 'preferred') as SkillProficiency,
       targetCompanies: Array.from(entry.companies),
       relatedPositions: Array.from(entry.positions)
     }))
@@ -376,11 +376,11 @@ export function calculateRoadmapProgress(milestones: LearningMilestoneDTO[]): nu
   return Math.min(100, Math.round(rawScore * 100));
 }
 
-export function validateMilestoneUpdateInput(input: unknown): {
-  ok: boolean;
-  data?: { status: MilestoneStatus };
-  message?: string;
-} {
+export type MilestoneUpdateValidationResult =
+  | { ok: true; data: { status: MilestoneStatus } }
+  | { ok: false; message: string };
+
+export function validateMilestoneUpdateInput(input: unknown): MilestoneUpdateValidationResult {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { ok: false, message: 'Dữ liệu cập nhật milestone phải là đối tượng JSON.' };
   }
@@ -401,11 +401,11 @@ export function validateMilestoneUpdateInput(input: unknown): {
   };
 }
 
-export function validateRoadmapGenerateInput(input: unknown): {
-  ok: boolean;
-  data?: { targetRole?: string; focusSkills?: string[] };
-  message?: string;
-} {
+export type RoadmapGenerateValidationResult =
+  | { ok: true; data: { targetRole: string; focusSkills: string[] } }
+  | { ok: false; message: string };
+
+export function validateRoadmapGenerateInput(input: unknown): RoadmapGenerateValidationResult {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { ok: true, data: { targetRole: 'Senior Software Specialist', focusSkills: [] } };
   }

@@ -40,7 +40,9 @@ import {
   validateScorecardInput,
   validateChatInput,
   DEFAULT_SUGGESTED_CHAT_PROMPTS,
-  type ChatActionReceiptDTO
+  type ChatActionReceiptDTO,
+  validateMilestoneUpdateInput,
+  validateRoadmapGenerateInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -72,6 +74,7 @@ import { ContactService } from './services/contact-service.ts';
 import { PipelineService } from './services/pipeline-service.ts';
 import { DecisionService } from './services/decision-service.ts';
 import { ChatService } from './services/chat-service.ts';
+import { RoadmapService } from './services/roadmap-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -120,6 +123,7 @@ export const contactService = new ContactService(pool);
 export const pipelineService = new PipelineService(pool);
 export const decisionService = new DecisionService(pool);
 export const chatService = new ChatService(pool);
+export const roadmapService = new RoadmapService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1174,6 +1178,78 @@ app.delete('/api/ai/chat/history', auth, async (req, res, next) => {
       success: true,
       cleared
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get(['/api/career/skill-gap', '/api/career/gap-analysis'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const gap = await roadmapService.getSkillGapAnalysis(userId);
+    res.json(gap);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/career/roadmap', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const roadmap = await roadmapService.getRoadmap(userId);
+    res.json(roadmap);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/career/roadmap/generate', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateRoadmapGenerateInput(req.body);
+    if (!val.ok) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.message
+      });
+    }
+    const roadmap = await roadmapService.generateRoadmap(userId, val.data);
+    res.status(201).json(roadmap);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch(['/api/career/roadmap/milestones/:id', '/api/career/roadmap/:roadmapId/milestones/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const milestoneId = String(req.params.id);
+    const val = validateMilestoneUpdateInput(req.body);
+    if (!val.ok) {
+      return res.status(422).json({
+        code: 'invalid_request',
+        message: val.message
+      });
+    }
+    const roadmap = await roadmapService.updateMilestone(userId, milestoneId, val.data.status);
+    res.json(roadmap);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/career/roadmap/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const roadmapId = String(req.params.id);
+    const deleted = await roadmapService.deleteRoadmap(userId, roadmapId);
+    if (!deleted) {
+      return res.status(404).json({
+        code: 'not_found',
+        message: 'Không tìm thấy lộ trình sự nghiệp.'
+      });
+    }
+    res.json({ success: true, deletedId: roadmapId });
   } catch (error) {
     next(error);
   }
