@@ -242,7 +242,25 @@ import {
   CULTURE_DIMENSION_LABELS,
   CULTURE_INDUSTRY_BENCHMARKS,
   evaluateCompanyCulture,
-  generateReverseInterviewQuestions
+  generateReverseInterviewQuestions,
+  type HeadhunterAgencyTier,
+  type RecruiterRelationshipTier,
+  type MandateExclusivity,
+  type MandateStatus,
+  type RecruiterReplyIntent,
+  type HeadhunterAgencyDTO,
+  type RecruiterLeadDTO,
+  type HeadhunterMandateDTO,
+  type InboundPitchParseResultDTO,
+  type ParseRecruiterPitchInputDTO,
+  type RecruiterResponseDraftDTO,
+  type RecruiterLeadMutationInputDTO,
+  type HeadhunterMandateMutationInputDTO,
+  KNOWN_HEADHUNTER_AGENCIES,
+  computeRecruiterRelationshipHealth,
+  detectMandateConflict,
+  parseInboundRecruiterPitch,
+  generateRecruiterReplyDraft
 } from '@jobtrack/contract';
 
 export type {
@@ -3962,6 +3980,411 @@ export const cultureRadarRepository = {
   }
 };
 
+const DEMO_HEADHUNTER_LEADS_KEY = 'jobtrack_demo_headhunter_leads_v1';
+const DEMO_HEADHUNTER_MANDATES_KEY = 'jobtrack_demo_headhunter_mandates_v1';
+
+const INITIAL_DEMO_LEADS: RecruiterLeadDTO[] = [
+  {
+    id: 'lead-rw',
+    userId: 'demo-user',
+    name: 'Mai Hoàng',
+    agency: 'Robert Walters',
+    agencyTier: 'tier1_global',
+    role: 'Director of Tech Practice',
+    email: 'mai.hoang@robertwalters.com.vn',
+    linkedinUrl: 'https://linkedin.com/in/mai-hoang-rw',
+    tier: 'trusted_advisor',
+    rating: 5,
+    specialties: ['FinTech', 'C-Suite', 'Engineering Leadership'],
+    mandatesCount: 4,
+    lastContactedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    notes: 'Đối tác chiến lược retained cho các tập đoàn ngân hàng và kỳ lân công nghệ.',
+    healthScore: 95,
+    healthStatus: 'excellent',
+    nextActionSuggestion: 'Đối tác chiến lược tin cậy. Hãy chia sẻ định hướng thăng tiến hoặc cập nhật kỳ vọng thu nhập mới.',
+    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'lead-mp',
+    userId: 'demo-user',
+    name: 'Alexandre Nguyen',
+    agency: 'Michael Page',
+    agencyTier: 'tier1_global',
+    role: 'Senior Consultant - Engineering & Data',
+    email: 'alexandre.nguyen@michaelpage.com.vn',
+    linkedinUrl: 'https://linkedin.com/in/alexandre-nguyen',
+    tier: 'preferred_partner',
+    rating: 4,
+    specialties: ['Data & AI', 'Platform Engineering', 'Golang'],
+    mandatesCount: 2,
+    lastContactedAt: new Date(Date.now() - 25 * 86400000).toISOString(),
+    notes: 'Rất nắm thị trường bán lẻ đa quốc gia và các Tech Hub nước ngoài.',
+    healthScore: 80,
+    healthStatus: 'active',
+    nextActionSuggestion: 'Quan hệ tích cực. Sẵn sàng xem xét các mandate độc quyền phù hợp.',
+    createdAt: new Date(Date.now() - 90 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'lead-nav',
+    userId: 'demo-user',
+    name: 'Trần Kim Oanh',
+    agency: 'Navigos Search',
+    agencyTier: 'tier1_global',
+    role: 'Senior Lead Consultant',
+    email: 'oanh.tran@navigossearch.com',
+    tier: 'preferred_partner',
+    rating: 4,
+    specialties: ['Banking Tech', 'High-Tech Manufacturing'],
+    mandatesCount: 1,
+    lastContactedAt: new Date(Date.now() - 50 * 86400000).toISOString(),
+    notes: 'Nhiều mandate cho các ngân hàng truyền thống đang chuyển đổi số.',
+    healthScore: 70,
+    healthStatus: 'cooling',
+    nextActionSuggestion: 'Đã lâu chưa trao đổi (>45 ngày). Hãy gửi tin nhắn cập nhật trạng thái tìm việc nhẹ nhàng.',
+    createdAt: new Date(Date.now() - 120 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'lead-monroe',
+    userId: 'demo-user',
+    name: 'Lê Quốc Tuấn',
+    agency: 'Monroe Consulting Group',
+    agencyTier: 'tier2_regional',
+    role: 'Technology Headhunter',
+    email: 'tuan.le@monroeconsulting.com',
+    tier: 'situational_contingency',
+    rating: 3,
+    specialties: ['E-commerce', 'Startup Scaleups'],
+    mandatesCount: 1,
+    lastContactedAt: new Date(Date.now() - 100 * 86400000).toISOString(),
+    notes: 'Chuyên contingency cho các startup Series A/B.',
+    healthScore: 50,
+    healthStatus: 'cooling',
+    nextActionSuggestion: 'Đã lâu chưa trao đổi (>45 ngày). Hãy gửi tin nhắn cập nhật trạng thái tìm việc nhẹ nhàng.',
+    createdAt: new Date(Date.now() - 150 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+const INITIAL_DEMO_MANDATES: HeadhunterMandateDTO[] = [
+  {
+    id: 'mandate-1',
+    userId: 'demo-user',
+    leadId: 'lead-rw',
+    recruiterName: 'Mai Hoàng',
+    agencyName: 'Robert Walters',
+    roleTitle: 'VP of Engineering',
+    clientCompany: 'Techcombank Digital',
+    isConfidential: false,
+    exclusivity: 'exclusive_retained',
+    salaryRange: '$6,000 - $8,000 USD gross',
+    status: 'submitted',
+    notes: 'Hồ sơ đã được gửi trực tiếp tới Managing Director Technology.',
+    pitchedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'mandate-2',
+    userId: 'demo-user',
+    leadId: 'lead-mp',
+    recruiterName: 'Alexandre Nguyen',
+    agencyName: 'Michael Page',
+    roleTitle: 'Head of Data & AI Platform',
+    clientCompany: 'VNG Corporation',
+    isConfidential: false,
+    exclusivity: 'contingency_shared',
+    salaryRange: '90 - 130 Triệu VND gross',
+    status: 'pitched',
+    notes: 'Đang chờ bản mô tả công việc (JD) chính thức.',
+    pitchedAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+function getDemoHeadhunterLeads(): RecruiterLeadDTO[] {
+  try {
+    const raw = localStorage.getItem(DEMO_HEADHUNTER_LEADS_KEY);
+    if (!raw) {
+      localStorage.setItem(DEMO_HEADHUNTER_LEADS_KEY, JSON.stringify(INITIAL_DEMO_LEADS));
+      return INITIAL_DEMO_LEADS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_DEMO_LEADS;
+  } catch {
+    return INITIAL_DEMO_LEADS;
+  }
+}
+
+function saveDemoHeadhunterLeads(leads: RecruiterLeadDTO[]): void {
+  try {
+    localStorage.setItem(DEMO_HEADHUNTER_LEADS_KEY, JSON.stringify(leads));
+  } catch {
+  }
+}
+
+function getDemoHeadhunterMandates(): HeadhunterMandateDTO[] {
+  try {
+    const raw = localStorage.getItem(DEMO_HEADHUNTER_MANDATES_KEY);
+    if (!raw) {
+      localStorage.setItem(DEMO_HEADHUNTER_MANDATES_KEY, JSON.stringify(INITIAL_DEMO_MANDATES));
+      return INITIAL_DEMO_MANDATES;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : INITIAL_DEMO_MANDATES;
+  } catch {
+    return INITIAL_DEMO_MANDATES;
+  }
+}
+
+function saveDemoHeadhunterMandates(mandates: HeadhunterMandateDTO[]): void {
+  try {
+    localStorage.setItem(DEMO_HEADHUNTER_MANDATES_KEY, JSON.stringify(mandates));
+  } catch {
+  }
+}
+
+export const headhunterCrmRepository = {
+  async listLeads(filters?: {
+    agency?: string;
+    tier?: RecruiterRelationshipTier;
+    query?: string;
+  }): Promise<RecruiterLeadDTO[]> {
+    if (demoMode) {
+      let leads = getDemoHeadhunterLeads();
+      if (filters?.tier) {
+        leads = leads.filter(l => l.tier === filters.tier);
+      }
+      if (filters?.agency && filters.agency.trim()) {
+        const ag = filters.agency.toLowerCase().trim();
+        leads = leads.filter(l => l.agency.toLowerCase().includes(ag));
+      }
+      if (filters?.query && filters.query.trim()) {
+        const q = filters.query.toLowerCase().trim();
+        leads = leads.filter(l =>
+          l.name.toLowerCase().includes(q) ||
+          l.agency.toLowerCase().includes(q) ||
+          l.role.toLowerCase().includes(q) ||
+          l.specialties.some(s => s.toLowerCase().includes(q))
+        );
+      }
+      return leads.map(l => {
+        const health = computeRecruiterRelationshipHealth(l);
+        return {
+          ...l,
+          healthScore: health.healthScore,
+          healthStatus: health.healthStatus,
+          nextActionSuggestion: health.nextActionSuggestion
+        };
+      });
+    }
+
+    const params = new URLSearchParams();
+    if (filters?.agency) params.set('agency', filters.agency);
+    if (filters?.tier) params.set('tier', filters.tier);
+    if (filters?.query) params.set('q', filters.query);
+    const qs = params.toString();
+    return request<RecruiterLeadDTO[]>(`/headhunters${qs ? `?${qs}` : ''}`);
+  },
+
+  async getLead(id: string): Promise<RecruiterLeadDTO | null> {
+    if (demoMode) {
+      const leads = getDemoHeadhunterLeads();
+      const lead = leads.find(l => l.id === id);
+      if (!lead) return null;
+      const health = computeRecruiterRelationshipHealth(lead);
+      return {
+        ...lead,
+        healthScore: health.healthScore,
+        healthStatus: health.healthStatus,
+        nextActionSuggestion: health.nextActionSuggestion
+      };
+    }
+    return request<RecruiterLeadDTO | null>(`/headhunters/${id}`);
+  },
+
+  async upsertLead(input: RecruiterLeadMutationInputDTO, existingId?: string): Promise<RecruiterLeadDTO> {
+    if (demoMode) {
+      const leads = getDemoHeadhunterLeads();
+      const nowIso = new Date().toISOString();
+      const tier = input.tier || 'preferred_partner';
+      const rating = input.rating ?? 4;
+      const health = computeRecruiterRelationshipHealth({
+        tier,
+        rating,
+        mandatesCount: 0,
+        lastContactedAt: input.lastContactedAt
+      });
+
+      if (existingId) {
+        const idx = leads.findIndex(l => l.id === existingId);
+        if (idx !== -1) {
+          const updated: RecruiterLeadDTO = {
+            ...leads[idx],
+            name: input.name,
+            agency: input.agency,
+            agencyTier: input.agencyTier || leads[idx].agencyTier,
+            role: input.role || leads[idx].role,
+            email: input.email || leads[idx].email,
+            phone: input.phone || leads[idx].phone,
+            linkedinUrl: input.linkedinUrl || leads[idx].linkedinUrl,
+            tier,
+            rating,
+            specialties: input.specialties || leads[idx].specialties,
+            notes: input.notes || leads[idx].notes,
+            lastContactedAt: input.lastContactedAt || leads[idx].lastContactedAt,
+            healthScore: health.healthScore,
+            healthStatus: health.healthStatus,
+            nextActionSuggestion: health.nextActionSuggestion,
+            updatedAt: nowIso
+          };
+          leads[idx] = updated;
+          saveDemoHeadhunterLeads(leads);
+          return updated;
+        }
+      }
+
+      const newLead: RecruiterLeadDTO = {
+        id: `lead-${Date.now()}`,
+        userId: 'demo-user',
+        name: input.name,
+        agency: input.agency,
+        agencyTier: input.agencyTier || 'independent',
+        role: input.role || 'Executive Recruiter',
+        email: input.email,
+        phone: input.phone,
+        linkedinUrl: input.linkedinUrl,
+        tier,
+        rating,
+        specialties: input.specialties || [],
+        mandatesCount: 0,
+        notes: input.notes,
+        lastContactedAt: input.lastContactedAt,
+        healthScore: health.healthScore,
+        healthStatus: health.healthStatus,
+        nextActionSuggestion: health.nextActionSuggestion,
+        createdAt: nowIso,
+        updatedAt: nowIso
+      };
+      saveDemoHeadhunterLeads([newLead, ...leads]);
+      return newLead;
+    }
+
+    return request<RecruiterLeadDTO>('/headhunters', {
+      method: 'POST',
+      body: JSON.stringify({ ...input, id: existingId })
+    });
+  },
+
+  async deleteLead(id: string): Promise<boolean> {
+    if (demoMode) {
+      const leads = getDemoHeadhunterLeads();
+      const filtered = leads.filter(l => l.id !== id);
+      saveDemoHeadhunterLeads(filtered);
+      return true;
+    }
+    await request<void>(`/headhunters/${id}`, { method: 'DELETE' });
+    return true;
+  },
+
+  async listMandates(leadId?: string): Promise<HeadhunterMandateDTO[]> {
+    if (demoMode) {
+      let mandates = getDemoHeadhunterMandates();
+      if (leadId) {
+        mandates = mandates.filter(m => m.leadId === leadId);
+      }
+      return mandates;
+    }
+    const query = leadId ? `?leadId=${encodeURIComponent(leadId)}` : '';
+    return request<HeadhunterMandateDTO[]>(`/headhunters/mandates${query}`);
+  },
+
+  async createMandate(input: HeadhunterMandateMutationInputDTO): Promise<HeadhunterMandateDTO> {
+    if (demoMode) {
+      const leads = getDemoHeadhunterLeads();
+      const lead = leads.find(l => l.id === input.leadId);
+      const recruiterName = lead ? lead.name : 'Recruiter';
+      const agencyName = lead ? lead.agency : 'Agency';
+      const nowIso = new Date().toISOString();
+
+      const newMandate: HeadhunterMandateDTO = {
+        id: `mandate-${Date.now()}`,
+        userId: 'demo-user',
+        leadId: input.leadId,
+        recruiterName,
+        agencyName,
+        applicationId: input.applicationId,
+        roleTitle: input.roleTitle,
+        clientCompany: input.clientCompany,
+        isConfidential: Boolean(input.isConfidential),
+        exclusivity: input.exclusivity || 'unconfirmed',
+        salaryRange: input.salaryRange,
+        status: input.status || 'pitched',
+        notes: input.notes,
+        pitchedAt: nowIso,
+        updatedAt: nowIso
+      };
+
+      const mandates = getDemoHeadhunterMandates();
+      saveDemoHeadhunterMandates([newMandate, ...mandates]);
+
+      if (lead) {
+        lead.mandatesCount = (lead.mandatesCount || 0) + 1;
+        lead.updatedAt = nowIso;
+        saveDemoHeadhunterLeads(leads);
+      }
+
+      return newMandate;
+    }
+
+    return request<HeadhunterMandateDTO>('/headhunters/mandates', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async updateMandateStatus(id: string, status: MandateStatus): Promise<HeadhunterMandateDTO | null> {
+    if (demoMode) {
+      const mandates = getDemoHeadhunterMandates();
+      const idx = mandates.findIndex(m => m.id === id);
+      if (idx === -1) return null;
+      mandates[idx].status = status;
+      mandates[idx].updatedAt = new Date().toISOString();
+      saveDemoHeadhunterMandates(mandates);
+      return mandates[idx];
+    }
+
+    return request<HeadhunterMandateDTO>(`/headhunters/mandates/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+  },
+
+  async parsePitch(input: ParseRecruiterPitchInputDTO): Promise<InboundPitchParseResultDTO> {
+    if (demoMode) {
+      return parseInboundRecruiterPitch(input.rawText, input.channel);
+    }
+    return request<InboundPitchParseResultDTO>('/headhunters/parse-pitch', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async generateReply(input: {
+    pitch: InboundPitchParseResultDTO;
+    intent: RecruiterReplyIntent;
+  }): Promise<RecruiterResponseDraftDTO> {
+    if (demoMode) {
+      return generateRecruiterReplyDraft(input.pitch, input.intent);
+    }
+    return request<RecruiterResponseDraftDTO>('/headhunters/reply-draft', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  }
+};
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
@@ -4046,7 +4469,20 @@ export type {
   ReverseInterviewQuestionDTO,
   CultureCompatibilityReportDTO,
   AnalyzeCultureInputDTO,
-  CultureQuestionGenerationInputDTO
+  CultureQuestionGenerationInputDTO,
+  HeadhunterAgencyTier,
+  RecruiterRelationshipTier,
+  MandateExclusivity,
+  MandateStatus,
+  RecruiterReplyIntent,
+  HeadhunterAgencyDTO,
+  RecruiterLeadDTO,
+  HeadhunterMandateDTO,
+  InboundPitchParseResultDTO,
+  ParseRecruiterPitchInputDTO,
+  RecruiterResponseDraftDTO,
+  RecruiterLeadMutationInputDTO,
+  HeadhunterMandateMutationInputDTO
 };
 
 
