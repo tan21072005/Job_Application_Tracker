@@ -126,7 +126,15 @@ import {
   verifyDossierIntegrity,
   validatePortfolioConfigInput,
   validateGenerateTokenInput,
-  type PortfolioConfigDTO
+  type PortfolioConfigDTO,
+  computeVestingSchedule,
+  calculateNetTakeHomeVnd,
+  forecastCompensationScenarios,
+  evaluateMarketBenchmark,
+  deriveNegotiationLeveragePoints,
+  validateCreateCompensationForecastInput,
+  type EquityGrantDTO,
+  type CompensationPackageDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -2745,3 +2753,159 @@ test('contract: validatePortfolioConfigInput and validateGenerateTokenInput vali
   const invalidToken = validateGenerateTokenInput({ expiryDays: 500 });
   assert.equal(invalidToken.valid, false);
 });
+
+test('contract: computeVestingSchedule computes 4-year vesting milestones with cliff correctly', () => {
+  const emptyVesting = computeVestingSchedule(undefined);
+  assert.equal(emptyVesting.length, 4);
+  assert.equal(emptyVesting[0].vestedSharesCumulative, 0);
+
+  const grant: EquityGrantDTO = {
+    type: 'esop',
+    totalShares: 20000,
+    strikePrice: 20000,
+    currentFairMarketValue: 50000,
+    vestingYears: 4,
+    cliffMonths: 12
+  };
+
+  const schedule = computeVestingSchedule(grant);
+  assert.equal(schedule.length, 4);
+  assert.equal(schedule[0].year, 1);
+  assert.equal(schedule[0].vestedSharesInYear, 5000);
+  assert.equal(schedule[0].vestedSharesCumulative, 5000);
+  assert.equal(schedule[0].estimatedGrossValue, 250000000);
+  assert.equal(schedule[0].netGainValue, 150000000);
+
+  assert.equal(schedule[3].year, 4);
+  assert.equal(schedule[3].vestedSharesCumulative, 20000);
+  assert.equal(schedule[3].netGainValue, 150000000);
+
+  const longCliffGrant: EquityGrantDTO = {
+    ...grant,
+    cliffMonths: 18
+  };
+  const longCliffSchedule = computeVestingSchedule(longCliffGrant);
+  assert.equal(longCliffSchedule[0].vestedSharesInYear, 0);
+  assert.equal(longCliffSchedule[0].vestedSharesCumulative, 0);
+});
+
+test('contract: calculateNetTakeHomeVnd computes progressive PIT and insurance caps', () => {
+  assert.equal(calculateNetTakeHomeVnd(0), 0);
+  assert.equal(calculateNetTakeHomeVnd(-1000), 0);
+
+  const net15m = calculateNetTakeHomeVnd(15000000);
+  assert.ok(net15m > 12000000 && net15m < 15000000);
+
+  const net55m = calculateNetTakeHomeVnd(55000000);
+  assert.ok(net55m > 40000000 && net55m < 48000000);
+
+  const net120m = calculateNetTakeHomeVnd(120000000);
+  assert.ok(net120m > 75000000 && net120m < 95000000);
+});
+
+test('contract: forecastCompensationScenarios generates conservative, baseline, and optimistic projections', () => {
+  const pkg: CompensationPackageDTO = {
+    baseSalaryMonthly: 50000000,
+    currency: 'VND',
+    hasMonth13: true,
+    performanceBonusAnnual: 50000000,
+    equityGrant: {
+      type: 'esop',
+      totalShares: 12000,
+      strikePrice: 10000,
+      currentFairMarketValue: 30000,
+      vestingYears: 4,
+      cliffMonths: 12
+    }
+  };
+
+  const scenarios = forecastCompensationScenarios(pkg);
+  assert.ok(scenarios.conservative);
+  assert.ok(scenarios.baseline);
+  assert.ok(scenarios.optimistic);
+
+  assert.equal(scenarios.conservative.annualBreakdowns.length, 4);
+  assert.equal(scenarios.baseline.annualBreakdowns.length, 4);
+  assert.equal(scenarios.optimistic.annualBreakdowns.length, 4);
+
+  assert.ok(scenarios.optimistic.fourYearTotalGross > scenarios.baseline.fourYearTotalGross);
+  assert.ok(scenarios.baseline.fourYearTotalGross > scenarios.conservative.fourYearTotalGross);
+  assert.ok(scenarios.baseline.fourYearTotalNet > 0);
+});
+
+test('contract: evaluateMarketBenchmark evaluates roles, levels, and market percentiles', () => {
+  const bmSeniorFe = evaluateMarketBenchmark('Senior Frontend Engineer', 'senior', 750000000, 'VND');
+  assert.equal(bmSeniorFe.level, 'senior');
+  assert.equal(bmSeniorFe.currency, 'VND');
+  assert.ok(bmSeniorFe.p50AnnualCash > 0);
+  assert.ok(bmSeniorFe.candidatePercentile >= 50 && bmSeniorFe.candidatePercentile <= 75);
+
+  const bmLeadBe = evaluateMarketBenchmark('Lead Backend Architect', 'lead', 600000000, 'VND');
+  assert.equal(bmLeadBe.marketComparisonStatus, 'below_market');
+  assert.ok(bmLeadBe.candidatePercentile < 40);
+
+  const bmDevopsUsd = evaluateMarketBenchmark('Staff DevOps Engineer', 'staff', 75000, 'USD');
+  assert.equal(bmDevopsUsd.currency, 'USD');
+  assert.ok(bmDevopsUsd.p50AnnualCash > 0);
+});
+
+test('contract: deriveNegotiationLeveragePoints identifies gaps and provides counter scripts', () => {
+  const pkg: CompensationPackageDTO = {
+    baseSalaryMonthly: 30000000,
+    currency: 'VND',
+    hasMonth13: false,
+    performanceBonusAnnual: 0,
+    equityGrant: {
+      type: 'esop',
+      totalShares: 10000,
+      strikePrice: 10000,
+      currentFairMarketValue: 15000,
+      vestingYears: 4,
+      cliffMonths: 24
+    }
+  };
+
+  const benchmark = evaluateMarketBenchmark('Senior Backend Engineer', 'senior', 360000000, 'VND');
+  const leveragePoints = deriveNegotiationLeveragePoints(pkg, benchmark, 'TechCorp');
+
+  assert.ok(leveragePoints.length >= 2);
+  const basePoint = leveragePoints.find(p => p.dimension === 'base_salary');
+  assert.ok(basePoint);
+  assert.ok(basePoint.suggestedScript.includes('TechCorp') || basePoint.suggestedScript.includes('thị trường'));
+
+  const cliffPoint = leveragePoints.find(p => p.dimension === 'cliff_period');
+  assert.ok(cliffPoint);
+  assert.ok(cliffPoint.suggestedScript.includes('12 tháng'));
+});
+
+test('contract: validateCreateCompensationForecastInput validates input payload', () => {
+  const valid = validateCreateCompensationForecastInput({
+    company: 'Shopee Vietnam',
+    role: 'Senior Fullstack Engineer',
+    level: 'senior',
+    package: {
+      baseSalaryMonthly: 60000000,
+      currency: 'VND',
+      hasMonth13: true,
+      performanceBonusAnnual: 60000000
+    }
+  });
+  assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.data.company, 'Shopee Vietnam');
+    assert.equal(valid.data.package.baseSalaryMonthly, 60000000);
+  }
+
+  const invalid = validateCreateCompensationForecastInput({
+    company: '',
+    role: '',
+    package: {
+      baseSalaryMonthly: -500
+    }
+  });
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors.company);
+  assert.ok(invalid.errors.role);
+  assert.ok(invalid.errors['package.baseSalaryMonthly']);
+});
+

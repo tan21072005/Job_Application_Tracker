@@ -25,3 +25,4 @@ export * from './email-ingest.ts';
 export * from './outreach-campaign.ts';
 export * from './interview-simulation.ts';
 export * from './portfolio-dossier.ts';
+export * from './compensation-forecaster.ts';
