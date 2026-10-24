@@ -97,6 +97,7 @@ import { SystemDesignService } from './services/system-design-service.ts';
 import { EquityLiquidityService } from './services/equity-liquidity-service.ts';
 import { BackchannelService } from './services/backchannel-service.ts';
 import { ExecutiveContractService } from './services/executive-contract-service.ts';
+import { ExecutiveOnboardingService } from './services/executive-onboarding-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -121,7 +122,11 @@ import {
   validateBackchannelAuditInput,
   validateExecutiveContractInput,
   validatePriorInventionInput,
-  validateContractRedlineInput
+  validateContractRedlineInput,
+  validateExecutiveOnboardingPlanInput,
+  validateStakeholderInput,
+  validateMilestoneInput,
+  validateDiagnosticsInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -184,6 +189,7 @@ export const systemDesignService = new SystemDesignService(pool);
 export const equityLiquidityService = new EquityLiquidityService(pool);
 export const backchannelService = new BackchannelService(pool);
 export const executiveContractService = new ExecutiveContractService(pool);
+export const executiveOnboardingService = new ExecutiveOnboardingService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -2533,6 +2539,200 @@ app.get('/api/executive-contracts/:id/export-exhibit-a', auth, async (req, res, 
       return res.status(404).json({ code: 'not_found', message: 'Khong tim thay hop dong lanh dao.' });
     }
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/executive-onboarding', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const plans = await executiveOnboardingService.listPlans(userId);
+    res.json(plans);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-onboarding', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateExecutiveOnboardingPlanInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', message: validation.message, errors: validation.errors });
+    }
+    const created = await executiveOnboardingService.createPlan(userId, validation.data);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/executive-onboarding/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const plan = await executiveOnboardingService.getPlan(userId, String(req.params.id));
+    if (!plan) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay ke hoach 100 ngay executive.' });
+    }
+    res.json(plan);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/executive-onboarding/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = String(req.params.id);
+    const existing = await executiveOnboardingService.getPlan(userId, planId);
+    if (!existing) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay ke hoach 100 ngay executive.' });
+    }
+    const updated = await executiveOnboardingService.updatePlan(userId, planId, req.body);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/executive-onboarding/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await executiveOnboardingService.deletePlan(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay ke hoach 100 ngay executive de xoa.' });
+    }
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-onboarding/:id/stakeholders', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = String(req.params.id);
+    const validation = validateStakeholderInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', message: validation.message, errors: validation.errors });
+    }
+    const created = await executiveOnboardingService.addStakeholder(userId, planId, validation.data);
+    if (!created) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay ke hoach de them stakeholder.' });
+    }
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/executive-onboarding/:id/stakeholders/:sid', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = String(req.params.id);
+    const sid = String(req.params.sid);
+    const updated = await executiveOnboardingService.updateStakeholder(userId, planId, sid, req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay stakeholder de cap nhat.' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/executive-onboarding/:id/stakeholders/:sid', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = String(req.params.id);
+    const sid = String(req.params.sid);
+    const deleted = await executiveOnboardingService.deleteStakeholder(userId, planId, sid);
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay stakeholder de xoa.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/executive-onboarding/:id/milestones', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = String(req.params.id);
+    const validation = validateMilestoneInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', message: validation.message, errors: validation.errors });
+    }
+    const created = await executiveOnboardingService.addMilestone(userId, planId, validation.data);
+    if (!created) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay ke hoach de them milestone.' });
+    }
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/executive-onboarding/:id/milestones/:mid', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = String(req.params.id);
+    const mid = String(req.params.mid);
+    const updated = await executiveOnboardingService.updateMilestone(userId, planId, mid, req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay milestone de cap nhat.' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/executive-onboarding/:id/milestones/:mid', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = String(req.params.id);
+    const mid = String(req.params.mid);
+    const deleted = await executiveOnboardingService.deleteMilestone(userId, planId, mid);
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay milestone de xoa.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/executive-onboarding/:id/diagnostics', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = String(req.params.id);
+    const validation = validateDiagnosticsInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', message: validation.message, errors: validation.errors });
+    }
+    const updated = await executiveOnboardingService.updateDiagnostics(userId, planId, validation.data);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay ke hoach de cap nhat diagnostics.' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/executive-onboarding/:id/memo/:memoType', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = String(req.params.id);
+    const memoType = String(req.params.memoType) as Parameters<typeof executiveOnboardingService.getMemo>[2];
+    const memo = await executiveOnboardingService.getMemo(userId, planId, memoType);
+    if (!memo) {
+      return res.status(404).json({ code: 'not_found', message: 'Khong tim thay ke hoach de xuat executive memo.' });
+    }
+    res.json(memo);
   } catch (err) {
     next(err);
   }

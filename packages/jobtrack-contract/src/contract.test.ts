@@ -208,7 +208,19 @@ import {
   validateContractRedlineInput,
   type ExecutiveContractDTO,
   type PriorInventionItemDTO,
-  type ContractRedlineDTO
+  type ContractRedlineDTO,
+  computeStakeholderRelationshipIndex,
+  computeDiagnosticHealthIndex,
+  createDefaultExecutiveDiagnostics,
+  computeTransitionMomentum,
+  generateExecutiveMemoMarkdown,
+  validateExecutiveOnboardingPlanInput,
+  validateStakeholderInput,
+  validateMilestoneInput,
+  validateDiagnosticsInput,
+  type StakeholderDTO,
+  type OnboardingMilestoneDTO,
+  type ExecutiveOnboardingPlanDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -4589,6 +4601,447 @@ test('contract: validateExecutiveContractInput, validatePriorInventionInput, val
   });
   assert.equal(invalidRedline.ok, false);
 });
+
+test('contract: computeStakeholderRelationshipIndex calculates coverage, sentiment, and diversity accurately', () => {
+  const emptyRes = computeStakeholderRelationshipIndex([]);
+  assert.equal(emptyRes.sri, 0);
+  assert.equal(emptyRes.coverageRate, 0);
+  assert.equal(emptyRes.avgSentiment, 0);
+  assert.equal(emptyRes.diversityFactor, 0);
+
+  const now = new Date().toISOString();
+  const mockStakeholders: StakeholderDTO[] = [
+    {
+      id: 's1',
+      planId: 'plan-1',
+      name: 'Sarah Jenkins',
+      roleTitle: 'CEO & Co-founder',
+      category: 'executive_sponsor',
+      expectations: 'Stabilize cloud infrastructure',
+      painPoints: 'Incident load',
+      politicalDynamics: 'Strong board backing',
+      sentimentScore: 5,
+      interviewDate: '2026-10-01',
+      status: 'completed',
+      alignmentLevel: 'strongly_aligned',
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: 's2',
+      planId: 'plan-1',
+      name: 'Marcus Vance',
+      roleTitle: 'VP of Product',
+      category: 'peer_executive',
+      expectations: 'Predictable sprint delivery',
+      painPoints: 'Missed launch dates',
+      politicalDynamics: 'Product-led culture history',
+      sentimentScore: 4,
+      interviewDate: '2026-10-03',
+      status: 'completed',
+      alignmentLevel: 'strongly_aligned',
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: 's3',
+      planId: 'plan-1',
+      name: 'Elena Rostova',
+      roleTitle: 'Engineering Manager, Core Billing',
+      category: 'direct_report',
+      expectations: 'Career growth and on-call relief',
+      painPoints: 'Billing monolith technical debt',
+      politicalDynamics: 'Key retention flight risk',
+      sentimentScore: 4,
+      interviewDate: '2026-10-05',
+      status: 'completed',
+      alignmentLevel: 'partially_aligned',
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: 's4',
+      planId: 'plan-1',
+      name: 'David Kim',
+      roleTitle: 'Principal Distributed Systems Architect',
+      category: 'staff_principal',
+      expectations: 'Clear architecture decision record (ADR) process',
+      painPoints: 'Unchecked microservice sprawl',
+      politicalDynamics: 'High technical credibility with ICs',
+      sentimentScore: 4,
+      interviewDate: '2026-10-07',
+      status: 'completed',
+      alignmentLevel: 'strongly_aligned',
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: 's5',
+      planId: 'plan-1',
+      name: 'Priya Sharma',
+      roleTitle: 'VP of Customer Success',
+      category: 'customer_ops',
+      expectations: 'Faster customer bug escalations',
+      painPoints: 'Slow turnaround on tier-1 escalations',
+      politicalDynamics: 'Protective of enterprise account retention',
+      sentimentScore: 3,
+      interviewDate: null,
+      status: 'scheduled',
+      alignmentLevel: 'partially_aligned',
+      createdAt: now,
+      updatedAt: now
+    }
+  ];
+
+  const result = computeStakeholderRelationshipIndex(mockStakeholders);
+  assert.equal(result.coverageRate, 80);
+  assert.equal(result.diversityFactor, 80);
+  assert.ok(result.avgSentiment >= 80);
+  assert.ok(result.sri >= 75 && result.sri <= 95);
+});
+
+test('contract: computeDiagnosticHealthIndex calculates severity tiers, bottlenecks count, and composite DHI', () => {
+  const defaultDiag = createDefaultExecutiveDiagnostics();
+  assert.ok(defaultDiag.diagnosticHealthIndex > 65);
+  assert.ok(defaultDiag.identifiedBottlenecksCount >= 6);
+  assert.equal(defaultDiag.architectureTechDebt.severityLevel, 'moderate_risk');
+
+  const customDiag = computeDiagnosticHealthIndex({
+    architectureTechDebt: {
+      score: 95,
+      primaryBottlenecks: [],
+      immediateMitigations: [],
+      actionPlan: 'Pristine decoupled event architecture'
+    },
+    deliveryVelocityIncidentCadence: {
+      score: 85,
+      primaryBottlenecks: [],
+      immediateMitigations: [],
+      actionPlan: 'Continuous deployment with automated rollbacks'
+    },
+    teamMoraleFlightRisks: {
+      score: 90,
+      primaryBottlenecks: [],
+      immediateMitigations: [],
+      actionPlan: 'High psychological safety and clear career ladders'
+    },
+    strategicProductEngineeringAlignment: {
+      score: 90,
+      primaryBottlenecks: [],
+      immediateMitigations: [],
+      actionPlan: 'Co-owned OKRs and joint discovery triads'
+    }
+  });
+
+  assert.equal(customDiag.diagnosticHealthIndex, 90);
+  assert.equal(customDiag.architectureTechDebt.severityLevel, 'healthy');
+  assert.equal(customDiag.criticalHazardsCount, 0);
+  assert.equal(customDiag.identifiedBottlenecksCount, 0);
+
+  const hazardousDiag = computeDiagnosticHealthIndex({
+    architectureTechDebt: {
+      score: 30,
+      primaryBottlenecks: ['Single point of failure database cluster'],
+      immediateMitigations: ['Failover replica'],
+      actionPlan: 'Emergency cluster migration'
+    },
+    deliveryVelocityIncidentCadence: {
+      score: 35,
+      primaryBottlenecks: ['Manual bi-monthly releases with high outage frequency'],
+      immediateMitigations: ['Rollback automation'],
+      actionPlan: 'CI/CD pipeline refactor'
+    },
+    teamMoraleFlightRisks: {
+      score: 45,
+      primaryBottlenecks: ['3 key staff departures pending'],
+      immediateMitigations: ['Retention equity grants'],
+      actionPlan: 'Leadership 1-on-1s'
+    },
+    strategicProductEngineeringAlignment: {
+      score: 50,
+      primaryBottlenecks: ['Feature delivery deadline conflicts with safety'],
+      immediateMitigations: ['Executive escalation'],
+      actionPlan: 'Scope negotiation'
+    }
+  });
+
+  assert.equal(hazardousDiag.architectureTechDebt.severityLevel, 'critical_hazard');
+  assert.equal(hazardousDiag.deliveryVelocityIncidentCadence.severityLevel, 'critical_hazard');
+  assert.equal(hazardousDiag.teamMoraleFlightRisks.severityLevel, 'high_vulnerability');
+  assert.ok(hazardousDiag.diagnosticHealthIndex <= 45);
+  assert.equal(hazardousDiag.criticalHazardsCount, 4);
+});
+
+test('contract: computeTransitionMomentum evaluates quick wins, milestones, and transition momentum tier', () => {
+  const now = new Date().toISOString();
+  const defaultDiag = createDefaultExecutiveDiagnostics();
+  const mockStakeholders: StakeholderDTO[] = [
+    {
+      id: 's1',
+      planId: 'plan-1',
+      name: 'CEO',
+      roleTitle: 'CEO',
+      category: 'executive_sponsor',
+      expectations: '',
+      painPoints: '',
+      politicalDynamics: '',
+      sentimentScore: 5,
+      interviewDate: '2026-10-01',
+      status: 'completed',
+      alignmentLevel: 'strongly_aligned',
+      createdAt: now,
+      updatedAt: now
+    }
+  ];
+
+  const mockMilestones: OnboardingMilestoneDTO[] = [
+    {
+      id: 'm1',
+      planId: 'plan-1',
+      phase: 'phase_1_listen_align',
+      title: 'Fix Canary Deployment Flake',
+      description: 'Zero out intermittent pipeline test failures',
+      targetDay: 14,
+      deliveredDay: 12,
+      status: 'achieved',
+      isQuickWin: true,
+      deliveryEstimateDays: 5,
+      impactScore: 8,
+      blockerReason: null,
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: 'm2',
+      planId: 'plan-1',
+      phase: 'phase_1_listen_align',
+      title: 'Automate On-Call Handoff Runbook',
+      description: 'Deploy PagerDuty integration for automated shift handover',
+      targetDay: 20,
+      deliveredDay: 18,
+      status: 'achieved',
+      isQuickWin: true,
+      deliveryEstimateDays: 7,
+      impactScore: 7,
+      blockerReason: null,
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: 'm3',
+      planId: 'plan-1',
+      phase: 'phase_2_synthesize_wins',
+      title: 'Complete Monolith Domain Splitting RFC',
+      description: 'Draft architecture boundary proposal for checkout',
+      targetDay: 45,
+      deliveredDay: null,
+      status: 'in_progress',
+      isQuickWin: false,
+      deliveryEstimateDays: 20,
+      impactScore: 9,
+      blockerReason: null,
+      createdAt: now,
+      updatedAt: now
+    }
+  ];
+
+  const momentum = computeTransitionMomentum(mockStakeholders, defaultDiag, mockMilestones, 25);
+  assert.equal(momentum.quickWinsTotal, 2);
+  assert.equal(momentum.quickWinsDelivered, 2);
+  assert.equal(momentum.quickWinDeliveryRate, 100);
+  assert.ok(momentum.milestoneExecutionRate >= 65);
+  assert.ok(momentum.transitionMomentumIndex >= 70);
+  assert.ok(momentum.tier === 'on_track' || momentum.tier === 'accelerating');
+
+  const emptyMomentum = computeTransitionMomentum([], defaultDiag, [], 1);
+  assert.ok(emptyMomentum.transitionMomentumIndex < 50);
+  assert.equal(emptyMomentum.tier, 'at_risk');
+});
+
+test('contract: generateExecutiveMemoMarkdown synthesizes Day 30, Day 60, and Day 100 briefs', () => {
+  const now = new Date().toISOString();
+  const diag = createDefaultExecutiveDiagnostics();
+  const mockPlan: ExecutiveOnboardingPlanDTO = {
+    id: 'plan-test-1',
+    userId: 'user-1',
+    applicationId: null,
+    companyName: 'Acme Cloud AI',
+    roleTitle: 'VP of Engineering',
+    startDate: '2026-10-01',
+    currentDay: 30,
+    executiveSponsorName: 'Sarah Jenkins',
+    stakeholders: [
+      {
+        id: 's1',
+        planId: 'plan-test-1',
+        name: 'Sarah Jenkins',
+        roleTitle: 'CEO',
+        category: 'executive_sponsor',
+        expectations: 'Growth and stability',
+        painPoints: 'Slow velocity',
+        politicalDynamics: 'Founder authority',
+        sentimentScore: 5,
+        interviewDate: '2026-10-02',
+        status: 'completed',
+        alignmentLevel: 'strongly_aligned',
+        createdAt: now,
+        updatedAt: now
+      }
+    ],
+    diagnostics: diag,
+    milestones: [
+      {
+        id: 'm1',
+        planId: 'plan-test-1',
+        phase: 'phase_1_listen_align',
+        title: 'Stabilize CI pipeline',
+        description: 'Fixed Docker cache layering',
+        targetDay: 14,
+        deliveredDay: 10,
+        status: 'achieved',
+        isQuickWin: true,
+        deliveryEstimateDays: 5,
+        impactScore: 8,
+        blockerReason: null,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        id: 'm2',
+        planId: 'plan-test-1',
+        phase: 'phase_3_transform_scale',
+        title: 'Multi-region cluster deploy',
+        description: 'Establish European data plane',
+        targetDay: 90,
+        deliveredDay: null,
+        status: 'planned',
+        isQuickWin: false,
+        deliveryEstimateDays: 30,
+        impactScore: 10,
+        blockerReason: null,
+        createdAt: now,
+        updatedAt: now
+      }
+    ],
+    momentum: {
+      transitionMomentumIndex: 82,
+      tier: 'on_track',
+      stakeholderRelationshipIndex: 85,
+      diagnosticHealthIndex: 74,
+      quickWinDeliveryRate: 100,
+      milestoneExecutionRate: 50,
+      actionPlansCoverageRate: 100,
+      currentDay: 30,
+      totalStakeholders: 1,
+      interviewedStakeholders: 1,
+      totalMilestones: 2,
+      achievedMilestones: 1,
+      quickWinsTotal: 1,
+      quickWinsDelivered: 1
+    },
+    createdAt: now,
+    updatedAt: now
+  };
+
+  const day30 = generateExecutiveMemoMarkdown('day_30_listening_tour', mockPlan);
+  assert.ok(day30.includes('EXECUTIVE MEMO: Day 30 Listening Tour Insights'));
+  assert.ok(day30.includes('Acme Cloud AI'));
+  assert.ok(day30.includes('Sarah Jenkins'));
+  assert.ok(day30.includes('Stakeholder Sentiment & 360 Alignment Matrix'));
+
+  const day60 = generateExecutiveMemoMarkdown('day_60_strategic_priorities', mockPlan);
+  assert.ok(day60.includes('EXECUTIVE BRIEFING: Day 60 Strategic Priorities'));
+  assert.ok(day60.includes('Early Wins Delivered & Business Impact'));
+
+  const day100 = generateExecutiveMemoMarkdown('day_100_transformation_charter', mockPlan);
+  assert.ok(day100.includes('BOARD CHARTER: Day 100 Engineering Transformation Review'));
+  assert.ok(day100.includes('1-Year Strategic Technology & Organizational Charter'));
+});
+
+test('contract: executive onboarding input validators enforce schemas and bounds', () => {
+  const validPlan = validateExecutiveOnboardingPlanInput({
+    companyName: 'Acme Cloud AI',
+    roleTitle: 'VP of Engineering',
+    startDate: '2026-10-01',
+    currentDay: 34,
+    executiveSponsorName: 'Sarah Jenkins'
+  });
+  assert.equal(validPlan.ok, true);
+
+  const invalidPlanDay = validateExecutiveOnboardingPlanInput({
+    companyName: 'Acme',
+    roleTitle: 'CTO',
+    startDate: '2026-10-01',
+    currentDay: 150
+  });
+  assert.equal(invalidPlanDay.ok, false);
+
+  const invalidPlanEmpty = validateExecutiveOnboardingPlanInput({
+    companyName: '',
+    roleTitle: ''
+  });
+  assert.equal(invalidPlanEmpty.ok, false);
+
+  const validStakeholder = validateStakeholderInput({
+    name: 'David Kim',
+    roleTitle: 'Principal Architect',
+    category: 'staff_principal',
+    expectations: 'Clear architecture decision records',
+    painPoints: 'Legacy sprawl',
+    politicalDynamics: 'High IC influence',
+    sentimentScore: 4,
+    status: 'completed',
+    alignmentLevel: 'strongly_aligned'
+  });
+  assert.equal(validStakeholder.ok, true);
+
+  const invalidStakeholderScore = validateStakeholderInput({
+    name: 'David Kim',
+    roleTitle: 'Principal Architect',
+    category: 'staff_principal',
+    sentimentScore: 10,
+    status: 'completed',
+    alignmentLevel: 'strongly_aligned'
+  });
+  assert.equal(invalidStakeholderScore.ok, false);
+
+  const validMilestone = validateMilestoneInput({
+    phase: 'phase_1_listen_align',
+    title: 'Deploy Automated Canary Testing',
+    description: 'De-risk releases with error budget triggers',
+    targetDay: 25,
+    status: 'in_progress',
+    isQuickWin: true,
+    deliveryEstimateDays: 7,
+    impactScore: 8
+  });
+  assert.equal(validMilestone.ok, true);
+
+  const invalidMilestonePhase = validateMilestoneInput({
+    phase: 'unknown_phase',
+    title: 'Deploy',
+    targetDay: 20,
+    status: 'planned',
+    isQuickWin: false,
+    deliveryEstimateDays: 5,
+    impactScore: 5
+  });
+  assert.equal(invalidMilestonePhase.ok, false);
+
+  const validDiag = validateDiagnosticsInput({
+    architectureTechDebt: { score: 75 },
+    deliveryVelocityIncidentCadence: { score: 80 },
+    teamMoraleFlightRisks: { score: 70 },
+    strategicProductEngineeringAlignment: { score: 85 }
+  });
+  assert.equal(validDiag.ok, true);
+
+  const invalidDiag = validateDiagnosticsInput({
+    architectureTechDebt: { score: 150 }
+  });
+  assert.equal(invalidDiag.ok, false);
+});
+
 
 
 

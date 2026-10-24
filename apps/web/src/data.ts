@@ -19,7 +19,30 @@ import {
   evaluateExecutiveContract,
   generateSynthesizedRedlines,
   generateExhibitAMarkdown,
-  generateExecutiveAddendumMarkdown
+  generateExecutiveAddendumMarkdown,
+  type StakeholderCategory,
+  type StakeholderInterviewStatus,
+  type AlignmentLevel,
+  type DiagnosticAreaKey,
+  type MilestonePhaseKey,
+  type OnboardingMilestoneStatus,
+  type TransitionMomentumTier,
+  type ExecutiveMemoType,
+  type StakeholderDTO,
+  type StakeholderMutationDTO,
+  type DiagnosticDimensionDetailDTO,
+  type ExecutiveDiagnosticsDTO,
+  type ExecutiveDiagnosticsMutationDTO,
+  type OnboardingMilestoneDTO,
+  type OnboardingMilestoneMutationDTO,
+  type TransitionMomentumDTO,
+  type ExecutiveOnboardingPlanDTO,
+  type ExecutiveOnboardingPlanMutationDTO,
+  computeStakeholderRelationshipIndex,
+  computeDiagnosticHealthIndex,
+  createDefaultExecutiveDiagnostics,
+  computeTransitionMomentum,
+  generateExecutiveMemoMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -5979,7 +6002,7 @@ export type {
   BackchannelAuditMutationDTO
 };
 
-export { backchannelRepository, executiveContractRepository };
+export { backchannelRepository, executiveContractRepository, executiveOnboardingRepository };
 
 const DEFAULT_DEMO_CONTRACTS: ExecutiveContractDTO[] = [
   {
@@ -6837,6 +6860,874 @@ const executiveContractRepository = {
       redlines
     );
     return { markdown, cri: contract.contractRiskIndex };
+  }
+};
+
+const DEFAULT_DEMO_ONBOARDING_PLANS: ExecutiveOnboardingPlanDTO[] = [
+  {
+    id: 'plan-demo-1',
+    userId: 'demo-user',
+    applicationId: null,
+    companyName: 'Acme Cloud AI',
+    roleTitle: 'VP of Engineering',
+    startDate: '2026-10-01',
+    currentDay: 34,
+    executiveSponsorName: 'Sarah Jenkins (CEO)',
+    stakeholders: [
+      {
+        id: 's-demo-1',
+        planId: 'plan-demo-1',
+        name: 'Sarah Jenkins',
+        roleTitle: 'CEO & Co-founder',
+        category: 'executive_sponsor',
+        expectations: 'Re-architect core event streaming, improve roadmap predictability, establish Staff career ladders.',
+        painPoints: 'Quarterly roadmap delays, customer contract enterprise escalations.',
+        politicalDynamics: 'Founder authority, high trust, demands direct transparency on architectural risks.',
+        sentimentScore: 5,
+        interviewDate: '2026-10-02',
+        status: 'completed',
+        alignmentLevel: 'strongly_aligned',
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-02T00:00:00.000Z'
+      },
+      {
+        id: 's-demo-2',
+        planId: 'plan-demo-1',
+        name: 'Marcus Vance',
+        roleTitle: 'VP of Product Management',
+        category: 'peer_executive',
+        expectations: 'Establish predictable 2-week sprint releases and collaborative technical discovery triads.',
+        painPoints: 'Engineering estimation surprises and recurring regressions in billing checkout.',
+        politicalDynamics: 'Strong commercial sway, previously felt engineering was a black box.',
+        sentimentScore: 4,
+        interviewDate: '2026-10-05',
+        status: 'completed',
+        alignmentLevel: 'strongly_aligned',
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-05T00:00:00.000Z'
+      },
+      {
+        id: 's-demo-3',
+        planId: 'plan-demo-1',
+        name: 'Elena Rostova',
+        roleTitle: 'Engineering Manager, Core Platform',
+        category: 'direct_report',
+        expectations: 'Buffer team against ad-hoc interruptions and fund technical debt retirement.',
+        painPoints: 'Severe on-call fatigue, monolithic deploy coupling, and lack of CI cache optimization.',
+        politicalDynamics: 'High emotional investment, respected by team, flight risk if conditions do not improve.',
+        sentimentScore: 4,
+        interviewDate: '2026-10-08',
+        status: 'completed',
+        alignmentLevel: 'partially_aligned',
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-08T00:00:00.000Z'
+      },
+      {
+        id: 's-demo-4',
+        planId: 'plan-demo-1',
+        name: 'David Kim',
+        roleTitle: 'Principal Distributed Systems Architect',
+        category: 'staff_principal',
+        expectations: 'Empower an Architecture Review Council (ARC) and adopt lightweight ADRs.',
+        painPoints: 'Microservice sprawl without schema governance or contract testing.',
+        politicalDynamics: 'Longest tenure technical authority, skeptical of superficial corporate process.',
+        sentimentScore: 4,
+        interviewDate: '2026-10-12',
+        status: 'completed',
+        alignmentLevel: 'strongly_aligned',
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-12T00:00:00.000Z'
+      },
+      {
+        id: 's-demo-5',
+        planId: 'plan-demo-1',
+        name: 'Priya Sharma',
+        roleTitle: 'VP of Customer Success & Support',
+        category: 'customer_ops',
+        expectations: 'Establish direct Sev-1/Sev-2 escalation bridge and bi-weekly stability briefings.',
+        painPoints: 'Slow turnaround on enterprise account defects causing renewal hesitations.',
+        politicalDynamics: 'Focused on enterprise retention, receptive to proactive engineering updates.',
+        sentimentScore: 3,
+        interviewDate: null,
+        status: 'scheduled',
+        alignmentLevel: 'partially_aligned',
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-01T00:00:00.000Z'
+      }
+    ],
+    diagnostics: {
+      architectureTechDebt: {
+        areaKey: 'architecture_tech_debt',
+        score: 74,
+        severityLevel: 'moderate_risk',
+        primaryBottlenecks: [
+          'Monolithic deploy coupling between core billing and order processing',
+          'Inadequate contract testing across message queues'
+        ],
+        immediateMitigations: [
+          'Decouple release pipelines using feature flags',
+          'Establish contract tests for high-throughput queues'
+        ],
+        actionPlan: 'Deploy domain-driven service boundaries and enforce strict consumer-driven contract tests across Q3.'
+      },
+      deliveryVelocityIncidentCadence: {
+        areaKey: 'delivery_velocity_incident_cadence',
+        score: 78,
+        severityLevel: 'moderate_risk',
+        primaryBottlenecks: [
+          'Bi-weekly deployment windows limiting release agility',
+          'Fragmented distributed tracing prolonging MTTR'
+        ],
+        immediateMitigations: [
+          'Automate canary stages with error-budget rollback',
+          'Consolidate OpenTelemetry instrumentation'
+        ],
+        actionPlan: 'Migrate to continuous deployment with automated canary gates and unified OpenTelemetry APM dashboards.'
+      },
+      teamMoraleFlightRisks: {
+        areaKey: 'team_morale_flight_risks',
+        score: 72,
+        severityLevel: 'moderate_risk',
+        primaryBottlenecks: [
+          'Platform squad on-call alert fatigue',
+          'Ambiguous Staff-plus engineering career ladder'
+        ],
+        immediateMitigations: [
+          'Implement secondary on-call rotation with rest compensation',
+          'Draft dual IC/Management engineering matrix'
+        ],
+        actionPlan: 'Publish comprehensive technical career tracks and redistribute platform incident burdens via site reliability engineering rotations.'
+      },
+      strategicProductEngineeringAlignment: {
+        areaKey: 'strategic_product_engineering_alignment',
+        score: 84,
+        severityLevel: 'healthy',
+        primaryBottlenecks: [
+          'Engineering involvement late in product discovery',
+          'Roadmap capacity estimates lack technical debt headroom'
+        ],
+        immediateMitigations: [
+          'Institute bi-weekly engineering discovery pairing with PMs',
+          'Ringfence 20% capacity in sprint cadences for architecture'
+        ],
+        actionPlan: 'Form joint product-engineering triads for all tier-1 initiatives and formalize SLA commitments on feature stabilization.'
+      },
+      diagnosticHealthIndex: 77,
+      identifiedBottlenecksCount: 8,
+      criticalHazardsCount: 0
+    },
+    milestones: [
+      {
+        id: 'm-demo-1',
+        planId: 'plan-demo-1',
+        phase: 'phase_1_listen_align',
+        title: 'Conduct 360 Stakeholder Listening Tour',
+        description: 'Complete structured interviews with CEO, peer executives, EMs, and principal architects.',
+        targetDay: 15,
+        deliveredDay: 12,
+        status: 'achieved',
+        isQuickWin: true,
+        deliveryEstimateDays: 14,
+        impactScore: 9,
+        blockerReason: null,
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-12T00:00:00.000Z'
+      },
+      {
+        id: 'm-demo-2',
+        planId: 'plan-demo-1',
+        phase: 'phase_1_listen_align',
+        title: 'De-risk CI/CD Flaky Pipeline Stages',
+        description: 'Implement retry isolation and Docker layer caching to reduce build duration.',
+        targetDay: 20,
+        deliveredDay: 18,
+        status: 'achieved',
+        isQuickWin: true,
+        deliveryEstimateDays: 7,
+        impactScore: 8,
+        blockerReason: null,
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-18T00:00:00.000Z'
+      },
+      {
+        id: 'm-demo-3',
+        planId: 'plan-demo-1',
+        phase: 'phase_2_synthesize_wins',
+        title: 'Publish 4-Dimension Organizational Diagnostic Memo',
+        description: 'Synthesize architecture, velocity, team morale, and product alignment findings.',
+        targetDay: 35,
+        deliveredDay: 32,
+        status: 'achieved',
+        isQuickWin: true,
+        deliveryEstimateDays: 10,
+        impactScore: 9,
+        blockerReason: null,
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-25T00:00:00.000Z'
+      },
+      {
+        id: 'm-demo-4',
+        planId: 'plan-demo-1',
+        phase: 'phase_2_synthesize_wins',
+        title: 'Deploy Automated Canary Release Pipeline',
+        description: 'Automate canary percentage routing with automatic rollback on error budget spikes.',
+        targetDay: 50,
+        deliveredDay: null,
+        status: 'in_progress',
+        isQuickWin: false,
+        deliveryEstimateDays: 14,
+        impactScore: 8,
+        blockerReason: null,
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-25T00:00:00.000Z'
+      },
+      {
+        id: 'm-demo-5',
+        planId: 'plan-demo-1',
+        phase: 'phase_3_transform_scale',
+        title: 'Publish Staff-Plus Engineering Career Matrix',
+        description: 'Establish explicit IC progression ladder from Senior to Principal Fellow.',
+        targetDay: 75,
+        deliveredDay: null,
+        status: 'planned',
+        isQuickWin: false,
+        deliveryEstimateDays: 20,
+        impactScore: 9,
+        blockerReason: null,
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-01T00:00:00.000Z'
+      },
+      {
+        id: 'm-demo-6',
+        planId: 'plan-demo-1',
+        phase: 'phase_3_transform_scale',
+        title: 'Present 1-Year Strategic Technology Charter to Board',
+        description: 'Deliver transformation review and 12-month technology investment roadmap.',
+        targetDay: 100,
+        deliveredDay: null,
+        status: 'planned',
+        isQuickWin: false,
+        deliveryEstimateDays: 25,
+        impactScore: 10,
+        blockerReason: null,
+        createdAt: '2026-10-01T00:00:00.000Z',
+        updatedAt: '2026-10-01T00:00:00.000Z'
+      }
+    ],
+    momentum: {
+      transitionMomentumIndex: 88,
+      tier: 'accelerating',
+      stakeholderRelationshipIndex: 85,
+      diagnosticHealthIndex: 77,
+      quickWinDeliveryRate: 100,
+      milestoneExecutionRate: 58,
+      actionPlansCoverageRate: 100,
+      currentDay: 34,
+      totalStakeholders: 5,
+      interviewedStakeholders: 4,
+      totalMilestones: 6,
+      achievedMilestones: 3,
+      quickWinsTotal: 3,
+      quickWinsDelivered: 3
+    },
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-25T00:00:00.000Z'
+  }
+];
+
+function loadDemoOnboardingPlans(): ExecutiveOnboardingPlanDTO[] {
+  try {
+    const raw = localStorage.getItem('jobtrack_demo_executive_onboarding_v1');
+    if (raw) {
+      const parsed = JSON.parse(raw) as ExecutiveOnboardingPlanDTO[];
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+  }
+  return structuredClone(DEFAULT_DEMO_ONBOARDING_PLANS);
+}
+
+function saveDemoOnboardingPlans(plans: ExecutiveOnboardingPlanDTO[]): void {
+  try {
+    localStorage.setItem('jobtrack_demo_executive_onboarding_v1', JSON.stringify(plans));
+  } catch {
+  }
+}
+
+function createDemoOnboardingPlan(input: ExecutiveOnboardingPlanMutationDTO): ExecutiveOnboardingPlanDTO {
+  const list = loadDemoOnboardingPlans();
+  const id = `plan-demo-${Date.now()}`;
+  const now = new Date().toISOString();
+  const diagnostics = createDefaultExecutiveDiagnostics();
+
+  const defaultStakeholders: StakeholderDTO[] = [
+    {
+      id: `s-demo-${Date.now()}-1`,
+      planId: id,
+      name: input.executiveSponsorName || 'Chief Executive Officer',
+      roleTitle: 'CEO & Founder',
+      category: 'executive_sponsor',
+      expectations: 'Establish roadmap predictability and de-risk cloud architecture.',
+      painPoints: 'Quarterly feature delays.',
+      politicalDynamics: 'Primary visionary; direct reporting line.',
+      sentimentScore: 5,
+      interviewDate: input.startDate,
+      status: 'completed',
+      alignmentLevel: 'strongly_aligned',
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: `s-demo-${Date.now()}-2`,
+      planId: id,
+      name: 'VP of Product',
+      roleTitle: 'VP of Product Management',
+      category: 'peer_executive',
+      expectations: 'Collaborative quarterly roadmap discovery triads.',
+      painPoints: 'Hotfixes interrupting sprint flow.',
+      politicalDynamics: 'Key partner for product-led growth.',
+      sentimentScore: 4,
+      interviewDate: null,
+      status: 'scheduled',
+      alignmentLevel: 'strongly_aligned',
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: `s-demo-${Date.now()}-3`,
+      planId: id,
+      name: 'Platform Engineering Manager',
+      roleTitle: 'EM, Platform Squad',
+      category: 'direct_report',
+      expectations: 'Relief from on-call alert fatigue.',
+      painPoints: 'Legacy monolithic technical debt.',
+      politicalDynamics: 'Respected technical team lead.',
+      sentimentScore: 4,
+      interviewDate: null,
+      status: 'scheduled',
+      alignmentLevel: 'partially_aligned',
+      createdAt: now,
+      updatedAt: now
+    }
+  ];
+
+  const defaultMilestones: OnboardingMilestoneDTO[] = [
+    {
+      id: `m-demo-${Date.now()}-1`,
+      planId: id,
+      phase: 'phase_1_listen_align',
+      title: 'Conduct 360 Stakeholder Listening Tour',
+      description: 'Complete structured interviews with key leaders.',
+      targetDay: 15,
+      deliveredDay: 12,
+      status: 'achieved',
+      isQuickWin: true,
+      deliveryEstimateDays: 14,
+      impactScore: 9,
+      blockerReason: null,
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: `m-demo-${Date.now()}-2`,
+      planId: id,
+      phase: 'phase_1_listen_align',
+      title: 'De-risk CI/CD Flaky Pipeline Stages',
+      description: 'Layer caching optimization for fast builds.',
+      targetDay: 20,
+      deliveredDay: null,
+      status: 'in_progress',
+      isQuickWin: true,
+      deliveryEstimateDays: 7,
+      impactScore: 8,
+      blockerReason: null,
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: `m-demo-${Date.now()}-3`,
+      planId: id,
+      phase: 'phase_2_synthesize_wins',
+      title: 'Publish Organizational Diagnostic Memo',
+      description: 'Synthesize architecture and team velocity audit.',
+      targetDay: 35,
+      deliveredDay: null,
+      status: 'planned',
+      isQuickWin: false,
+      deliveryEstimateDays: 10,
+      impactScore: 9,
+      blockerReason: null,
+      createdAt: now,
+      updatedAt: now
+    }
+  ];
+
+  const momentum = computeTransitionMomentum(defaultStakeholders, diagnostics, defaultMilestones, input.currentDay);
+
+  const newPlan: ExecutiveOnboardingPlanDTO = {
+    id,
+    userId: 'demo-user',
+    applicationId: input.applicationId || null,
+    companyName: input.companyName,
+    roleTitle: input.roleTitle,
+    startDate: input.startDate,
+    currentDay: input.currentDay,
+    executiveSponsorName: input.executiveSponsorName,
+    stakeholders: defaultStakeholders,
+    diagnostics,
+    milestones: defaultMilestones,
+    momentum,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  list.unshift(newPlan);
+  saveDemoOnboardingPlans(list);
+  return newPlan;
+}
+
+function updateDemoOnboardingPlan(
+  id: string,
+  input: Partial<ExecutiveOnboardingPlanMutationDTO>
+): ExecutiveOnboardingPlanDTO | null {
+  const list = loadDemoOnboardingPlans();
+  const idx = list.findIndex(p => p.id === id);
+  if (idx === -1) return null;
+  const existing = list[idx];
+
+  const companyName = input.companyName ?? existing.companyName;
+  const roleTitle = input.roleTitle ?? existing.roleTitle;
+  const startDate = input.startDate ?? existing.startDate;
+  const currentDay = input.currentDay ?? existing.currentDay;
+  const executiveSponsorName = input.executiveSponsorName ?? existing.executiveSponsorName;
+
+  const momentum = computeTransitionMomentum(existing.stakeholders, existing.diagnostics, existing.milestones, currentDay);
+  const updated: ExecutiveOnboardingPlanDTO = {
+    ...existing,
+    companyName,
+    roleTitle,
+    startDate,
+    currentDay,
+    executiveSponsorName,
+    momentum,
+    updatedAt: new Date().toISOString()
+  };
+
+  list[idx] = updated;
+  saveDemoOnboardingPlans(list);
+  return updated;
+}
+
+function deleteDemoOnboardingPlan(id: string): boolean {
+  const list = loadDemoOnboardingPlans();
+  const next = list.filter(p => p.id !== id);
+  saveDemoOnboardingPlans(next);
+  return true;
+}
+
+function addDemoStakeholder(
+  planId: string,
+  input: StakeholderMutationDTO
+): StakeholderDTO | null {
+  const list = loadDemoOnboardingPlans();
+  const idx = list.findIndex(p => p.id === planId);
+  if (idx === -1) return null;
+  const plan = list[idx];
+  const now = new Date().toISOString();
+
+  const newStakeholder: StakeholderDTO = {
+    id: `s-demo-${Date.now()}`,
+    planId,
+    name: input.name,
+    roleTitle: input.roleTitle,
+    category: input.category,
+    expectations: input.expectations || '',
+    painPoints: input.painPoints || '',
+    politicalDynamics: input.politicalDynamics || '',
+    sentimentScore: input.sentimentScore,
+    interviewDate: input.interviewDate || null,
+    status: input.status,
+    alignmentLevel: input.alignmentLevel,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  plan.stakeholders = [...plan.stakeholders, newStakeholder];
+  plan.momentum = computeTransitionMomentum(plan.stakeholders, plan.diagnostics, plan.milestones, plan.currentDay);
+  plan.updatedAt = now;
+  list[idx] = plan;
+  saveDemoOnboardingPlans(list);
+  return newStakeholder;
+}
+
+function updateDemoStakeholder(
+  planId: string,
+  sid: string,
+  input: Partial<StakeholderMutationDTO>
+): StakeholderDTO | null {
+  const list = loadDemoOnboardingPlans();
+  const idx = list.findIndex(p => p.id === planId);
+  if (idx === -1) return null;
+  const plan = list[idx];
+  const sIdx = plan.stakeholders.findIndex(s => s.id === sid);
+  if (sIdx === -1) return null;
+
+  const existing = plan.stakeholders[sIdx];
+  const updated: StakeholderDTO = {
+    ...existing,
+    name: input.name ?? existing.name,
+    roleTitle: input.roleTitle ?? existing.roleTitle,
+    category: input.category ?? existing.category,
+    expectations: input.expectations ?? existing.expectations,
+    painPoints: input.painPoints ?? existing.painPoints,
+    politicalDynamics: input.politicalDynamics ?? existing.politicalDynamics,
+    sentimentScore: input.sentimentScore ?? existing.sentimentScore,
+    interviewDate: input.interviewDate !== undefined ? input.interviewDate : existing.interviewDate,
+    status: input.status ?? existing.status,
+    alignmentLevel: input.alignmentLevel ?? existing.alignmentLevel,
+    updatedAt: new Date().toISOString()
+  };
+
+  plan.stakeholders[sIdx] = updated;
+  plan.momentum = computeTransitionMomentum(plan.stakeholders, plan.diagnostics, plan.milestones, plan.currentDay);
+  plan.updatedAt = new Date().toISOString();
+  list[idx] = plan;
+  saveDemoOnboardingPlans(list);
+  return updated;
+}
+
+function deleteDemoStakeholder(planId: string, sid: string): boolean {
+  const list = loadDemoOnboardingPlans();
+  const idx = list.findIndex(p => p.id === planId);
+  if (idx === -1) return false;
+  const plan = list[idx];
+  plan.stakeholders = plan.stakeholders.filter(s => s.id !== sid);
+  plan.momentum = computeTransitionMomentum(plan.stakeholders, plan.diagnostics, plan.milestones, plan.currentDay);
+  plan.updatedAt = new Date().toISOString();
+  list[idx] = plan;
+  saveDemoOnboardingPlans(list);
+  return true;
+}
+
+function addDemoMilestone(
+  planId: string,
+  input: OnboardingMilestoneMutationDTO
+): OnboardingMilestoneDTO | null {
+  const list = loadDemoOnboardingPlans();
+  const idx = list.findIndex(p => p.id === planId);
+  if (idx === -1) return null;
+  const plan = list[idx];
+  const now = new Date().toISOString();
+
+  const newMilestone: OnboardingMilestoneDTO = {
+    id: `m-demo-${Date.now()}`,
+    planId,
+    phase: input.phase,
+    title: input.title,
+    description: input.description || '',
+    targetDay: input.targetDay,
+    deliveredDay: input.deliveredDay || null,
+    status: input.status,
+    isQuickWin: input.isQuickWin,
+    deliveryEstimateDays: input.deliveryEstimateDays,
+    impactScore: input.impactScore,
+    blockerReason: input.blockerReason || null,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  plan.milestones = [...plan.milestones, newMilestone];
+  plan.momentum = computeTransitionMomentum(plan.stakeholders, plan.diagnostics, plan.milestones, plan.currentDay);
+  plan.updatedAt = now;
+  list[idx] = plan;
+  saveDemoOnboardingPlans(list);
+  return newMilestone;
+}
+
+function updateDemoMilestone(
+  planId: string,
+  mid: string,
+  input: Partial<OnboardingMilestoneMutationDTO>
+): OnboardingMilestoneDTO | null {
+  const list = loadDemoOnboardingPlans();
+  const idx = list.findIndex(p => p.id === planId);
+  if (idx === -1) return null;
+  const plan = list[idx];
+  const mIdx = plan.milestones.findIndex(m => m.id === mid);
+  if (mIdx === -1) return null;
+
+  const existing = plan.milestones[mIdx];
+  const updated: OnboardingMilestoneDTO = {
+    ...existing,
+    phase: input.phase ?? existing.phase,
+    title: input.title ?? existing.title,
+    description: input.description ?? existing.description,
+    targetDay: input.targetDay ?? existing.targetDay,
+    deliveredDay: input.deliveredDay !== undefined ? input.deliveredDay : existing.deliveredDay,
+    status: input.status ?? existing.status,
+    isQuickWin: input.isQuickWin !== undefined ? input.isQuickWin : existing.isQuickWin,
+    deliveryEstimateDays: input.deliveryEstimateDays ?? existing.deliveryEstimateDays,
+    impactScore: input.impactScore ?? existing.impactScore,
+    blockerReason: input.blockerReason !== undefined ? input.blockerReason : existing.blockerReason,
+    updatedAt: new Date().toISOString()
+  };
+
+  plan.milestones[mIdx] = updated;
+  plan.momentum = computeTransitionMomentum(plan.stakeholders, plan.diagnostics, plan.milestones, plan.currentDay);
+  plan.updatedAt = new Date().toISOString();
+  list[idx] = plan;
+  saveDemoOnboardingPlans(list);
+  return updated;
+}
+
+function deleteDemoMilestone(planId: string, mid: string): boolean {
+  const list = loadDemoOnboardingPlans();
+  const idx = list.findIndex(p => p.id === planId);
+  if (idx === -1) return false;
+  const plan = list[idx];
+  plan.milestones = plan.milestones.filter(m => m.id !== mid);
+  plan.momentum = computeTransitionMomentum(plan.stakeholders, plan.diagnostics, plan.milestones, plan.currentDay);
+  plan.updatedAt = new Date().toISOString();
+  list[idx] = plan;
+  saveDemoOnboardingPlans(list);
+  return true;
+}
+
+function updateDemoDiagnostics(
+  planId: string,
+  input: ExecutiveDiagnosticsMutationDTO
+): ExecutiveOnboardingPlanDTO | null {
+  const list = loadDemoOnboardingPlans();
+  const idx = list.findIndex(p => p.id === planId);
+  if (idx === -1) return null;
+  const plan = list[idx];
+  plan.diagnostics = computeDiagnosticHealthIndex(input);
+  plan.momentum = computeTransitionMomentum(plan.stakeholders, plan.diagnostics, plan.milestones, plan.currentDay);
+  plan.updatedAt = new Date().toISOString();
+  list[idx] = plan;
+  saveDemoOnboardingPlans(list);
+  return plan;
+}
+
+function generateDemoMemo(
+  planId: string,
+  memoType: ExecutiveMemoType
+): { markdown: string; title: string } | null {
+  const list = loadDemoOnboardingPlans();
+  const plan = list.find(p => p.id === planId);
+  if (!plan) return null;
+
+  const markdown = generateExecutiveMemoMarkdown(memoType, plan);
+  let title = 'Executive Briefing';
+  if (memoType === 'day_30_listening_tour') title = 'Day 30 Listening Tour Insights Memo';
+  if (memoType === 'day_60_strategic_priorities') title = 'Day 60 Strategic Priorities Briefing';
+  if (memoType === 'day_100_transformation_charter') title = 'Day 100 Transformation Review & Charter';
+  return { markdown, title };
+}
+
+const executiveOnboardingRepository = {
+  async listPlans(): Promise<ExecutiveOnboardingPlanDTO[]> {
+    if (demoMode) return loadDemoOnboardingPlans();
+    try {
+      return await request<ExecutiveOnboardingPlanDTO[]>('/executive-onboarding');
+    } catch {
+      return loadDemoOnboardingPlans();
+    }
+  },
+
+  async getPlan(id: string): Promise<ExecutiveOnboardingPlanDTO | null> {
+    if (demoMode) {
+      const list = loadDemoOnboardingPlans();
+      return list.find(p => p.id === id) || null;
+    }
+    try {
+      return await request<ExecutiveOnboardingPlanDTO>(`/executive-onboarding/${encodeURIComponent(id)}`);
+    } catch {
+      const list = loadDemoOnboardingPlans();
+      return list.find(p => p.id === id) || null;
+    }
+  },
+
+  async createPlan(input: ExecutiveOnboardingPlanMutationDTO): Promise<ExecutiveOnboardingPlanDTO> {
+    if (demoMode) {
+      return createDemoOnboardingPlan(input);
+    }
+    try {
+      return await request<ExecutiveOnboardingPlanDTO>('/executive-onboarding', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return createDemoOnboardingPlan(input);
+    }
+  },
+
+  async updatePlan(
+    id: string,
+    input: Partial<ExecutiveOnboardingPlanMutationDTO>
+  ): Promise<ExecutiveOnboardingPlanDTO | null> {
+    if (demoMode) {
+      return updateDemoOnboardingPlan(id, input);
+    }
+    try {
+      return await request<ExecutiveOnboardingPlanDTO>(`/executive-onboarding/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return updateDemoOnboardingPlan(id, input);
+    }
+  },
+
+  async deletePlan(id: string): Promise<boolean> {
+    if (demoMode) {
+      return deleteDemoOnboardingPlan(id);
+    }
+    try {
+      await request<void>(`/executive-onboarding/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      return deleteDemoOnboardingPlan(id);
+    }
+  },
+
+  async addStakeholder(
+    planId: string,
+    input: StakeholderMutationDTO
+  ): Promise<StakeholderDTO | null> {
+    if (demoMode) {
+      return addDemoStakeholder(planId, input);
+    }
+    try {
+      return await request<StakeholderDTO>(`/executive-onboarding/${encodeURIComponent(planId)}/stakeholders`, {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return addDemoStakeholder(planId, input);
+    }
+  },
+
+  async updateStakeholder(
+    planId: string,
+    stakeholderId: string,
+    input: Partial<StakeholderMutationDTO>
+  ): Promise<StakeholderDTO | null> {
+    if (demoMode) {
+      return updateDemoStakeholder(planId, stakeholderId, input);
+    }
+    try {
+      return await request<StakeholderDTO>(
+        `/executive-onboarding/${encodeURIComponent(planId)}/stakeholders/${encodeURIComponent(stakeholderId)}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(input)
+        }
+      );
+    } catch {
+      return updateDemoStakeholder(planId, stakeholderId, input);
+    }
+  },
+
+  async deleteStakeholder(planId: string, stakeholderId: string): Promise<boolean> {
+    if (demoMode) {
+      return deleteDemoStakeholder(planId, stakeholderId);
+    }
+    try {
+      await request<{ success: boolean }>(
+        `/executive-onboarding/${encodeURIComponent(planId)}/stakeholders/${encodeURIComponent(stakeholderId)}`,
+        { method: 'DELETE' }
+      );
+      return true;
+    } catch {
+      return deleteDemoStakeholder(planId, stakeholderId);
+    }
+  },
+
+  async addMilestone(
+    planId: string,
+    input: OnboardingMilestoneMutationDTO
+  ): Promise<OnboardingMilestoneDTO | null> {
+    if (demoMode) {
+      return addDemoMilestone(planId, input);
+    }
+    try {
+      return await request<OnboardingMilestoneDTO>(`/executive-onboarding/${encodeURIComponent(planId)}/milestones`, {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return addDemoMilestone(planId, input);
+    }
+  },
+
+  async updateMilestone(
+    planId: string,
+    milestoneId: string,
+    input: Partial<OnboardingMilestoneMutationDTO>
+  ): Promise<OnboardingMilestoneDTO | null> {
+    if (demoMode) {
+      return updateDemoMilestone(planId, milestoneId, input);
+    }
+    try {
+      return await request<OnboardingMilestoneDTO>(
+        `/executive-onboarding/${encodeURIComponent(planId)}/milestones/${encodeURIComponent(milestoneId)}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(input)
+        }
+      );
+    } catch {
+      return updateDemoMilestone(planId, milestoneId, input);
+    }
+  },
+
+  async deleteMilestone(planId: string, milestoneId: string): Promise<boolean> {
+    if (demoMode) {
+      return deleteDemoMilestone(planId, milestoneId);
+    }
+    try {
+      await request<{ success: boolean }>(
+        `/executive-onboarding/${encodeURIComponent(planId)}/milestones/${encodeURIComponent(milestoneId)}`,
+        { method: 'DELETE' }
+      );
+      return true;
+    } catch {
+      return deleteDemoMilestone(planId, milestoneId);
+    }
+  },
+
+  async updateDiagnostics(
+    planId: string,
+    input: ExecutiveDiagnosticsMutationDTO
+  ): Promise<ExecutiveOnboardingPlanDTO | null> {
+    if (demoMode) {
+      return updateDemoDiagnostics(planId, input);
+    }
+    try {
+      return await request<ExecutiveOnboardingPlanDTO>(`/executive-onboarding/${encodeURIComponent(planId)}/diagnostics`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return updateDemoDiagnostics(planId, input);
+    }
+  },
+
+  async exportMemo(
+    planId: string,
+    memoType: ExecutiveMemoType
+  ): Promise<{ markdown: string; title: string } | null> {
+    if (demoMode) {
+      return generateDemoMemo(planId, memoType);
+    }
+    try {
+      return await request<{ markdown: string; title: string }>(
+        `/executive-onboarding/${encodeURIComponent(planId)}/memo/${encodeURIComponent(memoType)}`
+      );
+    } catch {
+      return generateDemoMemo(planId, memoType);
+    }
   }
 };
 
