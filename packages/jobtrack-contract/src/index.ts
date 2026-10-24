@@ -31,3 +31,4 @@ export * from './resume-optimizer.ts';
 export * from './pipeline-velocity.ts';
 export * from './culture-radar.ts';
 export * from './headhunter-crm.ts';
+export * from './system-design-studio.ts';

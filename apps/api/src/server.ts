@@ -93,6 +93,7 @@ import { ResumeOptimizerService } from './services/resume-optimizer-service.ts';
 import { PipelineVelocityService } from './services/pipeline-velocity-service.ts';
 import { CultureRadarService } from './services/culture-radar-service.ts';
 import { HeadhunterCrmService } from './services/headhunter-crm-service.ts';
+import { SystemDesignService } from './services/system-design-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -107,7 +108,10 @@ import {
   validateParsePitchInput,
   validateRecruiterLeadInput,
   validateMandateInput,
-  validateRecruiterReplyDraftInput
+  validateRecruiterReplyDraftInput,
+  validateCapacityInput,
+  validateSystemDesignSessionInput,
+  validateSystemDesignBlueprintInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -166,6 +170,7 @@ export const resumeOptimizerService = new ResumeOptimizerService(pool);
 export const pipelineVelocityService = new PipelineVelocityService(pool);
 export const cultureRadarService = new CultureRadarService(pool);
 export const headhunterCrmService = new HeadhunterCrmService(pool);
+export const systemDesignService = new SystemDesignService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1954,6 +1959,118 @@ app.patch('/api/headhunters/mandates/:id/status', auth, async (req, res, next) =
     next(error);
   }
 });
+
+app.get('/api/system-design/scenarios', auth, (req, res) => {
+  const scenarios = systemDesignService.listScenarios();
+  res.json(scenarios);
+});
+
+app.post('/api/system-design/estimate', auth, (req, res, next) => {
+  try {
+    const val = validateCapacityInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const estimate = systemDesignService.calculateCapacity(val.data);
+    res.json(estimate);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/system-design/sessions', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const scenarioId = typeof req.query.scenarioId === 'string' ? req.query.scenarioId : undefined;
+    const sessions = await systemDesignService.listSessions(userId, scenarioId);
+    res.json(sessions);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/system-design/sessions', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateSystemDesignSessionInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const session = await systemDesignService.createSession(userId, val.data);
+    res.status(201).json(session);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/system-design/sessions/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const session = await systemDesignService.getSession(userId, String(req.params.id));
+    if (!session) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy phiên thiết kế hệ thống.' });
+    }
+    res.json(session);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/api/system-design/sessions/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const b = bodyObject(req.body);
+    const updated = await systemDesignService.updateSession(userId, String(req.params.id), b as any);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy phiên thiết kế hệ thống.' });
+    }
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/system-design/sessions/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await systemDesignService.deleteSession(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy phiên thiết kế hệ thống.' });
+    }
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/system-design/sessions/:id/evaluate', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const b = bodyObject(req.body);
+    const targetRole = typeof b.targetRole === 'string' ? b.targetRole : undefined;
+    const evaluation = await systemDesignService.evaluateSession(userId, String(req.params.id), targetRole);
+    if (!evaluation) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy phiên thiết kế hệ thống.' });
+    }
+    res.json(evaluation);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/system-design/sessions/:id/export', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const markdown = await systemDesignService.exportMarkdown(userId, String(req.params.id));
+    if (markdown === null) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy phiên thiết kế hệ thống.' });
+    }
+    res.json({ markdown });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 
 app.get('/api/ai/grants', auth, async (req, res, next) => {

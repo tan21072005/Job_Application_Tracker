@@ -166,7 +166,14 @@ import {
   validateRecruiterLeadInput,
   validateMandateInput,
   validateRecruiterReplyDraftInput,
-  KNOWN_HEADHUNTER_AGENCIES
+  KNOWN_HEADHUNTER_AGENCIES,
+  SYSTEM_DESIGN_SCENARIOS,
+  calculateCapacityEstimates,
+  evaluateSystemArchitecture,
+  exportBlueprintToMarkdown,
+  validateCapacityInput,
+  validateSystemDesignSessionInput,
+  validateSystemDesignBlueprintInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -3681,6 +3688,125 @@ test('contract: validateParsePitchInput, validateRecruiterLeadInput, validateMan
   const invalidMandate = validateMandateInput({ leadId: 'lead-123' });
   assert.equal(invalidMandate.ok, false);
 });
+
+test('contract: SYSTEM_DESIGN_SCENARIOS contains 5 comprehensive production scenarios', () => {
+  assert.equal(SYSTEM_DESIGN_SCENARIOS.length, 5);
+  const ids = SYSTEM_DESIGN_SCENARIOS.map(s => s.id);
+  assert.ok(ids.includes('url_shortener'));
+  assert.ok(ids.includes('flash_sale'));
+  assert.ok(ids.includes('ride_hailing_matching'));
+  assert.ok(ids.includes('distributed_notification_system'));
+  assert.ok(ids.includes('custom_system'));
+
+  const tinyurl = SYSTEM_DESIGN_SCENARIOS.find(s => s.id === 'url_shortener');
+  assert.ok(tinyurl);
+  assert.equal(tinyurl?.category, 'web_scale');
+  assert.ok(tinyurl?.exemplarBlueprint.scope.functionalRequirements.length >= 3);
+  assert.ok(tinyurl?.exemplarBlueprint.highLevelDesign.apiEndpoints.length >= 2);
+  assert.ok(tinyurl?.exemplarBlueprint.deepDive.databaseSchema.length >= 1);
+});
+
+test('contract: calculateCapacityEstimates accurately computes QPS, bandwidth, and node sizing', () => {
+  const estimates = calculateCapacityEstimates({
+    dailyActiveUsers: 100000000,
+    readsPerUserPerDay: 10,
+    writesPerUserPerDay: 0.1,
+    avgReadPayloadBytes: 256,
+    avgWritePayloadBytes: 512,
+    peakLoadMultiplier: 3,
+    dataRetentionYears: 5,
+    cacheWorkingSetPercentage: 20
+  });
+
+  assert.equal(estimates.totalDailyReads, 1000000000);
+  assert.equal(estimates.totalDailyWrites, 10000000);
+  assert.equal(estimates.averageReadQps, 11574);
+  assert.equal(estimates.averageWriteQps, 116);
+  assert.equal(estimates.totalAverageQps, 11690);
+  assert.equal(estimates.peakReadQps, 34722);
+  assert.equal(estimates.peakWriteQps, 348);
+  assert.equal(estimates.peakTotalQps, 35070);
+  assert.ok(estimates.ingressBandwidthMbps > 0);
+  assert.ok(estimates.egressBandwidthMbps > 0);
+  assert.ok(estimates.retentionTotalStorageTb > 0);
+  assert.ok(estimates.cacheMemoryRequiredGb > 0);
+  assert.ok(estimates.recommendedAppServers >= 2);
+  assert.ok(estimates.recommendedCacheNodes >= 2);
+  assert.ok(estimates.recommendedDbShards >= 1);
+});
+
+test('contract: evaluateSystemArchitecture evaluates 5 pillars and outputs Staff-level verdict for exemplar', () => {
+  const scenario = SYSTEM_DESIGN_SCENARIOS.find(s => s.id === 'url_shortener')!;
+  const evalResult = evaluateSystemArchitecture(scenario.exemplarBlueprint, 'url_shortener', 'Staff Engineer');
+
+  assert.ok(evalResult.overallScore >= 85);
+  assert.equal(evalResult.seniorityVerdict, 'Principal/Staff Ready');
+  assert.equal(evalResult.pillars.length, 5);
+  assert.ok(evalResult.topStrengths.length > 0);
+  assert.ok(evalResult.tradeOffAnalysis.length > 0);
+  assert.ok(evalResult.actionableRecommendations.length > 0);
+});
+
+test('contract: exportBlueprintToMarkdown serializes markdown report with Mermaid diagram', () => {
+  const scenario = SYSTEM_DESIGN_SCENARIOS.find(s => s.id === 'url_shortener')!;
+  const estimates = calculateCapacityEstimates(scenario.defaultCapacityInput);
+  const evalResult = evaluateSystemArchitecture(scenario.exemplarBlueprint, 'url_shortener');
+
+  const markdown = exportBlueprintToMarkdown(
+    {
+      id: 'session-test-1',
+      userId: 'user-test-1',
+      title: 'TinyURL High Scale Design',
+      scenarioId: 'url_shortener',
+      targetRole: 'Staff Engineer',
+      difficulty: 'senior',
+      capacityInput: scenario.defaultCapacityInput,
+      capacityEstimates: estimates,
+      blueprint: scenario.exemplarBlueprint,
+      status: 'evaluated',
+      createdAt: '2026-10-25T00:00:00Z',
+      updatedAt: '2026-10-25T00:00:00Z'
+    },
+    evalResult
+  );
+
+  assert.ok(markdown.includes('# Báo Cáo Thiết Kế Hệ Thống: TinyURL High Scale Design'));
+  assert.ok(markdown.includes('```mermaid'));
+  assert.ok(markdown.includes('Redis Cache Cluster'));
+  assert.ok(markdown.includes('AI Architecture Rubric'));
+});
+
+test('contract: validateCapacityInput, validateSystemDesignSessionInput, validateSystemDesignBlueprintInput enforce schemas', () => {
+  const validCapacity = validateCapacityInput({
+    dailyActiveUsers: 1000000,
+    readsPerUserPerDay: 5,
+    writesPerUserPerDay: 1
+  });
+  assert.equal(validCapacity.ok, true);
+
+  const invalidCapacity = validateCapacityInput({ dailyActiveUsers: -10 });
+  assert.equal(invalidCapacity.ok, false);
+
+  const validSession = validateSystemDesignSessionInput({
+    title: 'Designing TinyURL',
+    scenarioId: 'url_shortener'
+  });
+  assert.equal(validSession.ok, true);
+
+  const invalidSession = validateSystemDesignSessionInput({
+    title: '',
+    scenarioId: 'invalid_scenario'
+  });
+  assert.equal(invalidSession.ok, false);
+
+  const scenario = SYSTEM_DESIGN_SCENARIOS[0];
+  const validBlueprint = validateSystemDesignBlueprintInput(scenario.exemplarBlueprint);
+  assert.equal(validBlueprint.ok, true);
+
+  const invalidBlueprint = validateSystemDesignBlueprintInput({ scope: {} });
+  assert.equal(invalidBlueprint.ok, false);
+});
+
 
 
 

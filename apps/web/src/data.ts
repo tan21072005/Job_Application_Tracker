@@ -260,7 +260,35 @@ import {
   computeRecruiterRelationshipHealth,
   detectMandateConflict,
   parseInboundRecruiterPitch,
-  generateRecruiterReplyDraft
+  generateRecruiterReplyDraft,
+  type SystemDesignScenarioId,
+  type SystemDesignDifficulty,
+  type SystemDesignSessionStatus,
+  type DatabaseEngine,
+  type CachingStrategy,
+  type PartitionStrategy,
+  type ConsistencyModel,
+  type ApiProtocol,
+  type SeniorityVerdict,
+  type SystemCapacityInputDTO,
+  type SystemCapacityEstimateDTO,
+  type ScopeAndClarificationDTO,
+  type ApiEndpointDefinitionDTO,
+  type ArchitectureComponentDTO,
+  type HighLevelDesignDTO,
+  type DatabaseTableDefinitionDTO,
+  type DeepDiveDesignDTO,
+  type ResilienceAndScaleDTO,
+  type SystemDesignBlueprintDTO,
+  type PillarEvaluationDTO,
+  type SystemDesignEvaluationDTO,
+  type SystemDesignScenarioDTO,
+  type SystemDesignSessionDTO,
+  type SystemDesignSessionMutationInputDTO,
+  SYSTEM_DESIGN_SCENARIOS,
+  calculateCapacityEstimates,
+  evaluateSystemArchitecture,
+  exportBlueprintToMarkdown
 } from '@jobtrack/contract';
 
 export type {
@@ -4433,6 +4461,329 @@ export const headhunterCrmRepository = {
   }
 };
 
+const DEMO_SYSTEM_DESIGN_KEY = 'jobtrack_demo_system_design_sessions_v1';
+
+const DEMO_SYSTEM_DESIGN_SESSIONS: SystemDesignSessionDTO[] = [
+  (() => {
+    const sc = SYSTEM_DESIGN_SCENARIOS.find(s => s.id === 'url_shortener')!;
+    const est = calculateCapacityEstimates(sc.defaultCapacityInput);
+    const ev = evaluateSystemArchitecture(sc.exemplarBlueprint, 'url_shortener', 'Staff Software Engineer');
+    ev.sessionId = 'demo-sds-tinyurl-1';
+    return {
+      id: 'demo-sds-tinyurl-1',
+      userId: 'demo-user',
+      title: 'TinyURL High-Throughput Redirection & Analytics',
+      scenarioId: 'url_shortener',
+      targetRole: 'Staff Software Engineer',
+      difficulty: 'senior',
+      capacityInput: sc.defaultCapacityInput,
+      capacityEstimates: est,
+      blueprint: sc.exemplarBlueprint,
+      status: 'evaluated',
+      score: ev.overallScore,
+      latestEvaluation: ev,
+      createdAt: '2026-10-24T10:00:00.000Z',
+      updatedAt: '2026-10-24T12:00:00.000Z'
+    };
+  })(),
+  (() => {
+    const sc = SYSTEM_DESIGN_SCENARIOS.find(s => s.id === 'flash_sale')!;
+    const est = calculateCapacityEstimates(sc.defaultCapacityInput);
+    const ev = evaluateSystemArchitecture(sc.exemplarBlueprint, 'flash_sale', 'Principal Architect');
+    ev.sessionId = 'demo-sds-flash-sale-2';
+    return {
+      id: 'demo-sds-flash-sale-2',
+      userId: 'demo-user',
+      title: '11.11 Flash Sale Token-Bucket Oversell Prevention',
+      scenarioId: 'flash_sale',
+      targetRole: 'Principal Architect',
+      difficulty: 'principal',
+      capacityInput: sc.defaultCapacityInput,
+      capacityEstimates: est,
+      blueprint: sc.exemplarBlueprint,
+      status: 'evaluated',
+      score: ev.overallScore,
+      latestEvaluation: ev,
+      createdAt: '2026-10-24T14:00:00.000Z',
+      updatedAt: '2026-10-24T16:00:00.000Z'
+    };
+  })()
+];
+
+function getDemoSystemDesignSessions(): SystemDesignSessionDTO[] {
+  try {
+    const raw = localStorage.getItem(DEMO_SYSTEM_DESIGN_KEY);
+    if (!raw) {
+      saveDemoSystemDesignSessions(DEMO_SYSTEM_DESIGN_SESSIONS);
+      return DEMO_SYSTEM_DESIGN_SESSIONS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEMO_SYSTEM_DESIGN_SESSIONS;
+  } catch {
+    return DEMO_SYSTEM_DESIGN_SESSIONS;
+  }
+}
+
+function saveDemoSystemDesignSessions(sessions: SystemDesignSessionDTO[]): void {
+  try {
+    localStorage.setItem(DEMO_SYSTEM_DESIGN_KEY, JSON.stringify(sessions));
+  } catch {
+  }
+}
+
+
+export const systemDesignRepository = {
+  async listScenarios(): Promise<SystemDesignScenarioDTO[]> {
+    return SYSTEM_DESIGN_SCENARIOS;
+  },
+
+  async calculateCapacity(input: SystemCapacityInputDTO): Promise<SystemCapacityEstimateDTO> {
+    return calculateCapacityEstimates(input);
+  },
+
+  async listSessions(scenarioId?: string): Promise<SystemDesignSessionDTO[]> {
+    if (demoMode) {
+      let sessions = getDemoSystemDesignSessions();
+      if (scenarioId && scenarioId.trim().length > 0) {
+        sessions = sessions.filter(s => s.scenarioId === scenarioId);
+      }
+      return [...sessions].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
+    const query = scenarioId ? `?scenarioId=${encodeURIComponent(scenarioId)}` : '';
+    try {
+      return await request<SystemDesignSessionDTO[]>(`/system-design/sessions${query}`);
+    } catch {
+      let sessions = getDemoSystemDesignSessions();
+      if (scenarioId && scenarioId.trim().length > 0) {
+        sessions = sessions.filter(s => s.scenarioId === scenarioId);
+      }
+      return [...sessions].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
+  },
+
+  async getSession(id: string): Promise<SystemDesignSessionDTO | null> {
+    if (demoMode) {
+      const sessions = getDemoSystemDesignSessions();
+      return sessions.find(s => s.id === id) || null;
+    }
+    try {
+      return await request<SystemDesignSessionDTO>(`/system-design/sessions/${id}`);
+    } catch {
+      const sessions = getDemoSystemDesignSessions();
+      return sessions.find(s => s.id === id) || null;
+    }
+  },
+
+  async createSession(input: SystemDesignSessionMutationInputDTO): Promise<SystemDesignSessionDTO> {
+    if (demoMode) {
+      const scenario = SYSTEM_DESIGN_SCENARIOS.find(s => s.id === input.scenarioId) || SYSTEM_DESIGN_SCENARIOS[0];
+      const capacityInput = input.capacityInput || scenario.defaultCapacityInput;
+      const capacityEstimates = calculateCapacityEstimates(capacityInput);
+      const blueprint = input.blueprint || scenario.exemplarBlueprint;
+      const nowIso = new Date().toISOString();
+
+      const newSession: SystemDesignSessionDTO = {
+        id: `sds-${Date.now()}`,
+        userId: 'demo-user',
+        title: input.title.trim(),
+        scenarioId: input.scenarioId,
+        targetRole: input.targetRole || 'Senior Software Engineer',
+        difficulty: input.difficulty || scenario.difficulty,
+        capacityInput,
+        capacityEstimates,
+        blueprint,
+        status: input.status || 'draft',
+        latestEvaluation: null,
+        createdAt: nowIso,
+        updatedAt: nowIso
+      };
+
+      const sessions = getDemoSystemDesignSessions();
+      saveDemoSystemDesignSessions([newSession, ...sessions]);
+      return newSession;
+    }
+
+    try {
+      return await request<SystemDesignSessionDTO>('/system-design/sessions', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const scenario = SYSTEM_DESIGN_SCENARIOS.find(s => s.id === input.scenarioId) || SYSTEM_DESIGN_SCENARIOS[0];
+      const capacityInput = input.capacityInput || scenario.defaultCapacityInput;
+      const capacityEstimates = calculateCapacityEstimates(capacityInput);
+      const blueprint = input.blueprint || scenario.exemplarBlueprint;
+      const nowIso = new Date().toISOString();
+
+      const newSession: SystemDesignSessionDTO = {
+        id: `sds-${Date.now()}`,
+        userId: 'demo-user',
+        title: input.title.trim(),
+        scenarioId: input.scenarioId,
+        targetRole: input.targetRole || 'Senior Software Engineer',
+        difficulty: input.difficulty || scenario.difficulty,
+        capacityInput,
+        capacityEstimates,
+        blueprint,
+        status: input.status || 'draft',
+        latestEvaluation: null,
+        createdAt: nowIso,
+        updatedAt: nowIso
+      };
+
+      const sessions = getDemoSystemDesignSessions();
+      saveDemoSystemDesignSessions([newSession, ...sessions]);
+      return newSession;
+    }
+  },
+
+  async updateSession(
+    id: string,
+    input: Partial<SystemDesignSessionMutationInputDTO>
+  ): Promise<SystemDesignSessionDTO | null> {
+    if (demoMode) {
+      const sessions = getDemoSystemDesignSessions();
+      const idx = sessions.findIndex(s => s.id === id);
+      if (idx === -1) return null;
+
+      const current = sessions[idx];
+      const capacityInput = input.capacityInput || current.capacityInput;
+      const capacityEstimates = input.capacityInput ? calculateCapacityEstimates(capacityInput) : current.capacityEstimates;
+
+      const updated: SystemDesignSessionDTO = {
+        ...current,
+        title: input.title !== undefined ? input.title.trim() : current.title,
+        scenarioId: input.scenarioId || current.scenarioId,
+        targetRole: input.targetRole || current.targetRole,
+        difficulty: input.difficulty || current.difficulty,
+        capacityInput,
+        capacityEstimates,
+        blueprint: input.blueprint || current.blueprint,
+        status: input.status || current.status,
+        updatedAt: new Date().toISOString()
+      };
+
+      sessions[idx] = updated;
+      saveDemoSystemDesignSessions(sessions);
+      return updated;
+    }
+
+    try {
+      return await request<SystemDesignSessionDTO>(`/system-design/sessions/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const sessions = getDemoSystemDesignSessions();
+      const idx = sessions.findIndex(s => s.id === id);
+      if (idx === -1) return null;
+
+      const current = sessions[idx];
+      const capacityInput = input.capacityInput || current.capacityInput;
+      const capacityEstimates = input.capacityInput ? calculateCapacityEstimates(capacityInput) : current.capacityEstimates;
+
+      const updated: SystemDesignSessionDTO = {
+        ...current,
+        title: input.title !== undefined ? input.title.trim() : current.title,
+        scenarioId: input.scenarioId || current.scenarioId,
+        targetRole: input.targetRole || current.targetRole,
+        difficulty: input.difficulty || current.difficulty,
+        capacityInput,
+        capacityEstimates,
+        blueprint: input.blueprint || current.blueprint,
+        status: input.status || current.status,
+        updatedAt: new Date().toISOString()
+      };
+
+      sessions[idx] = updated;
+      saveDemoSystemDesignSessions(sessions);
+      return updated;
+    }
+  },
+
+  async deleteSession(id: string): Promise<boolean> {
+    if (demoMode) {
+      const sessions = getDemoSystemDesignSessions();
+      const filtered = sessions.filter(s => s.id !== id);
+      saveDemoSystemDesignSessions(filtered);
+      return true;
+    }
+
+    try {
+      await request<void>(`/system-design/sessions/${id}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      const sessions = getDemoSystemDesignSessions();
+      const filtered = sessions.filter(s => s.id !== id);
+      saveDemoSystemDesignSessions(filtered);
+      return true;
+    }
+  },
+
+  async evaluateSession(id: string, targetRole?: string): Promise<SystemDesignEvaluationDTO | null> {
+    if (demoMode) {
+      const sessions = getDemoSystemDesignSessions();
+      const idx = sessions.findIndex(s => s.id === id);
+      if (idx === -1) return null;
+
+      const session = sessions[idx];
+      const role = targetRole || session.targetRole;
+      const evaluation = evaluateSystemArchitecture(session.blueprint, session.scenarioId, role);
+      evaluation.sessionId = id;
+
+      session.score = evaluation.overallScore;
+      session.status = 'evaluated';
+      session.latestEvaluation = evaluation;
+      session.updatedAt = new Date().toISOString();
+
+      saveDemoSystemDesignSessions(sessions);
+      return evaluation;
+    }
+
+    try {
+      return await request<SystemDesignEvaluationDTO>(`/system-design/sessions/${id}/evaluate`, {
+        method: 'POST',
+        body: JSON.stringify({ targetRole })
+      });
+    } catch {
+      const sessions = getDemoSystemDesignSessions();
+      const idx = sessions.findIndex(s => s.id === id);
+      if (idx === -1) return null;
+
+      const session = sessions[idx];
+      const role = targetRole || session.targetRole;
+      const evaluation = evaluateSystemArchitecture(session.blueprint, session.scenarioId, role);
+      evaluation.sessionId = id;
+
+      session.score = evaluation.overallScore;
+      session.status = 'evaluated';
+      session.latestEvaluation = evaluation;
+      session.updatedAt = new Date().toISOString();
+
+      saveDemoSystemDesignSessions(sessions);
+      return evaluation;
+    }
+  },
+
+  async exportMarkdown(id: string): Promise<string | null> {
+    if (demoMode) {
+      const session = await this.getSession(id);
+      if (!session) return null;
+      return exportBlueprintToMarkdown(session, session.latestEvaluation);
+    }
+
+    try {
+      const res = await request<{ markdown: string }>(`/system-design/sessions/${id}/export`);
+      return res.markdown;
+    } catch {
+      const session = await this.getSession(id);
+      if (!session) return null;
+      return exportBlueprintToMarkdown(session, session.latestEvaluation);
+    }
+  }
+};
+
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
@@ -4530,8 +4881,33 @@ export type {
   ParseRecruiterPitchInputDTO,
   RecruiterResponseDraftDTO,
   RecruiterLeadMutationInputDTO,
-  HeadhunterMandateMutationInputDTO
+  HeadhunterMandateMutationInputDTO,
+  SystemDesignScenarioId,
+  SystemDesignDifficulty,
+  SystemDesignSessionStatus,
+  DatabaseEngine,
+  CachingStrategy,
+  PartitionStrategy,
+  ConsistencyModel,
+  ApiProtocol,
+  SeniorityVerdict,
+  SystemCapacityInputDTO,
+  SystemCapacityEstimateDTO,
+  ScopeAndClarificationDTO,
+  ApiEndpointDefinitionDTO,
+  ArchitectureComponentDTO,
+  HighLevelDesignDTO,
+  DatabaseTableDefinitionDTO,
+  DeepDiveDesignDTO,
+  ResilienceAndScaleDTO,
+  SystemDesignBlueprintDTO,
+  PillarEvaluationDTO,
+  SystemDesignEvaluationDTO,
+  SystemDesignScenarioDTO,
+  SystemDesignSessionDTO,
+  SystemDesignSessionMutationInputDTO
 };
+
 
 
 
