@@ -940,14 +940,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   proPlanSelect.addEventListener('change', refreshCheckout);
 
-  // 1-Click Extension Pairing
   pairAccountBtn.addEventListener('click', async () => {
     pairAccountBtn.disabled = true;
     pairAccountBtn.textContent = 'Đang ghép nối…';
     hideAlerts();
 
     try {
-      // Thử gọi endpoint ghép nối với cookie phiên web hiện hành
       const res = await fetch(`${serverConfig.serverUrl}/api/auth/extension/pair`, {
         method: 'POST',
         headers: {
@@ -968,7 +966,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      // Nếu chưa có phiên cookie, mở trang web
       chrome.tabs.create({ url: 'http://127.0.0.1:64364' });
       showAlert(alertInfo, 'Vui lòng đăng nhập trên JobTrack Web rồi bấm nút này lại để kết nối.');
     } catch (err) {
@@ -1015,7 +1012,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Source selection buttons
   srcBtnTable.addEventListener('click', () => selectSource('table', 0));
   srcBtnList.addEventListener('click', () => selectSource('list', 0));
   srcBtnSelection.addEventListener('click', () => selectSource('selection'));
@@ -1044,7 +1040,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.runtime.openOptionsPage();
   });
 
-  // Init
   await checkServerConnection();
   await scanPageData();
 });

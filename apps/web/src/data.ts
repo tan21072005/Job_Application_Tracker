@@ -20,6 +20,10 @@ import {
   type JobSubscriptionDTO,
   type SubscriptionMutationInput,
   type CrawlRunResultDTO,
+  type InterviewAgendaItemDTO,
+  type InterviewFormat,
+  type IcsCalendarEvent,
+  generateIcsCalendar,
   formatAsCsv
 } from '@jobtrack/contract';
 
@@ -661,6 +665,76 @@ export const subscriptionRepository = {
     return request<CrawlRunResultDTO>(`/subscriptions/${encodeURIComponent(id)}/run`, {
       method: 'POST'
     });
+  }
+};
+
+export const interviewsRepository = {
+  async listAgenda(): Promise<InterviewAgendaItemDTO[]> {
+    if (demoMode) {
+      const apps = load();
+      const items: InterviewAgendaItemDTO[] = apps.flatMap(app =>
+        (app.interviews || []).map(interview => ({
+          id: interview.id,
+          applicationId: app.id,
+          title: interview.title,
+          at: interview.at,
+          timezone: interview.timezone,
+          format: (['Online', 'Phone', 'On-site', 'Other'].includes(interview.format as InterviewFormat) ? interview.format as InterviewFormat : interview.format === 'Onsite' ? 'On-site' : 'Online'),
+          location: interview.location,
+          preparation: interview.preparation,
+          notes: interview.notes,
+          status: interview.status,
+          company: app.company,
+          position: app.position,
+          applicationStatus: app.status
+        }))
+      );
+      items.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+      return items;
+    }
+    return request<InterviewAgendaItemDTO[]>('/interviews');
+  },
+
+  async toggleComplete(item: InterviewAgendaItemDTO): Promise<InterviewAgendaItemDTO> {
+    const nextStatus = item.status === 'Completed' ? 'Scheduled' : 'Completed';
+    if (demoMode) {
+      const apps = load();
+      const targetApp = apps.find(a => a.id === item.applicationId);
+      if (!targetApp) throw new ApiError('Không tìm thấy hồ sơ liên quan.', 404);
+      const targetInterview = targetApp.interviews.find(r => r.id === item.id);
+      if (!targetInterview) throw new ApiError('Không tìm thấy lịch phỏng vấn.', 404);
+      targetInterview.status = nextStatus;
+      store(apps);
+      return { ...item, status: nextStatus };
+    }
+    await request<InterviewWireDTO>(`/interviews/${encodeURIComponent(item.id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: nextStatus })
+    });
+    return { ...item, status: nextStatus };
+  },
+
+  async exportIcs(): Promise<string> {
+    if (demoMode) {
+      const items = await this.listAgenda();
+      const events: IcsCalendarEvent[] = items.map(item => ({
+        id: item.id,
+        title: item.title,
+        company: item.company,
+        position: item.position,
+        at: item.at,
+        timezone: item.timezone,
+        format: item.format,
+        location: item.location,
+        notes: item.notes
+      }));
+      return generateIcsCalendar(events);
+    }
+    const res = await fetch('/api/interviews/export.ics', {
+      credentials: 'include'
+    });
+    if (!res.ok) throw new ApiError('Không thể tải lịch .ics', res.status);
+    return res.text();
   }
 };
 

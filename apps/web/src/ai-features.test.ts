@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { repository, aiRepository, profileRepository, subscriptionRepository } from './data';
+import { repository, aiRepository, profileRepository, subscriptionRepository, interviewsRepository } from './data';
 import { emptyDraft, type Application } from './domain';
 
 afterEach(() => {
@@ -219,6 +219,48 @@ describe('repository Trash & Restore lifecycle', () => {
     expect(afterDelete.some(s => s.id === sub.id)).toBe(false);
   });
 });
+
+describe('interviewsRepository agenda management and ics export', () => {
+  it('listAgenda returns chronologically ordered interview agenda items in demo mode', async () => {
+    const agenda = await interviewsRepository.listAgenda();
+    expect(Array.isArray(agenda)).toBe(true);
+    if (agenda.length >= 2) {
+      for (let i = 0; i < agenda.length - 1; i++) {
+        const t1 = new Date(agenda[i].at).getTime();
+        const t2 = new Date(agenda[i + 1].at).getTime();
+        expect(t1).toBeLessThanOrEqual(t2);
+      }
+    }
+  });
+
+  it('toggleComplete toggles status between Scheduled and Completed', async () => {
+    const agenda = await interviewsRepository.listAgenda();
+    expect(agenda.length).toBeGreaterThan(0);
+    const first = agenda[0];
+    const initialStatus = first.status;
+
+    const toggled = await interviewsRepository.toggleComplete(first);
+    expect(toggled.status).toBe(initialStatus === 'Completed' ? 'Scheduled' : 'Completed');
+
+    const reverted = await interviewsRepository.toggleComplete(toggled);
+    expect(reverted.status).toBe(initialStatus);
+  });
+
+  it('exportIcs outputs valid RFC 5545 iCalendar content', async () => {
+    const ics = await interviewsRepository.exportIcs();
+    expect(typeof ics).toBe('string');
+    expect(ics).toContain('BEGIN:VCALENDAR');
+    expect(ics).toContain('VERSION:2.0');
+    expect(ics).toContain('END:VCALENDAR');
+    if ((await interviewsRepository.listAgenda()).length > 0) {
+      expect(ics).toContain('BEGIN:VEVENT');
+      expect(ics).toContain('UID:');
+      expect(ics).toContain('DTSTART:');
+      expect(ics).toContain('SUMMARY:');
+    }
+  });
+});
+
 
 
 

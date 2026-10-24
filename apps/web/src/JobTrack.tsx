@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Check, CircleAlert, LayoutDashboard, LoaderCircle, LogOut, Plus, RotateCcw, Trash2, X, KeyRound, Sparkles, Database, UserCheck, Radar } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Check, CircleAlert, LayoutDashboard, LoaderCircle, LogOut, Plus, RotateCcw, Trash2, X, KeyRound, Sparkles, Database, UserCheck, Radar, CalendarDays } from 'lucide-react';
 import { demoMode, repository } from './data';
 import { ApiError } from './transport';
 import { duplicate, type Application, type Interview, type Status } from './domain';
@@ -10,6 +10,7 @@ import Applications, { initialFilters } from './views/Applications';
 import Detail from './views/Detail';
 import Auth from './views/Auth';
 import DatasetsView from './views/Datasets';
+import InterviewsView from './views/InterviewsView';
 import QuickAction from './components/QuickAction';
 import ImportLinkModal from './components/ImportLinkModal';
 import ChatWidget from './components/ChatWidget';
@@ -121,7 +122,7 @@ export default function JobTrack() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
     headingRef.current?.focus({ preventScroll: true });
-    document.title = `${route.page === 'dashboard' ? 'Tổng quan' : route.page === 'datasets' ? 'Dữ liệu Web · PageWeave' : route.page === 'auth' ? 'Đăng nhập' : selected?.position || 'Hồ sơ ứng tuyển'} · JobTrack`;
+    document.title = `${route.page === 'dashboard' ? 'Tổng quan' : route.page === 'datasets' ? 'Dữ liệu Web · PageWeave' : route.page === 'interviews' ? 'Lịch phỏng vấn' : route.page === 'auth' ? 'Đăng nhập' : selected?.position || 'Hồ sơ ứng tuyển'} · JobTrack`;
   }, [route.page, route.id, selected?.position]);
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 6000); return () => clearTimeout(timer); }, [toast]);
   useEffect(() => {
@@ -147,9 +148,9 @@ export default function JobTrack() {
             const actionStr = data.action === 'CREATE' ? 'thêm mới' : data.action === 'UPDATE' ? 'cập nhật' : data.action === 'RESTORE' ? 'khôi phục' : 'xóa';
             notify(`Đã đồng bộ thao tác ${actionStr} từ AI / MCP.`);
           }
-        } catch { /* ignore keepalive */ }
+        } catch {}
       };
-    } catch { /* EventSource fallback */ }
+    } catch {}
     return () => {
       es?.close();
     };
