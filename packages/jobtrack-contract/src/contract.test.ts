@@ -92,7 +92,14 @@ import {
   validateScorecardInput,
   validateChatInput,
   parseChatMarkdown,
-  DEFAULT_SUGGESTED_CHAT_PROMPTS
+  DEFAULT_SUGGESTED_CHAT_PROMPTS,
+  extractSkillsFromText,
+  extractSkillsFromApplications,
+  generateCareerRoadmap,
+  calculateRoadmapProgress,
+  validateMilestoneUpdateInput,
+  validateRoadmapGenerateInput,
+  KNOWN_SKILL_CATALOG
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -2150,4 +2157,85 @@ test('contract: DEFAULT_SUGGESTED_CHAT_PROMPTS provides actionable career querie
   assert.ok(DEFAULT_SUGGESTED_CHAT_PROMPTS.length >= 3);
   assert.ok(DEFAULT_SUGGESTED_CHAT_PROMPTS.some((p) => p.includes('phỏng vấn')));
   assert.ok(DEFAULT_SUGGESTED_CHAT_PROMPTS.some((p) => p.includes('hồ sơ')));
+});
+
+test('contract: extractSkillsFromText detects core technologies and aliases correctly', () => {
+  const sample = 'Looking for a Senior React and TypeScript specialist with experience in Next.js, Docker and PostgreSQL.';
+  const detected = extractSkillsFromText(sample);
+  const names = detected.map((d) => d.name);
+  assert.ok(names.includes('React'));
+  assert.ok(names.includes('TypeScript'));
+  assert.ok(names.includes('Next.js'));
+  assert.ok(names.includes('Docker'));
+  assert.ok(names.includes('PostgreSQL'));
+  assert.deepEqual(extractSkillsFromText(''), []);
+});
+
+test('contract: extractSkillsFromApplications aggregates demand and identifies missing skills with coverage score', () => {
+  const apps = [
+    { position: 'Senior React Engineer', company: 'VNG', notes: 'Yêu cầu vững TypeScript, Redux, Docker' },
+    { position: 'Frontend Tech Lead', company: 'Shopee', notes: 'Kiến trúc Next.js, System Design và Kubernetes' },
+    { position: 'Fullstack Developer', company: 'FPT', notes: 'Node.js, PostgreSQL và React' }
+  ];
+  const candidateSkills = ['React', 'TypeScript', 'Node.js'];
+
+  const analysis = extractSkillsFromApplications(apps, candidateSkills);
+  assert.ok(analysis.coverageScore < 100);
+  assert.ok(analysis.coverageScore > 20);
+  assert.ok(analysis.matchedSkills.includes('React'));
+  assert.ok(analysis.matchedSkills.includes('TypeScript'));
+  assert.ok(analysis.matchedSkills.includes('Node.js'));
+  
+  const missingNames = analysis.missingSkills.map((m) => m.skill);
+  assert.ok(missingNames.includes('Docker') || missingNames.includes('PostgreSQL') || missingNames.includes('System Design'));
+  assert.equal(analysis.totalApplicationsAnalyzed, 3);
+  assert.ok(analysis.recommendedFocusSkills.length > 0);
+});
+
+test('contract: generateCareerRoadmap synthesizes structured 4-week milestones with curated resources', () => {
+  const dummyAnalysis = {
+    coverageScore: 60,
+    matchedSkills: ['React', 'TypeScript'],
+    missingSkills: [],
+    topInDemandSkills: [],
+    totalApplicationsAnalyzed: 2,
+    recommendedFocusSkills: ['Kubernetes', 'System Design', 'PostgreSQL', 'Docker'],
+    generatedAt: new Date().toISOString()
+  };
+
+  const roadmap = generateCareerRoadmap(dummyAnalysis, 'Principal Frontend Engineer');
+  assert.equal(roadmap.durationWeeks, 4);
+  assert.equal(roadmap.targetRole, 'Principal Frontend Engineer');
+  assert.equal(roadmap.milestones.length, 4);
+  assert.equal(roadmap.milestones[0].week, 1);
+  assert.equal(roadmap.milestones[3].week, 4);
+  assert.ok(roadmap.milestones[0].resources.length > 0);
+  assert.equal(roadmap.overallProgressPercent, 0);
+});
+
+test('contract: calculateRoadmapProgress computes weighted completion percentage', () => {
+  const sampleMilestones = [
+    { id: 'm1', week: 1, title: 'W1', description: '', skill: 'React', category: 'frontend' as const, estimatedHours: 8, status: 'completed' as const, resources: [] },
+    { id: 'm2', week: 2, title: 'W2', description: '', skill: 'Docker', category: 'devops' as const, estimatedHours: 8, status: 'in_progress' as const, resources: [] },
+    { id: 'm3', week: 3, title: 'W3', description: '', skill: 'K8s', category: 'devops' as const, estimatedHours: 8, status: 'pending' as const, resources: [] },
+    { id: 'm4', week: 4, title: 'W4', description: '', skill: 'Design', category: 'architecture' as const, estimatedHours: 8, status: 'pending' as const, resources: [] }
+  ];
+
+  const progress = calculateRoadmapProgress(sampleMilestones);
+  assert.equal(progress, 35);
+  assert.equal(calculateRoadmapProgress([]), 0);
+});
+
+test('contract: validateMilestoneUpdateInput and validateRoadmapGenerateInput validate schema correctly', () => {
+  const validMilestone = validateMilestoneUpdateInput({ status: 'completed' });
+  assert.equal(validMilestone.ok, true);
+  assert.equal(validMilestone.data?.status, 'completed');
+
+  const invalidMilestone = validateMilestoneUpdateInput({ status: 'unknown_status' });
+  assert.equal(invalidMilestone.ok, false);
+
+  const validGen = validateRoadmapGenerateInput({ targetRole: 'Lead Architect', focusSkills: ['Docker', 'AWS'] });
+  assert.equal(validGen.ok, true);
+  assert.equal(validGen.data?.targetRole, 'Lead Architect');
+  assert.deepEqual(validGen.data?.focusSkills, ['Docker', 'AWS']);
 });
