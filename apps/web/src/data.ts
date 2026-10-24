@@ -145,7 +145,19 @@ import {
   type UpdateRecipientStepInputDTO,
   generateOutreachSequence,
   personalizeMessage,
-  computeCampaignMetrics
+  computeCampaignMetrics,
+  type SimulationTrack,
+  type SimulationDifficulty,
+  type SimulationPacingMode,
+  type TurnEvaluationDTO,
+  type SimulationSessionReportDTO,
+  type SimulationSessionDTO,
+  type StartSimulationInputDTO,
+  type SubmitTurnInputDTO,
+  getPacingDurationSeconds,
+  generateSimulationQuestions,
+  evaluateSimulationTurn,
+  synthesizeSessionReport
 } from '@jobtrack/contract';
 
 export type {
@@ -2928,6 +2940,171 @@ export const outreachRepository = {
   }
 };
 
+const SIMULATION_STORAGE_KEY = 'jobtrack_simulation_sessions';
+
+function loadDemoSessions(): SimulationSessionDTO[] {
+  if (typeof localStorage === 'undefined') return [];
+  const raw = localStorage.getItem(SIMULATION_STORAGE_KEY);
+  if (raw) {
+    try {
+      return JSON.parse(raw) as SimulationSessionDTO[];
+    } catch {
+      return [];
+    }
+  }
+
+  const initialQuestions = generateSimulationQuestions('system_design', 'senior', 'Senior Backend Engineer', 'Shopee');
+  const initialTurn = evaluateSimulationTurn(
+    initialQuestions[0],
+    'Với Shopee quy mô 100M người dùng, tôi thiết kế distributed notification service phân tầng: Gateway tiếp nhận request, Kafka partition theo user_id, worker pool xử lý rate limiting qua Redis Leaky Bucket. Đo lường giảm drop rate xuống 0.01% và p99 latency dưới 65ms.',
+    85,
+    'standard_2min',
+    'system_design'
+  );
+  initialTurn.turnNumber = 1;
+
+  const defaultSession: SimulationSessionDTO = {
+    id: 'sim-default-01',
+    targetRole: 'Senior Backend Engineer',
+    targetCompany: 'Shopee',
+    track: 'system_design',
+    difficulty: 'senior',
+    pacingMode: 'standard_2min',
+    status: 'in_progress',
+    questions: initialQuestions,
+    currentQuestionIndex: 1,
+    turns: [initialTurn],
+    report: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const initialList = [defaultSession];
+  saveDemoSessions(initialList);
+  return initialList;
+}
+
+function saveDemoSessions(sessions: SimulationSessionDTO[]): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(SIMULATION_STORAGE_KEY, JSON.stringify(sessions));
+  }
+}
+
+export const simulationRepository = {
+  async listSessions(): Promise<SimulationSessionDTO[]> {
+    if (demoMode) {
+      return loadDemoSessions();
+    }
+    return request<SimulationSessionDTO[]>('/simulation/sessions');
+  },
+
+  async getSession(id: string): Promise<SimulationSessionDTO | null> {
+    if (demoMode) {
+      const list = loadDemoSessions();
+      return list.find(s => s.id === id) || null;
+    }
+    return request<SimulationSessionDTO>(`/simulation/sessions/${encodeURIComponent(id)}`);
+  },
+
+  async startSession(input: StartSimulationInputDTO): Promise<SimulationSessionDTO> {
+    if (demoMode) {
+      const list = loadDemoSessions();
+      const sessionId = `sim-${Date.now()}`;
+      const questions = generateSimulationQuestions(input.track, input.difficulty, input.targetRole, input.targetCompany);
+
+      const newSession: SimulationSessionDTO = {
+        id: sessionId,
+        targetRole: input.targetRole,
+        targetCompany: input.targetCompany,
+        track: input.track,
+        difficulty: input.difficulty,
+        pacingMode: input.pacingMode,
+        status: 'in_progress',
+        questions,
+        currentQuestionIndex: 0,
+        turns: [],
+        report: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      list.unshift(newSession);
+      saveDemoSessions(list);
+      return newSession;
+    }
+    return request<SimulationSessionDTO>('/simulation/sessions', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async submitTurn(
+    sessionId: string,
+    input: SubmitTurnInputDTO
+  ): Promise<{ session: SimulationSessionDTO; evaluation: TurnEvaluationDTO }> {
+    if (demoMode) {
+      const list = loadDemoSessions();
+      const session = list.find(s => s.id === sessionId);
+      if (!session) throw new Error('Phiên phỏng vấn không tồn tại.');
+      if (session.status !== 'in_progress') throw new Error('Phiên phỏng vấn đã kết thúc.');
+
+      const currentQuestion = session.questions[session.currentQuestionIndex] || 'Câu hỏi tình huống';
+      const evaluation = evaluateSimulationTurn(
+        currentQuestion,
+        input.answer,
+        input.timeTakenSeconds,
+        session.pacingMode,
+        session.track
+      );
+      evaluation.turnNumber = session.currentQuestionIndex + 1;
+
+      session.turns.push(evaluation);
+      session.currentQuestionIndex += 1;
+      if (session.currentQuestionIndex >= session.questions.length) {
+        session.status = 'completed';
+        session.report = synthesizeSessionReport(session.turns);
+      }
+      session.updatedAt = new Date().toISOString();
+      saveDemoSessions(list);
+      return { session, evaluation };
+    }
+    return request<{ session: SimulationSessionDTO; evaluation: TurnEvaluationDTO }>(
+      `/simulation/sessions/${encodeURIComponent(sessionId)}/turn`,
+      {
+        method: 'POST',
+        body: JSON.stringify(input)
+      }
+    );
+  },
+
+  async completeSession(sessionId: string): Promise<SimulationSessionDTO> {
+    if (demoMode) {
+      const list = loadDemoSessions();
+      const session = list.find(s => s.id === sessionId);
+      if (!session) throw new Error('Phiên phỏng vấn không tồn tại.');
+
+      session.status = 'completed';
+      session.report = synthesizeSessionReport(session.turns);
+      session.updatedAt = new Date().toISOString();
+      saveDemoSessions(list);
+      return session;
+    }
+    return request<SimulationSessionDTO>(`/simulation/sessions/${encodeURIComponent(sessionId)}/complete`, {
+      method: 'POST'
+    });
+  },
+
+  async deleteSession(sessionId: string): Promise<boolean> {
+    if (demoMode) {
+      const list = loadDemoSessions();
+      const next = list.filter(s => s.id !== sessionId);
+      saveDemoSessions(next);
+      return true;
+    }
+    await request(`/simulation/sessions/${encodeURIComponent(sessionId)}`, { method: 'DELETE' });
+    return true;
+  }
+};
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
@@ -2944,7 +3121,15 @@ export type {
   CampaignAnalyticsDTO,
   CreateCampaignInputDTO,
   AddRecipientInputDTO,
-  UpdateRecipientStepInputDTO
+  UpdateRecipientStepInputDTO,
+  SimulationTrack,
+  SimulationDifficulty,
+  SimulationPacingMode,
+  TurnEvaluationDTO,
+  SimulationSessionReportDTO,
+  SimulationSessionDTO,
+  StartSimulationInputDTO,
+  SubmitTurnInputDTO
 };
 
 

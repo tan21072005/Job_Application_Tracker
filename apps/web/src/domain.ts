@@ -54,7 +54,19 @@ import {
   type UpdateRecipientStepInputDTO,
   generateOutreachSequence,
   personalizeMessage,
-  computeCampaignMetrics
+  computeCampaignMetrics,
+  type SimulationTrack,
+  type SimulationDifficulty,
+  type SimulationPacingMode,
+  type TurnEvaluationDTO,
+  type SimulationSessionReportDTO,
+  type SimulationSessionDTO,
+  type StartSimulationInputDTO,
+  type SubmitTurnInputDTO,
+  getPacingDurationSeconds,
+  generateSimulationQuestions,
+  evaluateSimulationTurn,
+  synthesizeSessionReport
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -112,7 +124,19 @@ export {
   type UpdateRecipientStepInputDTO,
   generateOutreachSequence,
   personalizeMessage,
-  computeCampaignMetrics
+  computeCampaignMetrics,
+  type SimulationTrack,
+  type SimulationDifficulty,
+  type SimulationPacingMode,
+  type TurnEvaluationDTO,
+  type SimulationSessionReportDTO,
+  type SimulationSessionDTO,
+  type StartSimulationInputDTO,
+  type SubmitTurnInputDTO,
+  getPacingDurationSeconds,
+  generateSimulationQuestions,
+  evaluateSimulationTurn,
+  synthesizeSessionReport
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {
