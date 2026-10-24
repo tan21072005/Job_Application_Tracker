@@ -674,6 +674,84 @@ async function main() {
     })()`);
     await wait(500);
 
+    console.log('\n--- GIAI ĐOẠN 10: Milestone 8 - Nhập hồ sơ hàng loạt qua CSV với Live Preview & Kiểm tra lỗi (C05 & A07) ---');
+    console.log('Điều hướng tới view Hồ sơ ứng tuyển (#applications)...');
+    await evaluate(`(() => {
+      const appLink = document.querySelector('aside nav a[href="#applications"]') || Array.from(document.querySelectorAll('aside nav a')).find(a => a.textContent.includes('Đơn ứng tuyển'));
+      if (appLink) appLink.click();
+      else location.hash = '#applications';
+    })()`);
+    await wait(1200);
+
+    console.log('Mở modal Nhập CSV...');
+    const openCsvModalCheck = await evaluate(`(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Nhập CSV') || b.getAttribute('aria-label') === 'Nhập từ file CSV');
+      if (!btn) return JSON.stringify({ clicked: false });
+      btn.click();
+      return JSON.stringify({ clicked: true });
+    })()`);
+    await wait(1000);
+    record('CSV Import Launcher', 'Nút Nhập CSV khả dụng trên thanh công cụ và mở hộp thoại thành công', openCsvModalCheck.clicked);
+
+    console.log('Kiểm tra giao diện dropzone của ImportCsvModal...');
+    const dropzoneCheck = await evaluate(`(() => {
+      const dropzone = document.querySelector('.csv-dropzone');
+      const title = document.querySelector('.csv-dropzone-title')?.textContent || '';
+      const tags = document.querySelectorAll('.csv-col-tag');
+      return JSON.stringify({
+        hasDropzone: Boolean(dropzone),
+        hasTitle: title.includes('Kéo thả tệp CSV'),
+        tagsCount: tags.length
+      });
+    })()`);
+    record('CSV Dropzone & Schema Guide', 'Giao diện tải tệp hiển thị vùng dropzone trực quan kèm danh sách cột chuẩn', dropzoneCheck.hasDropzone && dropzoneCheck.hasTitle);
+
+    console.log('Mô phỏng tải lên tệp CSV và hiển thị Live Preview...');
+    const sampleCsvData = 'Công ty,Vị trí,Trạng thái,Mức lương,Địa điểm,Ngày nộp,Link bài đăng\n"Axie Infinity","Lead Game Developer","Interview","80,000,000 VND","TP.HCM","2026-10-22","https://axieinfinity.com/careers/1"\n"Kyber Network","DeFi Rust Engineer","Applied","90,000,000 VND","Hà Nội","2026-10-23","https://kyber.network/careers/2"';
+
+    await evaluate(`(() => {
+      const fileInput = document.querySelector('.csv-dropzone input[type="file"]');
+      if (fileInput) {
+        const csvContent = ${JSON.stringify(sampleCsvData)};
+        const file = new File([csvContent], "ung-vien-tech.csv", { type: "text/csv" });
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    })()`);
+    await wait(1500);
+
+    const csvPreviewCheck = await evaluate(`(() => {
+      const table = document.querySelector('.csv-preview-table');
+      const statValid = document.querySelector('.stat-valid .stat-num')?.textContent.trim() || '0';
+      const rows = document.querySelectorAll('.csv-preview-table tbody tr');
+      const importBtn = Array.from(document.querySelectorAll('.dialog-actions button')).find(b => b.textContent.includes('Nhập'));
+      return JSON.stringify({
+        hasTable: Boolean(table),
+        validCount: Number(statValid),
+        renderedRows: rows.length,
+        hasImportBtn: Boolean(importBtn),
+        btnText: importBtn?.textContent.trim() || ''
+      });
+    })()`);
+    record('CSV Live Preview & Validation Table', 'Bảng xem trước trực tiếp phân tích chuẩn xác các dòng dữ liệu hợp lệ', csvPreviewCheck.hasTable && csvPreviewCheck.validCount === 2, `Số dòng hợp lệ: ${csvPreviewCheck.validCount}, Nút hành động: ${csvPreviewCheck.btnText}`);
+
+    console.log('Thực hiện xác nhận Nhập hồ sơ vào hệ thống...');
+    await evaluate(`(() => {
+      const importBtn = Array.from(document.querySelectorAll('.dialog-actions button')).find(b => b.textContent.includes('Nhập'));
+      if (importBtn) importBtn.click();
+    })()`);
+    await wait(2000);
+
+    const importVerifyCheck = await evaluate(`(() => {
+      const bodyText = document.body.textContent;
+      const hasAxie = bodyText.includes('Axie Infinity');
+      const hasKyber = bodyText.includes('Kyber Network');
+      return JSON.stringify({ hasAxie, hasKyber });
+    })()`);
+    record('CSV Batch Import Execution', 'Hồ sơ từ tệp CSV được nhập thành công và xuất hiện ngay trên danh sách ứng tuyển', importVerifyCheck.hasAxie && importVerifyCheck.hasKyber, 'Đã tìm thấy Axie Infinity và Kyber Network trên giao diện');
+
 
   } catch (err) {
     console.error('Lỗi trong quá trình kiểm thử:', err);
