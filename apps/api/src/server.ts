@@ -100,6 +100,7 @@ import { ExecutiveContractService } from './services/executive-contract-service.
 import { ExecutiveOnboardingService } from './services/executive-onboarding-service.ts';
 import { BoardAdvisoryNexusService } from './services/board-advisory-nexus-service.ts';
 import { ExecutiveSeveranceService } from './services/executive-severance-service.ts';
+import { TechnicalDueDiligenceService } from './services/technical-due-diligence-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -132,7 +133,9 @@ import {
   validateBoardMandateInput,
   validateGovernanceMatrixInput,
   validateSeveranceCaseInput,
-  validateGoodReasonEventInput
+  validateGoodReasonEventInput,
+  validateDueDiligenceAuditInput,
+  validateDiligenceFindingInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -198,6 +201,7 @@ export const executiveContractService = new ExecutiveContractService(pool);
 export const executiveOnboardingService = new ExecutiveOnboardingService(pool);
 export const boardAdvisoryNexusService = new BoardAdvisoryNexusService(pool);
 export const executiveSeveranceService = new ExecutiveSeveranceService(pool);
+export const technicalDueDiligenceService = new TechnicalDueDiligenceService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -2997,6 +3001,126 @@ app.post('/api/executive-severance/:id/counter-proposal', auth, async (req, res,
       return res.status(404).json({ code: 'case_not_found', error: 'Executive severance case not found' });
     }
     res.status(201).json(proposal);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/technical-due-diligence/audits', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const list = await technicalDueDiligenceService.listAudits(userId);
+    res.json(list);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/technical-due-diligence/audits', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateDueDiligenceAuditInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const audit = await technicalDueDiligenceService.createAudit(userId, req.body);
+    res.status(201).json(audit);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/technical-due-diligence/audits/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const audit = await technicalDueDiligenceService.getAudit(userId, req.params.id);
+    if (!audit) {
+      return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
+    }
+    res.json(audit);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put('/api/technical-due-diligence/audits/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateDueDiligenceAuditInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const updated = await technicalDueDiligenceService.updateAudit(userId, req.params.id, req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/technical-due-diligence/audits/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await technicalDueDiligenceService.deleteAudit(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/technical-due-diligence/audits/:id/findings', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const findings = await technicalDueDiligenceService.listFindings(userId, req.params.id);
+    res.json(findings);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/technical-due-diligence/audits/:id/findings', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateDiligenceFindingInput(req.body);
+    if (!validation.ok) {
+      return res.status(422).json({ code: 'validation_error', errors: validation.errors });
+    }
+    const finding = await technicalDueDiligenceService.addFinding(userId, req.params.id, req.body);
+    if (!finding) {
+      return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
+    }
+    res.status(201).json(finding);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/technical-due-diligence/findings/:findingId', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await technicalDueDiligenceService.deleteFinding(userId, req.params.findingId);
+    if (!deleted) {
+      return res.status(404).json({ code: 'finding_not_found', error: 'Finding not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/technical-due-diligence/audits/:id/generate-memo', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const memo = await technicalDueDiligenceService.generateMemo(userId, req.params.id);
+    if (!memo) {
+      return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
+    }
+    res.json({ markdown: memo });
   } catch (err) {
     next(err);
   }

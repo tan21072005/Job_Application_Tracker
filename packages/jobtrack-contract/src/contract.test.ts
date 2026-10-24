@@ -242,7 +242,23 @@ import {
   type ExecutiveSeveranceCaseDTO,
   type SeveranceAuditParams,
   type CicWaterfallParams,
-  type Tax280GParams
+  type Tax280GParams,
+  calculateTechnicalDebtRatio,
+  calculateSpofCriticalityIndex,
+  calculateScalabilityHorizon,
+  calculateOpenSourceContagionScore,
+  calculateCloudGrossMargin,
+  calculateSecurityComplianceIndex,
+  calculateSpecialEscrowHoldback,
+  calculateEngineeringVelocityQuotient,
+  calculateBusFactorVulnerability,
+  calculateCompositeRagScorecard,
+  determineTransactionRecommendation,
+  generateTechnicalDueDiligenceMemoMarkdown,
+  validateDueDiligenceAuditInput,
+  validateDiligenceFindingInput,
+  type TechnicalDueDiligenceAuditDTO,
+  type TechnicalDueDiligenceMutationDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -5616,6 +5632,275 @@ test('contract: validateSeveranceCaseInput and validateGoodReasonEventInput reje
     dateNoticeServed: '2026-10-18'
   });
   assert.equal(validEvent.ok, true);
+});
+
+test('contract: calculateTechnicalDebtRatio, calculateSpofCriticalityIndex, calculateScalabilityHorizon', () => {
+  const tdrZero = calculateTechnicalDebtRatio(50000, 0);
+  assert.equal(tdrZero, 0);
+
+  const tdr = calculateTechnicalDebtRatio(250000, 1000000);
+  assert.equal(tdr, 25);
+
+  const spofs = [
+    { severity: 'critical' as const, redundancyInPlace: false },
+    { severity: 'high' as const, redundancyInPlace: true },
+    { severity: 'moderate' as const, redundancyInPlace: false }
+  ];
+  const spofScore = calculateSpofCriticalityIndex(spofs);
+  assert.equal(spofScore, Math.min(100, Math.round(30 * 1.0 + 18 * 0.25 + 8 * 1.0)));
+
+  const horizon = calculateScalabilityHorizon(500, 2500);
+  assert.equal(horizon, 5);
+
+  const horizonZero = calculateScalabilityHorizon(0, 2500);
+  assert.equal(horizonZero, 10);
+});
+
+test('contract: calculateOpenSourceContagionScore and calculateCloudGrossMargin', () => {
+  const libs = [
+    { category: 'network_copyleft' as const, usageMode: 'backend_saas', riskLevel: 'critical' as const },
+    { category: 'strong_copyleft' as const, usageMode: 'client_distributed', riskLevel: 'high' as const }
+  ];
+  const contagionUnlinked = calculateOpenSourceContagionScore(libs, false);
+  assert.equal(contagionUnlinked, 40 * 1.0 + 30 * 1.5);
+
+  const contagionLinked = calculateOpenSourceContagionScore([], true);
+  assert.equal(contagionLinked, 100);
+
+  const emptyMargins = calculateCloudGrossMargin(0, 100000);
+  assert.deepEqual(emptyMargins, { cloudCogsPercent: 0, currentGrossMargin: 0, projectedGrossMargin: 0 });
+
+  const margins = calculateCloudGrossMargin(10000000, 1200000, 800000, 400000);
+  assert.equal(margins.cloudCogsPercent, 12);
+  assert.equal(margins.currentGrossMargin, 80);
+  assert.equal(margins.projectedGrossMargin, 83);
+});
+
+test('contract: calculateSecurityComplianceIndex and calculateSpecialEscrowHoldback', () => {
+  const scmi = calculateSecurityComplianceIndex({
+    soc2Status: 'certified_unqualified',
+    isoStatus: 'certified_active',
+    criticalCves: 0,
+    highCves: 1,
+    mediumCves: 2,
+    sec106Score: 90,
+    penTestRecencyMonths: 6
+  });
+  assert.ok(scmi >= 80 && scmi <= 100);
+
+  const holdbackBase = calculateSpecialEscrowHoldback(10000000, 50000, 0, 20);
+  assert.equal(holdbackBase, 250000);
+
+  const holdbackHighRisk = calculateSpecialEscrowHoldback(10000000, 200000, 2, 60);
+  assert.ok(holdbackHighRisk > 250000);
+});
+
+test('contract: calculateEngineeringVelocityQuotient, calculateBusFactorVulnerability, composite scorecard', () => {
+  const evq = calculateEngineeringVelocityQuotient({
+    df: 'elite',
+    ltc: 'high',
+    cfr: 'elite',
+    mttr: 'high'
+  });
+  assert.equal(evq, Math.round(((4 + 3 + 4 + 3) / 16) * 100));
+
+  const bfvi = calculateBusFactorVulnerability(70, 0.4);
+  assert.equal(bfvi, 42);
+
+  const scorecard = calculateCompositeRagScorecard({
+    dealSizeUsd: 50000000,
+    tdr: 15,
+    spofIndex: 25,
+    osContagionScore: 30,
+    cloudGrossMargin: 78,
+    cloudCogsPercent: 12,
+    scmi: 85,
+    evq: 88,
+    bfvi: 35,
+    techDebtRemediationCost: 350000,
+    cloudWastageAnnual: 120000,
+    escrowHoldback: 1250000,
+    retentionPool: 800000
+  });
+
+  assert.ok(scorecard.compositeRiskIndex >= 0 && scorecard.compositeRiskIndex <= 100);
+  assert.ok(scorecard.totalValuationHaircutEstimate > 0);
+  assert.ok(scorecard.postMergerIntegration100DayPriorities.length > 0);
+
+  const rec = determineTransactionRecommendation(scorecard.overallRiskLevel, scorecard.pillarScores.licenseRiskScore, 0.05);
+  assert.ok(['proceed_standard', 'proceed_with_haircut', 'mandate_escrow_holdback', 'restructure_renegotiate', 'walk_away_deal_breaker'].includes(rec));
+
+  const walkAwayRec = determineTransactionRecommendation('critical', 90, 0.5);
+  assert.equal(walkAwayRec, 'walk_away_deal_breaker');
+});
+
+test('contract: generateTechnicalDueDiligenceMemoMarkdown formats report properly', () => {
+  const audit: TechnicalDueDiligenceAuditDTO = {
+    id: 'test-audit-1',
+    userId: 'user-1',
+    targetCompanyName: 'CloudScale AI',
+    dealSizeUsd: 85000000,
+    transactionType: 'buy_side_acquisition',
+    auditLeadName: 'Alex Vance',
+    auditDate: '2026-10-25',
+    architecture: {
+      typology: 'modular_monolith',
+      estimatedTotalLoc: 450000,
+      costPerLocBurdened: 12.5,
+      replacementCostEstimate: 5625000,
+      technicalDebtRemediationCost: 450000,
+      technicalDebtRatio: 8.0,
+      rtoMinutesCurrent: 45,
+      rtoMinutesTarget: 30,
+      rpoMinutesCurrent: 15,
+      rpoMinutesTarget: 5,
+      disasterRecoveryTestedRecently: true,
+      spofCount: 2,
+      spofCriticalityIndex: 22,
+      currentPeakQps: 1200,
+      maxDatabaseQps: 6000,
+      scalabilitySaturationHorizon: 5.0,
+      identifiedSpofs: []
+    },
+    licenses: {
+      openSourceContagionScore: 15,
+      proprietaryCodeLinkedWithGpl: false,
+      cleanRoomDocumented: true,
+      contractorAssignmentsComplete: true,
+      patentFtoAnalyzed: true,
+      dependenciesCount: 142,
+      copyleftFindingsCount: 1,
+      licenseBreakdown: {
+        permissiveCount: 135,
+        weakCopyleftCount: 6,
+        strongCopyleftCount: 1,
+        networkCopyleftCount: 0,
+        commercialDualCount: 0
+      },
+      flaggedLibraries: []
+    },
+    cloudEconomics: {
+      annualRecurringRevenue: 24000000,
+      annualCloudSpendTotal: 2100000,
+      cloudCogsAmount: 1800000,
+      cloudCogsPercentOfArr: 7.5,
+      currentGrossMarginPercent: 81.2,
+      projectedOptimizedGrossMarginPercent: 84.5,
+      idleResourceWastageAnnual: 320000,
+      multiYearCommitmentLiability: 0,
+      finopsOptimizationCaptureEstimate: 240000,
+      spendByProvider: {
+        awsAnnual: 1800000,
+        gcpAnnual: 300000,
+        azureAnnual: 0,
+        otherInfrastructureAnnual: 0
+      },
+      wastageCategories: {
+        idleComputeAnnual: 180000,
+        unattachedStorageAnnual: 40000,
+        unindexedEgressAnnual: 20000,
+        overprovisionedDbAnnual: 80000
+      }
+    },
+    securityCompliance: {
+      securityComplianceMaturityIndex: 88,
+      soc2Type2Status: 'certified_unqualified',
+      iso27001Status: 'certified_active',
+      secItem106ReadinessScore: 92,
+      thirdPartyPenTestRecencyMonths: 4,
+      criticalCveCount: 0,
+      highCveCount: 1,
+      mediumCveCount: 3,
+      gdprAutomatedDeletionCapable: true,
+      piiEncryptionAtRest: true,
+      piiEncryptionInTransit: true,
+      recommendedSpecialEscrowHoldback: 2125000,
+      remediationCostEstimate: 45000
+    },
+    teamVelocity: {
+      doraDeploymentFrequency: 'elite',
+      doraLeadTimeForChanges: 'high',
+      doraChangeFailureRate: 'elite',
+      doraTimeToRestoreService: 'elite',
+      engineeringVelocityQuotient: 94,
+      teamBusFactor: 4,
+      topContributorCommitSharePercent: 28,
+      documentationCoverageRatio: 0.85,
+      busFactorVulnerabilityIndex: 12,
+      criticalSiloDomainsCount: 1,
+      highFlightRiskKeyPersonsCount: 2,
+      recommendedRetentionPoolSize: 1200000,
+      retentionProgramDurationMonths: 24,
+      keyPersonnel: []
+    },
+    scorecard: {
+      overallRiskLevel: 'low',
+      compositeRiskIndex: 21,
+      pillarScores: {
+        architectureRiskScore: 31,
+        licenseRiskScore: 15,
+        cloudUnitEconRiskScore: 28,
+        securityComplianceRiskScore: 12,
+        teamVelocityRiskScore: 15
+      },
+      totalValuationHaircutEstimate: 4118600,
+      recommendedSpecialEscrowReserve: 2125000,
+      postMergerIntegration100DayPriorities: [
+        'Deploy active-active database replication',
+        'Execute standard 100-day post-merger systems integration'
+      ]
+    },
+    recommendation: 'proceed_standard',
+    executiveSummaryText: 'Target exhibits elite engineering practices and healthy unit economics.',
+    createdAt: '2026-10-25T00:00:00.000Z',
+    updatedAt: '2026-10-25T00:00:00.000Z'
+  };
+
+  const memo = generateTechnicalDueDiligenceMemoMarkdown(audit);
+  assert.ok(memo.includes('Technical Due Diligence & M&A Vendor Diligence Memorandum'));
+  assert.ok(memo.includes('CloudScale AI'));
+  assert.ok(memo.includes('Pillar A: Architectural Scalability & Tech Debt'));
+  assert.ok(memo.includes('Pillar B: Open-Source IP & License Contagion'));
+  assert.ok(memo.includes('Pillar C: Cloud Unit Economics & Gross Margin'));
+  assert.ok(memo.includes('Pillar D: Security, Compliance & Regulatory Maturity'));
+  assert.ok(memo.includes('Pillar E: Team Bus Factor & Engineering Velocity'));
+});
+
+test('contract: validateDueDiligenceAuditInput and validateDiligenceFindingInput reject invalid payloads', () => {
+  const invalidAudit = validateDueDiligenceAuditInput({
+    targetCompanyName: '',
+    dealSizeUsd: -100
+  });
+  assert.equal(invalidAudit.ok, false);
+  assert.ok(invalidAudit.errors.targetCompanyName);
+  assert.ok(invalidAudit.errors.dealSizeUsd);
+
+  const validAudit = validateDueDiligenceAuditInput({
+    targetCompanyName: 'Acme SaaS',
+    dealSizeUsd: 50000000,
+    auditLeadName: 'Sarah Connor',
+    auditDate: '2026-10-25'
+  });
+  assert.equal(validAudit.ok, true);
+
+  const invalidFinding = validateDiligenceFindingInput({
+    title: '',
+    pillar: 'invalid_pillar',
+    severity: 'critical',
+    financialImpactUsd: -500
+  });
+  assert.equal(invalidFinding.ok, false);
+
+  const validFinding = validateDiligenceFindingInput({
+    title: 'AGPLv3 Dependency in Backend API',
+    pillar: 'license',
+    severity: 'critical',
+    financialImpactUsd: 150000,
+    remediationDays: 45,
+    description: 'Direct dependency on un-isolated AGPL database driver',
+    remediationPlan: 'Replace with Apache 2.0 alternative'
+  });
+  assert.equal(validFinding.ok, true);
 });
 
 

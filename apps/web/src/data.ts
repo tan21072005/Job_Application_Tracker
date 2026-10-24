@@ -82,7 +82,23 @@ import {
   computeCicWaterfall,
   compute280GTax,
   computeExecutiveLeverageIndex,
-  generateExecutiveCounterMemoMarkdown
+  generateExecutiveCounterMemoMarkdown,
+  type TechnicalDueDiligenceAuditDTO,
+  type TechnicalDueDiligenceMutationDTO,
+  type DiligenceFindingDTO,
+  type DiligenceFindingMutationDTO,
+  calculateTechnicalDebtRatio,
+  calculateSpofCriticalityIndex,
+  calculateScalabilityHorizon,
+  calculateOpenSourceContagionScore,
+  calculateCloudGrossMargin,
+  calculateSecurityComplianceIndex,
+  calculateSpecialEscrowHoldback,
+  calculateEngineeringVelocityQuotient,
+  calculateBusFactorVulnerability,
+  calculateCompositeRagScorecard,
+  determineTransactionRecommendation,
+  generateTechnicalDueDiligenceMemoMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -8641,6 +8657,489 @@ export const executiveSeveranceRepository = {
       );
     } catch {
       return createDemoCounterProposal(caseId);
+    }
+  }
+};
+
+const TDD_AUDITS_STORAGE_KEY = 'jobtrack.tech_diligence_audits.v1';
+const TDD_FINDINGS_STORAGE_KEY = 'jobtrack.tech_diligence_findings.v1';
+
+function createDefaultDemoAudit(): TechnicalDueDiligenceAuditDTO {
+  return {
+    id: 'demo-audit-1',
+    userId: 'demo-user',
+    targetCompanyName: 'CloudScale AI Corp',
+    dealSizeUsd: 85000000,
+    transactionType: 'buy_side_acquisition',
+    auditLeadName: 'Alex Vance, Chief Architect',
+    auditDate: '2026-10-25',
+    architecture: {
+      typology: 'modular_monolith',
+      estimatedTotalLoc: 450000,
+      costPerLocBurdened: 12.5,
+      replacementCostEstimate: 5625000,
+      technicalDebtRemediationCost: 450000,
+      technicalDebtRatio: 8.0,
+      rtoMinutesCurrent: 45,
+      rtoMinutesTarget: 30,
+      rpoMinutesCurrent: 15,
+      rpoMinutesTarget: 5,
+      disasterRecoveryTestedRecently: true,
+      spofCount: 2,
+      spofCriticalityIndex: 22,
+      currentPeakQps: 1200,
+      maxDatabaseQps: 6000,
+      scalabilitySaturationHorizon: 5.0,
+      identifiedSpofs: [
+        { id: 'spof-1', component: 'Primary PostgreSQL Write Replica', type: 'primary_database', severity: 'high', redundancyInPlace: true, remediationEstimateDays: 20 },
+        { id: 'spof-2', component: 'Redis Cache Cluster Single Node', type: 'cache_cluster', severity: 'moderate', redundancyInPlace: false, remediationEstimateDays: 5 }
+      ]
+    },
+    licenses: {
+      openSourceContagionScore: 15,
+      proprietaryCodeLinkedWithGpl: false,
+      cleanRoomDocumented: true,
+      contractorAssignmentsComplete: true,
+      patentFtoAnalyzed: true,
+      dependenciesCount: 142,
+      copyleftFindingsCount: 1,
+      licenseBreakdown: {
+        permissiveCount: 135,
+        weakCopyleftCount: 6,
+        strongCopyleftCount: 1,
+        networkCopyleftCount: 0,
+        commercialDualCount: 0
+      },
+      flaggedLibraries: [
+        { id: 'lib-1', packageName: 'readline-native', version: '2.1.0', license: 'GPL-3.0', category: 'strong_copyleft', usageMode: 'internal_tool', riskLevel: 'low', remediationStrategy: 'replace_with_permissive', remediationCost: 15000 }
+      ]
+    },
+    cloudEconomics: {
+      annualRecurringRevenue: 24000000,
+      annualCloudSpendTotal: 2100000,
+      cloudCogsAmount: 1800000,
+      cloudCogsPercentOfArr: 7.5,
+      currentGrossMarginPercent: 81.2,
+      projectedOptimizedGrossMarginPercent: 84.5,
+      idleResourceWastageAnnual: 320000,
+      multiYearCommitmentLiability: 0,
+      finopsOptimizationCaptureEstimate: 240000,
+      spendByProvider: {
+        awsAnnual: 1800000,
+        gcpAnnual: 300000,
+        azureAnnual: 0,
+        otherInfrastructureAnnual: 0
+      },
+      wastageCategories: {
+        idleComputeAnnual: 180000,
+        unattachedStorageAnnual: 40000,
+        unindexedEgressAnnual: 20000,
+        overprovisionedDbAnnual: 80000
+      }
+    },
+    securityCompliance: {
+      securityComplianceMaturityIndex: 88,
+      soc2Type2Status: 'certified_unqualified',
+      iso27001Status: 'certified_active',
+      secItem106ReadinessScore: 92,
+      thirdPartyPenTestRecencyMonths: 4,
+      criticalCveCount: 0,
+      highCveCount: 1,
+      mediumCveCount: 3,
+      gdprAutomatedDeletionCapable: true,
+      piiEncryptionAtRest: true,
+      piiEncryptionInTransit: true,
+      recommendedSpecialEscrowHoldback: 2125000,
+      remediationCostEstimate: 45000
+    },
+    teamVelocity: {
+      doraDeploymentFrequency: 'elite',
+      doraLeadTimeForChanges: 'high',
+      doraChangeFailureRate: 'elite',
+      doraTimeToRestoreService: 'elite',
+      engineeringVelocityQuotient: 94,
+      teamBusFactor: 4,
+      topContributorCommitSharePercent: 28,
+      documentationCoverageRatio: 0.85,
+      busFactorVulnerabilityIndex: 12,
+      criticalSiloDomainsCount: 1,
+      highFlightRiskKeyPersonsCount: 2,
+      recommendedRetentionPoolSize: 1200000,
+      retentionProgramDurationMonths: 24,
+      keyPersonnel: [
+        { id: 'kp-1', roleTitle: 'Chief Architect', domainOwnership: 'Core Data Engine', tenureYears: 4, flightRisk: 'moderate', busFactorCriticality: 'high', recommendedRetentionBonus: 600000 },
+        { id: 'kp-2', roleTitle: 'Principal Infra Lead', domainOwnership: 'Kubernetes Platform', tenureYears: 3, flightRisk: 'moderate', busFactorCriticality: 'moderate', recommendedRetentionBonus: 350000 }
+      ]
+    },
+    scorecard: {
+      overallRiskLevel: 'low',
+      compositeRiskIndex: 21,
+      pillarScores: {
+        architectureRiskScore: 31,
+        licenseRiskScore: 15,
+        cloudUnitEconRiskScore: 28,
+        securityComplianceRiskScore: 12,
+        teamVelocityRiskScore: 15
+      },
+      totalValuationHaircutEstimate: 4118600,
+      recommendedSpecialEscrowReserve: 2125000,
+      postMergerIntegration100DayPriorities: [
+        'Deploy active-active database replication',
+        'Execute standard 100-day post-merger systems integration'
+      ]
+    },
+    recommendation: 'proceed_standard',
+    executiveSummaryText: 'CloudScale AI demonstrates elite DORA metrics, healthy cloud unit economics at 7.5% COGS, and clean open-source licensing. Recommended for proceed with standard 100-day integration plan.',
+    createdAt: '2026-10-25T00:00:00.000Z',
+    updatedAt: '2026-10-25T00:00:00.000Z'
+  };
+}
+
+function loadDemoTechDiligenceAudits(): TechnicalDueDiligenceAuditDTO[] {
+  if (typeof localStorage === 'undefined') return [createDefaultDemoAudit()];
+  const raw = localStorage.getItem(TDD_AUDITS_STORAGE_KEY);
+  if (!raw) {
+    const initial = [createDefaultDemoAudit()];
+    localStorage.setItem(TDD_AUDITS_STORAGE_KEY, JSON.stringify(initial));
+    return initial;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [createDefaultDemoAudit()];
+  }
+}
+
+function saveDemoTechDiligenceAudits(audits: TechnicalDueDiligenceAuditDTO[]): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(TDD_AUDITS_STORAGE_KEY, JSON.stringify(audits));
+  }
+}
+
+function getDemoTechDiligenceAudit(id: string): TechnicalDueDiligenceAuditDTO | null {
+  const audits = loadDemoTechDiligenceAudits();
+  return audits.find(a => a.id === id) || null;
+}
+
+function createDemoTechDiligenceAudit(input: TechnicalDueDiligenceMutationDTO): TechnicalDueDiligenceAuditDTO {
+  const audits = loadDemoTechDiligenceAudits();
+  const id = 'demo-tdd-' + Date.now();
+  const arch = { ...input.architecture };
+  arch.technicalDebtRatio = calculateTechnicalDebtRatio(arch.technicalDebtRemediationCost, arch.replacementCostEstimate);
+  arch.spofCriticalityIndex = calculateSpofCriticalityIndex(arch.identifiedSpofs || []);
+  arch.scalabilitySaturationHorizon = calculateScalabilityHorizon(arch.currentPeakQps, arch.maxDatabaseQps);
+
+  const lic = { ...input.licenses };
+  lic.openSourceContagionScore = calculateOpenSourceContagionScore(lic.flaggedLibraries || [], lic.proprietaryCodeLinkedWithGpl);
+
+  const cloud = { ...input.cloudEconomics };
+  const margins = calculateCloudGrossMargin(cloud.annualRecurringRevenue, cloud.cloudCogsAmount, 0, cloud.idleResourceWastageAnnual);
+  cloud.cloudCogsPercentOfArr = margins.cloudCogsPercent;
+  cloud.currentGrossMarginPercent = margins.currentGrossMargin;
+  cloud.projectedOptimizedGrossMarginPercent = margins.projectedGrossMargin;
+
+  const sec = { ...input.securityCompliance };
+  sec.securityComplianceMaturityIndex = calculateSecurityComplianceIndex({
+    soc2Status: sec.soc2Type2Status,
+    isoStatus: sec.iso27001Status,
+    criticalCves: sec.criticalCveCount,
+    highCves: sec.highCveCount,
+    mediumCves: sec.mediumCveCount,
+    sec106Score: sec.secItem106ReadinessScore,
+    penTestRecencyMonths: sec.thirdPartyPenTestRecencyMonths
+  });
+  sec.recommendedSpecialEscrowHoldback = calculateSpecialEscrowHoldback(input.dealSizeUsd, sec.remediationCostEstimate, sec.criticalCveCount, lic.openSourceContagionScore);
+
+  const team = { ...input.teamVelocity };
+  team.engineeringVelocityQuotient = calculateEngineeringVelocityQuotient({
+    df: team.doraDeploymentFrequency,
+    ltc: team.doraLeadTimeForChanges,
+    cfr: team.doraChangeFailureRate,
+    mttr: team.doraTimeToRestoreService
+  });
+  team.busFactorVulnerabilityIndex = calculateBusFactorVulnerability(team.topContributorCommitSharePercent, team.documentationCoverageRatio);
+
+  const scorecard = calculateCompositeRagScorecard({
+    dealSizeUsd: input.dealSizeUsd,
+    tdr: arch.technicalDebtRatio,
+    spofIndex: arch.spofCriticalityIndex,
+    osContagionScore: lic.openSourceContagionScore,
+    cloudGrossMargin: cloud.currentGrossMarginPercent,
+    cloudCogsPercent: cloud.cloudCogsPercentOfArr,
+    scmi: sec.securityComplianceMaturityIndex,
+    evq: team.engineeringVelocityQuotient,
+    bfvi: team.busFactorVulnerabilityIndex,
+    techDebtRemediationCost: arch.technicalDebtRemediationCost,
+    cloudWastageAnnual: cloud.idleResourceWastageAnnual,
+    escrowHoldback: sec.recommendedSpecialEscrowHoldback,
+    retentionPool: team.recommendedRetentionPoolSize
+  });
+
+  const haircutRatio = input.dealSizeUsd > 0 ? scorecard.totalValuationHaircutEstimate / input.dealSizeUsd : 0;
+  const recommendation = determineTransactionRecommendation(scorecard.overallRiskLevel, scorecard.pillarScores.licenseRiskScore, haircutRatio);
+
+  const newAudit: TechnicalDueDiligenceAuditDTO = {
+    ...input,
+    id,
+    userId: 'demo-user',
+    architecture: arch,
+    licenses: lic,
+    cloudEconomics: cloud,
+    securityCompliance: sec,
+    teamVelocity: team,
+    scorecard,
+    recommendation,
+    executiveSummaryText: input.executiveSummaryText || '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  audits.unshift(newAudit);
+  saveDemoTechDiligenceAudits(audits);
+  return newAudit;
+}
+
+function updateDemoTechDiligenceAudit(id: string, input: TechnicalDueDiligenceMutationDTO): TechnicalDueDiligenceAuditDTO | null {
+  const audits = loadDemoTechDiligenceAudits();
+  const index = audits.findIndex(a => a.id === id);
+  if (index === -1) return null;
+
+  const arch = { ...input.architecture };
+  arch.technicalDebtRatio = calculateTechnicalDebtRatio(arch.technicalDebtRemediationCost, arch.replacementCostEstimate);
+  arch.spofCriticalityIndex = calculateSpofCriticalityIndex(arch.identifiedSpofs || []);
+  arch.scalabilitySaturationHorizon = calculateScalabilityHorizon(arch.currentPeakQps, arch.maxDatabaseQps);
+
+  const lic = { ...input.licenses };
+  lic.openSourceContagionScore = calculateOpenSourceContagionScore(lic.flaggedLibraries || [], lic.proprietaryCodeLinkedWithGpl);
+
+  const cloud = { ...input.cloudEconomics };
+  const margins = calculateCloudGrossMargin(cloud.annualRecurringRevenue, cloud.cloudCogsAmount, 0, cloud.idleResourceWastageAnnual);
+  cloud.cloudCogsPercentOfArr = margins.cloudCogsPercent;
+  cloud.currentGrossMarginPercent = margins.currentGrossMargin;
+  cloud.projectedOptimizedGrossMarginPercent = margins.projectedGrossMargin;
+
+  const sec = { ...input.securityCompliance };
+  sec.securityComplianceMaturityIndex = calculateSecurityComplianceIndex({
+    soc2Status: sec.soc2Type2Status,
+    isoStatus: sec.iso27001Status,
+    criticalCves: sec.criticalCveCount,
+    highCves: sec.highCveCount,
+    mediumCves: sec.mediumCveCount,
+    sec106Score: sec.secItem106ReadinessScore,
+    penTestRecencyMonths: sec.thirdPartyPenTestRecencyMonths
+  });
+  sec.recommendedSpecialEscrowHoldback = calculateSpecialEscrowHoldback(input.dealSizeUsd, sec.remediationCostEstimate, sec.criticalCveCount, lic.openSourceContagionScore);
+
+  const team = { ...input.teamVelocity };
+  team.engineeringVelocityQuotient = calculateEngineeringVelocityQuotient({
+    df: team.doraDeploymentFrequency,
+    ltc: team.doraLeadTimeForChanges,
+    cfr: team.doraChangeFailureRate,
+    mttr: team.doraTimeToRestoreService
+  });
+  team.busFactorVulnerabilityIndex = calculateBusFactorVulnerability(team.topContributorCommitSharePercent, team.documentationCoverageRatio);
+
+  const scorecard = calculateCompositeRagScorecard({
+    dealSizeUsd: input.dealSizeUsd,
+    tdr: arch.technicalDebtRatio,
+    spofIndex: arch.spofCriticalityIndex,
+    osContagionScore: lic.openSourceContagionScore,
+    cloudGrossMargin: cloud.currentGrossMarginPercent,
+    cloudCogsPercent: cloud.cloudCogsPercentOfArr,
+    scmi: sec.securityComplianceMaturityIndex,
+    evq: team.engineeringVelocityQuotient,
+    bfvi: team.busFactorVulnerabilityIndex,
+    techDebtRemediationCost: arch.technicalDebtRemediationCost,
+    cloudWastageAnnual: cloud.idleResourceWastageAnnual,
+    escrowHoldback: sec.recommendedSpecialEscrowHoldback,
+    retentionPool: team.recommendedRetentionPoolSize
+  });
+
+  const haircutRatio = input.dealSizeUsd > 0 ? scorecard.totalValuationHaircutEstimate / input.dealSizeUsd : 0;
+  const recommendation = determineTransactionRecommendation(scorecard.overallRiskLevel, scorecard.pillarScores.licenseRiskScore, haircutRatio);
+
+  audits[index] = {
+    ...audits[index],
+    ...input,
+    architecture: arch,
+    licenses: lic,
+    cloudEconomics: cloud,
+    securityCompliance: sec,
+    teamVelocity: team,
+    scorecard,
+    recommendation,
+    executiveSummaryText: input.executiveSummaryText || '',
+    updatedAt: new Date().toISOString()
+  };
+
+  saveDemoTechDiligenceAudits(audits);
+  return audits[index];
+}
+
+function deleteDemoTechDiligenceAudit(id: string): boolean {
+  const audits = loadDemoTechDiligenceAudits().filter(a => a.id !== id);
+  saveDemoTechDiligenceAudits(audits);
+  return true;
+}
+
+function loadDemoTechDiligenceFindings(auditId: string): DiligenceFindingDTO[] {
+  if (typeof localStorage === 'undefined') return [];
+  const raw = localStorage.getItem(TDD_FINDINGS_STORAGE_KEY);
+  if (!raw) {
+    const initial: DiligenceFindingDTO[] = [
+      {
+        id: 'demo-finding-1',
+        auditId: 'demo-audit-1',
+        pillar: 'architecture',
+        title: 'PostgreSQL Read-Replica Lag Under Peak Loads',
+        severity: 'moderate',
+        financialImpactUsd: 45000,
+        remediationDays: 14,
+        description: 'Under simulated 5x load, read replicas exhibit 4.2s replication lag causing stale reads.',
+        remediationPlan: 'Implement connection pooling via PgBouncer and optimize WAL archiving batch sizes.',
+        createdAt: '2026-10-25T00:00:00.000Z'
+      }
+    ];
+    localStorage.setItem(TDD_FINDINGS_STORAGE_KEY, JSON.stringify(initial));
+    return initial.filter(f => f.auditId === auditId);
+  }
+  try {
+    const list: DiligenceFindingDTO[] = JSON.parse(raw);
+    return list.filter(f => f.auditId === auditId);
+  } catch {
+    return [];
+  }
+}
+
+function addDemoTechDiligenceFinding(auditId: string, input: DiligenceFindingMutationDTO): DiligenceFindingDTO {
+  const all = (typeof localStorage !== 'undefined' && localStorage.getItem(TDD_FINDINGS_STORAGE_KEY))
+    ? JSON.parse(localStorage.getItem(TDD_FINDINGS_STORAGE_KEY)!)
+    : [];
+  const newFinding: DiligenceFindingDTO = {
+    ...input,
+    id: 'demo-finding-' + Date.now(),
+    auditId,
+    createdAt: new Date().toISOString()
+  };
+  all.push(newFinding);
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(TDD_FINDINGS_STORAGE_KEY, JSON.stringify(all));
+  }
+  return newFinding;
+}
+
+function deleteDemoTechDiligenceFinding(findingId: string): boolean {
+  if (typeof localStorage === 'undefined') return true;
+  const raw = localStorage.getItem(TDD_FINDINGS_STORAGE_KEY);
+  if (!raw) return true;
+  const all: DiligenceFindingDTO[] = JSON.parse(raw);
+  localStorage.setItem(TDD_FINDINGS_STORAGE_KEY, JSON.stringify(all.filter(f => f.id !== findingId)));
+  return true;
+}
+
+function generateDemoTechDiligenceMemo(auditId: string): string {
+  const audit = getDemoTechDiligenceAudit(auditId);
+  if (!audit) return '';
+  return generateTechnicalDueDiligenceMemoMarkdown(audit);
+}
+
+export const technicalDueDiligenceRepository = {
+  async listAudits(): Promise<TechnicalDueDiligenceAuditDTO[]> {
+    if (demoMode) return loadDemoTechDiligenceAudits();
+    try {
+      return await request<TechnicalDueDiligenceAuditDTO[]>('/technical-due-diligence/audits');
+    } catch {
+      return loadDemoTechDiligenceAudits();
+    }
+  },
+
+  async getAudit(id: string): Promise<TechnicalDueDiligenceAuditDTO | null> {
+    if (demoMode) return getDemoTechDiligenceAudit(id);
+    try {
+      return await request<TechnicalDueDiligenceAuditDTO>(`/technical-due-diligence/audits/${encodeURIComponent(id)}`);
+    } catch {
+      return getDemoTechDiligenceAudit(id);
+    }
+  },
+
+  async createAudit(input: TechnicalDueDiligenceMutationDTO): Promise<TechnicalDueDiligenceAuditDTO> {
+    if (demoMode) return createDemoTechDiligenceAudit(input);
+    try {
+      return await request<TechnicalDueDiligenceAuditDTO>('/technical-due-diligence/audits', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return createDemoTechDiligenceAudit(input);
+    }
+  },
+
+  async updateAudit(id: string, input: TechnicalDueDiligenceMutationDTO): Promise<TechnicalDueDiligenceAuditDTO | null> {
+    if (demoMode) return updateDemoTechDiligenceAudit(id, input);
+    try {
+      return await request<TechnicalDueDiligenceAuditDTO>(`/technical-due-diligence/audits/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return updateDemoTechDiligenceAudit(id, input);
+    }
+  },
+
+  async deleteAudit(id: string): Promise<boolean> {
+    if (demoMode) return deleteDemoTechDiligenceAudit(id);
+    try {
+      await request<void>(`/technical-due-diligence/audits/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      return deleteDemoTechDiligenceAudit(id);
+    }
+  },
+
+  async listFindings(auditId: string): Promise<DiligenceFindingDTO[]> {
+    if (demoMode) return loadDemoTechDiligenceFindings(auditId);
+    try {
+      return await request<DiligenceFindingDTO[]>(`/technical-due-diligence/audits/${encodeURIComponent(auditId)}/findings`);
+    } catch {
+      return loadDemoTechDiligenceFindings(auditId);
+    }
+  },
+
+  async addFinding(auditId: string, input: DiligenceFindingMutationDTO): Promise<DiligenceFindingDTO | null> {
+    if (demoMode) return addDemoTechDiligenceFinding(auditId, input);
+    try {
+      return await request<DiligenceFindingDTO>(`/technical-due-diligence/audits/${encodeURIComponent(auditId)}/findings`, {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return addDemoTechDiligenceFinding(auditId, input);
+    }
+  },
+
+  async deleteFinding(findingId: string): Promise<boolean> {
+    if (demoMode) return deleteDemoTechDiligenceFinding(findingId);
+    try {
+      await request<void>(`/technical-due-diligence/findings/${encodeURIComponent(findingId)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      return deleteDemoTechDiligenceFinding(findingId);
+    }
+  },
+
+  async generateMemo(auditId: string): Promise<string> {
+    if (demoMode) return generateDemoTechDiligenceMemo(auditId);
+    try {
+      const res = await request<{ markdown: string }>(`/technical-due-diligence/audits/${encodeURIComponent(auditId)}/generate-memo`, {
+        method: 'POST'
+      });
+      return res.markdown;
+    } catch {
+      return generateDemoTechDiligenceMemo(auditId);
     }
   }
 };
