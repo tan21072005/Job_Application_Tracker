@@ -32,7 +32,9 @@ import {
   validateOfferComparisonInput,
   validateCounterOfferInput,
   validateCheckoutInput,
-  validateSimulateWebhookInput
+  validateSimulateWebhookInput,
+  validateContactInput,
+  validateInteractionInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -60,6 +62,7 @@ import { AnalyticsService } from './services/analytics-service.ts';
 import { ResumeService } from './services/resume-service.ts';
 import { CompanyService } from './services/company-service.ts';
 import { FollowUpService } from './services/follow-up-service.ts';
+import { ContactService } from './services/contact-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -104,6 +107,7 @@ export const analyticsService = new AnalyticsService(pool);
 export const resumeService = new ResumeService(pool);
 export const companyService = new CompanyService(pool);
 export const followUpService = new FollowUpService(pool);
+export const contactService = new ContactService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1381,6 +1385,101 @@ app.get('/api/follow-ups/due', auth, async (req, res, next) => {
     const userId = (req as SessionRequest).userId;
     const dueList = await followUpService.getDueFollowUps(userId);
     res.json(dueList);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/contacts', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const { query, company, type, strength } = req.query as Record<string, string | undefined>;
+    const list = await contactService.listContacts(userId, { query, company, type, strength });
+    res.json(list);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/contacts/reconnect-due', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const dueList = await contactService.getReconnectDueContacts(userId);
+    res.json(dueList);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/contacts/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const found = await contactService.getContact(userId, String(req.params.id));
+    if (!found) {
+      throw new Problem(404, 'Không tìm thấy người liên hệ này.', 'not_found');
+    }
+    res.json(found);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/contacts', auth, async (req, res, next) => {
+  try {
+    const val = validateContactInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const created = await contactService.createContact(userId, val.data);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/api/contacts/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateContactInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const updated = await contactService.updateContact(userId, String(req.params.id), val.data);
+    if (!updated) {
+      throw new Problem(404, 'Không tìm thấy người liên hệ cần cập nhật.', 'not_found');
+    }
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/contacts/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await contactService.deleteContact(userId, String(req.params.id));
+    if (!deleted) {
+      throw new Problem(404, 'Không tìm thấy người liên hệ cần xóa.', 'not_found');
+    }
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/contacts/:id/interactions', auth, async (req, res, next) => {
+  try {
+    const val = validateInteractionInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const created = await contactService.createInteraction(userId, String(req.params.id), val.data);
+    if (!created) {
+      throw new Problem(404, 'Không tìm thấy người liên hệ để ghi nhật ký.', 'not_found');
+    }
+    res.status(201).json(created);
   } catch (error) {
     next(error);
   }
