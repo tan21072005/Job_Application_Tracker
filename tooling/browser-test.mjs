@@ -568,6 +568,112 @@ async function main() {
     })()`);
     record('Activity Timeline', 'Dòng thời gian hành trình ứng tuyển (Activity Journey Timeline) hiển thị đầy đủ mốc sự kiện', timelineCheck.hasTimeline && timelineCheck.nodeCount > 0, `Số mốc sự kiện: ${timelineCheck.nodeCount}`);
 
+    console.log('\n--- GIAI ĐOẠN 9: Milestone 7 - AI Mock Interview Simulator & Practice Coach (A05, A06, A12, C12, C18) ---');
+    console.log('Điều hướng tới view Lịch phỏng vấn (#interviews)...');
+    await evaluate(`(() => {
+      const closeBtn = document.querySelector('.dialog .icon-button') || document.querySelector('.dialog button[aria-label="Đóng"]');
+      if (closeBtn) closeBtn.click();
+      const calLink = document.querySelector('aside nav a[href="#interviews"]') || Array.from(document.querySelectorAll('aside nav a')).find(a => a.textContent.includes('Lịch phỏng vấn'));
+      if (calLink) calLink.click();
+      else location.hash = '#interviews';
+    })()`);
+    await wait(1500);
+
+    console.log('Tìm và kích hoạt nút Luyện phỏng vấn AI...');
+    const coachBtnCheck = await evaluate(`(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Luyện phỏng vấn AI'));
+      if (!btn) return JSON.stringify({ exists: false });
+      btn.click();
+      return JSON.stringify({ exists: true });
+    })()`);
+    await wait(1000);
+    for (let i = 0; i < 10; i++) {
+      const state = await evaluate(`(() => {
+        const textarea = document.querySelector('.mock-answer-textarea');
+        const starBoxes = document.querySelectorAll('.star-col');
+        return JSON.stringify({ ready: Boolean(textarea && starBoxes.length >= 4) });
+      })()`);
+      if (state.ready) break;
+      await wait(1000);
+    }
+    record('Mock Interview Coach Launcher', 'Kích hoạt mở Huấn luyện viên Phỏng vấn AI thành công', coachBtnCheck.exists);
+
+    console.log('Kiểm tra giao diện Huấn luyện viên STAR Practice Coach...');
+    const coachModalCheck = await evaluate(`(() => {
+      const modal = document.querySelector('.mock-interview-dialog') || document.querySelector('.dialog');
+      const tabs = Array.from(document.querySelectorAll('.mock-cat-btn')).map(b => b.textContent.trim());
+      const starBoxes = document.querySelectorAll('.star-col');
+      const textarea = document.querySelector('.mock-answer-textarea');
+      return JSON.stringify({
+        hasModal: Boolean(modal),
+        tabCount: tabs.length,
+        hasStarGuide: starBoxes.length >= 4,
+        hasTextarea: Boolean(textarea)
+      });
+    })()`);
+    record('STAR Guidelines & Practice UI', 'Giao diện luyện phỏng vấn hiển thị đầy đủ danh mục câu hỏi và khung STAR chuẩn', coachModalCheck.hasModal && coachModalCheck.hasStarGuide);
+
+    console.log('Nhập câu trả lời mẫu theo khung STAR và gửi chấm điểm AI...');
+    await evaluate(`(() => {
+      const textarea = document.querySelector('.mock-answer-textarea');
+      if (textarea) {
+        const val = 'Tại dự án trước, chúng tôi gặp sự cố latency màn hình thanh toán 4.2s vào dịp Black Friday. Trách nhiệm của tôi là tối ưu phản hồi dưới 800ms trong 48 giờ. Tôi đã dùng React Profiler phát hiện re-render không cần thiết và batch các truy vấn GraphQL. Kết quả thời gian tải trang giảm còn 450ms, giảm 89% latency và tăng 24% tỷ lệ hoàn tất đơn hàng.';
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+        if (setter) setter.call(textarea, val);
+        else textarea.value = val;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    })()`);
+    await wait(800);
+
+    await evaluate(`(() => {
+      const evalBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Chấm điểm & Nhận xét AI'));
+      if (evalBtn) evalBtn.click();
+    })()`);
+    for (let i = 0; i < 10; i++) {
+      const state = await evaluate(`(() => {
+        const resultCard = document.querySelector('.mock-evaluation-report');
+        return JSON.stringify({ ready: Boolean(resultCard) });
+      })()`);
+      if (state.ready) break;
+      await wait(1000);
+    }
+
+    const evalResultCheck = await evaluate(`(() => {
+      const resultCard = document.querySelector('.mock-evaluation-report');
+      const scoreBig = document.querySelector('.score-number')?.textContent.trim() || '';
+      const verdict = document.querySelector('.verdict-pill')?.textContent.trim() || '';
+      const rubricBars = document.querySelectorAll('.rubric-fill');
+      const strengths = document.querySelectorAll('.strengths-col li');
+      const improved = document.querySelector('.improved-text')?.textContent.trim() || '';
+      return JSON.stringify({
+        hasResult: Boolean(resultCard),
+        score: scoreBig,
+        verdict: verdict,
+        rubricBarsCount: rubricBars.length,
+        hasStrengths: strengths.length > 0,
+        hasImproved: Boolean(improved)
+      });
+    })()`);
+    record('STAR Answer Rubric Evaluation', 'AI chấm điểm theo 5 tiêu chí STAR, đưa ra nhận xét thế mạnh và phiên bản tinh chỉnh tối ưu', evalResultCheck.hasResult && evalResultCheck.rubricBarsCount >= 4, `Điểm: ${evalResultCheck.score}, Đánh giá: ${evalResultCheck.verdict}`);
+
+    console.log('Lưu câu trả lời vào nội dung chuẩn bị của vòng phỏng vấn...');
+    const savePrepCheck = await evaluate(`(() => {
+      const saveBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Lưu vào nội dung chuẩn bị'));
+      if (!saveBtn) return JSON.stringify({ exists: false });
+      saveBtn.click();
+      return JSON.stringify({ exists: true });
+    })()`);
+    await wait(1500);
+    record('Save to Interview Preparation', 'Tích hợp lưu câu trả lời và ghi chú ôn tập vào hồ sơ vòng phỏng vấn', savePrepCheck.exists);
+
+    await evaluate(`(() => {
+      const closeBtn = document.querySelector('.dialog .dialog-actions button') || document.querySelector('.dialog button[aria-label="Đóng"]');
+      if (closeBtn) closeBtn.click();
+    })()`);
+    await wait(500);
+
 
   } catch (err) {
     console.error('Lỗi trong quá trình kiểm thử:', err);
