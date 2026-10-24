@@ -34,7 +34,8 @@ import {
   validateCheckoutInput,
   validateSimulateWebhookInput,
   validateContactInput,
-  validateInteractionInput
+  validateInteractionInput,
+  validatePipelineMetadataInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import {
   JobTrackService,
@@ -63,6 +64,7 @@ import { ResumeService } from './services/resume-service.ts';
 import { CompanyService } from './services/company-service.ts';
 import { FollowUpService } from './services/follow-up-service.ts';
 import { ContactService } from './services/contact-service.ts';
+import { PipelineService } from './services/pipeline-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import { parseVietnameseCurrency } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
@@ -108,6 +110,7 @@ export const resumeService = new ResumeService(pool);
 export const companyService = new CompanyService(pool);
 export const followUpService = new FollowUpService(pool);
 export const contactService = new ContactService(pool);
+export const pipelineService = new PipelineService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -532,6 +535,26 @@ app.get('/api/applications/export.csv', auth, async (req, res, next) => {
   }
 });
 
+app.get('/api/applications/stagnant', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const list = await pipelineService.getStagnantApplications(userId);
+    res.json(list);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/pipeline/summary', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const summary = await pipelineService.getPipelineSummary(userId);
+    res.json(summary);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/applications/bulk-status', auth, async (req, res, next) => {
   try {
     const val = validateBulkStatusInput(req.body);
@@ -630,6 +653,23 @@ app.patch('/api/applications/:id', auth, async (req, res, next) => {
     });
 
     res.set('ETag', etag(id, updatedRecord.version)).json(updatedRecord);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/api/applications/:id/pipeline', auth, async (req, res, next) => {
+  try {
+    const val = validatePipelineMetadataInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const userId = (req as SessionRequest).userId;
+    const updated = await pipelineService.updatePipelineMetadata(userId, String(req.params.id), val.data);
+    if (!updated) {
+      throw new Problem(404, 'Không tìm thấy hồ sơ ứng tuyển cần cập nhật tiến độ.', 'not_found');
+    }
+    res.json(updated);
   } catch (error) {
     next(error);
   }
