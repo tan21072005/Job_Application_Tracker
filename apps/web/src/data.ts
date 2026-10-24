@@ -102,7 +102,16 @@ import {
   type StageSlaStatus,
   type PipelineMetadataInput,
   calculateStageSla,
-  validatePipelineMetadataInput
+  validatePipelineMetadataInput,
+  DECISION_DIMENSIONS,
+  type DecisionDimensionKey,
+  type ApplicationScorecardInput,
+  type DecisionMatrixComparison,
+  type EvaluatedOpportunity,
+  type CategoryWinner,
+  DEFAULT_WEIGHT_PROFILE,
+  normalizeWeights,
+  evaluateDecisionMatrix
 } from '@jobtrack/contract';
 
 export type {
@@ -148,7 +157,8 @@ function load(): Application[] {
     ...a,
     priority: a.priority || 'target',
     tags: Array.isArray(a.tags) ? a.tags : [],
-    statusUpdatedAt: a.statusUpdatedAt || a.appliedAt || a.createdAt
+    statusUpdatedAt: a.statusUpdatedAt || a.appliedAt || a.createdAt,
+    scorecard: a.scorecard || {}
   }));
 }
 
@@ -2236,6 +2246,134 @@ export const pipelineRepository = {
       };
     }
     return request<PipelineSummaryDTO>('/pipeline/summary');
+  }
+};
+
+export const decisionRepository = {
+  async getWeights(): Promise<Record<DecisionDimensionKey, number>> {
+    if (demoMode) {
+      if (typeof localStorage === 'undefined') return { ...DEFAULT_WEIGHT_PROFILE };
+      const raw = localStorage.getItem('jobtrack.decision_weights.v1');
+      if (!raw) return { ...DEFAULT_WEIGHT_PROFILE };
+      try {
+        return normalizeWeights(JSON.parse(raw));
+      } catch {
+        return { ...DEFAULT_WEIGHT_PROFILE };
+      }
+    }
+    return request<Record<DecisionDimensionKey, number>>('/decision-matrix/weights');
+  },
+
+  async saveWeights(weights: Record<DecisionDimensionKey, number>): Promise<Record<DecisionDimensionKey, number>> {
+    const normalized = normalizeWeights(weights);
+    if (demoMode) {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('jobtrack.decision_weights.v1', JSON.stringify(normalized));
+      }
+      return normalized;
+    }
+    return request<Record<DecisionDimensionKey, number>>('/decision-matrix/weights', {
+      method: 'PUT',
+      body: JSON.stringify(normalized)
+    });
+  },
+
+  async getScorecard(applicationId: string): Promise<{
+    id: string;
+    company: string;
+    position: string;
+    scorecard: Record<DecisionDimensionKey, number>;
+    notes?: string;
+  }> {
+    if (demoMode) {
+      const apps = load();
+      const app = apps.find(a => a.id === applicationId);
+      if (!app) throw new Error('Không tìm thấy hồ sơ ứng tuyển.');
+      const safeScores: Record<DecisionDimensionKey, number> = {
+        compensation: 5,
+        work_life_balance: 5,
+        career_growth: 5,
+        company_culture: 5,
+        commute_flexibility: 5,
+        leadership_team: 5,
+        tech_stack: 5
+      };
+      if (app.scorecard) {
+        for (const k of DECISION_DIMENSIONS) {
+          if (typeof app.scorecard[k] === 'number') {
+            safeScores[k] = app.scorecard[k];
+          }
+        }
+      }
+      return {
+        id: app.id,
+        company: app.company,
+        position: app.position,
+        scorecard: safeScores
+      };
+    }
+    return request<{
+      id: string;
+      company: string;
+      position: string;
+      scorecard: Record<DecisionDimensionKey, number>;
+      notes?: string;
+    }>(`/applications/${applicationId}/scorecard`);
+  },
+
+  async updateScorecard(applicationId: string, input: ApplicationScorecardInput): Promise<{
+    id: string;
+    company: string;
+    position: string;
+    scorecard: Record<DecisionDimensionKey, number>;
+    notes?: string;
+  }> {
+    if (demoMode) {
+      const apps = load();
+      const idx = apps.findIndex(a => a.id === applicationId);
+      if (idx === -1) throw new Error('Không tìm thấy hồ sơ ứng tuyển.');
+      apps[idx].scorecard = { ...input.scores };
+      store(apps);
+      return {
+        id: apps[idx].id,
+        company: apps[idx].company,
+        position: apps[idx].position,
+        scorecard: input.scores,
+        notes: input.notes
+      };
+    }
+    return request<{
+      id: string;
+      company: string;
+      position: string;
+      scorecard: Record<DecisionDimensionKey, number>;
+      notes?: string;
+    }>(`/applications/${applicationId}/scorecard`, {
+      method: 'PUT',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async getMatrix(applicationIds?: string[]): Promise<DecisionMatrixComparison> {
+    if (demoMode) {
+      const weights = await this.getWeights();
+      const apps = await repository.list();
+      let active = apps.filter(a => !a.deletedAt);
+      if (applicationIds && applicationIds.length > 0) {
+        const idSet = new Set(applicationIds);
+        active = active.filter(a => idSet.has(a.id));
+      }
+      const items = active.map(a => ({
+        id: a.id,
+        company: a.company,
+        position: a.position,
+        status: a.status,
+        scores: a.scorecard || {}
+      }));
+      return evaluateDecisionMatrix(items, weights);
+    }
+    const query = applicationIds && applicationIds.length > 0 ? `?ids=${applicationIds.join(',')}` : '';
+    return request<DecisionMatrixComparison>(`/decision-matrix${query}`);
   }
 };
 

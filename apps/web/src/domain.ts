@@ -3,14 +3,36 @@ import {
   type StageSlaStatus,
   calculateStageSla,
   DEFAULT_STAGE_SLAS,
-  APPLICATION_PRIORITIES
+  APPLICATION_PRIORITIES,
+  DECISION_DIMENSIONS,
+  type DecisionDimensionKey,
+  DIMENSION_METADATA,
+  DEFAULT_WEIGHT_PROFILE,
+  type DecisionMatrixComparison,
+  type EvaluatedOpportunity,
+  type CategoryWinner,
+  type ApplicationScorecardInput,
+  normalizeWeights,
+  calculateCompositeScore,
+  evaluateDecisionMatrix
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
   type StageSlaStatus,
   calculateStageSla,
   DEFAULT_STAGE_SLAS,
-  APPLICATION_PRIORITIES
+  APPLICATION_PRIORITIES,
+  DECISION_DIMENSIONS,
+  type DecisionDimensionKey,
+  DIMENSION_METADATA,
+  DEFAULT_WEIGHT_PROFILE,
+  type DecisionMatrixComparison,
+  type EvaluatedOpportunity,
+  type CategoryWinner,
+  type ApplicationScorecardInput,
+  normalizeWeights,
+  calculateCompositeScore,
+  evaluateDecisionMatrix
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {
@@ -31,8 +53,8 @@ export const statuses = ['Saved', 'Applied', 'Screening', 'Interview', 'Offer', 
 export type Status = typeof statuses[number];
 export const labels: Record<Status, string> = {Saved:'Đã lưu',Applied:'Đã nộp',Screening:'Sàng lọc',Interview:'Phỏng vấn',Offer:'Offer',Rejected:'Từ chối',Withdrawn:'Đã rút'};
 export type Interview = {id:string;title:string;at:string;timezone:string;format:string;location:string;preparation:string;notes:string;status:'Scheduled'|'Completed'|'Cancelled'};
-export type Application = {id:string;version?:number;company:string;position:string;url:string;source:string;jobCode:string;location:string;workMode:string;appliedAt:string;salary:string;notes:string;nextAction:string;deadline:string;status:Status;createdAt:string;interviews:Interview[];deletedAt?:string|null;priority?:ApplicationPriority;tags?:string[];statusUpdatedAt?:string};
-export type Draft = Omit<Application,'id'|'createdAt'|'interviews'|'deletedAt'>;
+export type Application = {id:string;version?:number;company:string;position:string;url:string;source:string;jobCode:string;location:string;workMode:string;appliedAt:string;salary:string;notes:string;nextAction:string;deadline:string;status:Status;createdAt:string;interviews:Interview[];deletedAt?:string|null;priority?:ApplicationPriority;tags?:string[];statusUpdatedAt?:string;scorecard?:Record<string, number>};
+export type Draft = Omit<Application,'id'|'createdAt'|'interviews'|'deletedAt'|'scorecard'>;
 export const emptyDraft: Draft = {company:'',position:'',url:'',source:'',jobCode:'',location:'',workMode:'',appliedAt:'',salary:'',notes:'',nextAction:'',deadline:'',status:'Saved'};
 export function metrics(apps:Application[], now=Date.now()) {
  const responses=apps.filter(a=>['Screening','Interview','Offer','Rejected'].includes(a.status)).length;

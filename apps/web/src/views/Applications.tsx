@@ -12,7 +12,8 @@ import {
   AlertTriangle,
   Tag,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Scale
 } from 'lucide-react';
 import {
   filtered,
@@ -65,6 +66,7 @@ export default function Applications({
   onOpen,
   onAdd,
   onImport,
+  onDecisionMatrix,
   onRefresh,
   notify
 }: {
@@ -74,6 +76,7 @@ export default function Applications({
   onOpen: (app: Application) => void;
   onAdd: () => void;
   onImport?: () => void;
+  onDecisionMatrix?: () => void;
   onRefresh?: () => Promise<void> | void;
   notify?: (message: string, isError?: boolean) => void;
 }) {
@@ -235,6 +238,17 @@ export default function Applications({
             <FileSpreadsheet size={18} />
             <span>Xuất CSV</span>
           </Button>
+          {onDecisionMatrix && (
+            <Button
+              kind="secondary"
+              className="decision-matrix-btn"
+              aria-label="So sánh cơ hội"
+              onClick={onDecisionMatrix}
+            >
+              <Scale size={18} />
+              <span>So sánh cơ hội</span>
+            </Button>
+          )}
           {onImport && (
             <Button kind="secondary" aria-label="Nhập từ link" onClick={onImport}>
               <Globe size={18} />

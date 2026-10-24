@@ -46,6 +46,21 @@ const demoTags: string[][] = [
   ['junior']
 ];
 
+const demoScorecards: Record<string, number>[] = [
+  { compensation: 8, work_life_balance: 7, career_growth: 8, company_culture: 8, commute_flexibility: 7, leadership_team: 7, tech_stack: 8 },
+  { compensation: 9, work_life_balance: 6, career_growth: 9, company_culture: 8, commute_flexibility: 8, leadership_team: 8, tech_stack: 9 },
+  { compensation: 10, work_life_balance: 5, career_growth: 9, company_culture: 7, commute_flexibility: 6, leadership_team: 8, tech_stack: 9 },
+  { compensation: 8, work_life_balance: 8, career_growth: 7, company_culture: 8, commute_flexibility: 9, leadership_team: 7, tech_stack: 8 },
+  { compensation: 9, work_life_balance: 7, career_growth: 9, company_culture: 8, commute_flexibility: 8, leadership_team: 9, tech_stack: 9 },
+  { compensation: 7, work_life_balance: 8, career_growth: 6, company_culture: 7, commute_flexibility: 8, leadership_team: 6, tech_stack: 7 },
+  { compensation: 7, work_life_balance: 9, career_growth: 6, company_culture: 8, commute_flexibility: 9, leadership_team: 7, tech_stack: 7 },
+  { compensation: 8, work_life_balance: 6, career_growth: 8, company_culture: 7, commute_flexibility: 7, leadership_team: 8, tech_stack: 8 },
+  { compensation: 9, work_life_balance: 5, career_growth: 9, company_culture: 6, commute_flexibility: 10, leadership_team: 7, tech_stack: 9 },
+  { compensation: 8, work_life_balance: 7, career_growth: 8, company_culture: 8, commute_flexibility: 8, leadership_team: 8, tech_stack: 8 },
+  { compensation: 7, work_life_balance: 6, career_growth: 7, company_culture: 7, commute_flexibility: 6, leadership_team: 6, tech_stack: 7 },
+  { compensation: 6, work_life_balance: 7, career_growth: 8, company_culture: 7, commute_flexibility: 7, leadership_team: 6, tech_stack: 6 }
+];
+
 export function fixture(): Application[] {
   const now = new Date();
   function day(offset: number, hour = 10, minute = 0) {
@@ -59,7 +74,7 @@ export function fixture(): Application[] {
     ...emptyDraft, id: `demo-${index}`, company: row[0], position: row[1], status: row[2] as Status,
     location: row[3], nextAction: row[4], source: row[5], jobCode: row[6], workMode: index % 2 ? 'Hybrid' : 'On-site',
     url: `https://example.com/jobs/${row[6]}`, appliedAt: row[2] === 'Saved' ? '' : local(day(-2 - index % 6)).slice(0, 10),
-    createdAt: day(-index).toISOString(), priority: demoPriorities[index] || 'target', tags: demoTags[index] || [], statusUpdatedAt: (index === 1 ? day(-18) : index === 2 ? day(-12) : day(-index)).toISOString(), salary: index === 0 ? '20–25 triệu/tháng' : '',
+    createdAt: day(-index).toISOString(), priority: demoPriorities[index] || 'target', tags: demoTags[index] || [], statusUpdatedAt: (index === 1 ? day(-18) : index === 2 ? day(-12) : day(-index)).toISOString(), scorecard: demoScorecards[index] || { compensation: 7, work_life_balance: 7, career_growth: 7, company_culture: 7, commute_flexibility: 7, leadership_team: 7, tech_stack: 7 }, salary: index === 0 ? '20–25 triệu/tháng' : '',
     notes: index === 0 ? 'Ôn React hooks và TypeScript. Chuẩn bị một ví dụ tối ưu hiệu năng từ dự án cá nhân.' : '',
     deadline: row[4] ? local(day(index === 0 ? 0 : 2 + index % 3, 18)) : '',
     interviews: index === 0 ? [
