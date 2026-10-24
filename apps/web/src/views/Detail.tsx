@@ -4,6 +4,7 @@ import { Button, Empty, Monogram, StatusBadge } from '../components/ui';
 import { interviewLabels } from '../components/forms';
 import { Deadline } from './Dashboard';
 import AiAssistantPanel from '../components/AiAssistantPanel';
+import ActivityTimeline from '../components/ActivityTimeline';
 
 export default function Detail({
   app,
@@ -155,6 +156,7 @@ export default function Detail({
               </div>
               <p>{app.notes || 'Chưa có ghi chú. Lưu những điều bạn muốn nhớ về cơ hội này.'}</p>
             </section>
+            <ActivityTimeline app={app} />
           </div>
           <aside className="detail-aside">
             <section className="next-action-panel">

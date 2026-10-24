@@ -1,6 +1,6 @@
 import { request, ApiError } from './transport';
 import { validApplications } from './validation';
-import { emptyDraft, resolveLocalTime, deviceTimezone, type Application, type Draft, type Interview } from './domain';
+import { emptyDraft, resolveLocalTime, deviceTimezone, type Application, type Draft, type Interview, type Status } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
   wireApplicationToUI,
@@ -24,7 +24,11 @@ import {
   type InterviewFormat,
   type IcsCalendarEvent,
   generateIcsCalendar,
-  formatAsCsv
+  formatAsCsv,
+  formatApplicationsAsCsv,
+  deriveActivityTimeline,
+  type ActivityTimelineItemDTO,
+  type BulkOperationResultDTO
 } from '@jobtrack/contract';
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
@@ -239,6 +243,61 @@ export const repository = {
         app.id === applicationId ? { ...app, interviews: app.interviews.filter(round => round.id !== id) } : app
       )
     );
+  },
+
+  async bulkUpdateStatus(ids: string[], status: Status): Promise<BulkOperationResultDTO> {
+    if (demoMode) {
+      const all = load();
+      const idSet = new Set(ids);
+      let count = 0;
+      const updated = all.map(a => {
+        if (idSet.has(a.id)) {
+          count++;
+          return { ...a, status, updatedAt: new Date().toISOString() };
+        }
+        return a;
+      });
+      store(updated);
+      return { affectedCount: count, ids };
+    }
+    return request<BulkOperationResultDTO>('/applications/bulk-status', {
+      method: 'POST',
+      body: JSON.stringify({ ids, status })
+    });
+  },
+
+  async bulkMoveToTrash(ids: string[]): Promise<BulkOperationResultDTO> {
+    if (demoMode) {
+      const all = load();
+      const trash = loadTrash();
+      const idSet = new Set(ids);
+      const remaining: Application[] = [];
+      const moving: Application[] = [];
+      for (const a of all) {
+        if (idSet.has(a.id)) {
+          moving.push({ ...a, deletedAt: new Date().toISOString() });
+        } else {
+          remaining.push(a);
+        }
+      }
+      store(remaining);
+      storeTrash([...trash, ...moving]);
+      return { affectedCount: moving.length, ids: moving.map(m => m.id) };
+    }
+    return request<BulkOperationResultDTO>('/applications/bulk-trash', {
+      method: 'POST',
+      body: JSON.stringify({ ids })
+    });
+  },
+
+  async getTimeline(appId: string): Promise<ActivityTimelineItemDTO[]> {
+    if (demoMode) {
+      const all = load();
+      const app = all.find(a => a.id === appId);
+      if (!app) return [];
+      return deriveActivityTimeline(app);
+    }
+    return request<ActivityTimelineItemDTO[]>(`/applications/${encodeURIComponent(appId)}/timeline`);
   },
 
   async reset() {
@@ -737,6 +796,19 @@ export const interviewsRepository = {
     return res.text();
   }
 };
+
+export function downloadApplicationsCsv(apps: Application[], filename = 'jobtrack-applications.csv'): void {
+  const csv = formatApplicationsAsCsv(apps);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 
 

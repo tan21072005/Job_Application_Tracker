@@ -59,8 +59,32 @@ export function Deadline({ value, now }: { value: string; now?: number }) {
   return <span className={`deadline ${overdue ? 'deadline-overdue' : today ? 'deadline-today' : ''}`}><Clock3 size={13} />{overdue ? 'Quá hạn · ' : today ? 'Hôm nay · ' : ''}{today ? time : formatDate(value)}</span>;
 }
 
-export function ApplicationRow({ app, onOpen, now }: { app: Application; onOpen: (app: Application) => void; now?: number }) {
-  return <div className="application-row">
+export function ApplicationRow({
+  app,
+  onOpen,
+  now,
+  selectable = false,
+  selected = false,
+  onToggleSelect
+}: {
+  app: Application;
+  onOpen: (app: Application) => void;
+  now?: number;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+}) {
+  return <div className={`application-row ${selectable ? 'has-checkbox' : ''} ${selected ? 'row-selected' : ''}`}>
+    {selectable && (
+      <label className="row-checkbox-label" onClick={e => e.stopPropagation()}>
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onToggleSelect?.()}
+          aria-label={`Chọn hồ sơ ${app.position} tại ${app.company}`}
+        />
+      </label>
+    )}
     <Monogram company={app.company} />
     <button className="application-name" onClick={() => onOpen(app)}><strong>{app.position}</strong><span>{app.company}{app.location ? ` · ${app.location}` : ''}</span></button>
     <StatusBadge status={app.status} />
