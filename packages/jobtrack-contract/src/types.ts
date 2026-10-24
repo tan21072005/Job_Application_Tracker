@@ -353,3 +353,9 @@ export interface CrawlRunResultDTO {
     status: 'saved' | 'duplicate_url' | 'duplicate_identity';
   }>;
 }
+
+export interface InterviewAgendaItemDTO extends InterviewWireDTO {
+  company: string;
+  position: string;
+  applicationStatus: ApplicationStatus;
+}

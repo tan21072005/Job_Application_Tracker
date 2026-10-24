@@ -29,7 +29,9 @@ import {
   type CoverLetterResultDTO,
   type JobSubscriptionDTO,
   type CrawlRunResultDTO,
-  validateCandidateProfileInput
+  validateCandidateProfileInput,
+  generateIcsCalendar,
+  escapeIcsText
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -509,3 +511,42 @@ test('contract: job subscription and crawl run DTO structures match contract req
   assert.equal(crawl.saved, 2);
   assert.equal(crawl.items.length, 3);
 });
+
+test('contract: generateIcsCalendar generates compliant RFC 5545 calendar text', () => {
+  const events = [
+    {
+      id: 'round-1',
+      title: 'Phỏng vấn Kỹ thuật (Technical)',
+      company: 'FPT Software',
+      position: 'Senior React Engineer',
+      at: '2026-10-25T09:00:00.000Z',
+      timezone: 'Asia/Ho_Chi_Minh',
+      format: 'Online',
+      location: 'https://meet.google.com/abc-defg-hij',
+      notes: 'Chuẩn bị live coding thuật toán, kiến trúc React và Node.js',
+      durationMinutes: 60
+    }
+  ];
+
+  const ics = generateIcsCalendar(events);
+  assert.ok(ics.startsWith('BEGIN:VCALENDAR\r\n'));
+  assert.ok(ics.includes('VERSION:2.0\r\n'));
+  assert.ok(ics.includes('PRODID:-//JobTrack//Interview Calendar//VI\r\n'));
+  assert.ok(ics.includes('BEGIN:VEVENT\r\n'));
+  assert.ok(ics.includes('UID:jt-interview-round-1@jobtrack.local\r\n'));
+  assert.ok(ics.includes('DTSTART:20261025T090000Z\r\n'));
+  assert.ok(ics.includes('DTEND:20261025T100000Z\r\n'));
+  assert.ok(ics.includes('SUMMARY:[Phỏng vấn] Phỏng vấn Kỹ thuật (Technical) - FPT Software (Senior React Engineer)\r\n'));
+  assert.ok(ics.includes('LOCATION:https://meet.google.com/abc-defg-hij\r\n'));
+  assert.ok(ics.includes('DESCRIPTION:'));
+  assert.ok(ics.includes('STATUS:CONFIRMED\r\n'));
+  assert.ok(ics.includes('END:VEVENT\r\n'));
+  assert.ok(ics.endsWith('END:VCALENDAR\r\n'));
+});
+
+test('contract: escapeIcsText properly escapes RFC 5545 special delimiters', () => {
+  const raw = 'Dòng 1\nDòng 2; có dấu chấm phẩy, phẩy và gạch chéo \\';
+  const escaped = escapeIcsText(raw);
+  assert.ok(escaped.includes('Dòng 1\\nDòng 2\\; có dấu chấm phẩy\\, phẩy và gạch chéo \\\\'));
+});
+
