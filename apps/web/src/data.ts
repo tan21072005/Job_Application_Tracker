@@ -53,7 +53,13 @@ import {
   type ProOrderDTO,
   type ProPlanDTO,
   type ProStatusDTO,
-  type CheckoutResultDTO
+  type CheckoutResultDTO,
+  type AnalyticsSummaryDTO,
+  type ApplicationGoalDTO,
+  type ApplicationGoalInput,
+  type AnalyticsTimeframe,
+  calculateAnalyticsSummary,
+  calculateGoalProgress
 } from '@jobtrack/contract';
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
@@ -1241,6 +1247,69 @@ export const proRepository = {
     return request<{ success: boolean; replayed?: boolean; orderId: string; plan: ProPlan }>('/pro/test/simulate-webhook', {
       method: 'POST',
       body: JSON.stringify({ orderId })
+    });
+  }
+};
+
+const GOALS_STORAGE_KEY = 'jobtrack.analytics.goals.v1';
+
+export const analyticsRepository = {
+  async getSummary(timeframe: AnalyticsTimeframe = 'all'): Promise<AnalyticsSummaryDTO> {
+    if (demoMode) {
+      const apps = load();
+      let goalsInput: ApplicationGoalInput = {};
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem(GOALS_STORAGE_KEY);
+        if (stored) {
+          try {
+            goalsInput = JSON.parse(stored);
+          } catch {}
+        }
+      }
+      const adapted = apps.map(a => ({
+        id: a.id,
+        company: a.company,
+        position: a.position,
+        source: a.source || null,
+        status: a.status,
+        appliedAt: a.appliedAt || null,
+        createdAt: a.createdAt,
+        updatedAt: a.createdAt,
+        interviews: a.interviews
+      }));
+      return calculateAnalyticsSummary(adapted, goalsInput, { timeframe });
+    }
+    const query = timeframe !== 'all' ? `?timeframe=${encodeURIComponent(timeframe)}` : '';
+    return request<AnalyticsSummaryDTO>(`/analytics/summary${query}`);
+  },
+
+  async getGoals(): Promise<ApplicationGoalDTO> {
+    if (demoMode) {
+      const apps = load();
+      let goalsInput: ApplicationGoalInput = {};
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem(GOALS_STORAGE_KEY);
+        if (stored) {
+          try {
+            goalsInput = JSON.parse(stored);
+          } catch {}
+        }
+      }
+      return calculateGoalProgress(apps, goalsInput);
+    }
+    return request<ApplicationGoalDTO>('/analytics/goals');
+  },
+
+  async updateGoals(input: ApplicationGoalInput): Promise<ApplicationGoalDTO> {
+    if (demoMode) {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(input));
+      }
+      return this.getGoals();
+    }
+    return request<ApplicationGoalDTO>('/analytics/goals', {
+      method: 'PUT',
+      body: JSON.stringify(input)
     });
   }
 };

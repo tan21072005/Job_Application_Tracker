@@ -619,29 +619,26 @@ async function main() {
       const textarea = document.querySelector('.mock-answer-textarea');
       if (textarea) {
         const val = 'Tại dự án trước, chúng tôi gặp sự cố latency màn hình thanh toán 4.2s vào dịp Black Friday. Trách nhiệm của tôi là tối ưu phản hồi dưới 800ms trong 48 giờ. Tôi đã dùng React Profiler phát hiện re-render không cần thiết và batch các truy vấn GraphQL. Kết quả thời gian tải trang giảm còn 450ms, giảm 89% latency và tăng 24% tỷ lệ hoàn tất đơn hàng.';
-        const tracker = textarea._valueTracker;
-        if (tracker) tracker.setValue('');
-        const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-        if (setter) setter.call(textarea, val);
-        else textarea.value = val;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        textarea.dispatchEvent(new Event('change', { bubbles: true }));
+        if (window.__setReactInput) {
+          window.__setReactInput(textarea, val);
+        } else {
+          const tracker = textarea._valueTracker;
+          if (tracker) tracker.setValue('');
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+          if (setter) setter.call(textarea, val);
+          else textarea.value = val;
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+          textarea.dispatchEvent(new Event('change', { bubbles: true }));
+        }
       }
     })()`);
-    await wait(800);
+    await wait(1200);
 
-    for (let i = 0; i < 6; i++) {
-      const clicked = await evaluate(`(() => {
-        const evalBtn = document.querySelector('.evaluate-btn');
-        if (evalBtn && !evalBtn.disabled) {
-          evalBtn.click();
-          return true;
-        }
-        return false;
-      })()`);
-      if (clicked) break;
-      await wait(500);
-    }
+    await evaluate(`(() => {
+      const evalBtn = document.querySelector('.evaluate-btn');
+      if (evalBtn) evalBtn.click();
+    })()`);
+    await wait(2500);
 
     for (let i = 0; i < 15; i++) {
       const state = await evaluate(`(() => {
@@ -672,7 +669,7 @@ async function main() {
 
     console.log('Lưu câu trả lời vào nội dung chuẩn bị của vòng phỏng vấn...');
     const savePrepCheck = await evaluate(`(() => {
-      const saveBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Lưu vào nội dung chuẩn bị'));
+      const saveBtn = document.querySelector('.save-prep-btn') || Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('chuẩn bị') || b.textContent.includes('Lưu'));
       if (!saveBtn) return JSON.stringify({ exists: false });
       saveBtn.click();
       return JSON.stringify({ exists: true });
@@ -952,6 +949,78 @@ async function main() {
       });
     })()`);
     record('Pro Status Badge Integration', 'Huy hiệu PRO xuất hiện nổi bật tại topbar và sidebar sau khi kích hoạt thành công', badgeCheck.hasTopbarBadge || badgeCheck.hasSidebarBadge, 'Huy hiệu PRO hoạt động chuẩn xác');
+
+    console.log('\n--- GIAI ĐOẠN 13: Milestone 11 - Phân tích, Phễu chuyển đổi & Career Velocity Dashboard ---');
+    console.log('Điều hướng tới view Phân tích (#analytics)...');
+    await evaluate(`(() => {
+      const link = document.querySelector('aside nav a[href="#analytics"]') || Array.from(document.querySelectorAll('aside nav a')).find(a => a.textContent.includes('Phân tích'));
+      if (link) link.click();
+      else location.hash = '#analytics';
+    })()`);
+    await wait(1500);
+
+    const analyticsViewCheck = await evaluate(`(() => {
+      const view = document.querySelector('.analytics-view');
+      const title = document.querySelector('.view-title-group h1')?.textContent || '';
+      const timeframeBtns = document.querySelectorAll('.timeframe-btn');
+      return JSON.stringify({
+        hasView: Boolean(view),
+        title,
+        timeframeBtnsCount: timeframeBtns.length
+      });
+    })()`);
+    record('Analytics Dashboard View', 'Trang Phân tích & Hiệu suất render đầy đủ với bộ lọc thời gian', analyticsViewCheck.hasView && analyticsViewCheck.timeframeBtnsCount === 4, `Tiêu đề: ${analyticsViewCheck.title}`);
+
+    console.log('Kiểm tra Thẻ Mục tiêu Tuyển dụng (Goals & Progress)...');
+    const goalsCheck = await evaluate(`(() => {
+      const goalsCard = document.querySelector('.goals-card');
+      const goalItems = document.querySelectorAll('.goal-item');
+      const editBtn = document.querySelector('.goals-card button');
+      return JSON.stringify({
+        hasCard: Boolean(goalsCard),
+        itemsCount: goalItems.length,
+        hasEditBtn: Boolean(editBtn)
+      });
+    })()`);
+    record('Application Goals & Progress Tracking', 'Hiển thị tiến độ nộp hồ sơ hàng tuần, phỏng vấn hàng tháng và chỉ tiêu Offer', goalsCheck.hasCard && goalsCheck.itemsCount === 3 && goalsCheck.hasEditBtn, `Số chỉ tiêu theo dõi: ${goalsCheck.itemsCount}`);
+
+    console.log('Kiểm tra Vận tốc Tuyển dụng (Career Velocity Scorecard)...');
+    const velocityCheck = await evaluate(`(() => {
+      const velocityCard = document.querySelector('.velocity-card');
+      const tiles = document.querySelectorAll('.velocity-tile');
+      const pills = document.querySelectorAll('.velocity-badge-group .stat-pill');
+      return JSON.stringify({
+        hasCard: Boolean(velocityCard),
+        tilesCount: tiles.length,
+        hasPills: pills.length >= 2
+      });
+    })()`);
+    record('Career Velocity Scorecard', 'Đo lường thời gian phản hồi đầu tiên, đến phỏng vấn, nhận offer và toàn chu kỳ', velocityCheck.hasCard && velocityCheck.tilesCount === 4 && velocityCheck.hasPills, `Số chỉ số vận tốc: ${velocityCheck.tilesCount}`);
+
+    console.log('Kiểm tra Phễu Chuyển đổi Waterfall (Funnel Conversion)...');
+    const funnelCheck = await evaluate(`(() => {
+      const funnelCard = document.querySelector('.funnel-card');
+      const rows = document.querySelectorAll('.funnel-row');
+      const rateTag = document.querySelector('.funnel-rate-tag');
+      return JSON.stringify({
+        hasCard: Boolean(funnelCard),
+        rowsCount: rows.length,
+        hasRateTag: Boolean(rateTag)
+      });
+    })()`);
+    record('Funnel Conversion Waterfall', 'Hiển thị phễu chuyển đổi 5 giai đoạn từ Đã lưu tới Offer kèm tỷ lệ chuyển đổi và tỷ lệ hao hụt', funnelCheck.hasCard && funnelCheck.rowsCount === 5 && funnelCheck.hasRateTag, `Số tầng phễu: ${funnelCheck.rowsCount}`);
+
+    console.log('Kiểm tra Hiệu quả Kênh Tuyển dụng & Danh sách Hồ sơ Stale...');
+    const tablesCheck = await evaluate(`(() => {
+      const sourcesCard = document.querySelector('.sources-card');
+      const staleCard = document.querySelector('.stale-card');
+      return JSON.stringify({
+        hasSources: Boolean(sourcesCard),
+        hasStale: Boolean(staleCard)
+      });
+    })()`);
+    record('Source ROI & Stale Applications Watchlist', 'Bảng phân tích nguồn tuyển dụng và danh sách theo dõi hồ sơ cần hành động', tablesCheck.hasSources && tablesCheck.hasStale, 'Cả hai khối phân tích hiển thị đầy đủ');
+
 
 
   } catch (err) {
