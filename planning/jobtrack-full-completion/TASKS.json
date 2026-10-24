@@ -1,0 +1,1305 @@
+{
+  "schemaVersion": 1,
+  "generatedOn": "2026-10-21",
+  "workspace": "D:\\Project\\Job_Application_Tracker",
+  "baselineCommit": "30db3fd",
+  "purpose": "Release completion planning; not an instruction to execute all tasks immediately.",
+  "statusMeaning": "planned means acceptance still to verify/close; implementation may already exist.",
+  "controllerCompatibility": "Planning metadata only. Derive individual controller task JSON using its actual schema and approved checks; never submit this registry directly.",
+  "releaseAcceptanceFile": "SCOPE-ACCEPTANCE.md",
+  "globalRules": {
+    "maxConcurrentWorkers": 3,
+    "wipPerLane": 1,
+    "coderAttempts": 3,
+    "sameFailureStopAfter": 2,
+    "defaultBranchPrefix": "codex/",
+    "liveDispatchRequires": "C01 accepted; no unrestricted fallback",
+    "automaticPush": false,
+    "automaticIntegration": false
+  },
+  "tasks": [
+    {
+      "id": "C00",
+      "title": "Khóa baseline và inventory toàn dự án",
+      "status": "planned",
+      "priority": "P0",
+      "dependencies": [],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A01",
+        "A20",
+        "A22"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Đối chiếu master/oldplans với routes, tools, UI actions, migrations và tests; lập function inventory và screen33 coverage.",
+        "Chụp Git/base/worktree/tool versions, phân loại evidence cũ; xác minh quy trình DB fixture mà không ghi DB chính.",
+        "Chốt scope và ngưỡng eval/performance trước triển khai."
+      ],
+      "acceptance": [
+        "Mỗi chức năng hiện có được map source→test→acceptance và có trạng thái thực.",
+        "Mâu thuẫn về enums/SDK/SSE/nativechat/passcounts được đánh dấu; không gọi historicalpass là fresh.",
+        "Danh sách paths và dependencies đủ tách task, không có secrets trong snapshot."
+      ],
+      "verification": [
+        "Read-only Git/source/configexample checks; chưa chạy test có thể ghi DB.",
+        "Review độc lập inventory và safety preflight."
+      ],
+      "deliverables": [
+        "FUNCTION-INVENTORY.md",
+        "SCREEN-COVERAGE-33.md",
+        "BASELINE-EVIDENCE.md"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C00: Khóa baseline và inventory toàn dự án theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C01",
+      "title": "Khôi phục sandbox và nghiệm thu điều phối live",
+      "status": "planned",
+      "priority": "P0",
+      "dependencies": [
+        "C00"
+      ],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A21"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Tái hiện setuprefresh probe bằng fixture; điều tra hỗ trợ môi trường, tài nguyên và quyền đúng phạm vi.",
+        "Chạy canary đọc/ghi/network/timeout với dữ liệu giả và identity tách biệt nếu cần.",
+        "Kiểm một worker read-only → proposal→check → review → commit trên disposable feature, không chạy task sản phẩm."
+      ],
+      "acceptance": [
+        "Không còn lỗi sandbox probe trước dispatch.",
+        "Worker không ghi sibling/control/Git; đọc ngoài/egress đúng policy được công bố, không tuyên bố tuyệt đối nếu chưa enforce.",
+        "Timeout bất định giữ lease, tối đa 3/cùng lỗi 2 lần/reviewdigest đúng; không unrestrictedfallback."
+      ],
+      "verification": [
+        "rtk npm run agents:test",
+        "Doctor/canary fixture và live smoke có log đã redact; nếu cần provider phải có ngân sách/runtime được giao."
+      ],
+      "deliverables": [
+        "SANDBOX-CANARY.md",
+        "LIVE-AGENT-EVIDENCE.md"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C01: Khôi phục sandbox và nghiệm thu điều phối live theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C02",
+      "title": "Chuẩn hóa contracts cho auth/AI/mutations",
+      "status": "planned",
+      "priority": "P0",
+      "dependencies": [
+        "C00"
+      ],
+      "lanes": [
+        "contracts",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A03",
+        "A15",
+        "A17"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Thiết kế DTO/error/scopes/idempotency/version/receipt/run/conversation bằng ADR.",
+        "Bổ sung contract schema/tests tương thích dữ liệu cũ, migration cần thiết là maintainer workitem riêng.",
+        "Tích hợp contracts trước API/web/MCP consumers."
+      ],
+      "acceptance": [
+        "Schema thuần không kéo React/runtime backend ngoài ý muốn.",
+        "Omitted/null, canonicalhash, scope và lỗi retry/conflict có test.",
+        "Upgrade không phá applications/interviews/profile/datasets cũ."
+      ],
+      "verification": [
+        "rtk npm run check:contract",
+        "Review migration plan và compatibility fixtures; migrate chỉ sau preflight DB riêng."
+      ],
+      "deliverables": [
+        "ADR-CONTRACTS-AI.md",
+        "contract commit",
+        "migration plan nếu cần"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C02: Chuẩn hóa contracts cho auth/AI/mutations theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách contracts/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C03",
+      "title": "Đóng auth/CSRF và thống nhất quyền",
+      "status": "planned",
+      "priority": "P0",
+      "dependencies": [
+        "C02"
+      ],
+      "lanes": [
+        "api"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A04",
+        "A08",
+        "A09",
+        "A14",
+        "A15"
+      ],
+      "dispatchGate": "Live dispatch requires C01 accepted and integrated dependencies.",
+      "steps": [
+        "Regression invalidBearer+cookie+foreignOrigin và bearer/cookie priority.",
+        "Áp dụng ownership/scopes trên toàn routeinventory, auth revoke/expiry và extension pairing.",
+        "Kiểm logout/userchange/sessioncache; không bypassOrigin bằng header chưa xác thực."
+      ],
+      "acceptance": [
+        "InvalidBearer bị từ chối thay vì downgrade; validcookie vẫn qua CSRFđúng.",
+        "Crossuser read/write bị chặn trên applications/profile/datasets/Pro/AI/MCP.",
+        "Scopefull control tuân quyền user; tokenrevoked không thao tác được."
+      ],
+      "verification": [
+        "API auth negative tests trên fixture DB riêng sau preflight.",
+        "rtk npm run build:api"
+      ],
+      "deliverables": [
+        "auth regression tests",
+        "endpoint permission matrix",
+        "feature commit"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C03: Đóng auth/CSRF và thống nhất quyền theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C04",
+      "title": "Mutation atomically, idempotency và audit bền vững",
+      "status": "planned",
+      "priority": "P0",
+      "dependencies": [
+        "C02",
+        "C03"
+      ],
+      "lanes": [
+        "api",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A03",
+        "A04",
+        "A14",
+        "A15",
+        "A17"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Thiết kế operationledger/uniquekey/receipt với canonicalpayload và owner.",
+        "Gộp domainmutation+receipt trong transaction, rollback khi audit bắtbuộc fail.",
+        "Yêu cầu expectedVersion đúng semantics, tool và web dùng cùng services."
+      ],
+      "acceptance": [
+        "Retry/replay đồng thời tạo đúng một kết quả; payload khác cùng key trả conflict.",
+        "Audit lỗi không bị nuốt sau khi mutation đã commit; không mất cập nhật.",
+        "Purge/restore/bulkstatus kiểm owner và privilegedconditions tương đươngUI."
+      ],
+      "verification": [
+        "ConcurrentAPI tests trên DB fixture; faultinjection receiptfailure.",
+        "rtk npm run build:api"
+      ],
+      "deliverables": [
+        "ADR-MUTATION-LEDGER.md",
+        "transaction/replay evidence",
+        "feature commit"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C04: Mutation atomically, idempotency và audit bền vững theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C05",
+      "title": "Hoàn thiện applications, lifecycle và import/export",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C04"
+      ],
+      "lanes": [
+        "api",
+        "web"
+      ],
+      "acceptanceIds": [
+        "A03",
+        "A04",
+        "A07"
+      ],
+      "dispatchGate": "Live dispatch requires C01 accepted and integrated dependencies.",
+      "steps": [
+        "Audit CRUD/search/filter/sort/pagination/drafts/statushistory và duplicate/reapply.",
+        "Sửa phần thiếu API trước, tách webconsumerworkitem sau integration.",
+        "Hoàn thiện CSVpreview/roundtrip/errors/formulaescaping và trash/restore conflicts."
+      ],
+      "acceptance": [
+        "Tạo/sửa/xóa/restore/reapply và retry/concurrency không mất dữ liệu.",
+        "Drafttách user;409/412/422 có hành động phục hồi và fieldfocus.",
+        "Unicode/status/date và ownership CSV đúng; không có placeholderactions."
+      ],
+      "verification": [
+        "Contract/APItests DB fixture, webtests và buildweb cho pathsthựcđổi.",
+        "Browser acceptance A03/A04/A07 ở C21."
+      ],
+      "deliverables": [
+        "lifecycle gap fixes",
+        "CSV fixtures",
+        "API và web commits riêng"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C05: Hoàn thiện applications, lifecycle và import/export theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/web thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C06",
+      "title": "Lịch, deadline, việc cần làm và dashboard",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C05"
+      ],
+      "lanes": [
+        "api",
+        "web"
+      ],
+      "acceptanceIds": [
+        "A05",
+        "A06"
+      ],
+      "dispatchGate": "Live dispatch requires C01 accepted and integrated dependencies.",
+      "steps": [
+        "Kiểm calendar/interview CRUD/partialPATCH/timezone/DST và applicationcascade.",
+        "Sửa queries today/upcoming/overdue theo thời gian/trạng thái thật.",
+        "Đồng bộ dashboard/mobilequickactions và clocktick."
+      ],
+      "acceptance": [
+        "Cancelled/completed không xuất hiện sai trongupcoming; deadline đúng timezone.",
+        "Status-only/reschedule-only không xóa trường omitted; clock/dateboundary đúng.",
+        "Empty/overdue dưới20hồsơ rõ hành động và counters khớp."
+      ],
+      "verification": [
+        "API boundary/timezone tests + web behavior tests.",
+        "Browser clockfixture và desktop/mobile smoke."
+      ],
+      "deliverables": [
+        "calendar/dashboard evidence",
+        "feature commits riêng"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C06: Lịch, deadline, việc cần làm và dashboard theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/web thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C07",
+      "title": "Candidate profile xuyên web/API/extension",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C03",
+        "C02"
+      ],
+      "lanes": [
+        "api",
+        "web",
+        "extension"
+      ],
+      "acceptanceIds": [
+        "A08"
+      ],
+      "dispatchGate": "Live dispatch requires C01 accepted and integrated dependencies.",
+      "steps": [
+        "Audit kiểu trường profile/maxlength/null/skills/email/phone và versioning.",
+        "SửaAPIvalidation rồi formweb và extensionconsume theo taskriêng.",
+        "Thiết kế emptyprofile cho ATS/letter không tự thêmfacts."
+      ],
+      "acceptance": [
+        "Malformedtypes trả422 không500; userkhác không truy  cập.",
+        "Concurrentupdate không silentlyoverwrite; lưu và đọc lại thốngnhất3kênh.",
+        "Thiếuprofile hiển thị rõ không bịa dữ liệu."
+      ],
+      "verification": [
+        "API profile negative/concurrency fixtures và web/extension tests.",
+        "rtk npm run build:api"
+      ],
+      "deliverables": [
+        "profile contract/evidence",
+        "per-lane commits"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C07: Candidate profile xuyên web/API/extension theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/web/extension thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C08",
+      "title": "Datasets và dữ liệu trích từ trang web",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C04",
+        "C07"
+      ],
+      "lanes": [
+        "api",
+        "web",
+        "extension"
+      ],
+      "acceptanceIds": [
+        "A09",
+        "A07"
+      ],
+      "dispatchGate": "Live dispatch requires C01 accepted and integrated dependencies.",
+      "steps": [
+        "Kiểm dataset/record/schema CRUD và pagination.",
+        "Áp dụng validation/dunglượng/quotaatomic/owner; sanitize display và CSV.",
+        "Đóngverticalslice extensioncapture→API→webdetail/export."
+      ],
+      "acceptance": [
+        "Khôngghiđọc chéo owner; recordsJSONB có giới hạn vàerrorrõ.",
+        "Quota không vượt khi concurrent; CSV/UI không execute celluntrusted.",
+        "Save/edit/delete/export hoạtđộng reload được."
+      ],
+      "verification": [
+        "DatasetAPI regression DB fixture + extension/webfixtures.",
+        "Browsercrosschannel ở C21."
+      ],
+      "deliverables": [
+        "dataset evidence",
+        "API/web/extension commits"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C08: Datasets và dữ liệu trích từ trang web theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/web/extension thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C09",
+      "title": "Fetcher và headless crawler có network isolation",
+      "status": "planned",
+      "priority": "P0",
+      "dependencies": [
+        "C03"
+      ],
+      "lanes": [
+        "api",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A10"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Chặn private/reservedIP/IPv6/credentials/protocol, redirect/DNSrebinding ở connectionthật.",
+        "Giớihạnbody trước đọc, decompressedsize/time/queue/concurrency; headless mọi subrequest/redirect/WebSocket cópolicy hoặc tắt.",
+        "Tách render process/identity, bỏ fallback né429/challenge; coiwebcontentlàdata khônginstructions."
+      ],
+      "acceptance": [
+        "Localhost/private/metadata qua redirect/subresource/rebinding không tới được networkcanary.",
+        "Oversize/timeout/cancel đóngresource, queuebounded, không tắt sandbox trình duyệt vôđiều kiện.",
+        "Extract cósource/confidence và không tự  mở tool/action từ nội dungtrang."
+      ],
+      "verification": [
+        "OfflinefakeDNS/server fixtures không gọi  mạngnội bộ thật.",
+        "Sandboxedheadlessnegativecanary nếu renderđược bật; resourceleak checks."
+      ],
+      "deliverables": [
+        "CRAWLER-THREAT-AND-LIMITS.md",
+        "networkcanary evidence",
+        "feature commit"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C09: Fetcher và headless crawler có network isolation theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C10",
+      "title": "Subscriptions và scheduler bền vững",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C09",
+        "C04"
+      ],
+      "lanes": [
+        "api",
+        "web",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A11"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Audit create/pause/resume/delete/schedules/owner và UI.",
+        "Thêmlease/jobs/retrybackoff/ratelimit/dedup dựa vào fetcherC09.",
+        "Đặt scheduleropt-in, timezone và deadletter/logredaction."
+      ],
+      "acceptance": [
+        "Pausedkhôngfetch;2workers khôngrunchồng; restartkhôngtrùngtin.",
+        "Timeout/429/backoffbounded vàusernhìnđượctrạngthái.",
+        "Subscriptionkhông mượn credential hoặc truycập source riêng."
+      ],
+      "verification": [
+        "Fakeclock/fakefetch jobtests; DB fixture lease/concurrency.",
+        "Onecontrolledpublicsource smoke chỉ khi được giao."
+      ],
+      "deliverables": [
+        "scheduler runbook",
+        "job evidence",
+        "feature commits"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C10: Subscriptions và scheduler bền vững theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/web/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C11",
+      "title": "AI model gateway, budget và provenance",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C04",
+        "C07"
+      ],
+      "lanes": [
+        "api",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A12",
+        "A13",
+        "A17"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Thiết kế provideradapter/servermodelallowlist/credential runtime riêng.",
+        "Input/outputschema, timeout/cancel, quota/costatomic và redactedtrace.",
+        "Providererror rõ; fallback ghi nhãn, không giảvờ model đã chạy."
+      ],
+      "acceptance": [
+        "Không nhận model key/userId/privilegedsystemprompt từ browser.",
+        "Overspend/retrystorm bị chặn; cancel timeout khôngnhânmutation.",
+        "Response cóprovider/model/promptversion/sourceprovenance cầnthiết."
+      ],
+      "verification": [
+        "Injectedprovider tests với429/timeout/malformed/cancel.",
+        "Live1smoke cóbudget được giao riêng; không gọi mặc định."
+      ],
+      "deliverables": [
+        "AI-GATEWAY-CONTRACT.md",
+        "quota/error evidence",
+        "feature commit"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C11: AI model gateway, budget và provenance theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C12",
+      "title": "ATS và thư xin việc đúng dữ liệu thực",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C11",
+        "C07"
+      ],
+      "lanes": [
+        "api",
+        "web",
+        "extension"
+      ],
+      "acceptanceIds": [
+        "A12",
+        "A13"
+      ],
+      "dispatchGate": "Live dispatch requires C01 accepted and integrated dependencies.",
+      "steps": [
+        "Gắnnhãnheuristic hiện có và thay narrative bịa bằng grounding.",
+        "Thựchiện tone/vi/en và modelgeneration nếu dùnggateway; giữeditableoutput.",
+        "Kỹnăngthiếu làgap/gợiýhọc, khôngkhuyênbịaCV; thiếufacts hỏi/đểtrống."
+      ],
+      "acceptance": [
+        "Khônggọi dictionaryscore là điểm tuyển dụng thật.",
+        "Tone/language phảnánh output; no inventedexperience trong fixture.",
+        "Lỗi/quota không mất draft và không tự  gửi thư."
+      ],
+      "verification": [
+        "FrozenJD/profilefixtures + assertion grounding/tone/outputschema.",
+        "Userreview mẫuvi/en và AI evalC24."
+      ],
+      "deliverables": [
+        "ATS/letter spec",
+        "grounded sample evidence",
+        "per-lane commits"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C12: ATS và thư xin việc đúng dữ liệu thực theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/web/extension thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C13",
+      "title": "Pro, checkout, quota và webhook có xác thực",
+      "status": "planned",
+      "priority": "P0",
+      "dependencies": [
+        "C03",
+        "C04"
+      ],
+      "lanes": [
+        "api",
+        "web",
+        "extension",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A14"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Bỏ thông tin ngân hàng ví dụ trông như thanh toán thật khỏi đườngthanh toán thật; configserver cótestmode.",
+        "Ràactivate route; serverprice, authenticatedwebhook/signature/timestamp/eventdedup.",
+        "Transaction lock/orderstatus+membership+receipt; pending/paid/expired UI."
+      ],
+      "acceptance": [
+        "Userthường không tự nânggói; payload giả/replay/concurrent không kích hoạt hai lần.",
+        "Checkout/quota/status serverauthority; wrongamount/orderfail khôngbậtPro.",
+        "Testflow hoạtđộng không chuyển tiền và mọi UI biết testmode."
+      ],
+      "verification": [
+        "Webhookfixtures signature/replay/parallel/failuretransaction trênDB riêng.",
+        "Browsercheckoutprovider giả lập; no livepayment."
+      ],
+      "deliverables": [
+        "PAYMENT-TEST-AND-OPS.md",
+        "billing regressions",
+        "per-lane commits"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C13: Pro, checkout, quota và webhook có xác thực theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/web/extension/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C14",
+      "title": "MCP transport và coverage tools",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C04",
+        "C02"
+      ],
+      "lanes": [
+        "mcp",
+        "api",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A15"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Lậpcatalog tooltheo inventory chức năng; chọnSDK/transport/spec bằng nguồnchínhthức.",
+        "Chuẩn initialize/negotiation/headers/errors/auth/session; stdio không dùngDBsuperuser trực tiếp.",
+        "Chuyển mọitoolmutation qua service/idempotency/version/owner/scopes; errorstructured."
+      ],
+      "acceptance": [
+        "Toollist/schema và initialize hợptransport, không hardcodeprotocolunsupported.",
+        "No cross-user/scopedowngrade; revokedtoken thấtbại cả HTTP/stdio.",
+        "CRUD/trashrestore/interviews/profile/datasets/subscriptions/AI capabilities maprõvớiUI."
+      ],
+      "verification": [
+        "rtk npm run check:mcp và protocolconformancefixtures.",
+        "HTTPmount/authintegration trênDB fixture; SDKreference khi triểnkhai."
+      ],
+      "deliverables": [
+        "MCP-CAPABILITY-MATRIX.md",
+        "protocol evidence",
+        "MCP/API commits riêng"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C14: MCP transport và coverage tools theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách mcp/api/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C15",
+      "title": "Nghiệm thu Claude/ChatGPT/Codex/Antigravity",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C14"
+      ],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A16"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Xácminhdocs chínhthức theo clientversion/transport/auth/account hiện có.",
+        "Tạocấu hình placeholders; kết nối từng client bằng endpoint đã được giao.",
+        "Chạycatalog/read/write/conflict/retry/revoke/negative ownership và ghi bằng chứng."
+      ],
+      "acceptance": [
+        "Mỗi client cóversion/date/accountcapability/transport và actualresult.",
+        "Khôngcoilocalhost từdesktop là remoteaccessible; chưa hỗtrợ ghiBLOCKED.",
+        "Khôngtựpublic tunnel/APIkey hoặc bịaOAuth/SSEsupport."
+      ],
+      "verification": [
+        "Live client testdata account riêng; không tài khoản/thôngtin đăngnhập trongZIP.",
+        "Reviewclientmatrix với evidence theo từng client."
+      ],
+      "deliverables": [
+        "CLIENT-MATRIX-VERIFIED.md",
+        "client config examples",
+        "redacted recordings"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C15: Nghiệm thu Claude/ChatGPT/Codex/Antigravity theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C16",
+      "title": "Workflow n8n JobTrack riêng và tool gateway",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C11",
+        "C14"
+      ],
+      "lanes": [
+        "api",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A17"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Đọcdocs/version n8n và inventory đã được phép; không sửa  workflow Toán.",
+        "Exportworkflow JobTrackriêng vớiChattrigger/agent/model/memory/gateway, credentialplaceholders.",
+        "Runscopedticket doAPIcấp gắnowner/scopes/budget/expiry; validation/timeout/cancel/receipts."
+      ],
+      "acceptance": [
+        "ModelkhôngđặtuserId; memoryconversation táchowner; keyruntimekhácadmin key.",
+        "Chatthực gọi toolCRUD từn8n vàAPI log cùngrun, retrykhôngtrùng.",
+        "Error/outage báođúng khôngsilentclaimsuccess; workflowkhông chạm  toán/Sheet."
+      ],
+      "verification": [
+        "WorkflowJSON validation và mockedgatewaytests trướcimport.",
+        "Liveworkflow test account/budget riêng saucấphìnhđược giao."
+      ],
+      "deliverables": [
+        "n8n workflow JSON redacted",
+        "N8N-JOBTRACK-RUNBOOK.md",
+        "live tool evidence"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C16: Workflow n8n JobTrack riêng và tool gateway theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C17",
+      "title": "Chat n8n tích hợp web/mobile",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C16",
+        "C18"
+      ],
+      "lanes": [
+        "web",
+        "api",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A18"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Chốtprotocolresponse/stream/history của phiên bản n8n đang dùng, dùngnativewidget nếuđápứngauth.",
+        "BFFownedconversation, parser/cancel/retry/sessionlogout và UIstates.",
+        "Toolreceipt kíchhoạt refreshresource; sanitizeMarkdown/links và accessibilitymobile."
+      ],
+      "acceptance": [
+        "UserA/B không đọc  historynhau; logoutclearstate/token.",
+        "Send/stream-or-declarednonstream/cancel/error/retry hoạtđộng thật.",
+        "AI mutation đúng owner cậpnhật UI; fallback nhậnbiết và không giả  kết quả."
+      ],
+      "verification": [
+        "Chatcomponent/BFFtests vớichunks/errors/ownerchange.",
+        "Browserfullconversation+n8n smoke ở C21."
+      ],
+      "deliverables": [
+        "CHAT-PROTOCOL.md",
+        "chat UI evidence",
+        "per-lane commits"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C17: Chat n8n tích hợp web/mobile theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách web/api/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C18",
+      "title": "Hoàn thiện UI web/mobile và coverage33",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C05",
+        "C06",
+        "C07",
+        "C08"
+      ],
+      "lanes": [
+        "web",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A20"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Đối chiếu33Drawiopages→routes/dialogs/states; ghi merged/NArõlýdo.",
+        "Hoànthiện nhấnmạnh action/deadline/interview, forms/profile/datasets/settings hiện tồn.",
+        "Typography/NotoSans/spacing/responsive/keyboard/focus/loading/empty/error/conflict; không đụng 5concept."
+      ],
+      "acceptance": [
+        "Khôngbuttonplaceholder hoặc mockstats trong mode thật.",
+        "320/390/768/1440 không overflow; formdialog/keyboard/contrast đạt checklist.",
+        "33 pages đượccoverage hoặc có quyết định gộp màn hình; giữnghiệpvụ."
+      ],
+      "verification": [
+        "rtk npm run test:web và rtk npm run build:web",
+        "Responsivebrowsercheck/a11y/manualkeyboard; screenshots sạch."
+      ],
+      "deliverables": [
+        "SCREEN-COVERAGE-33.md",
+        "responsive/a11y evidence",
+        "feature commits"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C18: Hoàn thiện UI web/mobile và coverage33 theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách web/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C19",
+      "title": "Extension production flow và permissions",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C07",
+        "C08",
+        "C12",
+        "C13",
+        "C18"
+      ],
+      "lanes": [
+        "extension",
+        "api",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A19"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Inventory popup/sidepanel/options/datasets; thu hẹphostpermissions vàcontentscripts theo nhu cầu.",
+        "Sửa tokenpair/revoke/expire vàCORS; khôngforgedOrigin; nội dung trang nguồn không đáng tin.",
+        "Nghiệmthu save/ATS/letter/Pro/datasets offline/error/retry."
+      ],
+      "acceptance": [
+        "Installunpacked Chrome thật khôngruntimeerror; không chạy trêntrang khôngđượcphép.",
+        "Expired/revokedtoken không truy cậpAPI; secretkhônglog.",
+        "Save/record/export vàreload đúng, permissions giải thích rõ."
+      ],
+      "verification": [
+        "rtk npm run test:extension",
+        "Chromeextension live smoke với trangfixture vàAPI accounttest."
+      ],
+      "deliverables": [
+        "EXTENSION-ACCEPTANCE.md",
+        "permission rationale",
+        "extension/API commits"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C19: Extension production flow và permissions theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách extension/api/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C20",
+      "title": "CI và check suite nhất quán",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C00",
+        "C01"
+      ],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A01",
+        "A21",
+        "A22"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Auditcheckall/dependencies/runtime/CIservices/guard DB test trước chạysuite.",
+        "Bổsungagents:test, xửlýlegacytimeoutfixture theo rootcause, táchchecks khôngcầnDB.",
+        "CIcleanrunner install từlockfile, DB fixture riêng và không phụ thuộcrtk ngầm."
+      ],
+      "acceptance": [
+        "FreshCI chạycontracts/API/web/MCP/extension/controller/architecture và ghi exitcodes.",
+        "KhôngtesttrênDBjobtrack; migrationfixtures/repeat/checksum đạt.",
+        "Failthật giữfailed, khôngskipđểgiảpass."
+      ],
+      "verification": [
+        "Readconfig first; then CI-equivalent commands trên envfixture.",
+        "Lệnhcheckall sau sửa phải phảnánh đúng intendedsuite."
+      ],
+      "deliverables": [
+        "CI-EVIDENCE.md",
+        "updated check inventory",
+        "maintainer commit"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C20: CI và check suite nhất quán theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C21",
+      "title": "Browser E2E full stack desktop/mobile",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C20",
+        "C05",
+        "C06",
+        "C08",
+        "C10",
+        "C12",
+        "C13",
+        "C15",
+        "C17",
+        "C18",
+        "C19"
+      ],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A03",
+        "A04",
+        "A05",
+        "A06",
+        "A07",
+        "A08",
+        "A09",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "A18",
+        "A19",
+        "A20"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Tạo browserfixtures DB/accountriêng và testcase functions inventory.",
+        "Chạydesktop/mobile corelife plusprofile/datasets/extension/AI, cross-user/logout/conflicts.",
+        "Lưutrace/screens/expectedactual đãredact, sửabug về tasklane nguồn."
+      ],
+      "acceptance": [
+        "Browserthật tươngtác UI/API/DB; API-onlytest không gọi E2Ebrowser.",
+        "Criticalflows success/error/empty/concurrency đạt trênRC.",
+        "Khôngread/write dữ liệugốc hoặc lưucookies/tokentrongartifactshare."
+      ],
+      "verification": [
+        "Playwright/local browser trên testenv riêng.",
+        "Extensions vàMCPclients dùng tool/browser thực cóevidence."
+      ],
+      "deliverables": [
+        "BROWSER-E2E-REPORT.md",
+        "redacted traces",
+        "defect links"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C21: Browser E2E full stack desktop/mobile theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C22",
+      "title": "Migration, backup/restore và rollback drill",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C20"
+      ],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A01",
+        "A22"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Reviewops scripts/targets/keysredaction vàencryptedbackupformat.",
+        "Tạofixturebackup vàrestore vào DBtênriêng; xácnhậnnonproductiontargettrướcwrite.",
+        "Kiểmrowcounts/FK/checksums/criticalAPIflows và rollbackapplication/schema compatibility."
+      ],
+      "acceptance": [
+        "Exit0 chưađủ: restoredDB phảiđọc/ghi flowsđúng vàintegrityđạt.",
+        "Keys/DBdump khôngvàoGit/context; productionDB không bị ghiđè.",
+        "Runbook reproducible với preflight/verification/rollback."
+      ],
+      "verification": [
+        "IsolatedDBrestore drill; no overwritejobtrack.",
+        "Fresh+migrationupgrade fixtures trênDB riêng."
+      ],
+      "deliverables": [
+        "RESTORE-DRILL.md",
+        "ROLLBACK-DRILL.md",
+        "ops fixes nếu cần"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C22: Migration, backup/restore và rollback drill theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C23",
+      "title": "HTTP load, queues và observability",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C20",
+        "C09",
+        "C10",
+        "C13",
+        "C16"
+      ],
+      "lanes": [
+        "api",
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A10",
+        "A11",
+        "A14",
+        "A17",
+        "A22"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Chốt workload20VU/5phút app-only vàngưỡng trước lần chạy, targettest riêng.",
+        "ĐoHTTP read/write/auth/queue, p50/p95/error/dbpool và resourcecleanup.",
+        "Health/metrics/redactedlogs/alerts cho job/model/payment errors; không secrets."
+      ],
+      "acceptance": [
+        "App-onlyp95≤500ms,error<1% theo fixturemáyđã ghi hoặc quyếtđịnhngưỡng trước lần chạy.",
+        "Queue/cancel khôngròCPU/RAM/process; owner isolation giữ khi load.",
+        "Logs đủtrace run/receipt, khôngtoken/CV đầy đủ."
+      ],
+      "verification": [
+        "BoundedHTTPload vào testenvironment sau preflight.",
+        "Provider latency/cost đo riêng, không loadmodeltrả phí mặc định."
+      ],
+      "deliverables": [
+        "HTTP-LOAD-REPORT.md",
+        "OBSERVABILITY-RUNBOOK.md"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C23: HTTP load, queues và observability theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách api/maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C24",
+      "title": "AI quality eval và data/model/prompt lifecycle",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C09",
+        "C11",
+        "C12",
+        "C16"
+      ],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A10",
+        "A12",
+        "A13",
+        "A17"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "Thu30+JDvi/en đa ngành có quyền/provenance; splitdev/holdout và hash.",
+        "Chốt groundtruth/threshold trướcchạy; testextraction/ATS/letter/toolplan/owner/injection/costlatency.",
+        "Versioncode/data/model/prompt, reviewdrift/failure và rollbackmodel; không tự động train."
+      ],
+      "acceptance": [
+        "0crossowner/privilegedviolation;0inventedexperience trong evaluation.",
+        "Company/positionaccuracy≥90% trên labeledfixtures hoặc blocker cóissue, khôngđổigrade.",
+        "Publish evalreport cómodel/provider/time/cost/latency, tuningkhông chạm holdout."
+      ],
+      "verification": [
+        "Offlinefixture eval trước, livebudgetsmoke riêng khi được cấp.",
+        "Humanreview thư/ATS và adversarialtoolcases."
+      ],
+      "deliverables": [
+        "AI-EVAL-DATA-CARD.md",
+        "AI-EVAL-REPORT.md",
+        "prompt/model registry"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C24: AI quality eval và data/model/prompt lifecycle theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C25",
+      "title": "Tài liệu vận hành, privacy và context đồng nhất",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C00",
+        "C14",
+        "C16",
+        "C19"
+      ],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A01",
+        "A16",
+        "A17",
+        "A19",
+        "A22"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "SửaREADME/runbook/clientmatrix/n8ninventory claims theoactualsource/evidence.",
+        "Reviewenvexamples/legacydefaults/Githistory trướcshare; khôngđóngrawmastersecrets.",
+        "Tài liệu tokenrevoke/userdataexportdelete/chatretention/crawlpermissions vàonboarding."
+      ],
+      "acceptance": [
+        "KhôngcònclaimSDK/SSE/OAuth/nativechat/100% PASS sai bằng chứng.",
+        "Càiđặt từdoc chạyđược theo envđãtest; local/cloudphânbiệt rõ.",
+        "Privacy/retention/quota vàlimits khớp hànhvicode."
+      ],
+      "verification": [
+        "Doc/sourcecrosscheck và link/schema validation.",
+        "Secrets scan redactedreport trước bấtkỳpublicshare."
+      ],
+      "deliverables": [
+        "corrected runbooks",
+        "PRIVACY-AND-RETENTION.md",
+        "sanitizedcontext"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C25: Tài liệu vận hành, privacy và context đồng nhất theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C26",
+      "title": "UAT và chốt nghiệm thu toàn scope",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C01",
+        "C21",
+        "C22",
+        "C23",
+        "C24",
+        "C25"
+      ],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A01",
+        "A02",
+        "A03",
+        "A04",
+        "A05",
+        "A06",
+        "A07",
+        "A08",
+        "A09",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "A18",
+        "A19",
+        "A20",
+        "A21",
+        "A22"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "TạoUATchecklist từ22acceptance vàcoverage 33 màn hình, tài khoản/dữ liệutest.",
+        "Ngườidùng thửtác vụ hàng ngày/mobile/extension/AI/Protest trênRC.",
+        "Phânloạiissue, sửaP0/P1, rerun affectedcases và xin chấp thuậnP2exceptions."
+      ],
+      "acceptance": [
+        "Mọiacceptance cóPASS trênRC hoặc exceptionđượcuserchốt; blockerbắtbuộc khôngẩn.",
+        "0P0/P1 và tài liệu giới hạnthực tế.",
+        "Ngườidùng xácnhận UAT, khôngagenttựký thay."
+      ],
+      "verification": [
+        "GuidedUAT thực tế + defectverification.",
+        "Reviewcompleteevidence/index theoRCdigest."
+      ],
+      "deliverables": [
+        "UAT-SIGNOFF.md",
+        "accepted issue register"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C26: UAT và chốt nghiệm thu toàn scope theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    },
+    {
+      "id": "C27",
+      "title": "Release candidate local và handoff cuối",
+      "status": "planned",
+      "priority": "P1",
+      "dependencies": [
+        "C26"
+      ],
+      "lanes": [
+        "maintainer"
+      ],
+      "acceptanceIds": [
+        "A22"
+      ],
+      "dispatchGate": "Split maintainer-only operations from lane worker proposals. Live dispatch requires C01 accepted.",
+      "steps": [
+        "FreezeRC/tagslocal nếuđược giao, verifydiff/checks/review cùngdigest.",
+        "Release notes/rollback/configplaceholders/evidenceindex vàmanifestSHA256.",
+        "Góicontextmới tạiTemp bằngskillhandoff, khôngsource/bản dump secrets ngoàiýmuốn."
+      ],
+      "acceptance": [
+        "Kếtquả reproducible trêncheckout/envđã ghi; mọiunresolvedlimit đượcnêu.",
+        "ZIPintegrity/hash/linkscheck đạt và promptchatmới rõphạmvi.",
+        "Khôngtựpush/clouddeploy/livepayment hoặc côngbốGithistory cólegacydefaults."
+      ],
+      "verification": [
+        "Finalappropriatechecks mộtlần trênRC sau lastchange.",
+        "Archive CRC/contentmanifest/source hash verification."
+      ],
+      "deliverables": [
+        "RELEASE-HANDOVER.md",
+        "release context ZIP",
+        "final source/evidence manifests"
+      ],
+      "safety": [
+        "Không đọc/copy dotenv, accounts, privatekeys, cookies hoặc DB dump vào prompts/log/context.",
+        "Không sửa sibling worktree, shared Git, policy hoặc ngoài allowedpaths; không thêm comment code.",
+        "DB/provider/n8n/browser/ops checks chỉ trong môi trường fixture/runtime được giao sau preflight; không suy ra quyền public deploy/payment."
+      ],
+      "implementationPrompt": "Thực hiện C27: Release candidate local và handoff cuối theo PLAN và DECISIONS. Đọc source hiện tại, chỉ sửa gap được kiểm chứng; historical PASS không thay evidence. Hoàn tất steps và acceptance của entry này. Orchestrator tách maintainer thành work items riêng, tích hợp dependencies trước consumer, cấp base/worktree/paths cụ thể. Worker chỉ trả proposal read-only theo controller schema; maintainer xử lý config/migration/ops riêng. Không thêm comment code hoặc hạ policy. Chạy verification phù hợp với targetfixture đã xác minh, báo NOT-RUN nếu blocker. Trả paths/diff/featurecommit/tests+exitcodes/evidence+limitations; review trên đúng source digest."
+    }
+  ]
+}
