@@ -200,7 +200,26 @@ import {
   PROMOTION_DIMENSION_METADATA,
   recommendPromotionInitiatives,
   evaluatePromotionReadiness,
-  simulateCareerTrajectory
+  simulateCareerTrajectory,
+  type AtsKeywordCategory,
+  type KeywordImportance,
+  type KeywordGapItemDTO,
+  type AtsDiagnosticScoreBreakdownDTO,
+  type AtsDiagnosticResultDTO,
+  type BulletVariantType,
+  type XyzBreakdownDTO,
+  type BulletVariantOptionDTO,
+  type BulletOptimizationProposalDTO,
+  type OptimizedResumeVariantDTO,
+  type OptimizeResumeInputDTO,
+  type RewriteBulletInputDTO,
+  type ApplyRewritesInputDTO,
+  ATS_KEYWORD_DICTIONARY,
+  extractKeywordsFromText,
+  extractBulletsFromResume,
+  diagnoseAtsKeywordGaps,
+  rewriteBulletPointsXyz,
+  synthesizeOptimizedResume
 } from '@jobtrack/contract';
 
 export type {
@@ -3553,6 +3572,147 @@ export const careerTrajectoryRepository = {
   }
 };
 
+const RESUME_OPTIMIZER_KEY = 'jobtrack.resume_optimizer.v1';
+
+function loadDemoOptimizations(): OptimizedResumeVariantDTO[] {
+  try {
+    const raw = localStorage.getItem(RESUME_OPTIMIZER_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveDemoOptimizations(list: OptimizedResumeVariantDTO[]): void {
+  try {
+    localStorage.setItem(RESUME_OPTIMIZER_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+export const resumeOptimizerRepository = {
+  async diagnose(input: OptimizeResumeInputDTO): Promise<OptimizedResumeVariantDTO> {
+    if (demoMode) {
+      const diagnostic = diagnoseAtsKeywordGaps(input.resumeText, input.jobDescription);
+      const bullets = extractBulletsFromResume(input.resumeText);
+      const missingCritical = diagnostic.keywordGaps
+        .filter(k => !k.matched)
+        .slice(0, 6)
+        .map(k => k.keyword);
+      const proposals = rewriteBulletPointsXyz(bullets, missingCritical);
+
+      const defaultAccepted: Record<string, string> = {};
+      for (const p of proposals) {
+        if (p.variants.length > 0) {
+          defaultAccepted[p.originalBullet] = p.variants[0].rewrittenText;
+        }
+      }
+
+      const synthesizedResume = synthesizeOptimizedResume(
+        input.resumeText,
+        defaultAccepted,
+        missingCritical
+      );
+
+      const now = new Date().toISOString();
+      const variant: OptimizedResumeVariantDTO = {
+        id: `opt-${Date.now()}`,
+        applicationId: input.applicationId,
+        jobTitle: input.jobTitle || 'Software Engineer',
+        company: input.company || 'Tech Company',
+        originalResume: input.resumeText,
+        targetJobText: input.jobDescription,
+        diagnosticResult: diagnostic,
+        proposals,
+        synthesizedResume,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      const existingList = loadDemoOptimizations();
+      saveDemoOptimizations([variant, ...existingList.filter(o => o.id !== variant.id)]);
+      return variant;
+    }
+
+    return request<OptimizedResumeVariantDTO>('/resume/diagnose', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async applyRewrites(id: string, input: ApplyRewritesInputDTO): Promise<OptimizedResumeVariantDTO> {
+    if (demoMode) {
+      const list = loadDemoOptimizations();
+      const existing = list.find(o => o.id === id);
+      if (!existing) {
+        throw new Error('Resume optimization record not found.');
+      }
+
+      const synthesizedResume = synthesizeOptimizedResume(
+        existing.originalResume,
+        input.acceptedBullets,
+        input.injectedKeywords || []
+      );
+
+      const updatedDiagnostic = diagnoseAtsKeywordGaps(synthesizedResume, existing.targetJobText);
+
+      const updatedProposals = existing.proposals.map(p => {
+        const chosen = input.acceptedBullets[p.originalBullet];
+        if (chosen) {
+          const matchingVariant = p.variants.find(v => v.rewrittenText === chosen);
+          return {
+            ...p,
+            selectedVariant: matchingVariant ? matchingVariant.variantType : p.selectedVariant
+          };
+        }
+        return p;
+      });
+
+      const updatedVariant: OptimizedResumeVariantDTO = {
+        ...existing,
+        diagnosticResult: updatedDiagnostic,
+        proposals: updatedProposals,
+        synthesizedResume,
+        updatedAt: new Date().toISOString()
+      };
+
+      const nextList = list.map(o => o.id === id ? updatedVariant : o);
+      saveDemoOptimizations(nextList);
+      return updatedVariant;
+    }
+
+    return request<OptimizedResumeVariantDTO>(`/resume/optimizations/${encodeURIComponent(id)}/apply`, {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async list(): Promise<OptimizedResumeVariantDTO[]> {
+    if (demoMode) {
+      return loadDemoOptimizations();
+    }
+    return request<OptimizedResumeVariantDTO[]>('/resume/optimizations');
+  },
+
+  async getById(id: string): Promise<OptimizedResumeVariantDTO | null> {
+    if (demoMode) {
+      const list = loadDemoOptimizations();
+      return list.find(o => o.id === id) || null;
+    }
+    return request<OptimizedResumeVariantDTO>(`/resume/optimizations/${encodeURIComponent(id)}`);
+  },
+
+  async delete(id: string): Promise<boolean> {
+    if (demoMode) {
+      const list = loadDemoOptimizations().filter(o => o.id !== id);
+      saveDemoOptimizations(list);
+      return true;
+    }
+    await request(`/resume/optimizations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    return true;
+  }
+};
+
 export type {
   EmailCategory,
   ExtractedEmailEntityDTO,
@@ -3609,7 +3769,20 @@ export type {
   TrajectoryStepDTO,
   TrajectorySimulationDTO,
   SimulateTrajectoryInputDTO,
-  UpdateCompetenciesInputDTO
+  UpdateCompetenciesInputDTO,
+  AtsKeywordCategory,
+  KeywordImportance,
+  KeywordGapItemDTO,
+  AtsDiagnosticScoreBreakdownDTO,
+  AtsDiagnosticResultDTO,
+  BulletVariantType,
+  XyzBreakdownDTO,
+  BulletVariantOptionDTO,
+  BulletOptimizationProposalDTO,
+  OptimizedResumeVariantDTO,
+  OptimizeResumeInputDTO,
+  RewriteBulletInputDTO,
+  ApplyRewritesInputDTO
 };
 
 

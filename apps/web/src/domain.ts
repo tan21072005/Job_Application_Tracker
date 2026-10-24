@@ -111,7 +111,26 @@ import {
   PROMOTION_DIMENSION_METADATA,
   recommendPromotionInitiatives,
   evaluatePromotionReadiness,
-  simulateCareerTrajectory
+  simulateCareerTrajectory,
+  type AtsKeywordCategory,
+  type KeywordImportance,
+  type KeywordGapItemDTO,
+  type AtsDiagnosticScoreBreakdownDTO,
+  type AtsDiagnosticResultDTO,
+  type BulletVariantType,
+  type XyzBreakdownDTO,
+  type BulletVariantOptionDTO,
+  type BulletOptimizationProposalDTO,
+  type OptimizedResumeVariantDTO,
+  type OptimizeResumeInputDTO,
+  type RewriteBulletInputDTO,
+  type ApplyRewritesInputDTO,
+  ATS_KEYWORD_DICTIONARY,
+  extractKeywordsFromText,
+  extractBulletsFromResume,
+  diagnoseAtsKeywordGaps,
+  rewriteBulletPointsXyz,
+  synthesizeOptimizedResume
 } from '@jobtrack/contract';
 export {
   type ApplicationPriority,
@@ -226,7 +245,26 @@ export {
   PROMOTION_DIMENSION_METADATA,
   recommendPromotionInitiatives,
   evaluatePromotionReadiness,
-  simulateCareerTrajectory
+  simulateCareerTrajectory,
+  type AtsKeywordCategory,
+  type KeywordImportance,
+  type KeywordGapItemDTO,
+  type AtsDiagnosticScoreBreakdownDTO,
+  type AtsDiagnosticResultDTO,
+  type BulletVariantType,
+  type XyzBreakdownDTO,
+  type BulletVariantOptionDTO,
+  type BulletOptimizationProposalDTO,
+  type OptimizedResumeVariantDTO,
+  type OptimizeResumeInputDTO,
+  type RewriteBulletInputDTO,
+  type ApplyRewritesInputDTO,
+  ATS_KEYWORD_DICTIONARY,
+  extractKeywordsFromText,
+  extractBulletsFromResume,
+  diagnoseAtsKeywordGaps,
+  rewriteBulletPointsXyz,
+  synthesizeOptimizedResume
 };
 
 export const priorityLabels: Record<ApplicationPriority, string> = {
