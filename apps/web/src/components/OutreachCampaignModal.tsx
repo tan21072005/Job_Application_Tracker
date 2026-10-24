@@ -25,9 +25,33 @@ import type {
   CreateCampaignInputDTO,
   AddRecipientInputDTO
 } from '@jobtrack/contract';
-import { personalizeMessage } from '@jobtrack/contract';
+import { personalizeMessage, computeCampaignMetrics } from '@jobtrack/contract';
 import { outreachRepository } from '../data';
 import { Button, Dialog } from './ui';
+
+const CAMPAIGN_PRESETS = [
+  {
+    name: 'Chiến dịch Referral Shopee Q4',
+    objective: 'referral_request' as CampaignObjective,
+    targetType: 'engineer' as OutreachTargetType,
+    company: 'Shopee Vietnam',
+    role: 'Senior Backend Engineer'
+  },
+  {
+    name: 'Mời Coffee Chat Grab Alumni',
+    objective: 'coffee_chat' as CampaignObjective,
+    targetType: 'alumni' as OutreachTargetType,
+    company: 'Grab Vietnam',
+    role: 'Staff Platform Engineer'
+  },
+  {
+    name: 'Tiếp cận Recruiter Tiki Tech',
+    objective: 'recruiter_intro' as CampaignObjective,
+    targetType: 'recruiter' as OutreachTargetType,
+    company: 'Tiki Corporation',
+    role: 'Lead Solutions Architect'
+  }
+];
 
 interface Props {
   isOpen: boolean;
@@ -68,17 +92,28 @@ export function OutreachCampaignModal({ isOpen, onClose, notify }: Props) {
     try {
       const list = await outreachRepository.listCampaigns();
       setCampaigns(list);
-      if (list.length > 0 && !selectedId) {
+      if (list.length > 0) {
         setSelectedId(list[0].id);
         if (list[0].recipients.length > 0) {
           setSelectedRecipientId(list[0].recipients[0].id);
         }
+      } else {
+        setCreating(true);
+        applyPreset(CAMPAIGN_PRESETS[0]);
       }
     } catch (err) {
       notify((err as Error).message || 'Không thể tải danh sách chiến dịch.', true);
     } finally {
       setLoading(false);
     }
+  }
+
+  function applyPreset(p: typeof CAMPAIGN_PRESETS[number]) {
+    setFormName(p.name);
+    setFormObjective(p.objective);
+    setFormTargetType(p.targetType);
+    setFormCompany(p.company);
+    setFormRole(p.role);
   }
 
   const activeCampaign = campaigns.find(c => c.id === selectedId) || null;
@@ -100,9 +135,21 @@ export function OutreachCampaignModal({ isOpen, onClose, notify }: Props) {
         targetRole: formRole.trim()
       };
       const created = await outreachRepository.createCampaign(input);
+      let initialRecipient: OutreachRecipientDTO | null = null;
+      try {
+        initialRecipient = await outreachRepository.addRecipient(created.id, {
+          name: 'Nguyễn Văn Minh',
+          title: 'Senior Tech Lead',
+          company: input.targetCompany,
+          channel: 'linkedin',
+          notes: 'Alumni Bách Khoa'
+        });
+        created.recipients = [initialRecipient];
+        created.analytics = computeCampaignMetrics(created.recipients);
+      } catch {}
       setCampaigns(prev => [created, ...prev]);
       setSelectedId(created.id);
-      setSelectedRecipientId(null);
+      setSelectedRecipientId(initialRecipient ? initialRecipient.id : null);
       setCreating(false);
       setFormName('');
       setFormCompany('');
@@ -307,6 +354,21 @@ export function OutreachCampaignModal({ isOpen, onClose, notify }: Props) {
         {creating ? (
           <form className="outreach-form-card" onSubmit={handleCreateCampaign}>
             <h4>Khởi tạo chiến dịch Outreach & Kịch bản tự động</h4>
+            <div className="preset-selector-row">
+              <span className="preset-label">Mẫu chiến dịch gợi ý:</span>
+              <div className="preset-buttons">
+                {CAMPAIGN_PRESETS.map((p, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="preset-btn"
+                    onClick={() => applyPreset(p)}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="form-grid">
               <div className="form-group">
                 <label>Tên chiến dịch:</label>
