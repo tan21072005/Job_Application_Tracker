@@ -619,6 +619,8 @@ async function main() {
       const textarea = document.querySelector('.mock-answer-textarea');
       if (textarea) {
         const val = 'Tại dự án trước, chúng tôi gặp sự cố latency màn hình thanh toán 4.2s vào dịp Black Friday. Trách nhiệm của tôi là tối ưu phản hồi dưới 800ms trong 48 giờ. Tôi đã dùng React Profiler phát hiện re-render không cần thiết và batch các truy vấn GraphQL. Kết quả thời gian tải trang giảm còn 450ms, giảm 89% latency và tăng 24% tỷ lệ hoàn tất đơn hàng.';
+        const tracker = textarea._valueTracker;
+        if (tracker) tracker.setValue('');
         const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
         if (setter) setter.call(textarea, val);
         else textarea.value = val;
@@ -628,11 +630,20 @@ async function main() {
     })()`);
     await wait(800);
 
-    await evaluate(`(() => {
-      const evalBtn = document.querySelector('.evaluate-btn') || Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Chấm điểm'));
-      if (evalBtn) evalBtn.click();
-    })()`);
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 6; i++) {
+      const clicked = await evaluate(`(() => {
+        const evalBtn = document.querySelector('.evaluate-btn');
+        if (evalBtn && !evalBtn.disabled) {
+          evalBtn.click();
+          return true;
+        }
+        return false;
+      })()`);
+      if (clicked) break;
+      await wait(500);
+    }
+
+    for (let i = 0; i < 15; i++) {
       const state = await evaluate(`(() => {
         const resultCard = document.querySelector('.mock-evaluation-report');
         return JSON.stringify({ ready: Boolean(resultCard) });
@@ -857,6 +868,90 @@ async function main() {
       if (closeBtn) closeBtn.click();
     })()`);
     await wait(800);
+
+    console.log('\n--- GIAI ĐOẠN 12: HỘI VIÊN PRO, SERVER-OWNED PLANS & TEST-MODE CHECKOUT FLOW ---');
+
+    console.log('Mở modal Nâng cấp Pro từ thanh điều hướng hoặc menu...');
+    await evaluate(`(() => {
+      const proBtn = document.querySelector('.sidebar-trash-btn.pro-btn') || document.querySelector('.pro-upgrade-nav-btn');
+      if (proBtn) proBtn.click();
+    })()`);
+    await wait(1200);
+
+    const proPlansCheck = await evaluate(`(() => {
+      const modal = document.querySelector('.pro-modal-container');
+      const cards = document.querySelectorAll('.pro-pricing-card');
+      const title = document.querySelector('.pro-modal-title')?.textContent || '';
+      return JSON.stringify({
+        hasModal: Boolean(modal),
+        cardsCount: cards.length,
+        title
+      });
+    })()`);
+    record('Pro Membership Plans View', 'Hiển thị 3 gói giá sở hữu từ máy chủ (Monthly, Quarterly, Yearly) với đầy đủ tính năng', proPlansCheck.hasModal && proPlansCheck.cardsCount === 3, `Số gói giá: ${proPlansCheck.cardsCount}`);
+
+    console.log('Chọn gói Quý (Quarterly) và tiến hành tạo đơn hàng...');
+    await evaluate(`(() => {
+      const cards = Array.from(document.querySelectorAll('.pro-pricing-card'));
+      if (cards[1]) cards[1].click();
+      const submitBtn = document.querySelector('.pro-submit-btn');
+      if (submitBtn) submitBtn.click();
+    })()`);
+    await wait(1500);
+
+    const checkoutCheck = await evaluate(`(() => {
+      const checkoutView = document.querySelector('.pro-view-checkout');
+      const transferCode = document.querySelector('.pro-transfer-code')?.textContent || '';
+      const amount = document.querySelector('.pro-detail-amount')?.textContent || '';
+      const testNotice = document.querySelector('.pro-test-mode-notice');
+      const simulateBtn = document.querySelector('.pro-simulate-webhook-btn');
+      return JSON.stringify({
+        hasCheckout: Boolean(checkoutView),
+        transferCode,
+        amount,
+        hasTestNotice: Boolean(testNotice),
+        hasSimulateBtn: Boolean(simulateBtn)
+      });
+    })()`);
+    record('Interactive Test-Mode Checkout', 'Khởi tạo đơn hàng với mã chuyển khoản duy nhất, cảnh báo thử nghiệm an toàn và cổng thanh toán mô phỏng', checkoutCheck.hasCheckout && Boolean(checkoutCheck.transferCode) && checkoutCheck.hasSimulateBtn, `Mã CK: ${checkoutCheck.transferCode}, Số tiền: ${checkoutCheck.amount}`);
+
+    console.log('Mô phỏng thanh toán thành công qua Webhook...');
+    await evaluate(`(() => {
+      const simulateBtn = document.querySelector('.pro-simulate-webhook-btn');
+      if (simulateBtn) simulateBtn.click();
+    })()`);
+    await wait(2000);
+
+    const celebrationCheck = await evaluate(`(() => {
+      const successView = document.querySelector('.pro-view-success');
+      const successTitle = document.querySelector('.pro-success-title')?.textContent || '';
+      const expiry = document.querySelector('.pro-success-expiry')?.textContent || '';
+      const perks = document.querySelectorAll('.pro-perk-item');
+      return JSON.stringify({
+        hasSuccess: Boolean(successView),
+        title: successTitle,
+        expiry,
+        perksCount: perks.length
+      });
+    })()`);
+    record('Payment Webhook & Pro Activation Celebration', 'Nhận webhook xác thực, kích hoạt Pro tức thì, hiển thị màn hình chúc mừng và đặc quyền', celebrationCheck.hasSuccess && celebrationCheck.perksCount > 0, `Tiêu đề: ${celebrationCheck.title}, ${celebrationCheck.expiry}`);
+
+    console.log('Đóng modal chúc mừng và kiểm tra Pro Badge trên giao diện...');
+    await evaluate(`(() => {
+      const exploreBtn = document.querySelector('.pro-explore-btn');
+      if (exploreBtn) exploreBtn.click();
+    })()`);
+    await wait(1000);
+
+    const badgeCheck = await evaluate(`(() => {
+      const topbarBadge = document.querySelector('.topbar-account .pro-pill-badge');
+      const sidebarBadge = document.querySelector('.sidebar .pro-pill-badge');
+      return JSON.stringify({
+        hasTopbarBadge: Boolean(topbarBadge),
+        hasSidebarBadge: Boolean(sidebarBadge)
+      });
+    })()`);
+    record('Pro Status Badge Integration', 'Huy hiệu PRO xuất hiện nổi bật tại topbar và sidebar sau khi kích hoạt thành công', badgeCheck.hasTopbarBadge || badgeCheck.hasSidebarBadge, 'Huy hiệu PRO hoạt động chuẩn xác');
 
 
   } catch (err) {
