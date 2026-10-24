@@ -92,6 +92,7 @@ import { TrajectoryService } from './services/trajectory-service.ts';
 import { ResumeOptimizerService } from './services/resume-optimizer-service.ts';
 import { PipelineVelocityService } from './services/pipeline-velocity-service.ts';
 import { CultureRadarService } from './services/culture-radar-service.ts';
+import { HeadhunterCrmService } from './services/headhunter-crm-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -102,7 +103,11 @@ import {
   validateRewriteBulletInput,
   rewriteBulletPointsXyz,
   validateCalculateVelocityReportInput,
-  validateAnalyzeCultureInput
+  validateAnalyzeCultureInput,
+  validateParsePitchInput,
+  validateRecruiterLeadInput,
+  validateMandateInput,
+  validateRecruiterReplyDraftInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -160,6 +165,7 @@ export const trajectoryService = new TrajectoryService(pool);
 export const resumeOptimizerService = new ResumeOptimizerService(pool);
 export const pipelineVelocityService = new PipelineVelocityService(pool);
 export const cultureRadarService = new CultureRadarService(pool);
+export const headhunterCrmService = new HeadhunterCrmService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -1834,6 +1840,116 @@ app.post('/api/culture/questions', auth, async (req, res, next) => {
       targetRole: typeof b?.targetRole === 'string' ? b.targetRole : undefined
     });
     res.json(questions);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/headhunters', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const agency = typeof req.query.agency === 'string' ? req.query.agency : undefined;
+    const tier = typeof req.query.tier === 'string' ? (req.query.tier as any) : undefined;
+    const query = typeof req.query.q === 'string' ? req.query.q : undefined;
+    const leads = await headhunterCrmService.listLeads(userId, { agency, tier, query });
+    res.json(leads);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/headhunters', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateRecruiterLeadInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const existingId = typeof req.query.id === 'string' ? req.query.id : typeof (req.body as any)?.id === 'string' ? (req.body as any).id : undefined;
+    const lead = await headhunterCrmService.upsertLead(userId, val.data, existingId);
+    res.status(existingId ? 200 : 201).json(lead);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/headhunters/:id', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const success = await headhunterCrmService.deleteLead(userId, String(req.params.id));
+    if (!success) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy thông tin recruiter.' });
+    }
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/headhunters/parse-pitch', auth, async (req, res, next) => {
+  try {
+    const val = validateParsePitchInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const result = headhunterCrmService.parsePitch(val.data);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/headhunters/reply-draft', auth, async (req, res, next) => {
+  try {
+    const val = validateRecruiterReplyDraftInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const result = headhunterCrmService.generateReply(val.data);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/headhunters/mandates', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const leadId = typeof req.query.leadId === 'string' ? req.query.leadId : undefined;
+    const mandates = await headhunterCrmService.listMandates(userId, leadId);
+    res.json(mandates);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/headhunters/mandates', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateMandateInput(req.body);
+    if (!val.ok) {
+      throw new Problem(422, val.message, 'invalid_request', val.errors);
+    }
+    const mandate = await headhunterCrmService.createMandate(userId, val.data);
+    res.status(201).json(mandate);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/api/headhunters/mandates/:id/status', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const b = bodyObject(req.body);
+    const status = typeof b.status === 'string' ? b.status : '';
+    if (!status) {
+      throw new Problem(422, 'Vui lòng cung cấp trạng thái mandate.', 'invalid_request');
+    }
+    const updated = await headhunterCrmService.updateMandateStatus(userId, String(req.params.id), status as any);
+    if (!updated) {
+      return res.status(404).json({ code: 'not_found', message: 'Không tìm thấy mandate.' });
+    }
+    res.json(updated);
   } catch (error) {
     next(error);
   }
