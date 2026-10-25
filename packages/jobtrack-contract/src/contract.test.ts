@@ -306,7 +306,23 @@ import {
   validateIdleWasteRemediationInput,
   validateKubernetesRightsizingInput,
   validateCfoMemoGenerateInput,
-  type CfoMemorandumDTO
+  type CfoMemorandumDTO,
+  classifyAiGovernanceBand,
+  classifyEuAiActRiskTier,
+  calculateLeaderboardScore,
+  calculatePromptCachingEfficiency,
+  calculateCascadeArbitrage,
+  maskSensitivePiiTokens,
+  calculateRagRetrievalMetrics,
+  calculateCompositeAiGovernanceScore,
+  generateExecutiveAiBoardMemorandumMarkdown,
+  validateLlmEvaluationInput,
+  validateCascadeSimulationInput,
+  validateGuardrailThresholds,
+  validateVectorIndexConfig,
+  validateAiBoardMemoGenerateInput,
+  type ExecutiveAiBoardMemorandumDTO,
+  type PiiMaskingRuleDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -6691,14 +6707,313 @@ test('contract: generateCfoBoardMemorandumMarkdown produces structured C-suite m
   assert.ok(md.includes('6. Board Audit Committee & CFO Directives'));
 });
 
+test('ai-governance: classifyAiGovernanceBand maps scores to status bands', () => {
+  assert.equal(classifyAiGovernanceBand(98.5), 'elite_compliant');
+  assert.equal(classifyAiGovernanceBand(90.0), 'elite_compliant');
+  assert.equal(classifyAiGovernanceBand(89.9), 'managed_defensible');
+  assert.equal(classifyAiGovernanceBand(75.0), 'managed_defensible');
+  assert.equal(classifyAiGovernanceBand(74.9), 'cautionary_gap');
+  assert.equal(classifyAiGovernanceBand(55.0), 'cautionary_gap');
+  assert.equal(classifyAiGovernanceBand(54.9), 'critical_non_compliant');
+  assert.equal(classifyAiGovernanceBand(22.0), 'critical_non_compliant');
+});
 
+test('ai-governance: classifyEuAiActRiskTier assigns proper category under Annex III', () => {
+  assert.equal(classifyEuAiActRiskTier(true, false), 'high_risk_employment');
+  assert.equal(classifyEuAiActRiskTier(true, true), 'high_risk_employment');
+  assert.equal(classifyEuAiActRiskTier(false, true), 'specific_transparency_risk');
+  assert.equal(classifyEuAiActRiskTier(false, false), 'minimal_risk');
+});
 
+test('ai-governance: calculateLeaderboardScore weights dimensions correctly', () => {
+  const score = calculateLeaderboardScore(94.5, 2.1, 91.0, 480, 88);
+  assert.ok(score > 75 && score <= 100);
+  assert.equal(typeof score, 'number');
 
+  const zeroLatencyScore = calculateLeaderboardScore(100, 0, 100, 0, 150);
+  assert.equal(zeroLatencyScore, 100);
+});
 
+test('ai-governance: calculatePromptCachingEfficiency computes hit rate and avoided cost', () => {
+  const emptyRes = calculatePromptCachingEfficiency(0, 0, 2.5, 50);
+  assert.equal(emptyRes.blendedHitRatePercent, 0);
+  assert.equal(emptyRes.monthlyCostAvoidedUsd, 0);
+  assert.equal(emptyRes.effectiveCostUsd, 0);
 
+  const res = calculatePromptCachingEfficiency(150_000, 850_000, 2.5, 50);
+  assert.equal(res.blendedHitRatePercent, 85);
+  assert.equal(res.effectiveCostUsd, 1.44);
+  assert.equal(res.monthlyCostAvoidedUsd, 1.06);
+});
 
+test('ai-governance: calculateCascadeArbitrage calculates tiered routing savings', () => {
+  const rates = {
+    tier1: { input: 0.15, output: 0.60 },
+    tier2: { input: 0.80, output: 2.40 },
+    tier3: { input: 3.00, output: 15.00 }
+  };
 
+  const sim = calculateCascadeArbitrage(
+    100_000,
+    1500,
+    300,
+    55,
+    35,
+    10,
+    rates,
+    85
+  );
 
+  assert.ok(sim.baselineFrontierOnlySpendUsd > sim.optimizedCascadeSpendUsd);
+  assert.ok(sim.totalMonthlySavingsUsd > 0);
+  assert.ok(sim.savingsPercentage >= 40);
+  assert.ok(sim.promptCachingSavingsUsd > 0);
+  assert.equal(sim.netMonthlySpendUsd, sim.optimizedCascadeSpendUsd);
+});
 
+test('ai-governance: maskSensitivePiiTokens applies redaction strategies correctly', () => {
+  const rawText = 'Candidate john.doe@example.com with phone +1-555-0199 salary $185,000.';
+  const rules: PiiMaskingRuleDTO[] = [
+    {
+      id: 'rule-email',
+      entityType: 'email',
+      regexPattern: '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}',
+      nerModelTarget: 'PresidioEmailRecognizer',
+      redactionStrategy: 'full_mask',
+      replacementMask: '[REDACTED_EMAIL]',
+      detectionConfidenceThreshold: 0.99,
+      isEnabled: true
+    },
+    {
+      id: 'rule-phone',
+      entityType: 'phone',
+      regexPattern: '\\+1-\\d{3}-\\d{4}',
+      nerModelTarget: 'PresidioPhoneRecognizer',
+      redactionStrategy: 'full_mask',
+      replacementMask: '[REDACTED_PHONE]',
+      detectionConfidenceThreshold: 0.95,
+      isEnabled: true
+    },
+    {
+      id: 'rule-salary',
+      entityType: 'salary',
+      regexPattern: '\\$\\d{1,3}(,\\d{3})*',
+      nerModelTarget: 'PresidioSalaryRecognizer',
+      redactionStrategy: 'full_mask',
+      replacementMask: '[REDACTED_SALARY]',
+      detectionConfidenceThreshold: 0.92,
+      isEnabled: true
+    }
+  ];
 
+  const fullMaskResult = maskSensitivePiiTokens(rawText, rules, 'full_mask');
+  assert.equal(fullMaskResult.detectedEntitiesCount, 3);
+  assert.ok(fullMaskResult.sanitizedText.includes('[REDACTED_EMAIL]'));
+  assert.ok(fullMaskResult.sanitizedText.includes('[REDACTED_PHONE]'));
+  assert.ok(fullMaskResult.sanitizedText.includes('[REDACTED_SALARY]'));
+  assert.ok(!fullMaskResult.sanitizedText.includes('john.doe@example.com'));
 
+  const syntheticResult = maskSensitivePiiTokens(rawText, rules, 'synthetic_token');
+  assert.ok(syntheticResult.sanitizedText.includes('[SYNTHETIC_EMAIL_1]'));
+  assert.ok(syntheticResult.sanitizedText.includes('[SYNTHETIC_PHONE_2]'));
+  assert.ok(syntheticResult.sanitizedText.includes('[SYNTHETIC_SALARY_3]'));
+
+  const hashResult = maskSensitivePiiTokens(rawText, rules, 'pseudonymized_hash');
+  assert.ok(hashResult.sanitizedText.includes('[HASH_'));
+  assert.ok(!hashResult.sanitizedText.includes('john.doe@example.com'));
+});
+
+test('ai-governance: calculateRagRetrievalMetrics computes MRR, NDCG, and Hit Rates', () => {
+  const emptyRes = calculateRagRetrievalMetrics([]);
+  assert.equal(emptyRes.hitRateAt5Percent, 0);
+  assert.equal(emptyRes.meanReciprocalRank, 0);
+
+  const retrievalData = [
+    { queryId: 'q1', retrievedDocIds: ['d1', 'd2', 'd3'], groundTruthDocId: 'd1' },
+    { queryId: 'q2', retrievedDocIds: ['dx', 'd2', 'dy', 'dz'], groundTruthDocId: 'd2' },
+    { queryId: 'q3', retrievedDocIds: ['a', 'b', 'c', 'd', 'e', 'f', 'd3'], groundTruthDocId: 'd3' },
+    { queryId: 'q4', retrievedDocIds: ['m', 'n', 'o'], groundTruthDocId: 'absent' }
+  ];
+
+  const metrics = calculateRagRetrievalMetrics(retrievalData);
+  assert.equal(metrics.hitRateAt5Percent, 50);
+  assert.equal(metrics.hitRateAt10Percent, 75);
+  assert.ok(metrics.meanReciprocalRank > 0.4);
+  assert.ok(metrics.ndcgAt10 > 0.4);
+});
+
+test('ai-governance: calculateCompositeAiGovernanceScore returns bounded score and band', () => {
+  const elite = calculateCompositeAiGovernanceScore({
+    evalAccuracyPercent: 95.0,
+    evalHallucinationPercent: 1.5,
+    tokenBudgetCompliancePercent: 94.0,
+    cacheEfficiencyPercent: 88.0,
+    jailbreakDefenseScore: 99.0,
+    piiRedactionAccuracyPercent: 98.5,
+    ragNdcgScore: 0.92,
+    euAiActCompliancePercent: 96.0,
+    nistMaturityPercent: 90.0
+  });
+
+  assert.ok(elite.compositeScore >= 90);
+  assert.equal(elite.statusBand, 'elite_compliant');
+
+  const deficient = calculateCompositeAiGovernanceScore({
+    evalAccuracyPercent: 40.0,
+    evalHallucinationPercent: 35.0,
+    tokenBudgetCompliancePercent: 45.0,
+    cacheEfficiencyPercent: 20.0,
+    jailbreakDefenseScore: 40.0,
+    piiRedactionAccuracyPercent: 50.0,
+    ragNdcgScore: 0.35,
+    euAiActCompliancePercent: 30.0,
+    nistMaturityPercent: 25.0
+  });
+
+  assert.ok(deficient.compositeScore < 55);
+  assert.equal(deficient.statusBand, 'critical_non_compliant');
+});
+
+test('ai-governance: generateExecutiveAiBoardMemorandumMarkdown formats all required sections', () => {
+  const memo: ExecutiveAiBoardMemorandumDTO = {
+    id: 'memo-test-1',
+    title: 'Q4-2026 Executive AI Governance & LLM Safety Memorandum',
+    fiscalQuarter: 'Q4-2026',
+    status: 'draft',
+    compositeAiGovernanceScore: 92.4,
+    governanceStatusBand: 'elite_compliant',
+    euAiActRiskTier: 'high_risk_employment',
+    monthlyAiSpendUsd: 14200,
+    annualizedArbitrageSavingsUsd: 118500,
+    jailbreakVulnerabilityRatePercent: 0.42,
+    executiveSummary: {
+      sectionKey: 'exec',
+      heading: '1. Executive Summary & AI Governance Posture',
+      executiveSummaryText: 'Enterprise AI operations operate at 92.4 Composite AGS.',
+      keyMetricsBulletPoints: ['AGS: 92.4 / 100', 'Arbitrage Savings: $118,500/yr'],
+      strategicGovernanceGuidance: 'Maintain model cascade routing policies.'
+    },
+    evaluationScorecard: {
+      sectionKey: 'eval',
+      heading: '2. LLM Benchmark Leaderboard & Accuracy Evaluation',
+      executiveSummaryText: 'GPT-4o and Claude 3.5 Sonnet lead multi-domain benchmarks.',
+      keyMetricsBulletPoints: ['Mean Accuracy: 94.2%', 'Hallucination Rate: 1.8%'],
+      strategicGovernanceGuidance: 'Adopt Tier 2 models for structured resume extraction.'
+    },
+    tokenEconomicsCascade: {
+      sectionKey: 'econ',
+      heading: '3. Token Economics, Prompt Caching & Cascade Routing',
+      executiveSummaryText: 'Blended prompt caching reached 87.4% hit rate.',
+      keyMetricsBulletPoints: ['Prompt Cache Hit: 87.4%', 'Cascade Savings: 62.4%'],
+      strategicGovernanceGuidance: 'Enforce prefix caching headers across all API callers.'
+    },
+    responsibleAiGuardrails: {
+      sectionKey: 'guard',
+      heading: '4. Responsible AI, Jailbreak Defense & PII Redaction',
+      executiveSummaryText: 'Jailbreak vulnerability bounded at 0.42% with zero PII leaks.',
+      keyMetricsBulletPoints: ['JVR: 0.42%', '100% PII Redaction on 5 Entity Classes'],
+      strategicGovernanceGuidance: 'Implement daily red-teaming adversarial injections.'
+    },
+    ragVectorGovernance: {
+      sectionKey: 'rag',
+      heading: '5. RAG Retrieval Quality & Knowledge Governance',
+      executiveSummaryText: 'Pinecone and pgvector indices maintain 0.912 MRR.',
+      keyMetricsBulletPoints: ['MRR: 0.912', 'NDCG@10: 0.884', 'Drift: 1.2%'],
+      strategicGovernanceGuidance: 'Re-index candidate skill taxonomy on monthly cadence.'
+    },
+    regulatoryComplianceDirectives: {
+      sectionKey: 'reg',
+      heading: '6. EU AI Act Annex III & NIST AI RMF Sign-Off Actions',
+      executiveSummaryText: 'All 7 mandatory high-risk employment criteria verified compliant.',
+      keyMetricsBulletPoints: ['EU AI Act: Compliant', 'NIST RMF: Run Phase'],
+      strategicGovernanceGuidance: 'Submit annual audit dossier to external compliance registrar.'
+    },
+    approvedByVpAiAt: '2026-10-25T00:00:00Z',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  };
+
+  const md = generateExecutiveAiBoardMemorandumMarkdown(memo);
+  assert.ok(md.includes('Executive AI Governance, LLM Systems & Responsible AI Board Memorandum'));
+  assert.ok(md.includes('Q4-2026'));
+  assert.ok(md.includes('92.4 / 100'));
+  assert.ok(md.includes('ELITE COMPLIANT'));
+  assert.ok(md.includes('HIGH RISK EMPLOYMENT'));
+  assert.ok(md.includes('$14,200'));
+  assert.ok(md.includes('$118,500'));
+  assert.ok(md.includes('0.42%'));
+  assert.ok(md.includes('1. Executive Summary & AI Governance Posture'));
+  assert.ok(md.includes('2. LLM Benchmark Leaderboard & Accuracy Evaluation'));
+  assert.ok(md.includes('3. Token Economics, Prompt Caching & Cascade Routing'));
+  assert.ok(md.includes('4. Responsible AI, Jailbreak Defense & PII Redaction'));
+  assert.ok(md.includes('5. RAG Retrieval Quality & Knowledge Governance'));
+  assert.ok(md.includes('6. EU AI Act Annex III & NIST AI RMF Sign-Off Actions'));
+  assert.ok(md.includes('Approved (2026-10-25T00:00:00Z)'));
+  assert.ok(md.includes('Pending Sign-Off'));
+});
+
+test('ai-governance: schema validators reject invalid inputs and accept valid payloads', () => {
+  const invalidEval = validateLlmEvaluationInput({ domain: 'invalid', models: [], sampleSize: 5 });
+  assert.equal(invalidEval.ok, false);
+  assert.ok(invalidEval.errors.domain);
+  assert.ok(invalidEval.errors.models);
+  assert.ok(invalidEval.errors.sampleSize);
+
+  const validEval = validateLlmEvaluationInput({
+    domain: 'job_matching',
+    models: ['gpt-4o', 'claude-3-5-sonnet'],
+    sampleSize: 100
+  });
+  assert.equal(validEval.ok, true);
+
+  const invalidCascade = validateCascadeSimulationInput({
+    monthlyTotalRequests: -5,
+    tier1RoutingPercent: 50,
+    tier2RoutingPercent: 30,
+    tier3RoutingPercent: 10
+  });
+  assert.equal(invalidCascade.ok, false);
+  assert.ok(invalidCascade.errors.monthlyTotalRequests);
+  assert.ok(invalidCascade.errors.routingShare);
+
+  const validCascade = validateCascadeSimulationInput({
+    monthlyTotalRequests: 50_000,
+    tier1RoutingPercent: 55,
+    tier2RoutingPercent: 35,
+    tier3RoutingPercent: 10
+  });
+  assert.equal(validCascade.ok, true);
+
+  const invalidGuardrails = validateGuardrailThresholds({
+    toxicityMaxAllowedScore: 120,
+    demographicBiasParityMinScore: 30
+  });
+  assert.equal(invalidGuardrails.ok, false);
+  assert.ok(invalidGuardrails.errors.toxicityMaxAllowedScore);
+  assert.ok(invalidGuardrails.errors.demographicBiasParityMinScore);
+
+  const validGuardrails = validateGuardrailThresholds({
+    toxicityMaxAllowedScore: 5.0,
+    demographicBiasParityMinScore: 85.0
+  });
+  assert.equal(validGuardrails.ok, true);
+
+  const invalidVec = validateVectorIndexConfig({ indexName: '', dimensionality: 512 });
+  assert.equal(invalidVec.ok, false);
+  assert.ok(invalidVec.errors.indexName);
+  assert.ok(invalidVec.errors.dimensionality);
+
+  const validVec = validateVectorIndexConfig({ indexName: 'pinecone-prod', dimensionality: 1536 });
+  assert.equal(validVec.ok, true);
+
+  const invalidMemo = validateAiBoardMemoGenerateInput({ title: '', fiscalQuarter: '' });
+  assert.equal(invalidMemo.ok, false);
+  assert.ok(invalidMemo.errors.title);
+  assert.ok(invalidMemo.errors.fiscalQuarter);
+
+  const validMemo = validateAiBoardMemoGenerateInput({
+    title: 'Q4-2026 AI Governance Audit',
+    fiscalQuarter: 'Q4-2026'
+  });
+  assert.equal(validMemo.ok, true);
+});

@@ -104,6 +104,7 @@ import { TechnicalDueDiligenceService } from './services/technical-due-diligence
 import { OrgTopologyStudioService } from './services/org-topology-studio-service.ts';
 import { ValueStreamStudioService } from './services/value-stream-studio-service.ts';
 import { CloudFinopsStudioService } from './services/cloud-finops-studio-service.ts';
+import { AiGovernanceStudioService } from './services/ai-governance-studio-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -153,7 +154,12 @@ import {
   validateAnomalyDetectionInput,
   validateIdleWasteRemediationInput,
   validateKubernetesRightsizingInput,
-  validateCfoMemoGenerateInput
+  validateCfoMemoGenerateInput,
+  validateLlmEvaluationInput,
+  validateCascadeSimulationInput,
+  validateGuardrailThresholds,
+  validateVectorIndexConfig,
+  validateAiBoardMemoGenerateInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -223,6 +229,7 @@ export const technicalDueDiligenceService = new TechnicalDueDiligenceService(poo
 export const orgTopologyStudioService = new OrgTopologyStudioService(pool);
 export const valueStreamStudioService = new ValueStreamStudioService(pool);
 export const cloudFinopsStudioService = new CloudFinopsStudioService(pool);
+export const aiGovernanceStudioService = new AiGovernanceStudioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -3702,6 +3709,181 @@ app.post(['/api/cloud-finops-studio/cfo-memos/:id/approve', '/api/finops/cfo-mem
     const updated = await cloudFinopsStudioService.approveCfoMemo(userId, String(req.params.id), role);
     if (!updated) {
       return res.status(404).json({ code: 'memo_not_found', error: 'CFO memorandum not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/ai-governance-studio/overview', '/api/ai-governance/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await aiGovernanceStudioService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/ai-governance-studio/evaluations', '/api/ai-governance/evaluations'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const domain = typeof req.query.domain === 'string' ? (req.query.domain as any) : undefined;
+    const evaluations = await aiGovernanceStudioService.listModelEvaluations(userId, domain);
+    res.json(evaluations);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/ai-governance-studio/evaluations/run', '/api/ai-governance/evaluations/run'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateLlmEvaluationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'invalid_evaluation_request', errors: val.errors });
+    }
+    const result = await aiGovernanceStudioService.runModelEvaluation(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/ai-governance-studio/token-economics', '/api/ai-governance/token-economics'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const tokenEcon = await aiGovernanceStudioService.getTokenEconomics(userId);
+    res.json(tokenEcon);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/ai-governance-studio/token-economics/simulate-cascade', '/api/ai-governance/token-economics/simulate-cascade'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateCascadeSimulationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'invalid_cascade_simulation_request', errors: val.errors });
+    }
+    const simulation = await aiGovernanceStudioService.simulateCascadeArbitrage(userId, req.body);
+    res.json(simulation);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/ai-governance-studio/responsible-ai', '/api/ai-governance/responsible-ai'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const responsibleAi = await aiGovernanceStudioService.getResponsibleAiOverview(userId);
+    res.json(responsibleAi);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/ai-governance-studio/responsible-ai/test-masking', '/api/ai-governance/responsible-ai/test-masking'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    if (!req.body?.rawPrompt || typeof req.body.rawPrompt !== 'string') {
+      return res.status(400).json({ code: 'invalid_masking_request', errors: { rawPrompt: 'Vui lòng nhập văn bản cần thử nghiệm che dấu PII.' } });
+    }
+    const result = await aiGovernanceStudioService.testPiiMasking(userId, {
+      rawPrompt: req.body.rawPrompt,
+      strategy: req.body.strategy || 'full_mask'
+    });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/ai-governance-studio/security-incidents', '/api/ai-governance/security-incidents'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const incidents = await aiGovernanceStudioService.scanSecurityIncidents(userId);
+    res.json(incidents);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.patch(['/api/ai-governance-studio/security-incidents/:id/resolve', '/api/ai-governance/security-incidents/:id/resolve'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const updated = await aiGovernanceStudioService.resolveSecurityIncident(userId, String(req.params.id), req.body?.notes);
+    if (!updated) {
+      return res.status(404).json({ code: 'incident_not_found', error: 'Security incident not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/ai-governance-studio/rag', '/api/ai-governance/rag'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const rag = await aiGovernanceStudioService.getRagOverview(userId);
+    res.json(rag);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/ai-governance-studio/rag/tune-chunking', '/api/ai-governance/rag/tune-chunking'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const chunkSize = Number(req.body?.chunkSizeTokens);
+    const chunkOverlap = Number(req.body?.chunkOverlapTokens);
+    if (isNaN(chunkSize) || chunkSize < 128 || chunkSize > 4096) {
+      return res.status(400).json({ code: 'invalid_chunking_request', errors: { chunkSizeTokens: 'Kích thước đoạn văn bản phải từ 128 đến 4096 tokens.' } });
+    }
+    const result = await aiGovernanceStudioService.tuneChunking(userId, {
+      chunkSizeTokens: chunkSize,
+      chunkOverlapTokens: isNaN(chunkOverlap) ? 64 : chunkOverlap,
+      indexingStrategy: req.body?.indexingStrategy || 'semantic_parent'
+    });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/ai-governance-studio/board-memos', '/api/ai-governance/board-memos'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const memos = await aiGovernanceStudioService.listBoardMemos(userId);
+    res.json(memos);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/ai-governance-studio/board-memos/generate', '/api/ai-governance/board-memos/generate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateAiBoardMemoGenerateInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'invalid_board_memo_request', errors: val.errors });
+    }
+    const memo = await aiGovernanceStudioService.generateBoardMemo(userId, req.body);
+    res.status(201).json(memo);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/ai-governance-studio/board-memos/:id/approve', '/api/ai-governance/board-memos/:id/approve'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const role = req.body?.role === 'chief_legal_officer' ? 'chief_legal_officer' : req.body?.role === 'cto' ? 'cto' : 'vp_ai';
+    const updated = await aiGovernanceStudioService.approveBoardMemo(userId, String(req.params.id), role);
+    if (!updated) {
+      return res.status(404).json({ code: 'board_memo_not_found', error: 'Executive board memorandum not found' });
     }
     res.json(updated);
   } catch (err) {

@@ -42,3 +42,4 @@ export * from './technical-due-diligence.ts';
 export * from './org-topology-studio.ts';
 export * from './value-stream-studio.ts';
 export * from './cloud-finops-studio.ts';
+export * from './ai-governance-studio.ts';

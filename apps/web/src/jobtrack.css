@@ -2900,6 +2900,120 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .finops-studio-btn-secondary{border:none;background:rgba(255,255,255,0.1);color:#cbd5e1;padding:0.5rem 1rem;border-radius:6px;font-size:0.875rem;cursor:pointer}
 .finops-studio-btn-primary{border:none;background:#10b981;color:#ffffff;padding:0.5rem 1rem;border-radius:6px;font-size:0.875rem;font-weight:600;cursor:pointer}
 
+.ai-gov-studio-backdrop{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.ai-gov-studio-dialog{width:1320px;max-width:96vw;height:90vh;max-height:92vh;background:#0b0f19;border:1px solid rgba(255,255,255,0.12);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.7)}
+.ai-gov-studio-header{padding:1.25rem 1.5rem;background:#111827;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center}
+.ai-gov-studio-title-row{display:flex;align-items:center;gap:0.75rem}
+.ai-gov-studio-icon{font-size:1.75rem}
+.ai-gov-studio-title{margin:0;font-size:1.25rem;font-weight:700;color:#f8fafc}
+.ai-gov-studio-subtitle{font-size:0.8rem;color:#94a3b8;margin-top:0.2rem}
+.ai-gov-studio-header-metrics{display:flex;align-items:center;gap:1rem}
+.ai-gov-studio-score-badge,.ai-gov-studio-risk-badge{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:0.35rem 0.75rem;border-radius:8px;display:flex;flex-direction:column;align-items:flex-end}
+.ai-gov-studio-score-label,.ai-gov-studio-risk-label{font-size:0.65rem;text-transform:uppercase;color:#94a3b8;font-weight:600;letter-spacing:0.04em}
+.ai-gov-studio-score-val{font-size:1rem;font-weight:800;color:#10b981;font-variant-numeric:tabular-nums}
+.ai-gov-studio-risk-val{font-size:0.75rem;font-weight:700;color:#f59e0b;letter-spacing:0.02em}
+.ai-gov-studio-band-pill{font-size:0.65rem;color:#10b981;font-weight:700}
+.ai-gov-studio-close-btn{background:transparent;border:none;color:#94a3b8;font-size:1.25rem;cursor:pointer;padding:0.25rem 0.5rem;border-radius:6px;transition:all 0.15s ease}
+.ai-gov-studio-close-btn:hover{color:#ffffff;background:rgba(255,255,255,0.1)}
+.ai-gov-studio-tabs{display:flex;gap:0.5rem;padding:0.75rem 1.5rem;background:#0f172a;border-bottom:1px solid rgba(255,255,255,0.08);overflow-x:auto}
+.ai-gov-studio-tab-btn{background:transparent;border:none;color:#94a3b8;font-size:0.85rem;font-weight:600;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.ai-gov-studio-tab-btn:hover{color:#f8fafc;background:rgba(255,255,255,0.05)}
+.ai-gov-studio-tab-btn.active{background:#1e293b;color:#38bdf8;box-shadow:0 2px 4px rgba(0,0,0,0.2)}
+.ai-gov-studio-body{flex:1;overflow-y:auto;padding:1.5rem;background:#0b0f19}
+.ai-gov-studio-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.ai-gov-studio-kpi-card{background:#111827;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:0.35rem}
+.ai-gov-studio-kpi-label{font-size:0.75rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.03em}
+.ai-gov-studio-kpi-value{font-size:1.5rem;font-weight:800;color:#f8fafc;font-variant-numeric:tabular-nums}
+.ai-gov-studio-kpi-hint{font-size:0.7rem;color:#64748b}
+.ai-gov-studio-panel-card{background:#111827;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+.ai-gov-studio-panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem}
+.ai-gov-studio-panel-title{margin:0;font-size:1.05rem;font-weight:700;color:#f8fafc}
+.ai-gov-studio-panel-desc{margin:0.25rem 0 0 0;font-size:0.8rem;color:#94a3b8}
+.ai-gov-studio-panel-actions{display:flex;align-items:center;gap:0.75rem}
+.ai-gov-studio-select,.ai-gov-studio-input,.ai-gov-studio-textarea{background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:0.5rem 0.75rem;color:#f8fafc;font-size:0.85rem}
+.ai-gov-studio-textarea{width:100%;box-sizing:border-box;resize:vertical}
+.ai-gov-studio-primary-btn{background:#0ea5e9;color:#ffffff;border:none;border-radius:6px;padding:0.5rem 1rem;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s}
+.ai-gov-studio-primary-btn:hover{background:#0284c7}
+.ai-gov-studio-primary-btn:disabled{opacity:0.6;cursor:not-allowed}
+.ai-gov-studio-subtle-btn{background:rgba(255,255,255,0.08);color:#cbd5e1;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:0.4rem 0.8rem;font-size:0.8rem;cursor:pointer}
+.ai-gov-studio-subtle-btn:hover{background:rgba(255,255,255,0.15)}
+.ai-gov-studio-table-container{overflow-x:auto}
+.ai-gov-studio-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.ai-gov-studio-table th{text-align:left;padding:0.75rem 1rem;font-weight:600;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,0.08);background:#0f172a}
+.ai-gov-studio-table td{padding:0.75rem 1rem;border-bottom:1px solid rgba(255,255,255,0.05);color:#e2e8f0}
+.ai-gov-studio-two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+.ai-gov-studio-green{color:#10b981 !important}
+.ai-gov-studio-red{color:#ef4444 !important}
+.ai-gov-studio-rank-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-weight:700;font-size:0.75rem;background:#1e293b;color:#94a3b8}
+.ai-gov-studio-rank-badge.rank-1{background:#f59e0b;color:#1e1b4b}
+.ai-gov-studio-rank-badge.rank-2{background:#cbd5e1;color:#1e293b}
+.ai-gov-studio-rank-badge.rank-3{background:#b45309;color:#ffffff}
+.ai-gov-studio-model-name{font-weight:600;color:#f8fafc}
+.ai-gov-studio-model-sub{font-size:0.7rem;color:#64748b}
+.ai-gov-studio-provider-tag{display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:700;background:rgba(255,255,255,0.08);color:#94a3b8}
+.ai-gov-studio-rating-badge{display:inline-block;padding:3px 8px;border-radius:6px;font-weight:700;background:rgba(16,185,129,0.15);color:#10b981}
+.ai-gov-studio-discount-tag{display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.75rem;font-weight:700;background:rgba(56,189,248,0.15);color:#38bdf8}
+.ai-gov-studio-tier-list{display:flex;flex-direction:column;gap:0.75rem}
+.ai-gov-studio-tier-item{background:#0f172a;border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:0.85rem}
+.ai-gov-studio-tier-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem}
+.ai-gov-studio-tier-title{font-weight:700;color:#f8fafc;font-size:0.9rem}
+.ai-gov-studio-tier-share{font-weight:700;color:#38bdf8;font-size:0.85rem}
+.ai-gov-studio-tier-detail{font-size:0.75rem;color:#94a3b8;display:flex;gap:1.5rem;margin-bottom:0.5rem}
+.ai-gov-studio-tier-tags{display:flex;flex-wrap:wrap;gap:0.35rem}
+.ai-gov-studio-workload-chip{background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;font-size:0.7rem;color:#cbd5e1}
+.ai-gov-studio-simulator-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem}
+.ai-gov-studio-form-group{display:flex;flex-direction:column;gap:0.35rem}
+.ai-gov-studio-form-group label{font-size:0.75rem;font-weight:600;color:#94a3b8}
+.ai-gov-studio-sim-result{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;background:#0f172a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:1rem;margin-top:1rem}
+.ai-gov-studio-sim-stat{display:flex;flex-direction:column;gap:0.25rem}
+.ai-gov-studio-sim-stat .label{font-size:0.75rem;color:#94a3b8}
+.ai-gov-studio-sim-stat .val{font-size:1.15rem;font-weight:700;color:#f8fafc;font-variant-numeric:tabular-nums}
+.ai-gov-studio-entity-tag{display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:700;background:rgba(244,63,94,0.15);color:#f43f5e}
+.ai-gov-studio-active-tag{color:#10b981;font-weight:600}
+.ai-gov-studio-sandbox-controls{display:flex;gap:0.75rem;margin-top:0.75rem}
+.ai-gov-studio-sandbox-output{background:#0f172a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:1rem;margin-top:1rem}
+.ai-gov-studio-sandbox-output .output-header{font-size:0.75rem;font-weight:700;color:#10b981;margin-bottom:0.5rem}
+.ai-gov-studio-sandbox-output .output-text{font-family:monospace;font-size:0.85rem;color:#e2e8f0;white-space:pre-wrap;word-break:break-all}
+.ai-gov-studio-sev-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:700}
+.ai-gov-studio-sev-badge.sev-critical{background:rgba(239,68,68,0.2);color:#ef4444}
+.ai-gov-studio-sev-badge.sev-high{background:rgba(249,115,22,0.2);color:#f97316}
+.ai-gov-studio-sev-badge.sev-medium{background:rgba(234,179,8,0.2);color:#eab308}
+.ai-gov-studio-status-pill{display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:700}
+.ai-gov-studio-status-pill.status-blocked{background:rgba(16,185,129,0.15);color:#10b981}
+.ai-gov-studio-status-pill.status-mitigated{background:rgba(56,189,248,0.15);color:#38bdf8}
+.ai-gov-studio-status-pill.status-board_approved{background:rgba(16,185,129,0.2);color:#10b981}
+.ai-gov-studio-status-pill.status-under_review{background:rgba(245,158,11,0.2);color:#f59e0b}
+.ai-gov-studio-status-pill.status-draft{background:rgba(148,163,184,0.2);color:#cbd5e1}
+.ai-gov-studio-index-card{display:flex;flex-direction:column;gap:0.5rem;background:#0f172a;border-radius:8px;padding:1rem}
+.ai-gov-studio-index-row{display:flex;justify-content:space-between;font-size:0.85rem}
+.ai-gov-studio-index-row .label{color:#94a3b8}
+.ai-gov-studio-index-row .val{color:#f8fafc}
+.ai-gov-studio-checklist{display:flex;flex-direction:column;gap:0.75rem}
+.ai-gov-studio-check-item{display:flex;align-items:flex-start;gap:0.75rem;background:#0f172a;border-radius:8px;padding:0.75rem}
+.ai-gov-studio-check-item .icon{font-size:1.1rem}
+.ai-gov-studio-check-item strong{color:#f8fafc;font-size:0.85rem}
+.ai-gov-studio-check-item p{margin:0.2rem 0 0 0;font-size:0.75rem;color:#94a3b8}
+.ai-gov-studio-nist-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem}
+.ai-gov-studio-nist-card{background:#0f172a;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.25rem}
+.ai-gov-studio-nist-card .title{font-size:0.75rem;font-weight:700;color:#94a3b8}
+.ai-gov-studio-nist-card .score{font-size:1.25rem;font-weight:800;color:#38bdf8}
+.ai-gov-studio-nist-card .stage{font-size:0.7rem;color:#10b981;font-weight:700}
+.ai-gov-studio-memo-container{background:#0f172a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:1.5rem;display:flex;flex-direction:column;gap:1.5rem}
+.ai-gov-studio-memo-section h4{margin:0 0 0.5rem 0;color:#38bdf8;font-size:1rem}
+.ai-gov-studio-memo-section p{margin:0 0 0.5rem 0;font-size:0.85rem;color:#cbd5e1;line-height:1.5}
+.ai-gov-studio-memo-section ul{margin:0 0 0.5rem 1.25rem;padding:0;font-size:0.85rem;color:#94a3b8}
+.ai-gov-studio-guidance{background:rgba(14,165,233,0.1);border-left:3px solid #0ea5e9;padding:0.5rem 0.75rem;border-radius:0 4px 4px 0;font-size:0.8rem;color:#e0f2fe}
+.ai-gov-studio-signoff-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.1)}
+.ai-gov-studio-signoff-role{display:flex;flex-direction:column;align-items:center;gap:0.5rem;background:#111827;border-radius:8px;padding:1rem;text-align:center}
+.ai-gov-studio-signoff-role .role-title{font-size:0.75rem;font-weight:700;color:#94a3b8}
+.ai-gov-studio-signoff-role .approved-pill{display:inline-block;padding:4px 10px;border-radius:6px;background:rgba(16,185,129,0.2);color:#10b981;font-size:0.75rem;font-weight:700}
+.ai-gov-studio-sidebar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:10px;border:none;background:transparent;color:#475569;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s ease}
+.ai-gov-studio-sidebar-btn:hover{background:#f1f5f9;color:#0ea5e9}
+.ai-gov-studio-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:1rem;color:#94a3b8}
+.ai-gov-studio-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.1);border-top-color:#0ea5e9;border-radius:50%;animation:ai-gov-spin 0.8s linear infinite}
+@keyframes ai-gov-spin{to{transform:rotate(360deg)}}
+
+
 
 
 
