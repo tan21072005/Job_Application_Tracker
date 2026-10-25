@@ -115,6 +115,7 @@ import { InternalAuditErmNexusService } from './services/internal-audit-erm-nexu
 import { LegalOperationsNexusService } from './services/legal-operations-nexus-service.ts';
 import { InvestorRelationsNexusService } from './services/investor-relations-nexus-service.ts';
 import { CorpDevPmiNexusService } from './services/corp-dev-pmi-nexus-service.ts';
+import { GlobalTradeSanctionsNexusService } from './services/global-trade-sanctions-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -157,7 +158,14 @@ import {
   validateCollarSimulationInput,
   validateAntitrustAssessmentInput,
   validateTalentRetentionInput,
-  validateCorpDevSignoffInput
+  validateCorpDevSignoffInput,
+  validateSanctionsScreeningInput,
+  validateEccnClassificationInput,
+  validateDeemedExportAuditInput,
+  validateCfiusAssessmentInput,
+  validateCustomsDutyInput,
+  validateCompileVsdInput,
+  validateExecuteSignoffInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -301,6 +309,7 @@ export const internalAuditErmNexusService = new InternalAuditErmNexusService(poo
 export const legalOperationsNexusService = new LegalOperationsNexusService(pool);
 export const investorRelationsNexusService = new InvestorRelationsNexusService(pool);
 export const corpDevPmiNexusService = new CorpDevPmiNexusService(pool);
+export const globalTradeSanctionsNexusService = new GlobalTradeSanctionsNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -5313,6 +5322,114 @@ app.post(['/api/corp-dev-pmi-nexus/targets/:id/signoff', '/api/corpdev/targets/:
     if ((error as Error).message.includes('must sign before')) {
       return res.status(400).json({ error: (error as Error).message });
     }
+    next(error);
+  }
+});
+
+app.get(['/api/global-trade-sanctions-nexus/overview', '/api/trade/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await globalTradeSanctionsNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/global-trade-sanctions-nexus/sanctions/screen', '/api/trade/sanctions/screen'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateSanctionsScreeningInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await globalTradeSanctionsNexusService.executeSanctionsScreening(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/global-trade-sanctions-nexus/export-control/classify-eccn', '/api/trade/export-control/classify-eccn'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateEccnClassificationInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await globalTradeSanctionsNexusService.classifyEccnItem(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/global-trade-sanctions-nexus/export-control/deemed-export-audit', '/api/trade/export-control/deemed-export-audit'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateDeemedExportAuditInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await globalTradeSanctionsNexusService.auditDeemedExport(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/global-trade-sanctions-nexus/cfius/assess-transaction', '/api/trade/cfius/assess-transaction'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCfiusAssessmentInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await globalTradeSanctionsNexusService.assessCfiusTransaction(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/global-trade-sanctions-nexus/customs/calculate-landed-duty', '/api/trade/customs/calculate-landed-duty'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCustomsDutyInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await globalTradeSanctionsNexusService.calculateLandedDuty(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/global-trade-sanctions-nexus/vsd/generate-report', '/api/trade/vsd/generate-report'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCompileVsdInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await globalTradeSanctionsNexusService.compileVsdReport(userId, req.body);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/global-trade-sanctions-nexus/vsd/signoff', '/api/trade/vsd/signoff'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateExecuteSignoffInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await globalTradeSanctionsNexusService.executeSignoff(userId, req.body);
+    res.json(result);
+  } catch (error) {
     next(error);
   }
 });

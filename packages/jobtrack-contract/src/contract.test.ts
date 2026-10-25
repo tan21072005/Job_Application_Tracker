@@ -510,7 +510,28 @@ import {
   validateCollarSimulationInput,
   validateAntitrustAssessmentInput,
   validateTalentRetentionInput,
-  validateCorpDevSignoffInput
+  validateCorpDevSignoffInput,
+  computeLevenshteinDistance,
+  computeJaroWinklerSimilarity,
+  computeSimplePhoneticHash,
+  computeSanctionsCompositeScore,
+  calculateAggregateBlockedOwnership,
+  evaluateOfacFiftyPercentRule,
+  computeSecondarySanctionsExposureIndex,
+  evaluateEccnEncryptionClassification,
+  computeDeemedExportExposure,
+  evaluateCfiusTidObligations,
+  computeCustomsDutyAndRvc,
+  computeCompositeTradeSanctionsRiskIndex,
+  generateVsdDossierMarkdown,
+  validateSanctionsScreeningInput,
+  validateEccnClassificationInput,
+  validateDeemedExportAuditInput,
+  validateCfiusAssessmentInput,
+  validateCustomsDutyInput,
+  validateCompileVsdInput,
+  validateExecuteSignoffInput,
+  type BeneficialOwnerNodeDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -9829,6 +9850,328 @@ test('contract: corp-dev-pmi-nexus validators enforce schemas and reject invalid
   });
   assert.equal(goodSignoff.ok, true);
 });
+
+test('contract: global-trade-sanctions-nexus Levenshtein, Jaro-Winkler, and Phonetic algorithms calculate deterministic scores', () => {
+  const levExact = computeLevenshteinDistance('Huawei Technologies', 'Huawei Technologies');
+  assert.equal(levExact, 0);
+
+  const levClose = computeLevenshteinDistance('Huawei Technologies', 'Huawei Technology');
+  assert.equal(levClose, 3);
+
+  const jwMatch = computeJaroWinklerSimilarity('Vnesheconombank', 'Vnesheconombank RF');
+  assert.ok(jwMatch > 0.85);
+
+  const jwMismatch = computeJaroWinklerSimilarity('Apple', 'Banana');
+  assert.ok(jwMismatch < 0.5);
+
+  const phone1 = computeSimplePhoneticHash('Smith');
+  const phone2 = computeSimplePhoneticHash('Smyth');
+  assert.equal(phone1, phone2);
+
+  const composite = computeSanctionsCompositeScore('Rostec', 'Rostec State Corp');
+  assert.ok(composite.compositeScore >= 0.70);
+  assert.ok(composite.scoreLevenshtein > 0);
+  assert.ok(composite.scoreJaroWinkler > 0);
+});
+
+test('contract: global-trade-sanctions-nexus OFAC 50% Rule recursive graph traversal aggregates ownership fractions', () => {
+  const blockedTree: BeneficialOwnerNodeDTO = {
+    id: 'root-1',
+    name: 'Holding Alpha',
+    country: 'CY',
+    isDirectlySanctioned: false,
+    ownershipPercentage: 100,
+    votingRightsPercentage: 100,
+    children: [
+      {
+        id: 'child-1',
+        name: 'Blocked Parent X',
+        country: 'RU',
+        isDirectlySanctioned: true,
+        ownershipPercentage: 30,
+        votingRightsPercentage: 30,
+        children: []
+      },
+      {
+        id: 'child-2',
+        name: 'Blocked Parent Y',
+        country: 'RU',
+        isDirectlySanctioned: true,
+        ownershipPercentage: 25,
+        votingRightsPercentage: 25,
+        children: []
+      }
+    ]
+  };
+
+  const result = evaluateOfacFiftyPercentRule(blockedTree);
+  assert.equal(result.aggregateBlockedPercentage, 55);
+  assert.equal(result.isBlockedByLaw, true);
+
+  const clearTree: BeneficialOwnerNodeDTO = {
+    id: 'root-2',
+    name: 'Holding Beta',
+    country: 'SG',
+    isDirectlySanctioned: false,
+    ownershipPercentage: 100,
+    votingRightsPercentage: 100,
+    children: [
+      {
+        id: 'child-3',
+        name: 'Minority Blocked Shareholder',
+        country: 'RU',
+        isDirectlySanctioned: true,
+        ownershipPercentage: 20,
+        votingRightsPercentage: 20,
+        children: []
+      }
+    ]
+  };
+
+  const clearResult = evaluateOfacFiftyPercentRule(clearTree);
+  assert.equal(clearResult.aggregateBlockedPercentage, 20);
+  assert.equal(clearResult.isBlockedByLaw, false);
+});
+
+test('contract: global-trade-sanctions-nexus Secondary Sanctions Exposure Index (SSEI) calculates multi-factor risks', () => {
+  const highRisk = computeSecondarySanctionsExposureIndex(90, 0.55, 100, 50);
+  assert.ok(highRisk >= 75);
+
+  const lowRisk = computeSecondarySanctionsExposureIndex(10, 0.0, 10, 10);
+  assert.ok(lowRisk <= 20);
+});
+
+test('contract: global-trade-sanctions-nexus ECCN Category 5 Part 2 classification evaluates encryption and mass market', () => {
+  const controlled = evaluateEccnEncryptionClassification({
+    isSoftware: true,
+    symmetricBits: 256,
+    asymmetricBits: 2048,
+    ellipticBits: 256,
+    isMassMarket: false,
+    destinationCountry: 'DE'
+  });
+  assert.equal(controlled.assignedEccn, '5D002.a.1');
+  assert.equal(controlled.encryptionLevel, 'controlled_high_assurance_5a002');
+  assert.equal(controlled.exception, 'enc_740_17_b1');
+  assert.equal(controlled.requiresReporting, true);
+  assert.equal(controlled.requiresLicense, false);
+
+  const massMarket = evaluateEccnEncryptionClassification({
+    isSoftware: true,
+    symmetricBits: 256,
+    asymmetricBits: 2048,
+    ellipticBits: 256,
+    isMassMarket: true,
+    destinationCountry: 'DE'
+  });
+  assert.equal(massMarket.assignedEccn, '5D992.c');
+  assert.equal(massMarket.encryptionLevel, 'mass_market_eligible_5a992_note3');
+  assert.equal(massMarket.requiresReporting, false);
+
+  const standardCommercial = evaluateEccnEncryptionClassification({
+    isSoftware: false,
+    symmetricBits: 0,
+    asymmetricBits: 0,
+    ellipticBits: 0,
+    isMassMarket: false,
+    destinationCountry: 'FR'
+  });
+  assert.equal(standardCommercial.assignedEccn, 'EAR99');
+  assert.equal(standardCommercial.encryptionLevel, 'non_cryptographic');
+
+  const embargoed = evaluateEccnEncryptionClassification({
+    isSoftware: true,
+    symmetricBits: 256,
+    asymmetricBits: 2048,
+    ellipticBits: 256,
+    isMassMarket: false,
+    destinationCountry: 'RU'
+  });
+  assert.equal(embargoed.requiresLicense, true);
+});
+
+test('contract: global-trade-sanctions-nexus Deemed Export exposure calculates country group and scope weights', () => {
+  const usCitizen = computeDeemedExportExposure({
+    isUsPerson: true,
+    countryGroup: 'group_d_1_national_security',
+    controlledEccn: '5D002.a.1',
+    scope: 'source_code_read'
+  });
+  assert.equal(usCitizen.score, 0);
+  assert.equal(usCitizen.requiresLicense, false);
+
+  const foreignNational = computeDeemedExportExposure({
+    isUsPerson: false,
+    countryGroup: 'group_d_1_national_security',
+    controlledEccn: '5D002.a.1',
+    scope: 'source_code_read'
+  });
+  assert.ok(foreignNational.score >= 60);
+  assert.equal(foreignNational.requiresLicense, true);
+});
+
+test('contract: global-trade-sanctions-nexus CFIUS TID assessment triggers sensitive personal data and mandatory filings', () => {
+  const mandatoryDeal = evaluateCfiusTidObligations({
+    criticalTech: false,
+    criticalInfra: false,
+    personalDataCount: 1500000,
+    militaryTargets: false,
+    foreignGovVotingPct: 30,
+    foreignAcquisitionPct: 51,
+    hasBoardSeat: true,
+    hasMaterialNonpublicAccess: true
+  });
+  assert.equal(mandatoryDeal.sensitiveThresholdExceeded, true);
+  assert.equal(mandatoryDeal.tidStatus, 'sensitive_personal_data_d');
+  assert.equal(mandatoryDeal.isMandatoryFiling, true);
+  assert.equal(mandatoryDeal.filingType, 'mandatory_declaration_part_800');
+
+  const clearDeal = evaluateCfiusTidObligations({
+    criticalTech: false,
+    criticalInfra: false,
+    personalDataCount: 50000,
+    militaryTargets: false,
+    foreignGovVotingPct: 0,
+    foreignAcquisitionPct: 20,
+    hasBoardSeat: false,
+    hasMaterialNonpublicAccess: false
+  });
+  assert.equal(clearDeal.tidStatus, 'non_tid_unrestricted');
+  assert.equal(clearDeal.isMandatoryFiling, false);
+});
+
+test('contract: global-trade-sanctions-nexus customs duty stack and Free Trade Agreement RVC calculations', () => {
+  const usmcaQualified = computeCustomsDutyAndRvc({
+    customsValueUsd: 100000,
+    mfnRatePct: 3.0,
+    section301RatePct: 25.0,
+    section232RatePct: 0.0,
+    totalTransactionValueUsd: 120000,
+    netCostUsd: 90000,
+    valueNonOriginatingMaterialsUsd: 36000,
+    ftaCode: 'usmca'
+  });
+  assert.equal(usmcaQualified.rvcTransactionValuePct, 70);
+  assert.equal(usmcaQualified.isFtaQualified, true);
+  assert.equal(usmcaQualified.ftaSavingsUsd, 3000);
+  assert.equal(usmcaQualified.section301Usd, 25000);
+  assert.equal(usmcaQualified.totalDutyPayableUsd, 25000);
+
+  const nonFta = computeCustomsDutyAndRvc({
+    customsValueUsd: 50000,
+    mfnRatePct: 4.0,
+    section301RatePct: 0.0,
+    section232RatePct: 0.0,
+    totalTransactionValueUsd: 50000,
+    netCostUsd: 40000,
+    valueNonOriginatingMaterialsUsd: 30000,
+    ftaCode: 'general_mfn_non_preferential'
+  });
+  assert.equal(nonFta.isFtaQualified, false);
+  assert.equal(nonFta.ftaSavingsUsd, 0);
+  assert.equal(nonFta.totalDutyPayableUsd, 2000);
+});
+
+test('contract: global-trade-sanctions-nexus Composite Trade Sanctions Risk Index (CTSRI) determines tiers and weighted score', () => {
+  const elite = computeCompositeTradeSanctionsRiskIndex(10, 10, 10, 10, 10);
+  assert.equal(elite.ctsriScore, 10);
+  assert.equal(elite.tier, 'tier_1_elite_zero_defect');
+
+  const managed = computeCompositeTradeSanctionsRiskIndex(25, 30, 20, 15, 10);
+  assert.ok(managed.ctsriScore > 15 && managed.ctsriScore <= 40);
+  assert.equal(managed.tier, 'tier_2_managed_exposure');
+
+  const critical = computeCompositeTradeSanctionsRiskIndex(90, 85, 75, 60, 80);
+  assert.ok(critical.ctsriScore > 70);
+  assert.equal(critical.tier, 'tier_4_critical_board_escalation');
+});
+
+test('contract: global-trade-sanctions-nexus generateVsdDossierMarkdown generates structured markdown report', () => {
+  const markdown = generateVsdDossierMarkdown({
+    vsdReferenceNumber: 'VSD-2026-EAR-0091',
+    targetAuthority: 'bis_oee',
+    title: 'Inadvertent Dual-Use Encryption Source Code Commit Access',
+    suspectedRegulationBreach: '15 CFR § 734.13 (Deemed Export Control Violation)',
+    incidentStartDate: '2026-08-01',
+    incidentEndDate: '2026-10-15',
+    estimatedTransactionsCount: 14,
+    estimatedTransactionVolumeUsd: 1250000,
+    narrativeSummary: 'Foreign national engineers accessed cryptographic source code.',
+    rootCauseAnalysis: 'Repository permissions defaulted to public on refactoring.',
+    remedialActionsImplemented: ['Revoked access', 'Instituted branch protection']
+  });
+
+  assert.ok(markdown.includes('VOLUNTARY SELF-DISCLOSURE DOSSIER'));
+  assert.ok(markdown.includes('VSD-2026-EAR-0091'));
+  assert.ok(markdown.includes('BIS_OEE'));
+  assert.ok(markdown.includes('15 CFR § 734.13'));
+  assert.ok(markdown.includes('Revoked access'));
+});
+
+test('contract: global-trade-sanctions-nexus input validators enforce schemas and reject invalid payloads', () => {
+  const badScreening = validateSanctionsScreeningInput({});
+  assert.equal(badScreening.ok, false);
+  const goodScreening = validateSanctionsScreeningInput({
+    queryName: 'Vneshtorg Logistics Holding',
+    countryCode: 'RU'
+  });
+  assert.equal(goodScreening.ok, true);
+
+  const badEccn = validateEccnClassificationInput({});
+  assert.equal(badEccn.ok, false);
+  const goodEccn = validateEccnClassificationInput({
+    itemName: 'SecureEdge Gateway',
+    functionalDescription: 'Cryptographic mesh routing software',
+    symmetricKeyLengthBits: 256
+  });
+  assert.equal(goodEccn.ok, true);
+
+  const badDeemed = validateDeemedExportAuditInput({});
+  assert.equal(badDeemed.ok, false);
+  const goodDeemed = validateDeemedExportAuditInput({
+    employeeName: 'Elena Rostova',
+    citizenshipCountry: 'RU',
+    accessedEccn: '5D002.a.1'
+  });
+  assert.equal(goodDeemed.ok, true);
+
+  const badCfius = validateCfiusAssessmentInput({});
+  assert.equal(badCfius.ok, false);
+  const goodCfius = validateCfiusAssessmentInput({
+    targetCompanyName: 'Quantum Telemetry Inc',
+    dealValueUsd: 50000000,
+    sensitivePersonalDataRecordsCount: 2000000
+  });
+  assert.equal(goodCfius.ok, true);
+
+  const badDuty = validateCustomsDutyInput({});
+  assert.equal(badDuty.ok, false);
+  const goodDuty = validateCustomsDutyInput({
+    partNumber: 'GPU-ACCEL-01',
+    htsCode: '8542.31.0000',
+    customsValueUsd: 500000
+  });
+  assert.equal(goodDuty.ok, true);
+
+  const badVsd = validateCompileVsdInput({});
+  assert.equal(badVsd.ok, false);
+  const goodVsd = validateCompileVsdInput({
+    vsdReferenceNumber: 'VSD-2026-EAR-0091',
+    title: 'Inadvertent Encryption Export',
+    suspectedRegulationBreach: '15 CFR § 734.13 Violation'
+  });
+  assert.equal(goodVsd.ok, true);
+
+  const badSignoff = validateExecuteSignoffInput({});
+  assert.equal(badSignoff.ok, false);
+  const goodSignoff = validateExecuteSignoffInput({
+    role: 'head_of_global_trade_compliance',
+    signerName: 'Sarah Jenkins',
+    signatureHash: 'sha256:8899aabbccddeeff0011223344556677'
+  });
+  assert.equal(goodSignoff.ok, true);
+});
+
 
 
 

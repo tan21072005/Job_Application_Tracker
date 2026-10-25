@@ -569,7 +569,46 @@ import {
   calculateFloatingCollarExchangeRatio,
   calculateAntitrustSecondRequestRisk,
   calculateDspiScore,
-  generateForm8KDisclosures
+  generateForm8KDisclosures,
+  type SanctionsListSource,
+  type SanctionsEntityType,
+  type SanctionsMatchConfidence,
+  type EccnCategory,
+  type EncryptionLevel,
+  type LicenseExceptionType,
+  type EarCountryGroup,
+  type CfiusTidStatus,
+  type CfiusFilingType,
+  type SubstantialTransformationCriterion,
+  type FreeTradeAgreementCode,
+  type CtsriRiskTier,
+  type TripartiteSignoffRole,
+  type VsdFilingAuthority,
+  type BeneficialOwnerNodeDTO,
+  type SanctionsHitDTO,
+  type SanctionsScreeningRequestDTO,
+  type SanctionsScreeningResultDTO,
+  type EccnClassificationRequestDTO,
+  type EccnClassificationResultDTO,
+  type DeemedExportAuditRequestDTO,
+  type DeemedExportAuditResultDTO,
+  type CfiusTidAssessmentRequestDTO,
+  type CfiusTidAssessmentResultDTO,
+  type NsmaMitigationAgreementDTO,
+  type CustomsLandedDutyRequestDTO,
+  type CustomsLandedDutyResultDTO,
+  type VoluntarySelfDisclosureDTO,
+  type TradeComplianceSignoffDTO,
+  type GlobalTradeNexusOverviewDTO,
+  computeSanctionsCompositeScore,
+  evaluateOfacFiftyPercentRule,
+  computeSecondarySanctionsExposureIndex,
+  evaluateEccnEncryptionClassification,
+  computeDeemedExportExposure,
+  evaluateCfiusTidObligations,
+  computeCustomsDutyAndRvc,
+  computeCompositeTradeSanctionsRiskIndex,
+  generateVsdDossierMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -21338,6 +21377,465 @@ export const corpDevPmiNexusRepository = {
     });
   }
 };
+
+const DEMO_GLOBAL_TRADE_SANCTIONS_NEXUS_KEY = 'jobtrack_demo_global_trade_sanctions_nexus_v1';
+
+interface DemoTradeNexusStore {
+  overview: GlobalTradeNexusOverviewDTO;
+  screenings: SanctionsScreeningResultDTO[];
+  eccnItems: EccnClassificationResultDTO[];
+  deemedAudits: DeemedExportAuditResultDTO[];
+  cfiusAssessments: CfiusTidAssessmentResultDTO[];
+  landedDuties: CustomsLandedDutyResultDTO[];
+  vsdFilings: VoluntarySelfDisclosureDTO[];
+}
+
+function createDefaultDemoTradeNexusStore(): DemoTradeNexusStore {
+  return {
+    overview: {
+      ctsriScore: 12.5,
+      ctsriRiskTier: 'tier_1_elite_zero_defect',
+      sanctionsRiskComponent: 10.0,
+      exportControlRiskComponent: 15.0,
+      cfiusRiskComponent: 12.0,
+      customsDutyRiskComponent: 14.0,
+      disclosureGovernanceComponent: 5.0,
+      activeSanctionsScreeningCount: 1420,
+      pendingSanctionsHitsCount: 0,
+      activeEccnClassificationsCount: 88,
+      activeDeemedExportLicensesCount: 4,
+      activeCfiusAssessmentsCount: 3,
+      activeNsmaAgreementsCount: 1,
+      activeHtsCatalogItemsCount: 312,
+      pendingVsdFilingsCount: 0,
+      lastUpdated: new Date().toISOString()
+    },
+    screenings: [],
+    eccnItems: [],
+    deemedAudits: [],
+    cfiusAssessments: [],
+    landedDuties: [],
+    vsdFilings: []
+  };
+}
+
+function loadDemoTradeNexusStore(): DemoTradeNexusStore {
+  const raw = localStorage.getItem(DEMO_GLOBAL_TRADE_SANCTIONS_NEXUS_KEY);
+  if (!raw) {
+    const s = createDefaultDemoTradeNexusStore();
+    saveDemoTradeNexusStore(s);
+    return s;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const s = createDefaultDemoTradeNexusStore();
+    saveDemoTradeNexusStore(s);
+    return s;
+  }
+}
+
+function saveDemoTradeNexusStore(store: DemoTradeNexusStore): void {
+  localStorage.setItem(DEMO_GLOBAL_TRADE_SANCTIONS_NEXUS_KEY, JSON.stringify(store));
+}
+
+export const tradeSanctionsNexusRepository = {
+  async getOverview(): Promise<GlobalTradeNexusOverviewDTO> {
+    if (demoMode) {
+      return loadDemoTradeNexusStore().overview;
+    }
+    try {
+      return await request<GlobalTradeNexusOverviewDTO>('/trade/overview');
+    } catch {
+      return loadDemoTradeNexusStore().overview;
+    }
+  },
+
+  async screenSanctions(req: SanctionsScreeningRequestDTO): Promise<SanctionsScreeningResultDTO> {
+    if (!demoMode) {
+      try {
+        return await request<SanctionsScreeningResultDTO>('/trade/sanctions/screen', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoTradeNexusStore();
+      const knownSanctionedEntities = [
+        { name: 'Vnesheconombank', source: 'ofac_sdn' as const, ref: 'EO 14024 Directive 1 / 31 CFR Part 587' },
+        { name: 'Huawei Technologies Co., Ltd.', source: 'bis_entity_list' as const, ref: 'Supp No 4 to Part 744' },
+        { name: 'Islamic Revolutionary Guard Corps', source: 'ofac_sdn' as const, ref: '31 CFR Part 594' },
+        { name: 'Rostec State Corporation', source: 'eu_financial_sanctions' as const, ref: 'Council Reg 269/2014' },
+        { name: 'Semiconductor Manufacturing International Corp', source: 'bis_entity_list' as const, ref: '15 CFR 744.11' },
+        { name: 'Sovcomflot', source: 'ofac_sdn' as const, ref: 'EO 14024 Maritime Sanctions' }
+      ];
+
+      const directHits = [];
+      for (const target of knownSanctionedEntities) {
+        const match = computeSanctionsCompositeScore(req.queryName, target.name);
+        if (match.compositeScore >= 0.70) {
+          directHits.push({
+            id: `hit-${Date.now().toString(16)}`,
+            listSource: target.source,
+            entityName: target.name,
+            aliases: [],
+            matchedField: 'legal_name' as const,
+            scoreLevenshtein: match.scoreLevenshtein,
+            scoreJaroWinkler: match.scoreJaroWinkler,
+            scorePhonetic: match.scorePhonetic,
+            compositeSimilarityScore: match.compositeScore,
+            confidence: match.compositeScore >= 0.85 ? ('high_probable' as const) : ('medium_review_required' as const),
+            regulatoryReference: target.ref
+          });
+        }
+      }
+
+      let aggregateBlockedFraction = 0;
+      let isBlockedBy50 = false;
+      if (req.beneficialOwnershipRoot) {
+        const eval50 = evaluateOfacFiftyPercentRule(req.beneficialOwnershipRoot);
+        aggregateBlockedFraction = eval50.aggregateBlockedFraction;
+        isBlockedBy50 = eval50.isBlockedByLaw;
+      }
+
+      const maxDirectScore = directHits.reduce((max, h) => Math.max(max, h.compositeSimilarityScore * 100), 0);
+      const countryRiskWeight = ['RU', 'IR', 'KP', 'SY', 'BY', 'CU'].includes(req.countryCode.toUpperCase()) ? 100 : 20;
+      const ssei = computeSecondarySanctionsExposureIndex(maxDirectScore, aggregateBlockedFraction, countryRiskWeight, 30);
+
+      let riskTier: CtsriRiskTier = 'tier_1_elite_zero_defect';
+      if (maxDirectScore >= 85 || isBlockedBy50 || ssei >= 70) riskTier = 'tier_4_critical_board_escalation';
+      else if (ssei >= 40) riskTier = 'tier_3_elevated_remediation';
+      else if (ssei >= 15) riskTier = 'tier_2_managed_exposure';
+
+      let recommendedAction: 'immediate_freeze_report' | 'enhanced_due_diligence' | 'cleared' = 'cleared';
+      if (maxDirectScore >= 85 || isBlockedBy50) recommendedAction = 'immediate_freeze_report';
+      else if (directHits.length > 0 || ssei >= 40) recommendedAction = 'enhanced_due_diligence';
+
+      const result: SanctionsScreeningResultDTO = {
+        screeningId: `scr-${Date.now().toString(16)}`,
+        screenedAt: new Date().toISOString(),
+        queryName: req.queryName,
+        directMatches: directHits,
+        aggregateBlockedOwnership: Math.round(aggregateBlockedFraction * 10000) / 100,
+        isBlockedByFiftyPercentRule: isBlockedBy50,
+        secondarySanctionsExposureIndex: ssei,
+        riskTier,
+        recommendedAction
+      };
+
+      store.screenings.unshift(result);
+      store.overview.activeSanctionsScreeningCount++;
+      if (directHits.length > 0) store.overview.pendingSanctionsHitsCount++;
+      saveDemoTradeNexusStore(store);
+      return result;
+  },
+
+  async classifyEccn(req: EccnClassificationRequestDTO): Promise<EccnClassificationResultDTO> {
+    if (!demoMode) {
+      try {
+        return await request<EccnClassificationResultDTO>('/trade/export-control/classify-eccn', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoTradeNexusStore();
+      const isSoftware =
+        req.functionalDescription.toLowerCase().includes('software') ||
+        req.itemName.toLowerCase().includes('daemon') ||
+        req.itemName.toLowerCase().includes('sdk');
+
+      const evaluation = evaluateEccnEncryptionClassification({
+        isSoftware,
+        symmetricBits: req.implementsSymmetricEncryption ? req.symmetricKeyLengthBits : 0,
+        asymmetricBits: req.implementsAsymmetricEncryption ? req.asymmetricKeyLengthBits : 0,
+        ellipticBits: req.implementsEllipticCurve ? req.ellipticCurveBits : 0,
+        isMassMarket: req.isMassMarketRetailAvailable,
+        destinationCountry: req.destinationCountry
+      });
+
+      const justification = `Item evaluated under EAR Category 5 Part 2. Cryptographic key lengths: Symmetric=${req.symmetricKeyLengthBits}b. Mass market test: ${req.isMassMarketRetailAvailable ? 'Satisfied under Note 3' : 'Not satisfied'}. Final ECCN: ${evaluation.assignedEccn}.`;
+
+      const result: EccnClassificationResultDTO = {
+        classificationId: `cls-${Date.now().toString(16)}`,
+        itemId: req.itemId,
+        assignedEccn: evaluation.assignedEccn,
+        reasonForControl: ['National Security (NS)', 'Anti-Terrorism (AT)'],
+        encryptionLevel: evaluation.encryptionLevel,
+        applicableLicenseException: evaluation.exception,
+        requiresSemiAnnualReporting: evaluation.requiresReporting,
+        requiresExportLicense: evaluation.requiresLicense,
+        determinationJustification: justification
+      };
+
+      store.eccnItems.unshift(result);
+      store.overview.activeEccnClassificationsCount++;
+      saveDemoTradeNexusStore(store);
+      return result;
+  },
+
+  async auditDeemedExport(req: DeemedExportAuditRequestDTO): Promise<DeemedExportAuditResultDTO> {
+    if (!demoMode) {
+      try {
+        return await request<DeemedExportAuditResultDTO>('/trade/export-control/deemed-export-audit', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoTradeNexusStore();
+      let countryGroup: EarCountryGroup = 'group_b_general';
+      const c = req.citizenshipCountry.toUpperCase();
+      if (['CA', 'GB', 'DE', 'FR', 'JP', 'AU', 'NZ', 'NL'].includes(c)) countryGroup = 'group_a_allies';
+      else if (['CN', 'RU', 'VN', 'AM', 'AZ', 'BY'].includes(c)) countryGroup = 'group_d_1_national_security';
+      else if (['IR', 'KP', 'SY', 'CU'].includes(c)) countryGroup = 'group_e_1_terrorist_supporting';
+
+      const { score, requiresLicense } = computeDeemedExportExposure({
+        isUsPerson: req.isUsPerson,
+        countryGroup,
+        controlledEccn: req.accessedEccn,
+        scope: req.technicalDataScope
+      });
+
+      let actionRequired: 'license_mandated_before_access' | 'technology_transfer_plan_required' | 'access_granted' = 'access_granted';
+      if (requiresLicense) actionRequired = 'license_mandated_before_access';
+      else if (score >= 40) actionRequired = 'technology_transfer_plan_required';
+
+      const result: DeemedExportAuditResultDTO = {
+        auditId: `audit-${Date.now().toString(16)}`,
+        employeeId: req.employeeId,
+        citizenshipCountry: req.citizenshipCountry,
+        earCountryGroup: countryGroup,
+        deemedExportExposureScore: score,
+        requiresDeemedExportLicense: requiresLicense,
+        licenseExceptionAvailable: requiresLicense ? undefined : 'enc_740_17_b1',
+        actionRequired
+      };
+
+      store.deemedAudits.unshift(result);
+      if (requiresLicense) store.overview.activeDeemedExportLicensesCount++;
+      saveDemoTradeNexusStore(store);
+      return result;
+  },
+
+  async assessCfius(req: CfiusTidAssessmentRequestDTO): Promise<CfiusTidAssessmentResultDTO> {
+    if (!demoMode) {
+      try {
+        return await request<CfiusTidAssessmentResultDTO>('/trade/cfius/assess-transaction', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoTradeNexusStore();
+      const analysis = evaluateCfiusTidObligations({
+        criticalTech: req.producesCriticalTechnology,
+        criticalInfra: req.operatesCriticalInfrastructure,
+        personalDataCount: req.sensitivePersonalDataRecordsCount,
+        militaryTargets: req.targetsMilitaryOrIntelligencePersonnel,
+        foreignGovVotingPct: req.foreignGovernmentVotingPercentage,
+        foreignAcquisitionPct: req.foreignInvestorOwnershipPercentage,
+        hasBoardSeat: req.foreignInvestorBoardSeats > 0,
+        hasMaterialNonpublicAccess: req.foreignInvestorMaterialNonpublicAccess
+      });
+
+      const mitigations: string[] = [];
+      if (analysis.sensitiveThresholdExceeded) {
+        mitigations.push('Establish independent US Data Governance Committee');
+        mitigations.push('Exclude foreign national board observers from raw US user data access');
+      }
+      if (req.producesCriticalTechnology) {
+        mitigations.push('Implement physical and logical access controls over 5D002 cryptographic source repositories');
+      }
+      if (analysis.isMandatoryFiling) {
+        mitigations.push('Submit joint declaration 30 calendar days prior to closing under 31 CFR Part 800');
+      }
+
+      const result: CfiusTidAssessmentResultDTO = {
+        assessmentId: `cfius-${Date.now().toString(16)}`,
+        tidStatus: analysis.tidStatus,
+        sensitiveDataThresholdExceeded: analysis.sensitiveThresholdExceeded,
+        isCoveredInvestment: analysis.isCoveredInvestment,
+        filingRequirement: analysis.filingType,
+        statutorySafeHarborAvailable: !analysis.isMandatoryFiling && analysis.riskScore < 50,
+        nationalSecurityRiskScore: analysis.riskScore,
+        recommendedMitigationMeasures: mitigations
+      };
+
+      store.cfiusAssessments.unshift(result);
+      store.overview.activeCfiusAssessmentsCount++;
+      saveDemoTradeNexusStore(store);
+      return result;
+  },
+
+  async calculateLandedDuty(req: CustomsLandedDutyRequestDTO): Promise<CustomsLandedDutyResultDTO> {
+    if (!demoMode) {
+      try {
+        return await request<CustomsLandedDutyResultDTO>('/trade/customs/calculate-landed-duty', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoTradeNexusStore();
+      const isChina = req.countryOfOrigin.toUpperCase() === 'CN';
+      const mfnRate = 2.5;
+      const s301Rate = isChina ? 25.0 : 0.0;
+      const s232Rate = 0.0;
+
+      const duty = computeCustomsDutyAndRvc({
+        customsValueUsd: req.customsValueUsd,
+        mfnRatePct: mfnRate,
+        section301RatePct: s301Rate,
+        section232RatePct: s232Rate,
+        totalTransactionValueUsd: req.totalTransactionValueUsd,
+        netCostUsd: req.netCostUsd,
+        valueNonOriginatingMaterialsUsd: req.valueNonOriginatingMaterialsUsd,
+        ftaCode: req.qualifyingFta
+      });
+
+      const result: CustomsLandedDutyResultDTO = {
+        calculationId: `duty-${Date.now().toString(16)}`,
+        htsCode: req.htsCode,
+        generalMfnDutyRate: mfnRate,
+        section301DutyRate: s301Rate,
+        section232DutyRate: s232Rate,
+        ftaPreferentialDutyRate: duty.isFtaQualified ? 0.0 : mfnRate,
+        dutySavedByFtaUsd: duty.ftaSavingsUsd,
+        baseDutyAmountUsd: duty.baseDutyUsd,
+        section301AmountUsd: duty.section301Usd,
+        section232AmountUsd: duty.section232Usd,
+        totalDutyPayableUsd: duty.totalDutyPayableUsd,
+        effectiveDutyRatePercentage: duty.effectiveDutyRatePct,
+        regionalValueContentPercentage: duty.rvcTransactionValuePct,
+        isFtaOriginQualified: duty.isFtaQualified
+      };
+
+      store.landedDuties.unshift(result);
+      saveDemoTradeNexusStore(store);
+      return result;
+  },
+
+  async compileVsdReport(req: {
+    vsdReferenceNumber: string;
+    targetAuthority: string;
+    title: string;
+    suspectedRegulationBreach: string;
+    incidentStartDate: string;
+    incidentEndDate: string;
+    estimatedTransactionsCount: number;
+    estimatedTransactionVolumeUsd: number;
+    narrativeSummary: string;
+    rootCauseAnalysis: string;
+    remedialActionsImplemented: string[];
+  }): Promise<VoluntarySelfDisclosureDTO> {
+    if (!demoMode) {
+      try {
+        return await request<VoluntarySelfDisclosureDTO>('/trade/vsd/generate-report', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoTradeNexusStore();
+      const markdown = generateVsdDossierMarkdown({
+        vsdReferenceNumber: req.vsdReferenceNumber,
+        targetAuthority: req.targetAuthority,
+        title: req.title,
+        suspectedRegulationBreach: req.suspectedRegulationBreach,
+        incidentStartDate: req.incidentStartDate,
+        incidentEndDate: req.incidentEndDate,
+        estimatedTransactionsCount: req.estimatedTransactionsCount,
+        estimatedTransactionVolumeUsd: req.estimatedTransactionVolumeUsd,
+        narrativeSummary: req.narrativeSummary,
+        rootCauseAnalysis: req.rootCauseAnalysis,
+        remedialActionsImplemented: req.remedialActionsImplemented
+      });
+
+      const filing: VoluntarySelfDisclosureDTO = {
+        id: `vsd-${Date.now().toString(16)}`,
+        vsdReferenceNumber: req.vsdReferenceNumber,
+        targetAuthority: req.targetAuthority as any,
+        title: req.title,
+        suspectedRegulationBreach: req.suspectedRegulationBreach,
+        incidentStartDate: req.incidentStartDate,
+        incidentEndDate: req.incidentEndDate,
+        estimatedTransactionsCount: req.estimatedTransactionsCount,
+        estimatedTransactionVolumeUsd: req.estimatedTransactionVolumeUsd,
+        narrativeSummary: req.narrativeSummary,
+        rootCauseAnalysis: req.rootCauseAnalysis,
+        remedialActionsImplemented: req.remedialActionsImplemented,
+        generatedMarkdownReport: markdown,
+        status: 'draft'
+      };
+
+      store.vsdFilings.unshift(filing);
+      store.overview.pendingVsdFilingsCount++;
+      saveDemoTradeNexusStore(store);
+      return filing;
+  },
+
+  async executeSignoff(req: {
+    vsdId: string;
+    role: TripartiteSignoffRole;
+    signerName: string;
+    signatureHash: string;
+  }): Promise<{ status: string; totalSignoffs: number; isFullySigned: boolean }> {
+    if (!demoMode) {
+      try {
+        return await request<{ status: string; totalSignoffs: number; isFullySigned: boolean }>('/trade/vsd/signoff', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoTradeNexusStore();
+      const vsd = store.vsdFilings.find((v) => v.id === req.vsdId) || store.vsdFilings[0];
+      if (vsd) {
+        if (req.role === 'head_of_global_trade_compliance') {
+          vsd.complianceOfficerSignature = req.signatureHash;
+          vsd.complianceOfficerSignedAt = new Date().toISOString();
+        } else if (req.role === 'chief_legal_officer') {
+          vsd.chiefLegalOfficerSignature = req.signatureHash;
+          vsd.chiefLegalOfficerSignedAt = new Date().toISOString();
+        } else if (req.role === 'chief_executive_officer') {
+          vsd.chiefExecutiveOfficerSignature = req.signatureHash;
+          vsd.chiefExecutiveOfficerSignedAt = new Date().toISOString();
+        }
+
+        const signedCount =
+          (vsd.complianceOfficerSignature ? 1 : 0) +
+          (vsd.chiefLegalOfficerSignature ? 1 : 0) +
+          (vsd.chiefExecutiveOfficerSignature ? 1 : 0);
+
+        if (signedCount >= 3) {
+          vsd.status = 'tripartite_pending';
+        }
+        saveDemoTradeNexusStore(store);
+        return {
+          status: signedCount >= 3 ? 'tripartite_approved' : 'signature_recorded',
+          totalSignoffs: signedCount,
+          isFullySigned: signedCount >= 3
+        };
+      }
+      return { status: 'signature_recorded', totalSignoffs: 1, isFullySigned: false };
+  }
+};
+
 
 
 
