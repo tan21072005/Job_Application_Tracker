@@ -105,6 +105,7 @@ import { OrgTopologyStudioService } from './services/org-topology-studio-service
 import { ValueStreamStudioService } from './services/value-stream-studio-service.ts';
 import { CloudFinopsStudioService } from './services/cloud-finops-studio-service.ts';
 import { AiGovernanceStudioService } from './services/ai-governance-studio-service.ts';
+import { SuccessionPipelineStudioService } from './services/succession-pipeline-studio-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -159,7 +160,14 @@ import {
   validateCascadeSimulationInput,
   validateGuardrailThresholds,
   validateVectorIndexConfig,
-  validateAiBoardMemoGenerateInput
+  validateAiBoardMemoGenerateInput,
+  validateTalentProfileInput,
+  validateRetentionInterventionInput,
+  validateCriticalRoleInput,
+  validateSuccessorCandidateInput,
+  validateExecutiveDevelopmentPlanInput,
+  validateSuccessionPlanInput,
+  validateSignOffInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -230,6 +238,7 @@ export const orgTopologyStudioService = new OrgTopologyStudioService(pool);
 export const valueStreamStudioService = new ValueStreamStudioService(pool);
 export const cloudFinopsStudioService = new CloudFinopsStudioService(pool);
 export const aiGovernanceStudioService = new AiGovernanceStudioService(pool);
+export const successionPipelineStudioService = new SuccessionPipelineStudioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -3888,6 +3897,185 @@ app.post(['/api/ai-governance-studio/board-memos/:id/approve', '/api/ai-governan
     res.json(updated);
   } catch (err) {
     next(err);
+  }
+});
+
+app.get(['/api/succession-pipeline-studio/overview', '/api/succession/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await successionPipelineStudioService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/succession-pipeline-studio/talent-profiles', '/api/succession/talent-profiles'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const profiles = await successionPipelineStudioService.listTalentProfiles(userId);
+    res.json(profiles);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/succession-pipeline-studio/talent-profiles', '/api/succession/talent-profiles'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const profile = await successionPipelineStudioService.createTalentProfile(userId, req.body);
+    res.status(201).json(profile);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_talent_profile_payload', error: (err as Error).message });
+  }
+});
+
+app.put(['/api/succession-pipeline-studio/talent-profiles/:id', '/api/succession/talent-profiles/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const updated = await successionPipelineStudioService.updateTalentProfile(userId, String(req.params.id), req.body);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message === 'talent_profile_not_found') {
+      return res.status(404).json({ code: 'talent_profile_not_found', error: 'Talent profile not found' });
+    }
+    res.status(400).json({ code: 'invalid_talent_profile_update', error: (err as Error).message });
+  }
+});
+
+app.delete(['/api/succession-pipeline-studio/talent-profiles/:id', '/api/succession/talent-profiles/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await successionPipelineStudioService.deleteTalentProfile(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'talent_profile_not_found', error: 'Talent profile not found' });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/succession-pipeline-studio/critical-roles', '/api/succession/critical-roles'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const plan = await successionPipelineStudioService.getPlan(userId);
+    const roles = await successionPipelineStudioService.listCriticalRoles(userId, plan.id);
+    res.json(roles);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/succession-pipeline-studio/critical-roles', '/api/succession/critical-roles'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const role = await successionPipelineStudioService.createCriticalRole(userId, req.body);
+    res.status(201).json(role);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_critical_role_payload', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/succession-pipeline-studio/successors', '/api/succession/successors'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const successor = await successionPipelineStudioService.addSuccessorCandidate(userId, req.body);
+    res.status(201).json(successor);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_successor_payload', error: (err as Error).message });
+  }
+});
+
+app.delete(['/api/succession-pipeline-studio/successors/:id', '/api/succession/successors/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const removed = await successionPipelineStudioService.removeSuccessorCandidate(userId, String(req.params.id));
+    if (!removed) {
+      return res.status(404).json({ code: 'successor_not_found', error: 'Successor candidate not found' });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/succession-pipeline-studio/interventions', '/api/succession/interventions'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const interventions = await successionPipelineStudioService.listRetentionInterventions(userId);
+    res.json(interventions);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/succession-pipeline-studio/interventions', '/api/succession/interventions'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const intervention = await successionPipelineStudioService.createRetentionIntervention(userId, req.body);
+    res.status(201).json(intervention);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_intervention_payload', error: (err as Error).message });
+  }
+});
+
+app.patch(['/api/succession-pipeline-studio/interventions/:id/status', '/api/succession/interventions/:id/status'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const status = req.body?.status;
+    const authorizedBy = typeof req.body?.authorizedBy === 'string' ? req.body.authorizedBy : undefined;
+    const updated = await successionPipelineStudioService.updateInterventionStatus(userId, String(req.params.id), status, authorizedBy);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message === 'intervention_not_found') {
+      return res.status(404).json({ code: 'intervention_not_found', error: 'Intervention not found' });
+    }
+    res.status(400).json({ code: 'invalid_intervention_status_payload', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/succession-pipeline-studio/development-plans', '/api/succession/development-plans'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const plans = await successionPipelineStudioService.listDevelopmentPlans(userId);
+    res.json(plans);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/succession-pipeline-studio/development-plans', '/api/succession/development-plans'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const devPlan = await successionPipelineStudioService.createOrUpdateDevelopmentPlan(userId, req.body);
+    res.status(201).json(devPlan);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_development_plan_payload', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/succession-pipeline-studio/plan', '/api/succession/plan'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const planId = typeof req.query.planId === 'string' ? req.query.planId : undefined;
+    const plan = await successionPipelineStudioService.getPlan(userId, planId);
+    res.json(plan);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/succession-pipeline-studio/plan/:id/sign-off', '/api/succession/plan/:id/sign-off'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const updated = await successionPipelineStudioService.signOffPlan(userId, String(req.params.id), req.body);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message === 'succession_plan_not_found') {
+      return res.status(404).json({ code: 'succession_plan_not_found', error: 'Succession plan not found' });
+    }
+    res.status(400).json({ code: 'invalid_sign_off_payload', error: (err as Error).message });
   }
 });
 

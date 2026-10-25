@@ -214,7 +214,48 @@ import {
   maskSensitivePiiTokens,
   calculateRagRetrievalMetrics,
   calculateCompositeAiGovernanceScore,
-  generateExecutiveAiBoardMemorandumMarkdown
+  generateExecutiveAiBoardMemorandumMarkdown,
+  type PerformanceLevel,
+  type PotentialLevel,
+  type NineBoxClassification,
+  type FlightRiskLevel,
+  type KeyPersonRiskTier,
+  type ReadinessHorizon,
+  type InterventionPlaybookType,
+  type InterventionStatus,
+  type CompetencyDomain,
+  type GovernanceHealthTier,
+  type SuccessionPlanStatus,
+  type SignOffExecutiveRole,
+  type TalentProfileDTO,
+  type TalentProfileMutationDTO,
+  type CalibrationDistributionDTO,
+  type RetentionInterventionDTO,
+  type RetentionInterventionMutationDTO,
+  type SuccessorCandidateDTO,
+  type SuccessorCandidateMutationDTO,
+  type CriticalRoleDTO,
+  type CriticalRoleMutationDTO,
+  type SuccessionBenchDepthDTO,
+  type CompetencyScoreDTO,
+  type DevelopmentMilestoneDTO,
+  type ExecutiveDevelopmentPlanDTO,
+  type ExecutiveDevelopmentPlanMutationDTO,
+  type TripartiteSignOffDTO,
+  type SuccessionPlanDTO,
+  type SuccessionPlanMutationDTO,
+  type SuccessionStudioOverviewDTO,
+  classifyNineBox,
+  calculateNineBoxScore,
+  calculateCalibrationDistribution,
+  calculateKeyPersonRiskIndex,
+  calculateFlightRisk,
+  evaluateRetentionInterventionTriggers,
+  calculateBenchDepthMetrics,
+  calculateCompetencyGap,
+  generateDevelopmentMilestones,
+  calculateSuccessionHealthScore,
+  generateBoardSuccessionMemorandumMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -12561,6 +12602,1325 @@ export const aiGovernanceStudioRepository = {
         return ov.latestBoardMemo;
       }
       return null;
+    }
+  }
+};
+
+const DEMO_SUCCESSION_STORAGE_KEY = 'jobtrack_succession_pipeline_studio_overview';
+
+const DEFAULT_DEMO_TALENT_PROFILES: TalentProfileDTO[] = [
+  {
+    id: 'tp-1',
+    userId: 'demo-user',
+    employeeId: 'EXEC-001',
+    fullName: 'Sarah Lin',
+    currentRole: 'Chief Technology Officer',
+    department: 'Executive / Engineering',
+    tenureYears: 4.8,
+    yearsInCurrentRole: 3.2,
+    performanceLevel: 3,
+    potentialLevel: 3,
+    nineBoxClassification: 'star',
+    nineBoxCalibrationScore: 100,
+    totalDirectCompensationUsd: 480000,
+    marketBenchmarkP75Usd: 450000,
+    compaRatio: 1.07,
+    unvestedEquityValueUsd: 950000,
+    monthsToEquityCliff: 7,
+    organizationalChangeImpact: 0.2,
+    flightRiskScore: 68.5,
+    flightRiskLevel: 'high',
+    spofSeverity: 5,
+    operationalCriticality: 5,
+    replacementDifficulty: 5,
+    keyPersonRiskIndex: 100,
+    keyPersonRiskTier: 'critical_spof',
+    underrepresentedLeader: true,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'tp-2',
+    userId: 'demo-user',
+    employeeId: 'EXEC-002',
+    fullName: 'Alex Mercer',
+    currentRole: 'VP of Platform Engineering',
+    department: 'Engineering',
+    tenureYears: 3.5,
+    yearsInCurrentRole: 1.8,
+    performanceLevel: 2,
+    potentialLevel: 3,
+    nineBoxClassification: 'high_potential',
+    nineBoxCalibrationScore: 72.5,
+    totalDirectCompensationUsd: 360000,
+    marketBenchmarkP75Usd: 380000,
+    compaRatio: 0.95,
+    unvestedEquityValueUsd: 620000,
+    monthsToEquityCliff: 15,
+    organizationalChangeImpact: 0.3,
+    flightRiskScore: 44.0,
+    flightRiskLevel: 'medium',
+    spofSeverity: 4,
+    operationalCriticality: 4,
+    replacementDifficulty: 4,
+    keyPersonRiskIndex: 75.0,
+    keyPersonRiskTier: 'high_vulnerability',
+    underrepresentedLeader: false,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'tp-3',
+    userId: 'demo-user',
+    employeeId: 'EXEC-003',
+    fullName: 'Elena Rostova',
+    currentRole: 'VP of Talent Management',
+    department: 'People Operations',
+    tenureYears: 3.0,
+    yearsInCurrentRole: 2.2,
+    performanceLevel: 3,
+    potentialLevel: 2,
+    nineBoxClassification: 'high_performer',
+    nineBoxCalibrationScore: 77.5,
+    totalDirectCompensationUsd: 320000,
+    marketBenchmarkP75Usd: 340000,
+    compaRatio: 0.94,
+    unvestedEquityValueUsd: 450000,
+    monthsToEquityCliff: 12,
+    organizationalChangeImpact: 0.1,
+    flightRiskScore: 35.0,
+    flightRiskLevel: 'medium',
+    spofSeverity: 3,
+    operationalCriticality: 3,
+    replacementDifficulty: 3,
+    keyPersonRiskIndex: 50.0,
+    keyPersonRiskTier: 'moderate_exposure',
+    underrepresentedLeader: true,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'tp-4',
+    userId: 'demo-user',
+    employeeId: 'EXEC-004',
+    fullName: 'Marcus Vance',
+    currentRole: 'Chief Financial Officer',
+    department: 'Finance',
+    tenureYears: 5.2,
+    yearsInCurrentRole: 4.1,
+    performanceLevel: 3,
+    potentialLevel: 1,
+    nineBoxClassification: 'solid_professional',
+    nineBoxCalibrationScore: 55.0,
+    totalDirectCompensationUsd: 460000,
+    marketBenchmarkP75Usd: 475000,
+    compaRatio: 0.97,
+    unvestedEquityValueUsd: 350000,
+    monthsToEquityCliff: 5,
+    organizationalChangeImpact: 0.4,
+    flightRiskScore: 65.0,
+    flightRiskLevel: 'high',
+    spofSeverity: 4,
+    operationalCriticality: 5,
+    replacementDifficulty: 4,
+    keyPersonRiskIndex: 83.8,
+    keyPersonRiskTier: 'critical_spof',
+    underrepresentedLeader: false,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'tp-5',
+    userId: 'demo-user',
+    employeeId: 'EXEC-005',
+    fullName: 'David Kim',
+    currentRole: 'Head of Product Management',
+    department: 'Product',
+    tenureYears: 2.6,
+    yearsInCurrentRole: 1.5,
+    performanceLevel: 2,
+    potentialLevel: 2,
+    nineBoxClassification: 'core_player',
+    nineBoxCalibrationScore: 50.0,
+    totalDirectCompensationUsd: 340000,
+    marketBenchmarkP75Usd: 350000,
+    compaRatio: 0.97,
+    unvestedEquityValueUsd: 510000,
+    monthsToEquityCliff: 22,
+    organizationalChangeImpact: 0.2,
+    flightRiskScore: 28.0,
+    flightRiskLevel: 'low',
+    spofSeverity: 3,
+    operationalCriticality: 4,
+    replacementDifficulty: 3,
+    keyPersonRiskIndex: 58.8,
+    keyPersonRiskTier: 'moderate_exposure',
+    underrepresentedLeader: false,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'tp-6',
+    userId: 'demo-user',
+    employeeId: 'EXEC-006',
+    fullName: 'Priya Patel',
+    currentRole: 'Principal Systems Architect',
+    department: 'Architecture & AI',
+    tenureYears: 2.1,
+    yearsInCurrentRole: 1.2,
+    performanceLevel: 1,
+    potentialLevel: 3,
+    nineBoxClassification: 'enigma_rough_diamond',
+    nineBoxCalibrationScore: 45.0,
+    totalDirectCompensationUsd: 295000,
+    marketBenchmarkP75Usd: 320000,
+    compaRatio: 0.92,
+    unvestedEquityValueUsd: 410000,
+    monthsToEquityCliff: 26,
+    organizationalChangeImpact: 0.5,
+    flightRiskScore: 32.0,
+    flightRiskLevel: 'medium',
+    spofSeverity: 4,
+    operationalCriticality: 4,
+    replacementDifficulty: 5,
+    keyPersonRiskIndex: 81.3,
+    keyPersonRiskTier: 'critical_spof',
+    underrepresentedLeader: true,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'tp-7',
+    userId: 'demo-user',
+    employeeId: 'EXEC-007',
+    fullName: 'Rachel Green',
+    currentRole: 'VP of Commercial Sales',
+    department: 'Revenue',
+    tenureYears: 2.9,
+    yearsInCurrentRole: 2.0,
+    performanceLevel: 2,
+    potentialLevel: 1,
+    nineBoxClassification: 'effective',
+    nineBoxCalibrationScore: 27.5,
+    totalDirectCompensationUsd: 350000,
+    marketBenchmarkP75Usd: 350000,
+    compaRatio: 1.0,
+    unvestedEquityValueUsd: 390000,
+    monthsToEquityCliff: 16,
+    organizationalChangeImpact: 0.1,
+    flightRiskScore: 22.0,
+    flightRiskLevel: 'low',
+    spofSeverity: 2,
+    operationalCriticality: 3,
+    replacementDifficulty: 2,
+    keyPersonRiskIndex: 32.5,
+    keyPersonRiskTier: 'moderate_exposure',
+    underrepresentedLeader: true,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'tp-8',
+    userId: 'demo-user',
+    employeeId: 'EXEC-008',
+    fullName: 'Tom Bradley',
+    currentRole: 'Director of Infrastructure Ops',
+    department: 'Infrastructure',
+    tenureYears: 4.0,
+    yearsInCurrentRole: 3.5,
+    performanceLevel: 1,
+    potentialLevel: 2,
+    nineBoxClassification: 'dilemma',
+    nineBoxCalibrationScore: 22.5,
+    totalDirectCompensationUsd: 280000,
+    marketBenchmarkP75Usd: 310000,
+    compaRatio: 0.90,
+    unvestedEquityValueUsd: 220000,
+    monthsToEquityCliff: 8,
+    organizationalChangeImpact: 0.4,
+    flightRiskScore: 58.0,
+    flightRiskLevel: 'medium',
+    spofSeverity: 3,
+    operationalCriticality: 3,
+    replacementDifficulty: 3,
+    keyPersonRiskIndex: 50.0,
+    keyPersonRiskTier: 'moderate_exposure',
+    underrepresentedLeader: false,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  }
+];
+
+const DEFAULT_DEMO_CRITICAL_ROLES: CriticalRoleDTO[] = [
+  {
+    id: 'cr-1',
+    userId: 'demo-user',
+    planId: 'plan-demo-01',
+    title: 'Chief Technology Officer',
+    department: 'Executive Leadership',
+    currentIncumbentId: 'tp-1',
+    currentIncumbentName: 'Sarah Lin',
+    operationalCriticality: 5,
+    vacancyDisruptionScore: 100,
+    successors: [
+      {
+        id: 'sc-1',
+        userId: 'demo-user',
+        criticalRoleId: 'cr-1',
+        talentProfileId: 'tp-2',
+        candidateName: 'Alex Mercer',
+        currentRole: 'VP of Platform Engineering',
+        readinessHorizon: 'ready_now',
+        rankingOrder: 1,
+        competencyCoverageIndex: 92,
+        notes: 'Exemplary technical scale leadership and systems stewardship',
+        underrepresentedLeader: false,
+        createdAt: '2026-10-25T00:00:00Z',
+        updatedAt: '2026-10-25T00:00:00Z'
+      },
+      {
+        id: 'sc-2',
+        userId: 'demo-user',
+        criticalRoleId: 'cr-1',
+        talentProfileId: 'tp-6',
+        candidateName: 'Priya Patel',
+        currentRole: 'Principal Systems Architect',
+        readinessHorizon: 'ready_1_2_years',
+        rankingOrder: 2,
+        competencyCoverageIndex: 84,
+        notes: 'Advanced AI expertise; requires financial and people management breadth',
+        underrepresentedLeader: true,
+        createdAt: '2026-10-25T00:00:00Z',
+        updatedAt: '2026-10-25T00:00:00Z'
+      }
+    ],
+    readyNowCount: 1,
+    ready1To2YearsCount: 1,
+    emergencyInterimCount: 0,
+    isEmergencyVulnerable: false,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'cr-2',
+    userId: 'demo-user',
+    planId: 'plan-demo-01',
+    title: 'Chief Financial Officer',
+    department: 'Finance & Capital Strategy',
+    currentIncumbentId: 'tp-4',
+    currentIncumbentName: 'Marcus Vance',
+    operationalCriticality: 5,
+    vacancyDisruptionScore: 100,
+    successors: [
+      {
+        id: 'sc-3',
+        userId: 'demo-user',
+        criticalRoleId: 'cr-2',
+        talentProfileId: 'tp-3',
+        candidateName: 'Elena Rostova',
+        currentRole: 'VP of Talent Management',
+        readinessHorizon: 'emergency_interim',
+        rankingOrder: 1,
+        competencyCoverageIndex: 78,
+        notes: 'Senior operator designated for interim operational continuity',
+        underrepresentedLeader: true,
+        createdAt: '2026-10-25T00:00:00Z',
+        updatedAt: '2026-10-25T00:00:00Z'
+      }
+    ],
+    readyNowCount: 0,
+    ready1To2YearsCount: 0,
+    emergencyInterimCount: 1,
+    isEmergencyVulnerable: true,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'cr-3',
+    userId: 'demo-user',
+    planId: 'plan-demo-01',
+    title: 'VP of Platform Engineering',
+    department: 'Engineering Infrastructure',
+    currentIncumbentId: 'tp-2',
+    currentIncumbentName: 'Alex Mercer',
+    operationalCriticality: 4,
+    vacancyDisruptionScore: 80,
+    successors: [
+      {
+        id: 'sc-4',
+        userId: 'demo-user',
+        criticalRoleId: 'cr-3',
+        talentProfileId: 'tp-6',
+        candidateName: 'Priya Patel',
+        currentRole: 'Principal Systems Architect',
+        readinessHorizon: 'ready_now',
+        rankingOrder: 1,
+        competencyCoverageIndex: 90,
+        notes: 'Deep institutional architectural knowledge ready for departmental scale',
+        underrepresentedLeader: true,
+        createdAt: '2026-10-25T00:00:00Z',
+        updatedAt: '2026-10-25T00:00:00Z'
+      }
+    ],
+    readyNowCount: 1,
+    ready1To2YearsCount: 0,
+    emergencyInterimCount: 0,
+    isEmergencyVulnerable: false,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'cr-4',
+    userId: 'demo-user',
+    planId: 'plan-demo-01',
+    title: 'Chief People Officer',
+    department: 'People & Culture',
+    currentIncumbentName: 'Open Search',
+    operationalCriticality: 4,
+    vacancyDisruptionScore: 80,
+    successors: [
+      {
+        id: 'sc-5',
+        userId: 'demo-user',
+        criticalRoleId: 'cr-4',
+        talentProfileId: 'tp-3',
+        candidateName: 'Elena Rostova',
+        currentRole: 'VP of Talent Management',
+        readinessHorizon: 'ready_now',
+        rankingOrder: 1,
+        competencyCoverageIndex: 94,
+        notes: 'Top tier internal candidate for CPO expansion',
+        underrepresentedLeader: true,
+        createdAt: '2026-10-25T00:00:00Z',
+        updatedAt: '2026-10-25T00:00:00Z'
+      }
+    ],
+    readyNowCount: 1,
+    ready1To2YearsCount: 0,
+    emergencyInterimCount: 0,
+    isEmergencyVulnerable: false,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  }
+];
+
+const DEFAULT_DEMO_INTERVENTIONS: RetentionInterventionDTO[] = [
+  {
+    id: 'inv-1',
+    userId: 'demo-user',
+    talentProfileId: 'tp-1',
+    talentName: 'Sarah Lin',
+    talentRole: 'Chief Technology Officer',
+    playbookType: 'retention_equity_refresh',
+    title: 'CTO Multi-Year Retention Equity Refresh',
+    description: 'Issue $600,000 unvested equity grant with 4-year schedule to defeat 7-month vesting cliff.',
+    proposedCostUsd: 600000,
+    status: 'approved',
+    triggerRationale: 'CTO single point of failure index is 100 with 7 months to major cliff.',
+    authorizedBy: 'Board Compensation Committee',
+    targetCompletionDate: '2026-12-15',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'inv-2',
+    userId: 'demo-user',
+    talentProfileId: 'tp-2',
+    talentName: 'Alex Mercer',
+    talentRole: 'VP of Platform Engineering',
+    playbookType: 'role_expansion_promotion',
+    title: 'Executive Scope Expansion to Head of Platform & AI Infrastructure',
+    description: 'Broaden operational charter across all platform tiers with seat on Architecture Review Board.',
+    proposedCostUsd: 45000,
+    status: 'active',
+    triggerRationale: 'High potential successor in role for 1.8 years primed for leadership expansion.',
+    authorizedBy: 'Sarah Lin (CTO)',
+    targetCompletionDate: '2026-11-30',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'inv-3',
+    userId: 'demo-user',
+    talentProfileId: 'tp-6',
+    talentName: 'Priya Patel',
+    talentRole: 'Principal Systems Architect',
+    playbookType: 'executive_mentoring_coaching',
+    title: 'External C-Level Mentorship for Systems Architect',
+    description: 'Pair with external former CTO and executive communications coach for 6-month intensive.',
+    proposedCostUsd: 30000,
+    status: 'proposed',
+    triggerRationale: 'Rough diamond profile with high technical potential needing executive presence grooming.',
+    authorizedBy: 'Elena Rostova (VP Talent)',
+    targetCompletionDate: '2027-02-28',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  }
+];
+
+const DEFAULT_DEMO_DEV_PLAN: ExecutiveDevelopmentPlanDTO = {
+  id: 'edp-1',
+  userId: 'demo-user',
+  talentProfileId: 'tp-2',
+  talentName: 'Alex Mercer',
+  targetRoleId: 'cr-1',
+  targetRoleTitle: 'Chief Technology Officer',
+  competencyScores: [
+    { domain: 'strategic_vision', domainLabel: 'Strategic Vision & Foresight', currentScore: 3.5, targetScore: 4.8, gap: 1.3 },
+    { domain: 'operational_execution', domainLabel: 'Operational Execution & Velocity', currentScore: 4.8, targetScore: 4.8, gap: 0.0 },
+    { domain: 'people_leadership_culture', domainLabel: 'People Leadership & Cultural Anchor', currentScore: 4.0, targetScore: 4.5, gap: 0.5 },
+    { domain: 'financial_business_acumen', domainLabel: 'Financial & Capital Acumen', currentScore: 3.0, targetScore: 4.5, gap: 1.5 },
+    { domain: 'ai_technology_innovation', domainLabel: 'AI & Technological Innovation', currentScore: 4.6, targetScore: 4.6, gap: 0.0 }
+  ],
+  competencyCoverageIndex: 85.3,
+  milestones: [
+    {
+      id: 'ms-30',
+      dayHorizon: 30,
+      phaseTitle: 'Phase 1: Diagnostic & Stakeholder Alignment',
+      actionItems: [
+        'Conduct 360-degree leadership review focusing on Strategic Vision & Foresight',
+        'Engage executive sponsor for weekly mentoring cadence',
+        'Review current board governance and operational reporting frameworks'
+      ],
+      deliverable: 'Executive Capability Diagnostic & Development Charter',
+      mentorOrSponsor: 'Chief People Officer',
+      completed: true
+    },
+    {
+      id: 'ms-60',
+      dayHorizon: 60,
+      phaseTitle: 'Phase 2: High-Impact Strategic Stretch Assignment',
+      actionItems: [
+        'Lead cross-functional initiative addressing enterprise Financial & Capital Acumen',
+        'Formulate multi-quarter operational turnaround strategy',
+        'Present preliminary business model optimization to Executive Committee'
+      ],
+      deliverable: 'Cross-Functional Strategic Delivery Whitepaper',
+      mentorOrSponsor: 'Chief Technology Officer',
+      completed: false
+    },
+    {
+      id: 'ms-90',
+      dayHorizon: 90,
+      phaseTitle: 'Phase 3: Executive Operational Shadowing & Fiduciary Governance',
+      actionItems: [
+        'Shadow incumbent in board committee sessions and capital allocation meetings',
+        'Participate directly in annual enterprise budget formulation',
+        'Engage directly in high-stakes enterprise vendor and customer contract negotiations'
+      ],
+      deliverable: 'Board Committee Governance Review Portfolio',
+      mentorOrSponsor: 'Chief Executive Officer',
+      completed: false
+    },
+    {
+      id: 'ms-180',
+      dayHorizon: 180,
+      phaseTitle: 'Phase 4: Full Operational Autonomy & Board Review',
+      actionItems: [
+        'Assume direct operational delegation for key division or business unit',
+        'Complete formal 180-day radar re-evaluation with executive assessors',
+        'Deliver comprehensive Board Nominations Committee transition briefing'
+      ],
+      deliverable: 'Succession Readiness Certification & Board Sign-off File',
+      mentorOrSponsor: 'Board Nominations Committee Chair',
+      completed: false
+    }
+  ],
+  executiveSponsorName: 'Sarah Lin (CTO)',
+  status: 'active',
+  createdAt: '2026-10-25T00:00:00Z',
+  updatedAt: '2026-10-25T00:00:00Z'
+};
+
+function buildDefaultDemoSuccessionOverview(): SuccessionStudioOverviewDTO {
+  const profiles = DEFAULT_DEMO_TALENT_PROFILES;
+  const criticalRoles = DEFAULT_DEMO_CRITICAL_ROLES;
+  const interventions = DEFAULT_DEMO_INTERVENTIONS;
+  const developmentPlans = [DEFAULT_DEMO_DEV_PLAN];
+
+  const calibDist = calculateCalibrationDistribution(
+    profiles.map(p => ({ nineBoxClassification: p.nineBoxClassification }))
+  );
+
+  const benchDepth = calculateBenchDepthMetrics(
+    criticalRoles.map(cr => ({
+      operationalCriticality: cr.operationalCriticality,
+      successors: cr.successors.map(sc => ({
+        readinessHorizon: sc.readinessHorizon,
+        underrepresentedLeader: sc.underrepresentedLeader
+      }))
+    }))
+  );
+
+  const totalKpri = profiles.reduce((sum, p) => sum + p.keyPersonRiskIndex, 0);
+  const avgKpri = Number((totalKpri / profiles.length).toFixed(1));
+  const avgCci = 88.0;
+
+  const health = calculateSuccessionHealthScore({
+    benchDepthRatio: benchDepth.benchDepthRatio,
+    emergencyVulnerabilityIndex: benchDepth.emergencyVulnerabilityIndex,
+    averageKpri: avgKpri,
+    averageCci: avgCci,
+    calibrationHealthScore: calibDist.calibrationHealthScore
+  });
+
+  const signOffs: TripartiteSignOffDTO[] = [
+    {
+      role: 'vp_talent_management',
+      roleLabel: 'VP of Talent Management',
+      signedByUserId: 'u-vp-talent',
+      signedByUserName: 'Elena Rostova',
+      signedAt: '2026-10-25T08:00:00Z',
+      isApproved: true,
+      governanceComments: 'All 9-box calibration ratings verified against performance data',
+      digitalSignatureHash: 'sha256-demo-sig-vptalent-001'
+    },
+    {
+      role: 'chief_people_officer',
+      roleLabel: 'Chief People Officer',
+      signedByUserId: 'u-cpo',
+      signedByUserName: 'Chief People Officer',
+      signedAt: '2026-10-25T08:15:00Z',
+      isApproved: true,
+      governanceComments: 'Retention packages budgeted and approved by CPO',
+      digitalSignatureHash: 'sha256-demo-sig-cpo-002'
+    },
+    {
+      role: 'ceo',
+      roleLabel: 'Chief Executive Officer',
+      isApproved: false,
+      governanceComments: 'Pending final review prior to Board Nominations Committee'
+    }
+  ];
+
+  const plan: SuccessionPlanDTO = {
+    id: 'plan-demo-01',
+    userId: 'demo-user',
+    title: 'FY2027 Executive Leadership Succession & Continuity Plan',
+    fiscalYear: 2027,
+    status: 'pending_ceo',
+    calibrationDistribution: calibDist,
+    benchDepth,
+    averageKeyPersonRiskIndex: avgKpri,
+    averageCompetencyCoverageIndex: avgCci,
+    successionHealthScore: health.score,
+    governanceHealthTier: health.tier,
+    criticalRoles,
+    activeInterventionsCount: interventions.filter(i => i.status === 'active' || i.status === 'approved').length,
+    totalInterventionBudgetUsd: interventions.reduce((sum, i) => sum + i.proposedCostUsd, 0),
+    boardMemorandumMarkdown: '',
+    signOffs,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  };
+
+  plan.boardMemorandumMarkdown = generateBoardSuccessionMemorandumMarkdown(plan);
+
+  return {
+    plan,
+    talentProfiles: profiles,
+    interventions,
+    developmentPlans,
+    calibrationDistribution: calibDist,
+    benchDepth
+  };
+}
+
+function loadDemoSuccessionOverview(): SuccessionStudioOverviewDTO {
+  try {
+    const raw = localStorage.getItem(DEMO_SUCCESSION_STORAGE_KEY);
+    if (!raw) {
+      const initial = buildDefaultDemoSuccessionOverview();
+      localStorage.setItem(DEMO_SUCCESSION_STORAGE_KEY, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return buildDefaultDemoSuccessionOverview();
+  }
+}
+
+function saveDemoSuccessionOverview(ov: SuccessionStudioOverviewDTO): void {
+  try {
+    localStorage.setItem(DEMO_SUCCESSION_STORAGE_KEY, JSON.stringify(ov));
+  } catch {}
+}
+
+export const successionPipelineStudioRepository = {
+  async getOverview(): Promise<SuccessionStudioOverviewDTO> {
+    if (demoMode) {
+      return loadDemoSuccessionOverview();
+    }
+    try {
+      return await request<SuccessionStudioOverviewDTO>('/succession-pipeline-studio/overview');
+    } catch {
+      return loadDemoSuccessionOverview();
+    }
+  },
+
+  async listTalentProfiles(): Promise<TalentProfileDTO[]> {
+    if (demoMode) {
+      return loadDemoSuccessionOverview().talentProfiles;
+    }
+    try {
+      return await request<TalentProfileDTO[]>('/succession-pipeline-studio/talent-profiles');
+    } catch {
+      return loadDemoSuccessionOverview().talentProfiles;
+    }
+  },
+
+  async createTalentProfile(input: TalentProfileMutationDTO): Promise<TalentProfileDTO> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      const perf = input.performanceLevel;
+      const pot = input.potentialLevel;
+      const compa = input.totalDirectCompensationUsd / Math.max(1, input.marketBenchmarkP75Usd);
+      const flight = calculateFlightRisk(
+        compa,
+        input.yearsInCurrentRole,
+        input.monthsToEquityCliff,
+        input.organizationalChangeImpact
+      );
+      const kpri = calculateKeyPersonRiskIndex(
+        input.spofSeverity,
+        input.operationalCriticality,
+        input.replacementDifficulty
+      );
+
+      const newProfile: TalentProfileDTO = {
+        id: `tp-${Date.now()}`,
+        userId: 'demo-user',
+        employeeId: input.employeeId,
+        fullName: input.fullName,
+        currentRole: input.currentRole,
+        department: input.department,
+        tenureYears: input.tenureYears,
+        yearsInCurrentRole: input.yearsInCurrentRole,
+        performanceLevel: perf,
+        potentialLevel: pot,
+        nineBoxClassification: classifyNineBox(perf, pot),
+        nineBoxCalibrationScore: calculateNineBoxScore(perf, pot),
+        totalDirectCompensationUsd: input.totalDirectCompensationUsd,
+        marketBenchmarkP75Usd: input.marketBenchmarkP75Usd,
+        compaRatio: Number(compa.toFixed(2)),
+        unvestedEquityValueUsd: input.unvestedEquityValueUsd,
+        monthsToEquityCliff: input.monthsToEquityCliff,
+        organizationalChangeImpact: input.organizationalChangeImpact,
+        flightRiskScore: flight.score,
+        flightRiskLevel: flight.level,
+        spofSeverity: input.spofSeverity,
+        operationalCriticality: input.operationalCriticality,
+        replacementDifficulty: input.replacementDifficulty,
+        keyPersonRiskIndex: kpri.index,
+        keyPersonRiskTier: kpri.tier,
+        underrepresentedLeader: input.underrepresentedLeader,
+        avatarUrl: input.avatarUrl,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      ov.talentProfiles.push(newProfile);
+      ov.calibrationDistribution = calculateCalibrationDistribution(
+        ov.talentProfiles.map(p => ({ nineBoxClassification: p.nineBoxClassification }))
+      );
+      ov.plan.calibrationDistribution = ov.calibrationDistribution;
+      saveDemoSuccessionOverview(ov);
+      return newProfile;
+    }
+    try {
+      return await request<TalentProfileDTO>('/succession-pipeline-studio/talent-profiles', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      const perf = input.performanceLevel;
+      const pot = input.potentialLevel;
+      const compa = input.totalDirectCompensationUsd / Math.max(1, input.marketBenchmarkP75Usd);
+      const flight = calculateFlightRisk(
+        compa,
+        input.yearsInCurrentRole,
+        input.monthsToEquityCliff,
+        input.organizationalChangeImpact
+      );
+      const kpri = calculateKeyPersonRiskIndex(
+        input.spofSeverity,
+        input.operationalCriticality,
+        input.replacementDifficulty
+      );
+      const newProfile: TalentProfileDTO = {
+        id: `tp-${Date.now()}`,
+        userId: 'demo-user',
+        employeeId: input.employeeId,
+        fullName: input.fullName,
+        currentRole: input.currentRole,
+        department: input.department,
+        tenureYears: input.tenureYears,
+        yearsInCurrentRole: input.yearsInCurrentRole,
+        performanceLevel: perf,
+        potentialLevel: pot,
+        nineBoxClassification: classifyNineBox(perf, pot),
+        nineBoxCalibrationScore: calculateNineBoxScore(perf, pot),
+        totalDirectCompensationUsd: input.totalDirectCompensationUsd,
+        marketBenchmarkP75Usd: input.marketBenchmarkP75Usd,
+        compaRatio: Number(compa.toFixed(2)),
+        unvestedEquityValueUsd: input.unvestedEquityValueUsd,
+        monthsToEquityCliff: input.monthsToEquityCliff,
+        organizationalChangeImpact: input.organizationalChangeImpact,
+        flightRiskScore: flight.score,
+        flightRiskLevel: flight.level,
+        spofSeverity: input.spofSeverity,
+        operationalCriticality: input.operationalCriticality,
+        replacementDifficulty: input.replacementDifficulty,
+        keyPersonRiskIndex: kpri.index,
+        keyPersonRiskTier: kpri.tier,
+        underrepresentedLeader: input.underrepresentedLeader,
+        avatarUrl: input.avatarUrl,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.talentProfiles.push(newProfile);
+      saveDemoSuccessionOverview(ov);
+      return newProfile;
+    }
+  },
+
+  async updateTalentProfile(id: string, input: TalentProfileMutationDTO): Promise<TalentProfileDTO> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      const idx = ov.talentProfiles.findIndex(p => p.id === id);
+      if (idx === -1) throw new Error('talent_profile_not_found');
+
+      const perf = input.performanceLevel;
+      const pot = input.potentialLevel;
+      const compa = input.totalDirectCompensationUsd / Math.max(1, input.marketBenchmarkP75Usd);
+      const flight = calculateFlightRisk(
+        compa,
+        input.yearsInCurrentRole,
+        input.monthsToEquityCliff,
+        input.organizationalChangeImpact
+      );
+      const kpri = calculateKeyPersonRiskIndex(
+        input.spofSeverity,
+        input.operationalCriticality,
+        input.replacementDifficulty
+      );
+
+      const updated: TalentProfileDTO = {
+        ...ov.talentProfiles[idx],
+        employeeId: input.employeeId,
+        fullName: input.fullName,
+        currentRole: input.currentRole,
+        department: input.department,
+        tenureYears: input.tenureYears,
+        yearsInCurrentRole: input.yearsInCurrentRole,
+        performanceLevel: perf,
+        potentialLevel: pot,
+        nineBoxClassification: classifyNineBox(perf, pot),
+        nineBoxCalibrationScore: calculateNineBoxScore(perf, pot),
+        totalDirectCompensationUsd: input.totalDirectCompensationUsd,
+        marketBenchmarkP75Usd: input.marketBenchmarkP75Usd,
+        compaRatio: Number(compa.toFixed(2)),
+        unvestedEquityValueUsd: input.unvestedEquityValueUsd,
+        monthsToEquityCliff: input.monthsToEquityCliff,
+        organizationalChangeImpact: input.organizationalChangeImpact,
+        flightRiskScore: flight.score,
+        flightRiskLevel: flight.level,
+        spofSeverity: input.spofSeverity,
+        operationalCriticality: input.operationalCriticality,
+        replacementDifficulty: input.replacementDifficulty,
+        keyPersonRiskIndex: kpri.index,
+        keyPersonRiskTier: kpri.tier,
+        underrepresentedLeader: input.underrepresentedLeader,
+        avatarUrl: input.avatarUrl,
+        updatedAt: new Date().toISOString()
+      };
+      ov.talentProfiles[idx] = updated;
+      saveDemoSuccessionOverview(ov);
+      return updated;
+    }
+    try {
+      return await request<TalentProfileDTO>(`/succession-pipeline-studio/talent-profiles/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      const idx = ov.talentProfiles.findIndex(p => p.id === id);
+      if (idx !== -1) {
+        ov.talentProfiles[idx] = { ...ov.talentProfiles[idx], ...input, updatedAt: new Date().toISOString() };
+        saveDemoSuccessionOverview(ov);
+        return ov.talentProfiles[idx];
+      }
+      throw new Error('talent_profile_not_found');
+    }
+  },
+
+  async deleteTalentProfile(id: string): Promise<boolean> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      const before = ov.talentProfiles.length;
+      ov.talentProfiles = ov.talentProfiles.filter(p => p.id !== id);
+      saveDemoSuccessionOverview(ov);
+      return ov.talentProfiles.length < before;
+    }
+    try {
+      const res = await request<{ ok: boolean }>(`/succession-pipeline-studio/talent-profiles/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      const before = ov.talentProfiles.length;
+      ov.talentProfiles = ov.talentProfiles.filter(p => p.id !== id);
+      saveDemoSuccessionOverview(ov);
+      return ov.talentProfiles.length < before;
+    }
+  },
+
+  async listCriticalRoles(): Promise<CriticalRoleDTO[]> {
+    if (demoMode) {
+      return loadDemoSuccessionOverview().plan.criticalRoles;
+    }
+    try {
+      return await request<CriticalRoleDTO[]>('/succession-pipeline-studio/critical-roles');
+    } catch {
+      return loadDemoSuccessionOverview().plan.criticalRoles;
+    }
+  },
+
+  async createCriticalRole(input: CriticalRoleMutationDTO): Promise<CriticalRoleDTO> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      const incumbent = ov.talentProfiles.find(p => p.id === input.currentIncumbentId);
+      const newRole: CriticalRoleDTO = {
+        id: `cr-${Date.now()}`,
+        userId: 'demo-user',
+        planId: input.planId,
+        title: input.title,
+        department: input.department,
+        currentIncumbentId: input.currentIncumbentId,
+        currentIncumbentName: incumbent?.fullName,
+        operationalCriticality: input.operationalCriticality,
+        vacancyDisruptionScore: input.operationalCriticality * 20,
+        successors: [],
+        readyNowCount: 0,
+        ready1To2YearsCount: 0,
+        emergencyInterimCount: 0,
+        isEmergencyVulnerable: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.plan.criticalRoles.push(newRole);
+      ov.benchDepth = calculateBenchDepthMetrics(
+        ov.plan.criticalRoles.map(cr => ({
+          operationalCriticality: cr.operationalCriticality,
+          successors: cr.successors.map(sc => ({
+            readinessHorizon: sc.readinessHorizon,
+            underrepresentedLeader: sc.underrepresentedLeader
+          }))
+        }))
+      );
+      ov.plan.benchDepth = ov.benchDepth;
+      saveDemoSuccessionOverview(ov);
+      return newRole;
+    }
+    try {
+      return await request<CriticalRoleDTO>('/succession-pipeline-studio/critical-roles', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      const incumbent = ov.talentProfiles.find(p => p.id === input.currentIncumbentId);
+      const newRole: CriticalRoleDTO = {
+        id: `cr-${Date.now()}`,
+        userId: 'demo-user',
+        planId: input.planId,
+        title: input.title,
+        department: input.department,
+        currentIncumbentId: input.currentIncumbentId,
+        currentIncumbentName: incumbent?.fullName,
+        operationalCriticality: input.operationalCriticality,
+        vacancyDisruptionScore: input.operationalCriticality * 20,
+        successors: [],
+        readyNowCount: 0,
+        ready1To2YearsCount: 0,
+        emergencyInterimCount: 0,
+        isEmergencyVulnerable: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.plan.criticalRoles.push(newRole);
+      saveDemoSuccessionOverview(ov);
+      return newRole;
+    }
+  },
+
+  async addSuccessor(input: SuccessorCandidateMutationDTO): Promise<SuccessorCandidateDTO> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      const role = ov.plan.criticalRoles.find(r => r.id === input.criticalRoleId);
+      const talent = ov.talentProfiles.find(p => p.id === input.talentProfileId);
+      if (!role) throw new Error('critical_role_not_found');
+
+      const newCandidate: SuccessorCandidateDTO = {
+        id: `sc-${Date.now()}`,
+        userId: 'demo-user',
+        criticalRoleId: input.criticalRoleId,
+        talentProfileId: input.talentProfileId,
+        candidateName: talent?.fullName || 'Unknown Candidate',
+        currentRole: talent?.currentRole || 'Unknown Role',
+        readinessHorizon: input.readinessHorizon,
+        rankingOrder: input.rankingOrder,
+        competencyCoverageIndex: 88,
+        notes: input.notes || '',
+        underrepresentedLeader: talent?.underrepresentedLeader || false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      role.successors.push(newCandidate);
+      role.readyNowCount = role.successors.filter(s => s.readinessHorizon === 'ready_now').length;
+      role.ready1To2YearsCount = role.successors.filter(s => s.readinessHorizon === 'ready_1_2_years').length;
+      role.emergencyInterimCount = role.successors.filter(s => s.readinessHorizon === 'emergency_interim').length;
+      role.isEmergencyVulnerable = role.readyNowCount === 0;
+
+      ov.benchDepth = calculateBenchDepthMetrics(
+        ov.plan.criticalRoles.map(cr => ({
+          operationalCriticality: cr.operationalCriticality,
+          successors: cr.successors.map(sc => ({
+            readinessHorizon: sc.readinessHorizon,
+            underrepresentedLeader: sc.underrepresentedLeader
+          }))
+        }))
+      );
+      ov.plan.benchDepth = ov.benchDepth;
+      saveDemoSuccessionOverview(ov);
+      return newCandidate;
+    }
+    try {
+      return await request<SuccessorCandidateDTO>('/succession-pipeline-studio/successors', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      const role = ov.plan.criticalRoles.find(r => r.id === input.criticalRoleId);
+      const talent = ov.talentProfiles.find(p => p.id === input.talentProfileId);
+      const newCandidate: SuccessorCandidateDTO = {
+        id: `sc-${Date.now()}`,
+        userId: 'demo-user',
+        criticalRoleId: input.criticalRoleId,
+        talentProfileId: input.talentProfileId,
+        candidateName: talent?.fullName || 'Unknown Candidate',
+        currentRole: talent?.currentRole || 'Unknown Role',
+        readinessHorizon: input.readinessHorizon,
+        rankingOrder: input.rankingOrder,
+        competencyCoverageIndex: 88,
+        notes: input.notes || '',
+        underrepresentedLeader: talent?.underrepresentedLeader || false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (role) {
+        role.successors.push(newCandidate);
+        saveDemoSuccessionOverview(ov);
+      }
+      return newCandidate;
+    }
+  },
+
+  async removeSuccessor(id: string): Promise<boolean> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      for (const role of ov.plan.criticalRoles) {
+        const before = role.successors.length;
+        role.successors = role.successors.filter(s => s.id !== id);
+        if (role.successors.length < before) {
+          role.readyNowCount = role.successors.filter(s => s.readinessHorizon === 'ready_now').length;
+          role.ready1To2YearsCount = role.successors.filter(s => s.readinessHorizon === 'ready_1_2_years').length;
+          role.emergencyInterimCount = role.successors.filter(s => s.readinessHorizon === 'emergency_interim').length;
+          role.isEmergencyVulnerable = role.readyNowCount === 0;
+          saveDemoSuccessionOverview(ov);
+          return true;
+        }
+      }
+      return false;
+    }
+    try {
+      const res = await request<{ ok: boolean }>(`/succession-pipeline-studio/successors/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      for (const role of ov.plan.criticalRoles) {
+        role.successors = role.successors.filter(s => s.id !== id);
+      }
+      saveDemoSuccessionOverview(ov);
+      return true;
+    }
+  },
+
+  async listInterventions(): Promise<RetentionInterventionDTO[]> {
+    if (demoMode) {
+      return loadDemoSuccessionOverview().interventions;
+    }
+    try {
+      return await request<RetentionInterventionDTO[]>('/succession-pipeline-studio/interventions');
+    } catch {
+      return loadDemoSuccessionOverview().interventions;
+    }
+  },
+
+  async createIntervention(input: RetentionInterventionMutationDTO): Promise<RetentionInterventionDTO> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      const talent = ov.talentProfiles.find(p => p.id === input.talentProfileId);
+      const newIntervention: RetentionInterventionDTO = {
+        id: `inv-${Date.now()}`,
+        userId: 'demo-user',
+        talentProfileId: input.talentProfileId,
+        talentName: talent?.fullName || 'Unknown Candidate',
+        talentRole: talent?.currentRole || 'Unknown Role',
+        playbookType: input.playbookType,
+        title: input.title,
+        description: input.description,
+        proposedCostUsd: input.proposedCostUsd,
+        status: input.status,
+        triggerRationale: input.triggerRationale,
+        targetCompletionDate: input.targetCompletionDate,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.interventions.unshift(newIntervention);
+      ov.plan.activeInterventionsCount = ov.interventions.filter(i => i.status === 'active' || i.status === 'approved').length;
+      ov.plan.totalInterventionBudgetUsd = ov.interventions.reduce((sum, i) => sum + i.proposedCostUsd, 0);
+      saveDemoSuccessionOverview(ov);
+      return newIntervention;
+    }
+    try {
+      return await request<RetentionInterventionDTO>('/succession-pipeline-studio/interventions', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      const talent = ov.talentProfiles.find(p => p.id === input.talentProfileId);
+      const newIntervention: RetentionInterventionDTO = {
+        id: `inv-${Date.now()}`,
+        userId: 'demo-user',
+        talentProfileId: input.talentProfileId,
+        talentName: talent?.fullName || 'Unknown Candidate',
+        talentRole: talent?.currentRole || 'Unknown Role',
+        playbookType: input.playbookType,
+        title: input.title,
+        description: input.description,
+        proposedCostUsd: input.proposedCostUsd,
+        status: input.status,
+        triggerRationale: input.triggerRationale,
+        targetCompletionDate: input.targetCompletionDate,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.interventions.unshift(newIntervention);
+      saveDemoSuccessionOverview(ov);
+      return newIntervention;
+    }
+  },
+
+  async updateInterventionStatus(
+    id: string,
+    status: InterventionStatus,
+    authorizedBy?: string
+  ): Promise<RetentionInterventionDTO> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      const idx = ov.interventions.findIndex(i => i.id === id);
+      if (idx === -1) throw new Error('intervention_not_found');
+      ov.interventions[idx].status = status;
+      if (authorizedBy) ov.interventions[idx].authorizedBy = authorizedBy;
+      ov.interventions[idx].updatedAt = new Date().toISOString();
+      ov.plan.activeInterventionsCount = ov.interventions.filter(i => i.status === 'active' || i.status === 'approved').length;
+      saveDemoSuccessionOverview(ov);
+      return ov.interventions[idx];
+    }
+    try {
+      return await request<RetentionInterventionDTO>(`/succession-pipeline-studio/interventions/${encodeURIComponent(id)}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status, authorizedBy })
+      });
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      const idx = ov.interventions.findIndex(i => i.id === id);
+      if (idx !== -1) {
+        ov.interventions[idx].status = status;
+        if (authorizedBy) ov.interventions[idx].authorizedBy = authorizedBy;
+        saveDemoSuccessionOverview(ov);
+        return ov.interventions[idx];
+      }
+      throw new Error('intervention_not_found');
+    }
+  },
+
+  async listDevelopmentPlans(): Promise<ExecutiveDevelopmentPlanDTO[]> {
+    if (demoMode) {
+      return loadDemoSuccessionOverview().developmentPlans;
+    }
+    try {
+      return await request<ExecutiveDevelopmentPlanDTO[]>('/succession-pipeline-studio/development-plans');
+    } catch {
+      return loadDemoSuccessionOverview().developmentPlans;
+    }
+  },
+
+  async createOrUpdateDevelopmentPlan(
+    input: ExecutiveDevelopmentPlanMutationDTO
+  ): Promise<ExecutiveDevelopmentPlanDTO> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      const talent = ov.talentProfiles.find(p => p.id === input.talentProfileId);
+      const role = ov.plan.criticalRoles.find(r => r.id === input.targetRoleId);
+
+      const gapResult = calculateCompetencyGap(
+        input.competencyScores.map(s => ({ domain: s.domain, score: s.currentScore })),
+        input.competencyScores.map(s => ({ domain: s.domain, score: s.targetScore }))
+      );
+      const milestones = generateDevelopmentMilestones(gapResult.scores);
+
+      const existingIdx = ov.developmentPlans.findIndex(
+        d => d.talentProfileId === input.talentProfileId && d.targetRoleId === input.targetRoleId
+      );
+
+      const record: ExecutiveDevelopmentPlanDTO = {
+        id: existingIdx !== -1 ? ov.developmentPlans[existingIdx].id : `edp-${Date.now()}`,
+        userId: 'demo-user',
+        talentProfileId: input.talentProfileId,
+        talentName: talent?.fullName || 'Unknown Candidate',
+        targetRoleId: input.targetRoleId,
+        targetRoleTitle: role?.title || 'Target Role',
+        competencyScores: gapResult.scores,
+        competencyCoverageIndex: gapResult.coverageIndex,
+        milestones,
+        executiveSponsorName: input.executiveSponsorName,
+        status: 'active',
+        createdAt: existingIdx !== -1 ? ov.developmentPlans[existingIdx].createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      if (existingIdx !== -1) {
+        ov.developmentPlans[existingIdx] = record;
+      } else {
+        ov.developmentPlans.push(record);
+      }
+      saveDemoSuccessionOverview(ov);
+      return record;
+    }
+    try {
+      return await request<ExecutiveDevelopmentPlanDTO>('/succession-pipeline-studio/development-plans', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      const talent = ov.talentProfiles.find(p => p.id === input.talentProfileId);
+      const role = ov.plan.criticalRoles.find(r => r.id === input.targetRoleId);
+      const gapResult = calculateCompetencyGap(
+        input.competencyScores.map(s => ({ domain: s.domain, score: s.currentScore })),
+        input.competencyScores.map(s => ({ domain: s.domain, score: s.targetScore }))
+      );
+      const record: ExecutiveDevelopmentPlanDTO = {
+        id: `edp-${Date.now()}`,
+        userId: 'demo-user',
+        talentProfileId: input.talentProfileId,
+        talentName: talent?.fullName || 'Unknown Candidate',
+        targetRoleId: input.targetRoleId,
+        targetRoleTitle: role?.title || 'Target Role',
+        competencyScores: gapResult.scores,
+        competencyCoverageIndex: gapResult.coverageIndex,
+        milestones: generateDevelopmentMilestones(gapResult.scores),
+        executiveSponsorName: input.executiveSponsorName,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.developmentPlans.push(record);
+      saveDemoSuccessionOverview(ov);
+      return record;
+    }
+  },
+
+  async getPlan(planId?: string): Promise<SuccessionPlanDTO> {
+    if (demoMode) {
+      return loadDemoSuccessionOverview().plan;
+    }
+    try {
+      const query = planId ? `?planId=${encodeURIComponent(planId)}` : '';
+      return await request<SuccessionPlanDTO>(`/succession-pipeline-studio/plan${query}`);
+    } catch {
+      return loadDemoSuccessionOverview().plan;
+    }
+  },
+
+  async signOffPlan(
+    planId: string,
+    role: SignOffExecutiveRole,
+    comments?: string
+  ): Promise<SuccessionPlanDTO> {
+    if (demoMode) {
+      const ov = loadDemoSuccessionOverview();
+      const signOff = ov.plan.signOffs.find(s => s.role === role);
+      if (signOff) {
+        signOff.isApproved = true;
+        signOff.signedByUserId = 'demo-user';
+        signOff.signedByUserName =
+          role === 'vp_talent_management'
+            ? 'Elena Rostova'
+            : role === 'chief_people_officer'
+            ? 'Chief People Officer'
+            : 'Chief Executive Officer';
+        signOff.signedAt = new Date().toISOString();
+        signOff.governanceComments = comments || 'Approved by Executive Signatory';
+        signOff.digitalSignatureHash = `sha256-demo-sig-${role}-${Date.now()}`;
+      }
+
+      const vpTalent = ov.plan.signOffs.find(s => s.role === 'vp_talent_management')?.isApproved;
+      const cpo = ov.plan.signOffs.find(s => s.role === 'chief_people_officer')?.isApproved;
+      const ceo = ov.plan.signOffs.find(s => s.role === 'ceo')?.isApproved;
+
+      if (vpTalent && cpo && ceo) {
+        ov.plan.status = 'board_approved';
+      } else if (vpTalent && cpo) {
+        ov.plan.status = 'pending_ceo';
+      } else if (vpTalent) {
+        ov.plan.status = 'pending_cpo';
+      } else {
+        ov.plan.status = 'pending_vp_talent';
+      }
+
+      ov.plan.updatedAt = new Date().toISOString();
+      ov.plan.boardMemorandumMarkdown = generateBoardSuccessionMemorandumMarkdown(ov.plan);
+      saveDemoSuccessionOverview(ov);
+      return ov.plan;
+    }
+    try {
+      return await request<SuccessionPlanDTO>(`/succession-pipeline-studio/plan/${encodeURIComponent(planId)}/sign-off`, {
+        method: 'POST',
+        body: JSON.stringify({ role, comments })
+      });
+    } catch {
+      const ov = loadDemoSuccessionOverview();
+      const signOff = ov.plan.signOffs.find(s => s.role === role);
+      if (signOff) {
+        signOff.isApproved = true;
+        signOff.signedAt = new Date().toISOString();
+        signOff.governanceComments = comments;
+      }
+      ov.plan.boardMemorandumMarkdown = generateBoardSuccessionMemorandumMarkdown(ov.plan);
+      saveDemoSuccessionOverview(ov);
+      return ov.plan;
     }
   }
 };

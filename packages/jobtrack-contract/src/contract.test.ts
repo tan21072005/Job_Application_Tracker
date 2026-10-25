@@ -322,7 +322,27 @@ import {
   validateVectorIndexConfig,
   validateAiBoardMemoGenerateInput,
   type ExecutiveAiBoardMemorandumDTO,
-  type PiiMaskingRuleDTO
+  type PiiMaskingRuleDTO,
+  classifyNineBox,
+  calculateNineBoxScore,
+  calculateCalibrationDistribution,
+  calculateKeyPersonRiskIndex,
+  calculateFlightRisk,
+  evaluateRetentionInterventionTriggers,
+  calculateBenchDepthMetrics,
+  calculateCompetencyGap,
+  generateDevelopmentMilestones,
+  calculateSuccessionHealthScore,
+  generateBoardSuccessionMemorandumMarkdown,
+  validateTalentProfileInput,
+  validateRetentionInterventionInput,
+  validateCriticalRoleInput,
+  validateSuccessorCandidateInput,
+  validateExecutiveDevelopmentPlanInput,
+  validateSuccessionPlanInput,
+  validateSignOffInput,
+  type SuccessionPlanDTO,
+  type TalentProfileDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -7016,4 +7036,350 @@ test('ai-governance: schema validators reject invalid inputs and accept valid pa
     fiscalQuarter: 'Q4-2026'
   });
   assert.equal(validMemo.ok, true);
+});
+
+test('succession: classifyNineBox and calculateNineBoxScore evaluate boundary cases', () => {
+  assert.equal(classifyNineBox(3, 3), 'star');
+  assert.equal(classifyNineBox(3, 2), 'high_performer');
+  assert.equal(classifyNineBox(3, 1), 'solid_professional');
+  assert.equal(classifyNineBox(2, 3), 'high_potential');
+  assert.equal(classifyNineBox(2, 2), 'core_player');
+  assert.equal(classifyNineBox(2, 1), 'effective');
+  assert.equal(classifyNineBox(1, 3), 'enigma_rough_diamond');
+  assert.equal(classifyNineBox(1, 2), 'dilemma');
+  assert.equal(classifyNineBox(1, 1), 'underperformer_risk');
+
+  assert.equal(calculateNineBoxScore(3, 3), 100);
+  assert.equal(calculateNineBoxScore(1, 1), 0);
+  assert.equal(calculateNineBoxScore(2, 2), 50);
+  assert.ok(calculateNineBoxScore(3, 2) > calculateNineBoxScore(2, 3));
+});
+
+test('succession: calculateCalibrationDistribution computes divergence and health score', () => {
+  const profiles = [
+    { nineBoxClassification: 'star' as const },
+    { nineBoxClassification: 'core_player' as const },
+    { nineBoxClassification: 'core_player' as const },
+    { nineBoxClassification: 'high_potential' as const },
+    { nineBoxClassification: 'high_performer' as const },
+    { nineBoxClassification: 'solid_professional' as const },
+    { nineBoxClassification: 'effective' as const },
+    { nineBoxClassification: 'underperformer_risk' as const },
+    { nineBoxClassification: 'dilemma' as const },
+    { nineBoxClassification: 'core_player' as const }
+  ];
+
+  const dist = calculateCalibrationDistribution(profiles);
+  assert.equal(dist.totalTalentCount, 10);
+  assert.equal(dist.starsCount, 1);
+  assert.equal(dist.starsPercentage, 10);
+  assert.equal(dist.coreGrowthCount, 7);
+  assert.equal(dist.coreGrowthPercentage, 70);
+  assert.equal(dist.actionRiskCount, 2);
+  assert.equal(dist.actionRiskPercentage, 20);
+  assert.equal(dist.distributionDivergenceIndex, 0);
+  assert.equal(dist.calibrationHealthScore, 100);
+});
+
+test('succession: calculateKeyPersonRiskIndex and calculateFlightRisk evaluate risk metrics', () => {
+  const lowKpri = calculateKeyPersonRiskIndex(1, 1, 1);
+  assert.equal(lowKpri.index, 0);
+  assert.equal(lowKpri.tier, 'low_exposure');
+
+  const criticalKpri = calculateKeyPersonRiskIndex(5, 5, 5);
+  assert.equal(criticalKpri.index, 100);
+  assert.equal(criticalKpri.tier, 'critical_spof');
+
+  const lowFlight = calculateFlightRisk(1.2, 1.0, 36, 0.1);
+  assert.ok(lowFlight.score < 30);
+  assert.equal(lowFlight.level, 'low');
+
+  const criticalFlight = calculateFlightRisk(0.2, 6.0, 0, 1.0);
+  assert.ok(criticalFlight.score > 80);
+  assert.equal(criticalFlight.level, 'critical');
+});
+
+test('succession: evaluateRetentionInterventionTriggers returns actionable playbooks', () => {
+  const triggers = evaluateRetentionInterventionTriggers({
+    compaRatio: 0.75,
+    yearsInRole: 3.5,
+    monthsToCliff: 4,
+    orgChangeImpact: 0.8,
+    spofSeverity: 5,
+    operationalCriticality: 5,
+    replacementDifficulty: 4,
+    performanceLevel: 3,
+    potentialLevel: 3
+  });
+
+  assert.ok(triggers.length >= 2);
+  assert.ok(triggers.some(t => t.playbookType === 'retention_equity_refresh'));
+  assert.ok(triggers.some(t => t.playbookType === 'role_expansion_promotion'));
+});
+
+test('succession: calculateBenchDepthMetrics evaluates bench ratio and emergency vulnerability', () => {
+  const roles = [
+    {
+      operationalCriticality: 5,
+      successors: [
+        { readinessHorizon: 'ready_now' as const, underrepresentedLeader: true },
+        { readinessHorizon: 'ready_1_2_years' as const, underrepresentedLeader: false }
+      ]
+    },
+    {
+      operationalCriticality: 4,
+      successors: [
+        { readinessHorizon: 'emergency_interim' as const, underrepresentedLeader: true }
+      ]
+    }
+  ];
+
+  const metrics = calculateBenchDepthMetrics(roles);
+  assert.equal(metrics.totalCriticalRoles, 2);
+  assert.equal(metrics.totalSuccessorsIdentified, 3);
+  assert.equal(metrics.benchDepthRatio, 1.5);
+  assert.equal(metrics.emergencyVulnerableRoleCount, 1);
+  assert.equal(metrics.emergencyVulnerabilityIndex, 50);
+  assert.equal(metrics.underrepresentedSuccessorsCount, 2);
+  assert.equal(metrics.successionDiversityIndex, 66.7);
+  assert.equal(metrics.isBenchHealthy, false);
+});
+
+test('succession: calculateCompetencyGap and generateDevelopmentMilestones structure development', () => {
+  const current = [
+    { domain: 'strategic_vision' as const, score: 3.0 },
+    { domain: 'operational_execution' as const, score: 4.5 },
+    { domain: 'people_leadership_culture' as const, score: 4.0 },
+    { domain: 'financial_business_acumen' as const, score: 2.5 },
+    { domain: 'ai_technology_innovation' as const, score: 3.5 }
+  ];
+
+  const target = [
+    { domain: 'strategic_vision' as const, score: 4.5 },
+    { domain: 'operational_execution' as const, score: 4.5 },
+    { domain: 'people_leadership_culture' as const, score: 4.5 },
+    { domain: 'financial_business_acumen' as const, score: 4.5 },
+    { domain: 'ai_technology_innovation' as const, score: 4.5 }
+  ];
+
+  const gapResult = calculateCompetencyGap(current, target);
+  assert.equal(gapResult.scores.length, 5);
+  assert.ok(gapResult.coverageIndex > 0 && gapResult.coverageIndex < 100);
+
+  const milestones = generateDevelopmentMilestones(gapResult.scores);
+  assert.equal(milestones.length, 4);
+  assert.equal(milestones[0].dayHorizon, 30);
+  assert.equal(milestones[1].dayHorizon, 60);
+  assert.equal(milestones[2].dayHorizon, 90);
+  assert.equal(milestones[3].dayHorizon, 180);
+});
+
+test('succession: calculateSuccessionHealthScore and generateBoardSuccessionMemorandumMarkdown', () => {
+  const health = calculateSuccessionHealthScore({
+    benchDepthRatio: 2.5,
+    emergencyVulnerabilityIndex: 0,
+    averageKpri: 25,
+    averageCci: 90,
+    calibrationHealthScore: 95
+  });
+
+  assert.ok(health.score >= 85);
+  assert.equal(health.tier, 'resilient_bench');
+
+  const mockPlan: SuccessionPlanDTO = {
+    id: 'sp-01',
+    userId: 'u-1',
+    title: 'FY2027 Executive Leadership Succession Plan',
+    fiscalYear: 2027,
+    status: 'draft',
+    calibrationDistribution: {
+      totalTalentCount: 10,
+      starsCount: 1,
+      starsPercentage: 10,
+      coreGrowthCount: 7,
+      coreGrowthPercentage: 70,
+      actionRiskCount: 2,
+      actionRiskPercentage: 20,
+      distributionDivergenceIndex: 0,
+      calibrationHealthScore: 100,
+      cellCounts: {
+        star: 1,
+        high_performer: 2,
+        solid_professional: 1,
+        high_potential: 2,
+        core_player: 1,
+        effective: 1,
+        enigma_rough_diamond: 1,
+        dilemma: 0,
+        underperformer_risk: 1
+      }
+    },
+    benchDepth: {
+      totalCriticalRoles: 2,
+      totalSuccessorsIdentified: 4,
+      benchDepthRatio: 2.0,
+      isBenchHealthy: true,
+      emergencyVulnerableRoleCount: 0,
+      emergencyVulnerabilityIndex: 0,
+      underrepresentedSuccessorsCount: 2,
+      successionDiversityIndex: 50
+    },
+    averageKeyPersonRiskIndex: 35.5,
+    averageCompetencyCoverageIndex: 88.0,
+    successionHealthScore: 89.2,
+    governanceHealthTier: 'resilient_bench',
+    criticalRoles: [
+      {
+        id: 'cr-1',
+        userId: 'u-1',
+        planId: 'sp-01',
+        title: 'Chief Technology Officer',
+        department: 'Engineering',
+        currentIncumbentName: 'Sarah Lin',
+        operationalCriticality: 5,
+        vacancyDisruptionScore: 92,
+        successors: [
+          {
+            id: 'sc-1',
+            userId: 'u-1',
+            criticalRoleId: 'cr-1',
+            talentProfileId: 'tp-1',
+            candidateName: 'Alex Mercer',
+            currentRole: 'VP of Platform Engineering',
+            readinessHorizon: 'ready_now',
+            rankingOrder: 1,
+            competencyCoverageIndex: 94,
+            notes: 'Exemplary architectural leadership',
+            underrepresentedLeader: false,
+            createdAt: '2026-10-25T00:00:00Z',
+            updatedAt: '2026-10-25T00:00:00Z'
+          }
+        ],
+        readyNowCount: 1,
+        ready1To2YearsCount: 0,
+        emergencyInterimCount: 0,
+        isEmergencyVulnerable: false,
+        createdAt: '2026-10-25T00:00:00Z',
+        updatedAt: '2026-10-25T00:00:00Z'
+      }
+    ],
+    activeInterventionsCount: 3,
+    totalInterventionBudgetUsd: 145000,
+    boardMemorandumMarkdown: '',
+    signOffs: [
+      {
+        role: 'vp_talent_management',
+        roleLabel: 'VP of Talent Management',
+        isApproved: true,
+        signedByUserName: 'Elena Rostova',
+        signedAt: '2026-10-25T08:00:00Z',
+        digitalSignatureHash: 'sha256-mock-hash-1'
+      },
+      {
+        role: 'chief_people_officer',
+        roleLabel: 'Chief People Officer',
+        isApproved: false
+      },
+      {
+        role: 'ceo',
+        roleLabel: 'Chief Executive Officer',
+        isApproved: false
+      }
+    ],
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  };
+
+  const md = generateBoardSuccessionMemorandumMarkdown(mockPlan);
+  assert.ok(md.includes('Executive Board Memorandum: Enterprise Leadership Succession & Continuity Plan'));
+  assert.ok(md.includes('Chief Technology Officer'));
+  assert.ok(md.includes('VP of Talent Management'));
+});
+
+test('succession: input validators enforce strict bounds and schemas', () => {
+  assert.throws(() => validateTalentProfileInput(null), /must be a non-null object/);
+  assert.throws(() => validateTalentProfileInput({ employeeId: '' }), /employeeId is required/);
+  assert.throws(() => validateTalentProfileInput({
+    employeeId: 'EMP-01',
+    fullName: 'Jane Doe',
+    currentRole: 'CTO',
+    department: 'Engineering',
+    performanceLevel: 4,
+    potentialLevel: 2
+  }), /performanceLevel must be 1, 2, or 3/);
+
+  const validProfile = validateTalentProfileInput({
+    employeeId: 'EMP-01',
+    fullName: 'Jane Doe',
+    currentRole: 'CTO',
+    department: 'Engineering',
+    performanceLevel: 3,
+    potentialLevel: 3,
+    tenureYears: 4,
+    yearsInCurrentRole: 2,
+    totalDirectCompensationUsd: 450000,
+    marketBenchmarkP75Usd: 420000,
+    unvestedEquityValueUsd: 800000,
+    monthsToEquityCliff: 14,
+    organizationalChangeImpact: 0.2,
+    spofSeverity: 4,
+    operationalCriticality: 5,
+    replacementDifficulty: 4,
+    underrepresentedLeader: true
+  });
+  assert.equal(validProfile.employeeId, 'EMP-01');
+  assert.equal(validProfile.performanceLevel, 3);
+  assert.equal(validProfile.potentialLevel, 3);
+
+  assert.throws(() => validateRetentionInterventionInput({ talentProfileId: '' }), /talentProfileId is required/);
+  assert.throws(() => validateRetentionInterventionInput({
+    talentProfileId: 'tp-1',
+    playbookType: 'invalid_type',
+    title: 'Retention grant'
+  }), /Invalid playbookType/);
+
+  const validIntervention = validateRetentionInterventionInput({
+    talentProfileId: 'tp-1',
+    playbookType: 'retention_equity_refresh',
+    title: 'Equity refresh grant',
+    proposedCostUsd: 75000
+  });
+  assert.equal(validIntervention.playbookType, 'retention_equity_refresh');
+
+  assert.throws(() => validateCriticalRoleInput({ planId: '' }), /planId is required/);
+  const validRole = validateCriticalRoleInput({
+    planId: 'plan-1',
+    title: 'Head of AI',
+    department: 'AI Research',
+    operationalCriticality: 5
+  });
+  assert.equal(validRole.title, 'Head of AI');
+
+  assert.throws(() => validateSuccessorCandidateInput({ criticalRoleId: '' }), /criticalRoleId is required/);
+  assert.throws(() => validateSuccessorCandidateInput({
+    criticalRoleId: 'cr-1',
+    talentProfileId: 'tp-1',
+    readinessHorizon: 'invalid_horizon'
+  }), /Invalid readinessHorizon/);
+
+  const validSuccessor = validateSuccessorCandidateInput({
+    criticalRoleId: 'cr-1',
+    talentProfileId: 'tp-1',
+    readinessHorizon: 'ready_now',
+    rankingOrder: 1
+  });
+  assert.equal(validSuccessor.readinessHorizon, 'ready_now');
+
+  assert.throws(() => validateSuccessionPlanInput({ title: '', fiscalYear: 2026 }), /title is required/);
+  assert.throws(() => validateSuccessionPlanInput({ title: 'Plan', fiscalYear: 1999 }), /valid 4-digit year/);
+
+  const validPlan = validateSuccessionPlanInput({
+    title: 'FY2027 Executive Plan',
+    fiscalYear: 2027
+  });
+  assert.equal(validPlan.fiscalYear, 2027);
+
+  assert.throws(() => validateSignOffInput({ role: 'invalid' }), /Invalid sign-off executive role/);
+  const validSign = validateSignOffInput({ role: 'ceo', comments: 'Approved by CEO' });
+  assert.equal(validSign.role, 'ceo');
 });
