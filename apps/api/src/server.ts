@@ -108,6 +108,15 @@ import { AiGovernanceStudioService } from './services/ai-governance-studio-servi
 import { SuccessionPipelineStudioService } from './services/succession-pipeline-studio-service.ts';
 import { CyberRiskGovernanceStudioService } from './services/cyber-risk-governance-studio-service.ts';
 import { EsgSustainabilityStudioService } from './services/esg-sustainability-studio-service.ts';
+import { SupplyChainResilienceStudioService } from './services/supply-chain-resilience-studio-service.ts';
+import {
+  validateSupplierBomNodeInput,
+  validateDisruptionSimulationInput,
+  validateHubComparisonInput,
+  validateSupplyChainBoardMemoGenerateInput,
+  validateSupplyChainSignoffInput,
+  type BoardSignoffRole
+} from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -243,6 +252,7 @@ export const aiGovernanceStudioService = new AiGovernanceStudioService(pool);
 export const successionPipelineStudioService = new SuccessionPipelineStudioService(pool);
 export const cyberRiskGovernanceStudioService = new CyberRiskGovernanceStudioService(pool);
 export const esgSustainabilityStudioService = new EsgSustainabilityStudioService(pool);
+export const supplyChainResilienceStudioService = new SupplyChainResilienceStudioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -4343,6 +4353,152 @@ app.post(['/api/esg-sustainability-studio/board-memos/:id/approve', '/api/esg-st
       return res.status(400).json({ code: 'invalid_role', error: 'Invalid sign-off role' });
     }
     const updated = await esgSustainabilityStudioService.signOffBoardMemorandum(userId, req.params.id, role);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'memo_not_found', error: 'Board memorandum not found' });
+    }
+    res.status(400).json({ code: 'sign_off_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/supply-chain-resilience-studio/overview', '/api/supply-chain-studio/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await supplyChainResilienceStudioService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/supply-chain-resilience-studio/bom', '/api/supply-chain-studio/bom'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const nodes = await supplyChainResilienceStudioService.getBomNodes(userId);
+    res.json(nodes);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/supply-chain-resilience-studio/bom', '/api/supply-chain-studio/bom'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateSupplierBomNodeInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const node = await supplyChainResilienceStudioService.saveBomNode(userId, req.body);
+    res.status(201).json(node);
+  } catch (err) {
+    res.status(400).json({ code: 'save_bom_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/supply-chain-resilience-studio/geopolitical', '/api/supply-chain-studio/geopolitical'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const exposures = await supplyChainResilienceStudioService.getGeopoliticalExposures(userId);
+    res.json(exposures);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/supply-chain-resilience-studio/geopolitical/screen', '/api/supply-chain-studio/geopolitical/screen'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const results = await supplyChainResilienceStudioService.screenSanctions(userId);
+    res.json(results);
+  } catch (err) {
+    res.status(400).json({ code: 'screen_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/supply-chain-resilience-studio/buffers', '/api/supply-chain-studio/buffers'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const buffers = await supplyChainResilienceStudioService.getInventoryBuffers(userId);
+    res.json(buffers);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/supply-chain-resilience-studio/buffers/simulate', '/api/supply-chain-studio/buffers/simulate'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateDisruptionSimulationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const result = await supplyChainResilienceStudioService.simulateLeadTimeDisruption(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'buffer_not_found', error: (err as Error).message });
+    }
+    res.status(400).json({ code: 'simulation_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/supply-chain-resilience-studio/hubs', '/api/supply-chain-studio/hubs'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const hubs = await supplyChainResilienceStudioService.getNetworkHubs(userId);
+    res.json(hubs);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/supply-chain-resilience-studio/hubs/compare', '/api/supply-chain-studio/hubs/compare'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateHubComparisonInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const result = await supplyChainResilienceStudioService.compareHubLandedCosts(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ code: 'hub_comparison_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/supply-chain-resilience-studio/board-memos', '/api/supply-chain-studio/board-memos'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const memos = await supplyChainResilienceStudioService.getBoardMemos(userId);
+    res.json(memos);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/supply-chain-resilience-studio/board-memos/generate', '/api/supply-chain-studio/board-memos/generate'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateSupplyChainBoardMemoGenerateInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const memo = await supplyChainResilienceStudioService.generateBoardMemorandum(userId, req.body);
+    res.status(201).json(memo);
+  } catch (err) {
+    res.status(400).json({ code: 'memo_generation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/supply-chain-resilience-studio/board-memos/:id/approve', '/api/supply-chain-studio/board-memos/:id/approve', '/api/supply-chain-resilience-studio/board-memos/:id/signoff', '/api/supply-chain-studio/board-memos/:id/signoff'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateSupplyChainSignoffInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const updated = await supplyChainResilienceStudioService.signOffBoardMemorandum(userId, req.params.id, req.body.role as BoardSignoffRole, req.body.signoffNotes);
     res.json(updated);
   } catch (err) {
     if ((err as Error).message.includes('not found')) {

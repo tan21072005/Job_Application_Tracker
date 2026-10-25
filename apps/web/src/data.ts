@@ -360,7 +360,21 @@ import {
   validateMaterialityTopicUpdate,
   validateSupplierSimulationInput,
   validateEsgBoardMemoGenerateInput,
-  validateEsgSignOffInput
+  validateEsgSignOffInput,
+  type SupplyChainStudioOverviewDTO,
+  type SupplierBomNodeDTO,
+  type GeopoliticalExposureDTO,
+  type InventoryBufferDTO,
+  type SourcingHubModelDTO,
+  type SupplyChainBoardMemorandumDTO,
+  type DisruptionSimulationRequestDTO,
+  type DisruptionSimulationResultDTO,
+  type HubCostComparisonRequestDTO,
+  type HubCostComparisonResultDTO,
+  type GenerateSupplyChainBoardMemoRequestDTO,
+  type BoardSignoffRole,
+  calculateSafetyStock,
+  generateExecutiveSupplyChainMemorandum
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -15987,6 +16001,676 @@ export const esgSustainabilityStudioRepository = {
       });
     } catch {
       return executeEsgSignOffDemo(memoId, role);
+    }
+  }
+};
+
+const SUPPLY_CHAIN_DEMO_KEY = 'jobtrack_demo_supply_chain_resilience_v1';
+
+function createDefaultSupplyChainOverview(): SupplyChainStudioOverviewDTO {
+  const nodes: SupplierBomNodeDTO[] = [
+    {
+      id: 'bom-node-01',
+      partNumber: 'PCBA-7001',
+      componentName: 'Main Controller System Motherboard',
+      tier: 'tier_1_integrator',
+      parentPartNumber: null,
+      supplierName: 'Apex Electronics Manufacturing',
+      supplierCountry: 'Taiwan',
+      criticality: 'existential',
+      sourcingStrategy: 'dual_source',
+      spendVolumeSharePercent: 65.0,
+      hhiContribution: 4225,
+      nominalLeadTimeDays: 45,
+      annualSpendUsd: 14200000.0,
+      bomVulnerabilityScore: 35.0,
+      isSinglePointOfFailure: false,
+      activeSubstituteCount: 1
+    },
+    {
+      id: 'bom-node-02',
+      partNumber: 'MEM-8820',
+      componentName: 'DDR5 Low-Power High-Density DRAM',
+      tier: 'tier_2_subassembly',
+      parentPartNumber: 'PCBA-7001',
+      supplierName: 'K-Semiconductor Foundry',
+      supplierCountry: 'South Korea',
+      criticality: 'critical_path',
+      sourcingStrategy: 'dual_source',
+      spendVolumeSharePercent: 55.0,
+      hhiContribution: 3025,
+      nominalLeadTimeDays: 38,
+      annualSpendUsd: 8500000.0,
+      bomVulnerabilityScore: 42.0,
+      isSinglePointOfFailure: false,
+      activeSubstituteCount: 2
+    },
+    {
+      id: 'bom-node-03',
+      partNumber: 'MCU-3305',
+      componentName: 'Arm Cortex-M7 Real-Time Microcontroller',
+      tier: 'tier_3_component',
+      parentPartNumber: 'PCBA-7001',
+      supplierName: 'TSMC Advanced Packaging',
+      supplierCountry: 'Taiwan',
+      criticality: 'existential',
+      sourcingStrategy: 'single_source',
+      spendVolumeSharePercent: 100.0,
+      hhiContribution: 10000,
+      nominalLeadTimeDays: 52,
+      annualSpendUsd: 6100000.0,
+      bomVulnerabilityScore: 88.0,
+      isSinglePointOfFailure: true,
+      activeSubstituteCount: 0
+    },
+    {
+      id: 'bom-node-04',
+      partNumber: 'RAW-1090',
+      componentName: 'Ultra-High-Purity Silicon 300mm Ingot',
+      tier: 'tier_4_raw_material',
+      parentPartNumber: 'MCU-3305',
+      supplierName: 'Bavaria Siltronic AG',
+      supplierCountry: 'Germany',
+      criticality: 'high',
+      sourcingStrategy: 'single_source',
+      spendVolumeSharePercent: 100.0,
+      hhiContribution: 10000,
+      nominalLeadTimeDays: 60,
+      annualSpendUsd: 2900000.0,
+      bomVulnerabilityScore: 72.0,
+      isSinglePointOfFailure: true,
+      activeSubstituteCount: 0
+    }
+  ];
+
+  const exposures: GeopoliticalExposureDTO[] = [
+    {
+      id: 'geo-01',
+      countryCode: 'CN',
+      countryName: 'China',
+      politicalStabilityScore: 54.0,
+      tradeFreedomScore: 48.0,
+      compositeCountryRisk: 62.0,
+      activeSanctionMatch: 'bis_entity_list',
+      sanctionStatus: 'flagged_restricted',
+      primaryHtsCode: '8542.31.00',
+      section301TariffPercent: 25.0,
+      section232TariffPercent: 0.0,
+      effectiveTariffRatePercent: 25.0,
+      primaryMaritimeRoute: ['taiwan_strait', 'strait_of_malacca'],
+      chokepointRiskScore: 78.0,
+      alternateRouteDetourDays: 14,
+      annualTariffExposureUsd: 3100000.0
+    },
+    {
+      id: 'geo-02',
+      countryCode: 'TW',
+      countryName: 'Taiwan',
+      politicalStabilityScore: 72.0,
+      tradeFreedomScore: 85.0,
+      compositeCountryRisk: 48.0,
+      activeSanctionMatch: 'none',
+      sanctionStatus: 'cleared',
+      primaryHtsCode: '8542.39.00',
+      section301TariffPercent: 0.0,
+      section232TariffPercent: 0.0,
+      effectiveTariffRatePercent: 0.0,
+      primaryMaritimeRoute: ['taiwan_strait', 'suez_canal'],
+      chokepointRiskScore: 82.0,
+      alternateRouteDetourDays: 12,
+      annualTariffExposureUsd: 0.0
+    },
+    {
+      id: 'geo-03',
+      countryCode: 'MX',
+      countryName: 'Mexico',
+      politicalStabilityScore: 68.0,
+      tradeFreedomScore: 78.0,
+      compositeCountryRisk: 28.0,
+      activeSanctionMatch: 'none',
+      sanctionStatus: 'cleared',
+      primaryHtsCode: '8504.40.95',
+      section301TariffPercent: 0.0,
+      section232TariffPercent: 0.0,
+      effectiveTariffRatePercent: 0.0,
+      primaryMaritimeRoute: [],
+      chokepointRiskScore: 5.0,
+      alternateRouteDetourDays: 0,
+      annualTariffExposureUsd: 0.0
+    }
+  ];
+
+  const buffers: InventoryBufferDTO[] = [
+    {
+      id: 'buf-01',
+      sku: 'SKU-MCU-3305',
+      componentName: 'Arm Cortex-M7 Microcontroller',
+      currentStockUnits: 1400,
+      averageDailyDemandUnits: 50.0,
+      nominalLeadTimeDays: 52,
+      stdDevLeadTimeDays: 12.0,
+      stdDevDailyDemandUnits: 10.0,
+      targetServiceLevelZ: 1.96,
+      calculatedSafetyStockUnits: 1220,
+      reorderPointUnits: 3820,
+      daysOfInventoryOutstanding: 28.0,
+      timeToSurviveDays: 28,
+      timeToRecoverDays: 52,
+      resilienceRatio: 0.54,
+      resilienceDeficitDays: 24,
+      unitCostUsd: 45.0,
+      holdingCostPerUnitYearUsd: 9.0,
+      stockoutVulnerability: 'critical_breach'
+    },
+    {
+      id: 'buf-02',
+      sku: 'SKU-MEM-8820',
+      componentName: 'DDR5 Low-Power DRAM Module',
+      currentStockUnits: 4500,
+      averageDailyDemandUnits: 80.0,
+      nominalLeadTimeDays: 38,
+      stdDevLeadTimeDays: 6.0,
+      stdDevDailyDemandUnits: 12.0,
+      targetServiceLevelZ: 1.96,
+      calculatedSafetyStockUnits: 1020,
+      reorderPointUnits: 4060,
+      daysOfInventoryOutstanding: 56.2,
+      timeToSurviveDays: 56,
+      timeToRecoverDays: 38,
+      resilienceRatio: 1.47,
+      resilienceDeficitDays: 0,
+      unitCostUsd: 28.0,
+      holdingCostPerUnitYearUsd: 5.6,
+      stockoutVulnerability: 'secure'
+    }
+  ];
+
+  const allHubs: SourcingHubModelDTO[] = [
+    {
+      id: 'hub-01',
+      hubName: 'Shenzhen Southern Logistics Hub',
+      region: 'asia_offshore',
+      country: 'China',
+      transportMode: 'maritime_container',
+      exWorksUnitCostUsd: 85.0,
+      freightPerUnitUsd: 14.5,
+      customsTariffPercent: 25.0,
+      customsTariffPerUnitUsd: 21.25,
+      pipelineCarryingCostPerUnitUsd: 2.45,
+      qualityScrapRiskPerUnitUsd: 3.5,
+      totalLandedCostUsd: 126.7,
+      transitLeadTimeDays: 42,
+      freightCarbonKgCo2ePerTonKm: 0.015,
+      totalTripCarbonKgCo2ePerUnit: 52.4,
+      regionalAgilityRating: 58.0
+    },
+    {
+      id: 'hub-02',
+      hubName: 'Monterrey Advanced Manufacturing Center',
+      region: 'mexico_nearshore',
+      country: 'Mexico',
+      transportMode: 'cross_border_trucking',
+      exWorksUnitCostUsd: 92.0,
+      freightPerUnitUsd: 4.8,
+      customsTariffPercent: 0.0,
+      customsTariffPerUnitUsd: 0.0,
+      pipelineCarryingCostPerUnitUsd: 0.25,
+      qualityScrapRiskPerUnitUsd: 1.5,
+      totalLandedCostUsd: 98.55,
+      transitLeadTimeDays: 4,
+      freightCarbonKgCo2ePerTonKm: 0.082,
+      totalTripCarbonKgCo2ePerUnit: 16.8,
+      regionalAgilityRating: 88.0
+    },
+    {
+      id: 'hub-03',
+      hubName: 'Austin Domestic Technology Hub',
+      region: 'us_onshore',
+      country: 'United States',
+      transportMode: 'intermodal_rail',
+      exWorksUnitCostUsd: 104.0,
+      freightPerUnitUsd: 2.5,
+      customsTariffPercent: 0.0,
+      customsTariffPerUnitUsd: 0.0,
+      pipelineCarryingCostPerUnitUsd: 0.12,
+      qualityScrapRiskPerUnitUsd: 0.5,
+      totalLandedCostUsd: 107.12,
+      transitLeadTimeDays: 2,
+      freightCarbonKgCo2ePerTonKm: 0.028,
+      totalTripCarbonKgCo2ePerUnit: 6.2,
+      regionalAgilityRating: 95.0
+    }
+  ];
+
+  const memo: SupplyChainBoardMemorandumDTO = {
+    id: 'memo-demo-01',
+    title: 'Q4-2026 Executive Supply Chain Resilience & Logistics Strategy',
+    fiscalQuarter: 'Q4-2026',
+    status: 'draft',
+    crisisSeverity: 'tier_1_watch',
+    compositeScri: 82.5,
+    totalFinancialExposureUsd: 4850000.0,
+    nearshoringOpportunityUsd: 3240000.0,
+    executiveSummaryMarkdown: '# EXECUTIVE SUPPLY CHAIN RESILIENCE & GLOBAL LOGISTICS MEMORANDUM\n\nExecutive briefing on multi-tier BOM vulnerabilities and nearshoring arbitrage.',
+    bomVulnerabilitySection: 'Tier-1 to Tier-4 supplier concentration analysis indicates 2 single-point failures.',
+    geopoliticalSanctionsSection: 'Sovereign risk monitoring across Taiwan Strait and Suez Canal maritime routes.',
+    inventoryBufferSection: 'Safety stock calibration restores TTS/TTR parity across critical microcontrollers.',
+    nearshoringTlcSection: 'Transitioning to Monterrey nearshore delivers 22.2% landed cost arbitrage.',
+    strategicDirectivesSection: '1. Expedite dual-sourcing qualification.\n2. Expand Mexico nearshore capacity.\n3. Buffer single-sourced MCUs.',
+    approvedByVpSupplyChainAt: null,
+    approvedByCooAt: null,
+    approvedByBoardRiskChairAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  return {
+    compositeScri: 82.5,
+    resilienceRatingBand: 'defensible',
+    crisisSeverity: 'tier_1_watch',
+    totalMappedComponents: nodes.length,
+    singlePointOfFailureCount: 2,
+    aggregateHhiIndex: 2140,
+    dualSourcingRatioPercent: 64.5,
+    totalAnnualTariffExposureUsd: 3100000.0,
+    chokepointsAtRiskCount: 2,
+    averageDioDays: 42.1,
+    criticalBufferDeficitCount: 1,
+    potentialNearshoringArbitrageUsd: 3240000.0,
+    activeSanctionFlagsCount: 1,
+    indexBreakdown: {
+      supplierRedundancyScore: 78.0,
+      geopoliticalStabilityScore: 74.0,
+      bufferAdequacyScore: 68.0,
+      landedCostAgilityScore: 86.0,
+      sanctionsImmunityScore: 92.0,
+      compositeScri: 82.5,
+      resilienceRatingBand: 'defensible'
+    },
+    bomSummary: {
+      totalComponentsMapped: nodes.length,
+      tier1Count: 1,
+      tier2Count: 1,
+      tier3Count: 1,
+      tier4Count: 1,
+      singlePointOfFailureCount: 2,
+      aggregateHhiIndex: 2140,
+      dualSourcingRatioPercent: 64.5,
+      averageBomVulnerabilityScore: 59.2,
+      nodes
+    },
+    geopoliticalSummary: {
+      totalCountriesMonitored: exposures.length,
+      highRiskJurisdictionCount: 1,
+      flaggedSanctionEntitiesCount: 1,
+      totalAnnualTariffExposureUsd: 3100000.0,
+      criticalChokepointVulnerabilityCount: 2,
+      exposures
+    },
+    bufferSummary: {
+      totalSkusTracked: buffers.length,
+      criticalDeficitSkusCount: 1,
+      averageDioDays: 42.1,
+      totalBufferCarryingCostUsd: 37800.0,
+      aggregateStockoutExposureUsd: 1450000.0,
+      buffers
+    },
+    networkSummary: {
+      activeHubsCount: allHubs.length,
+      primaryOffshoreHub: allHubs[0],
+      primaryNearshoreHub: allHubs[1],
+      primaryOnshoreHub: allHubs[2],
+      projectedAnnualNearshoringArbitrageUsd: 3240000.0,
+      averageLeadTimeAdvantageDays: 38,
+      allHubs
+    },
+    recentMemos: [memo]
+  };
+}
+
+function loadDemoSupplyChainOverview(): SupplyChainStudioOverviewDTO {
+  try {
+    const raw = localStorage.getItem(SUPPLY_CHAIN_DEMO_KEY);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch {
+  }
+  const defaults = createDefaultSupplyChainOverview();
+  saveDemoSupplyChainOverview(defaults);
+  return defaults;
+}
+
+function saveDemoSupplyChainOverview(ov: SupplyChainStudioOverviewDTO): void {
+  try {
+    localStorage.setItem(SUPPLY_CHAIN_DEMO_KEY, JSON.stringify(ov));
+  } catch {
+  }
+}
+
+function executeSaveBomNodeDemo(input: Partial<SupplierBomNodeDTO>): SupplierBomNodeDTO {
+  const ov = loadDemoSupplyChainOverview();
+  const id = input.id || `bom-node-${Date.now()}`;
+  const hhiContrib = Math.round(Math.pow(input.spendVolumeSharePercent || 100, 2));
+  const isSpof = input.sourcingStrategy === 'single_source' || input.activeSubstituteCount === 0;
+  const bomVuln = isSpof ? Math.min(100, 50 + (input.nominalLeadTimeDays || 45) * 0.7) : 35.0;
+
+  const node: SupplierBomNodeDTO = {
+    id,
+    partNumber: input.partNumber || 'PART-UNKNOWN',
+    componentName: input.componentName || 'Component',
+    tier: input.tier || 'tier_3_component',
+    parentPartNumber: input.parentPartNumber || null,
+    supplierName: input.supplierName || 'Global Supplier',
+    supplierCountry: input.supplierCountry || 'US',
+    criticality: input.criticality || 'high',
+    sourcingStrategy: input.sourcingStrategy || 'single_source',
+    spendVolumeSharePercent: input.spendVolumeSharePercent ?? 100.0,
+    hhiContribution: hhiContrib,
+    nominalLeadTimeDays: input.nominalLeadTimeDays ?? 45,
+    annualSpendUsd: input.annualSpendUsd ?? 1000000.0,
+    bomVulnerabilityScore: bomVuln,
+    isSinglePointOfFailure: isSpof,
+    activeSubstituteCount: input.activeSubstituteCount ?? 0
+  };
+
+  const existingIdx = ov.bomSummary.nodes.findIndex((n) => n.id === id);
+  if (existingIdx >= 0) {
+    ov.bomSummary.nodes[existingIdx] = node;
+  } else {
+    ov.bomSummary.nodes.push(node);
+  }
+  ov.totalMappedComponents = ov.bomSummary.nodes.length;
+  ov.bomSummary.totalComponentsMapped = ov.bomSummary.nodes.length;
+  ov.singlePointOfFailureCount = ov.bomSummary.nodes.filter((n) => n.isSinglePointOfFailure).length;
+  ov.bomSummary.singlePointOfFailureCount = ov.singlePointOfFailureCount;
+  saveDemoSupplyChainOverview(ov);
+  return node;
+}
+
+function executeScreenSanctionsDemo(): GeopoliticalExposureDTO[] {
+  const ov = loadDemoSupplyChainOverview();
+  return ov.geopoliticalSummary.exposures;
+}
+
+function executeDisruptionSimulationDemo(input: DisruptionSimulationRequestDTO): DisruptionSimulationResultDTO {
+  const ov = loadDemoSupplyChainOverview();
+  const buf = ov.bufferSummary.buffers.find((b) => b.sku === input.sku) || ov.bufferSummary.buffers[0];
+  const effectiveDelay = input.simulatedDelayDays;
+  const currentTts = buf.timeToSurviveDays;
+  const projectedShortfall = Math.max(0, effectiveDelay - currentTts);
+  const lostRev = projectedShortfall * buf.averageDailyDemandUnits * buf.unitCostUsd * 3.5;
+
+  const newSafetyStock = calculateSafetyStock(
+    buf.targetServiceLevelZ,
+    buf.nominalLeadTimeDays + effectiveDelay,
+    buf.stdDevDailyDemandUnits,
+    buf.averageDailyDemandUnits * (1 + input.demandSurgePercent / 100),
+    buf.stdDevLeadTimeDays * 1.5
+  );
+
+  const incrementalUnits = Math.max(0, newSafetyStock - buf.calculatedSafetyStockUnits);
+  const incrementalWorkingCapital = incrementalUnits * buf.unitCostUsd;
+  const simulatedTtsRatio = Number(((currentTts + incrementalUnits / buf.averageDailyDemandUnits) / (buf.nominalLeadTimeDays + effectiveDelay)).toFixed(2));
+
+  let feasibility: 'feasible_buffered' | 'urgent_mitigation_needed' | 'catastrophic_shutdown' =
+    'catastrophic_shutdown';
+  if (simulatedTtsRatio >= 1.0) {
+    feasibility = 'feasible_buffered';
+  } else if (simulatedTtsRatio >= 0.7) {
+    feasibility = 'urgent_mitigation_needed';
+  }
+
+  return {
+    sku: input.sku,
+    simulatedDelayDays: input.simulatedDelayDays,
+    projectedStockoutDays: projectedShortfall,
+    estimatedLostRevenueUsd: Number(lostRev.toFixed(2)),
+    recommendedSafetyStockIncreaseUnits: incrementalUnits,
+    incrementalWorkingCapitalUsd: Number(incrementalWorkingCapital.toFixed(2)),
+    simulatedTtsRatio,
+    recoveryFeasibility: feasibility
+  };
+}
+
+function executeHubComparisonDemo(input: HubCostComparisonRequestDTO): HubCostComparisonResultDTO {
+  const ov = loadDemoSupplyChainOverview();
+  const hubs = ov.networkSummary.allHubs;
+  const baselineHub = hubs.find((h) => h.id === input.baselineHubId) || hubs[0];
+  const candidateHubs = hubs.filter((h) => input.candidateHubIds.includes(h.id));
+
+  const bestCandidate = candidateHubs.reduce(
+    (best, current) => (current.totalLandedCostUsd < best.totalLandedCostUsd ? current : best),
+    candidateHubs[0] || baselineHub
+  );
+
+  const costDeltaPerUnit = baselineHub.totalLandedCostUsd - bestCandidate.totalLandedCostUsd;
+  const annualSavingsUsd = Math.max(0, costDeltaPerUnit * input.annualProductionVolumeUnits);
+  const landedCostDeltaPercent = Number(((costDeltaPerUnit / baselineHub.totalLandedCostUsd) * 100).toFixed(2));
+  const leadTimeReductionDays = Math.max(0, baselineHub.transitLeadTimeDays - bestCandidate.transitLeadTimeDays);
+  const freightCarbonDeltaPercent = Number(
+    (((baselineHub.totalTripCarbonKgCo2ePerUnit - bestCandidate.totalTripCarbonKgCo2ePerUnit) /
+      baselineHub.totalTripCarbonKgCo2ePerUnit) *
+      100).toFixed(2)
+  );
+
+  return {
+    baselineHub,
+    candidateHubs,
+    annualSavingsUsd: Number(annualSavingsUsd.toFixed(2)),
+    landedCostDeltaPercent,
+    leadTimeReductionDays,
+    freightCarbonDeltaPercent,
+    optimalRecommendation: `Transition primary manufacturing volume to ${bestCandidate.hubName} (${bestCandidate.country}) to capture ${landedCostDeltaPercent}% TLC savings and reduce freight lead times by ${leadTimeReductionDays} days.`
+  };
+}
+
+function executeGenerateSupplyChainBoardMemoDemo(input: GenerateSupplyChainBoardMemoRequestDTO): SupplyChainBoardMemorandumDTO {
+  const ov = loadDemoSupplyChainOverview();
+  const markdown = generateExecutiveSupplyChainMemorandum({
+    title: input.title,
+    fiscalQuarter: input.fiscalQuarter,
+    overview: ov,
+    customDirectives: input.customDirectives
+  });
+
+  const memo: SupplyChainBoardMemorandumDTO = {
+    id: `memo-${Date.now()}`,
+    title: input.title,
+    fiscalQuarter: input.fiscalQuarter,
+    status: 'draft',
+    crisisSeverity: ov.crisisSeverity,
+    compositeScri: ov.compositeScri,
+    totalFinancialExposureUsd: ov.totalAnnualTariffExposureUsd,
+    nearshoringOpportunityUsd: ov.potentialNearshoringArbitrageUsd,
+    executiveSummaryMarkdown: markdown,
+    bomVulnerabilitySection: 'Pillar A Multi-Tier BOM Analysis',
+    geopoliticalSanctionsSection: 'Pillar B Geopolitical & Sanctions Screening Analysis',
+    inventoryBufferSection: 'Pillar C Buffer Stock & Monte Carlo Simulation Analysis',
+    nearshoringTlcSection: 'Pillar D Nearshoring Total Landed Cost Analysis',
+    strategicDirectivesSection: 'Pillar E Strategic C-Suite Directives',
+    approvedByVpSupplyChainAt: null,
+    approvedByCooAt: null,
+    approvedByBoardRiskChairAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  ov.recentMemos.unshift(memo);
+  saveDemoSupplyChainOverview(ov);
+  return memo;
+}
+
+function executeSupplyChainSignOffDemo(memoId: string, role: BoardSignoffRole, notes?: string): SupplyChainBoardMemorandumDTO {
+  const ov = loadDemoSupplyChainOverview();
+  let memo = ov.recentMemos.find((m) => m.id === memoId);
+  if (!memo) {
+    memo = executeGenerateSupplyChainBoardMemoDemo({
+      title: 'Q4-2026 Executive Supply Chain Strategy',
+      fiscalQuarter: 'Q4-2026'
+    });
+  }
+
+  const now = new Date().toISOString();
+  if (role === 'vp_supply_chain') memo.approvedByVpSupplyChainAt = now;
+  else if (role === 'chief_operating_officer') memo.approvedByCooAt = now;
+  else if (role === 'board_risk_chair') {
+    memo.approvedByBoardRiskChairAt = now;
+    memo.status = 'board_approved';
+  }
+  memo.updatedAt = now;
+
+  saveDemoSupplyChainOverview(ov);
+  return memo;
+}
+
+export const supplyChainResilienceStudioRepository = {
+  async getOverview(): Promise<SupplyChainStudioOverviewDTO> {
+    if (demoMode) {
+      return loadDemoSupplyChainOverview();
+    }
+    try {
+      return await request<SupplyChainStudioOverviewDTO>('/supply-chain-resilience-studio/overview');
+    } catch {
+      return loadDemoSupplyChainOverview();
+    }
+  },
+
+  async getBomNodes(): Promise<SupplierBomNodeDTO[]> {
+    if (demoMode) {
+      return loadDemoSupplyChainOverview().bomSummary.nodes;
+    }
+    try {
+      return await request<SupplierBomNodeDTO[]>('/supply-chain-resilience-studio/bom');
+    } catch {
+      return loadDemoSupplyChainOverview().bomSummary.nodes;
+    }
+  },
+
+  async saveBomNode(input: Partial<SupplierBomNodeDTO>): Promise<SupplierBomNodeDTO> {
+    if (demoMode) {
+      return executeSaveBomNodeDemo(input);
+    }
+    try {
+      return await request<SupplierBomNodeDTO>('/supply-chain-resilience-studio/bom', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeSaveBomNodeDemo(input);
+    }
+  },
+
+  async getGeopoliticalExposures(): Promise<GeopoliticalExposureDTO[]> {
+    if (demoMode) {
+      return loadDemoSupplyChainOverview().geopoliticalSummary.exposures;
+    }
+    try {
+      return await request<GeopoliticalExposureDTO[]>('/supply-chain-resilience-studio/geopolitical');
+    } catch {
+      return loadDemoSupplyChainOverview().geopoliticalSummary.exposures;
+    }
+  },
+
+  async screenSanctions(): Promise<GeopoliticalExposureDTO[]> {
+    if (demoMode) {
+      return executeScreenSanctionsDemo();
+    }
+    try {
+      return await request<GeopoliticalExposureDTO[]>('/supply-chain-resilience-studio/geopolitical/screen', {
+        method: 'POST'
+      });
+    } catch {
+      return executeScreenSanctionsDemo();
+    }
+  },
+
+  async getInventoryBuffers(): Promise<InventoryBufferDTO[]> {
+    if (demoMode) {
+      return loadDemoSupplyChainOverview().bufferSummary.buffers;
+    }
+    try {
+      return await request<InventoryBufferDTO[]>('/supply-chain-resilience-studio/buffers');
+    } catch {
+      return loadDemoSupplyChainOverview().bufferSummary.buffers;
+    }
+  },
+
+  async simulateLeadTimeDisruption(input: DisruptionSimulationRequestDTO): Promise<DisruptionSimulationResultDTO> {
+    if (demoMode) {
+      return executeDisruptionSimulationDemo(input);
+    }
+    try {
+      return await request<DisruptionSimulationResultDTO>('/supply-chain-resilience-studio/buffers/simulate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeDisruptionSimulationDemo(input);
+    }
+  },
+
+  async getNetworkHubs(): Promise<SourcingHubModelDTO[]> {
+    if (demoMode) {
+      return loadDemoSupplyChainOverview().networkSummary.allHubs;
+    }
+    try {
+      return await request<SourcingHubModelDTO[]>('/supply-chain-resilience-studio/hubs');
+    } catch {
+      return loadDemoSupplyChainOverview().networkSummary.allHubs;
+    }
+  },
+
+  async compareHubLandedCosts(input: HubCostComparisonRequestDTO): Promise<HubCostComparisonResultDTO> {
+    if (demoMode) {
+      return executeHubComparisonDemo(input);
+    }
+    try {
+      return await request<HubCostComparisonResultDTO>('/supply-chain-resilience-studio/hubs/compare', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeHubComparisonDemo(input);
+    }
+  },
+
+  async getBoardMemos(): Promise<SupplyChainBoardMemorandumDTO[]> {
+    if (demoMode) {
+      return loadDemoSupplyChainOverview().recentMemos;
+    }
+    try {
+      return await request<SupplyChainBoardMemorandumDTO[]>('/supply-chain-resilience-studio/board-memos');
+    } catch {
+      return loadDemoSupplyChainOverview().recentMemos;
+    }
+  },
+
+  async generateBoardMemorandum(input: GenerateSupplyChainBoardMemoRequestDTO): Promise<SupplyChainBoardMemorandumDTO> {
+    if (demoMode) {
+      return executeGenerateSupplyChainBoardMemoDemo(input);
+    }
+    try {
+      return await request<SupplyChainBoardMemorandumDTO>('/supply-chain-resilience-studio/board-memos/generate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeGenerateSupplyChainBoardMemoDemo(input);
+    }
+  },
+
+  async signOffBoardMemorandum(memoId: string, role: BoardSignoffRole, notes?: string): Promise<SupplyChainBoardMemorandumDTO> {
+    if (demoMode) {
+      return executeSupplyChainSignOffDemo(memoId, role, notes);
+    }
+    try {
+      return await request<SupplyChainBoardMemorandumDTO>(`/supply-chain-resilience-studio/board-memos/${encodeURIComponent(memoId)}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ role, signoffNotes: notes })
+      });
+    } catch {
+      return executeSupplyChainSignOffDemo(memoId, role, notes);
     }
   }
 };

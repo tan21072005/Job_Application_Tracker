@@ -389,7 +389,22 @@ import {
   validateMaterialityTopicUpdate,
   validateSupplierSimulationInput,
   validateEsgBoardMemoGenerateInput,
-  validateEsgSignOffInput
+  validateEsgSignOffInput,
+  calculateHerfindahlHirschmanIndex,
+  calculateDualSourcingRatio,
+  calculateSafetyStock,
+  calculateReorderPoint,
+  calculateDaysOfInventoryOutstanding,
+  calculateResilienceDeficit,
+  calculateTotalLandedCost,
+  calculateCompositeScri,
+  determineCrisisSeverityBand,
+  generateExecutiveSupplyChainMemorandum,
+  validateSupplierBomNodeInput,
+  validateDisruptionSimulationInput,
+  validateHubComparisonInput,
+  validateSupplyChainBoardMemoGenerateInput,
+  validateSupplyChainSignoffInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -8072,5 +8087,211 @@ test('esg: schema validators enforce boundaries and reject malformed inputs', ()
   assert.equal(badSign.ok, false);
 
   const goodSign = validateEsgSignOffInput({ role: 'cso' });
+  assert.equal(goodSign.ok, true);
+});
+
+test('supply-chain: calculateHerfindahlHirschmanIndex and calculateDualSourcingRatio compute concentration metrics', () => {
+  assert.equal(calculateHerfindahlHirschmanIndex([]), 10000);
+  assert.equal(calculateHerfindahlHirschmanIndex([100]), 10000);
+  assert.equal(calculateHerfindahlHirschmanIndex([50, 50]), 5000);
+  assert.equal(calculateHerfindahlHirschmanIndex([25, 25, 25, 25]), 2500);
+
+  assert.equal(calculateDualSourcingRatio(0, 0), 100);
+  assert.equal(calculateDualSourcingRatio(10, 8), 80);
+  assert.equal(calculateDualSourcingRatio(12, 3), 25);
+});
+
+test('supply-chain: buffer stock, reorder point, DIO, and resilience deficit calculations', () => {
+  const ss = calculateSafetyStock(1.96, 30, 8, 50, 6.5);
+  assert.ok(ss > 0);
+  assert.equal(typeof ss, 'number');
+
+  const rop = calculateReorderPoint(50, 30, ss);
+  assert.equal(rop, 50 * 30 + ss);
+
+  const dio = calculateDaysOfInventoryOutstanding(1500000, 12000000);
+  assert.ok(dio > 45 && dio < 46);
+
+  const deficitVulnerable = calculateResilienceDeficit(28, 45);
+  assert.equal(deficitVulnerable.resilienceRatio, 0.62);
+  assert.equal(deficitVulnerable.resilienceDeficitDays, 17);
+  assert.equal(deficitVulnerable.isVulnerable, true);
+
+  const deficitSecure = calculateResilienceDeficit(56, 38);
+  assert.equal(deficitSecure.resilienceRatio, 1.47);
+  assert.equal(deficitSecure.resilienceDeficitDays, 0);
+  assert.equal(deficitSecure.isVulnerable, false);
+});
+
+test('supply-chain: calculateTotalLandedCost correctly models tariffs, pipeline holding, and scrap', () => {
+  const tlc = calculateTotalLandedCost(100, 12.5, 25, 15, 42, 4);
+  assert.equal(tlc.customsTariffPerUnitUsd, 25.0);
+  assert.ok(tlc.pipelineCarryingCostPerUnitUsd > 1.7 && tlc.pipelineCarryingCostPerUnitUsd < 1.8);
+  assert.ok(tlc.totalLandedCostUsd > 143 && tlc.totalLandedCostUsd < 144);
+});
+
+test('supply-chain: calculateCompositeScri and determineCrisisSeverityBand categorize operational risk', () => {
+  const elite = calculateCompositeScri({
+    supplierRedundancyScore: 90,
+    geopoliticalStabilityScore: 90,
+    bufferAdequacyScore: 90,
+    landedCostAgilityScore: 85,
+    sanctionsImmunityScore: 95
+  });
+  assert.ok(elite.compositeScri >= 85);
+  assert.equal(elite.resilienceRatingBand, 'elite_hardened');
+
+  const defensible = calculateCompositeScri({
+    supplierRedundancyScore: 78,
+    geopoliticalStabilityScore: 74,
+    bufferAdequacyScore: 68,
+    landedCostAgilityScore: 86,
+    sanctionsImmunityScore: 92
+  });
+  assert.ok(defensible.compositeScri >= 70 && defensible.compositeScri < 85);
+  assert.equal(defensible.resilienceRatingBand, 'defensible');
+
+  const normalBand = determineCrisisSeverityBand(88, 0, 0, 0);
+  assert.equal(normalBand, 'normal_operations');
+
+  const watchBand = determineCrisisSeverityBand(82, 0, 0, 0);
+  assert.equal(watchBand, 'tier_1_watch');
+
+  const warnBand = determineCrisisSeverityBand(82, 1, 1, 0);
+  assert.equal(warnBand, 'tier_2_warning');
+
+  const warRoomBand = determineCrisisSeverityBand(82, 1, 1, 1);
+  assert.equal(warRoomBand, 'tier_3_crisis_war_room');
+});
+
+test('supply-chain: generateExecutiveSupplyChainMemorandum produces formatted board document', () => {
+  const md = generateExecutiveSupplyChainMemorandum({
+    title: 'Q4-2026 Board SCM Resilience Strategy',
+    fiscalQuarter: 'Q4-2026',
+    overview: {
+      compositeScri: 82.5,
+      resilienceRatingBand: 'defensible',
+      crisisSeverity: 'tier_1_watch',
+      totalMappedComponents: 48,
+      singlePointOfFailureCount: 7,
+      aggregateHhiIndex: 2140,
+      dualSourcingRatioPercent: 64.5,
+      totalAnnualTariffExposureUsd: 4850000,
+      chokepointsAtRiskCount: 2,
+      averageDioDays: 42.5,
+      criticalBufferDeficitCount: 4,
+      potentialNearshoringArbitrageUsd: 3240000,
+      activeSanctionFlagsCount: 1,
+      indexBreakdown: {
+        supplierRedundancyScore: 78,
+        geopoliticalStabilityScore: 74,
+        bufferAdequacyScore: 68,
+        landedCostAgilityScore: 86,
+        sanctionsImmunityScore: 92,
+        compositeScri: 82.5,
+        resilienceRatingBand: 'defensible'
+      },
+      bomSummary: {
+        totalComponentsMapped: 4,
+        tier1Count: 1,
+        tier2Count: 1,
+        tier3Count: 1,
+        tier4Count: 1,
+        singlePointOfFailureCount: 2,
+        aggregateHhiIndex: 2140,
+        dualSourcingRatioPercent: 64.5,
+        averageBomVulnerabilityScore: 59.2,
+        nodes: []
+      },
+      geopoliticalSummary: {
+        totalCountriesMonitored: 3,
+        highRiskJurisdictionCount: 1,
+        flaggedSanctionEntitiesCount: 1,
+        totalAnnualTariffExposureUsd: 3100000,
+        criticalChokepointVulnerabilityCount: 2,
+        exposures: []
+      },
+      bufferSummary: {
+        totalSkusTracked: 2,
+        criticalDeficitSkusCount: 1,
+        averageDioDays: 42.1,
+        totalBufferCarryingCostUsd: 37800,
+        aggregateStockoutExposureUsd: 1450000,
+        buffers: []
+      },
+      networkSummary: {
+        activeHubsCount: 3,
+        primaryOffshoreHub: {} as any,
+        primaryNearshoreHub: {} as any,
+        primaryOnshoreHub: {} as any,
+        projectedAnnualNearshoringArbitrageUsd: 3240000,
+        averageLeadTimeAdvantageDays: 38,
+        allHubs: []
+      },
+      recentMemos: []
+    }
+  });
+
+  assert.ok(md.includes('EXECUTIVE SUPPLY CHAIN RESILIENCE & GLOBAL LOGISTICS MEMORANDUM'));
+  assert.ok(md.includes('**Fiscal Review Period:** Q4-2026'));
+  assert.ok(md.includes('**Memorandum Title:** Q4-2026 Board SCM Resilience Strategy'));
+  assert.ok(md.includes('Composite Supply Chain Resilience Index (SCRI) of **82.5 / 100**'));
+  assert.ok(md.includes('Tripartite Governance Sign-Off'));
+});
+
+test('supply-chain: schema validators enforce boundaries and reject invalid inputs', () => {
+  const badBom = validateSupplierBomNodeInput({});
+  assert.equal(badBom.ok, false);
+  assert.ok(Object.keys(badBom.errors).length >= 4);
+
+  const goodBom = validateSupplierBomNodeInput({
+    partNumber: 'PCBA-7001',
+    componentName: 'Main Controller System Motherboard',
+    tier: 'tier_1_integrator',
+    supplierName: 'Apex Electronics',
+    supplierCountry: 'Taiwan',
+    spendVolumeSharePercent: 65,
+    nominalLeadTimeDays: 45,
+    annualSpendUsd: 14200000
+  });
+  assert.equal(goodBom.ok, true);
+
+  const badSim = validateDisruptionSimulationInput({});
+  assert.equal(badSim.ok, false);
+
+  const goodSim = validateDisruptionSimulationInput({
+    sku: 'SKU-MCU-3305',
+    simulatedDelayDays: 21,
+    demandSurgePercent: 20,
+    disruptionProbabilityPercent: 35
+  });
+  assert.equal(goodSim.ok, true);
+
+  const badHub = validateHubComparisonInput({});
+  assert.equal(badHub.ok, false);
+
+  const goodHub = validateHubComparisonInput({
+    baselineHubId: 'hub-1',
+    candidateHubIds: ['hub-2', 'hub-3'],
+    annualProductionVolumeUnits: 100000,
+    annualHoldingCostRatePercent: 15
+  });
+  assert.equal(goodHub.ok, true);
+
+  const badMemo = validateSupplyChainBoardMemoGenerateInput({});
+  assert.equal(badMemo.ok, false);
+
+  const goodMemo = validateSupplyChainBoardMemoGenerateInput({
+    fiscalQuarter: 'Q4-2026',
+    title: 'Enterprise Supply Chain Strategic Memorandum'
+  });
+  assert.equal(goodMemo.ok, true);
+
+  const badSign = validateSupplyChainSignoffInput({});
+  assert.equal(badSign.ok, false);
+
+  const goodSign = validateSupplyChainSignoffInput({
+    role: 'vp_supply_chain'
+  });
   assert.equal(goodSign.ok, true);
 });
