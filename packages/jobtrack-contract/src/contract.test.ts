@@ -442,7 +442,26 @@ import {
   validateGenerateTreasuryBoardMemoInput,
   validateSignoffTreasuryBoardMemoInput,
   type CorporateTreasuryOverviewDTO,
-  type BankCounterpartyDTO
+  type BankCounterpartyDTO,
+  calculateResidualRisk,
+  calculateSodSeverityIndex,
+  calculateDeficiencyImpactWeight,
+  calculateAuditRiskHealthScore,
+  generateRiskHeatmapMatrix,
+  generateSecItem9AMemoMarkdown,
+  validateSoxControlInput,
+  validateEnterpriseRiskInput,
+  validateCcmEventInput,
+  validateWhistleblowerReportInput,
+  validateRemediationPlanInput,
+  validateTripartiteSignOffInput,
+  type SoxInternalControlDTO,
+  type EnterpriseRiskDTO,
+  type CcmAuditEventDTO,
+  type WhistleblowerReportDTO,
+  type RemediationActionPlanDTO,
+  type SoxAuditCertificationDTO,
+  type AuditRiskHealthScoreDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -8886,5 +8905,311 @@ test('corporate-treasury: validators enforce boundaries and types accurately', (
   });
   assert.equal(goodSign.ok, true);
 });
+
+test('internal-audit: calculateResidualRisk scales risk properly with controls and penalties', () => {
+  const unmitigated = calculateResidualRisk(4, 5, []);
+  assert.equal(unmitigated.inherentScore, 20);
+  assert.equal(unmitigated.residualScore, 20);
+  assert.equal(unmitigated.appetiteZone, 'breached_appetite_red');
+  assert.equal(unmitigated.aggregateMitigationFactor, 0);
+
+  const mitigatedEffective = calculateResidualRisk(4, 5, [
+    {
+      testingStatus: 'operating_effectively',
+      nature: 'preventive_automated',
+      deficiencyClassification: 'none',
+      mitigationEfficacyFactor: 0.9
+    }
+  ]);
+  assert.equal(mitigatedEffective.inherentScore, 20);
+  assert.ok(mitigatedEffective.residualScore < 10);
+  assert.ok(mitigatedEffective.aggregateMitigationFactor > 0.6);
+
+  const mitigatedWithMaterialWeakness = calculateResidualRisk(4, 5, [
+    {
+      testingStatus: 'operating_ineffective',
+      nature: 'preventive_automated',
+      deficiencyClassification: 'material_weakness',
+      mitigationEfficacyFactor: 0.9
+    }
+  ]);
+  assert.ok(mitigatedWithMaterialWeakness.residualScore > mitigatedEffective.residualScore);
+});
+
+test('internal-audit: calculateSodSeverityIndex and calculateDeficiencyImpactWeight evaluate bounds', () => {
+  const sodUnmitigated = calculateSodSeverityIndex(
+    'sod_conflict_detected',
+    1.8,
+    500000,
+    0.8,
+    false
+  );
+  assert.ok(sodUnmitigated >= 50);
+  assert.ok(sodUnmitigated <= 100);
+
+  const sodCompensated = calculateSodSeverityIndex(
+    'sod_conflict_detected',
+    1.8,
+    500000,
+    0.8,
+    true
+  );
+  assert.ok(sodCompensated < sodUnmitigated);
+
+  const bypassSeverity = calculateSodSeverityIndex(
+    'change_management_bypass',
+    2.0,
+    1000000,
+    1.0,
+    false
+  );
+  assert.ok(bypassSeverity > sodCompensated);
+
+  const defWeightClean = calculateDeficiencyImpactWeight(0, 0, 1, 10000, 250000);
+  assert.equal(defWeightClean, 2.4);
+
+  const defWeightSevere = calculateDeficiencyImpactWeight(2, 3, 4, 1500000, 250000);
+  assert.ok(defWeightSevere >= 80);
+});
+
+test('internal-audit: calculateAuditRiskHealthScore computes composite ARHS and cliff penalties', () => {
+  const healthy = calculateAuditRiskHealthScore({
+    totalControls: 50,
+    effectiveControls: 48,
+    inProgressControls: 2,
+    deficiencyImpactWeight: 2,
+    materialWeaknessCount: 0,
+    averageResidualRisk: 4.5,
+    boardAppetiteBreachCount: 0,
+    totalRisksCount: 20,
+    activeSodViolationsCount: 0,
+    accumulatedCcmSeveritySum: 20,
+    unresolvedBypassesCount: 0,
+    criticalOpenWhistleblowerCount: 0,
+    highOpenWhistleblowerCount: 0,
+    overdueRemediationsCount: 0
+  });
+  assert.ok(healthy.compositeScore >= 90);
+  assert.equal(healthy.healthBand, 'sovereign_defensibility');
+  assert.equal(healthy.materialWeaknessPenaltyApplied, 0);
+
+  const withMaterialWeakness = calculateAuditRiskHealthScore({
+    totalControls: 50,
+    effectiveControls: 35,
+    inProgressControls: 5,
+    deficiencyImpactWeight: 35,
+    materialWeaknessCount: 1,
+    averageResidualRisk: 12.0,
+    boardAppetiteBreachCount: 3,
+    totalRisksCount: 20,
+    activeSodViolationsCount: 2,
+    accumulatedCcmSeveritySum: 150,
+    unresolvedBypassesCount: 1,
+    criticalOpenWhistleblowerCount: 1,
+    highOpenWhistleblowerCount: 1,
+    overdueRemediationsCount: 2
+  });
+  assert.ok(withMaterialWeakness.compositeScore <= 60);
+  assert.equal(withMaterialWeakness.healthBand, 'critical_non_compliance');
+  assert.equal(withMaterialWeakness.materialWeaknessPenaltyApplied, 30);
+});
+
+test('internal-audit: generateRiskHeatmapMatrix and generateSecItem9AMemoMarkdown format outputs correctly', () => {
+  const mockRisks: EnterpriseRiskDTO[] = [
+    {
+      id: 'risk-1',
+      userId: 'user-audit-1',
+      riskCode: 'ERM-FIN-01',
+      title: 'Revenue Cut-Off Acceleration Under ASC 606',
+      category: 'financial_reporting',
+      inherentLikelihood: 4,
+      inherentImpact: 4,
+      inherentScore: 16,
+      residualLikelihood: 2,
+      residualImpact: 2,
+      residualScore: 4,
+      boardAppetiteThreshold: 8,
+      appetiteZone: 'within_appetite_green',
+      responseStrategy: 'mitigate_controls',
+      mappedControlCodes: ['BPC-REV-01'],
+      maxPotentialFinancialLossUsd: 1200000,
+      riskOwner: 'Corporate Controller',
+      createdAt: '2026-10-25T00:00:00Z',
+      updatedAt: '2026-10-25T00:00:00Z'
+    }
+  ];
+
+  const heatmap = generateRiskHeatmapMatrix(mockRisks);
+  assert.equal(heatmap.cells.length, 25);
+  assert.equal(heatmap.totalRisks, 1);
+  assert.equal(heatmap.withinAppetiteCount, 1);
+
+  const mockControls: SoxInternalControlDTO[] = [
+    {
+      id: 'ctrl-1',
+      userId: 'user-audit-1',
+      controlCode: 'ITGC-AC-01',
+      title: 'Quarterly Privileged Access Re-certification',
+      description: 'System administrators undergo mandatory quarterly access certification.',
+      category: 'it_general_control',
+      nature: 'preventive_automated',
+      frequency: 'quarterly',
+      cosoPrinciple: 'p11_general_controls_tech',
+      primaryAssertion: 'rights_obligations',
+      controlOwner: 'SecOps Lead',
+      testingStatus: 'operating_effectively',
+      deficiencyClassification: 'none',
+      sampleSize: 25,
+      exceptionsIdentified: 0,
+      mitigationEfficacyFactor: 0.95,
+      createdAt: '2026-10-25T00:00:00Z',
+      updatedAt: '2026-10-25T00:00:00Z'
+    }
+  ];
+
+  const arhs = calculateAuditRiskHealthScore({
+    totalControls: 1,
+    effectiveControls: 1,
+    inProgressControls: 0,
+    deficiencyImpactWeight: 0,
+    materialWeaknessCount: 0,
+    averageResidualRisk: 4.0,
+    boardAppetiteBreachCount: 0,
+    totalRisksCount: 1,
+    activeSodViolationsCount: 0,
+    accumulatedCcmSeveritySum: 0,
+    unresolvedBypassesCount: 0,
+    criticalOpenWhistleblowerCount: 0,
+    highOpenWhistleblowerCount: 0,
+    overdueRemediationsCount: 0
+  });
+
+  const memo = generateSecItem9AMemoMarkdown({
+    fiscalPeriod: 'Q4-2026',
+    fiscalYear: 2026,
+    auditorFirmName: 'PricewaterhouseCoopers LLP',
+    managementEvaluationDate: '2026-10-25',
+    arhs,
+    controls: mockControls,
+    risks: mockRisks,
+    signOffs: [
+      {
+        role: 'head_of_internal_audit',
+        signerName: 'Marcus Sterling, CIA',
+        signerTitle: 'VP & Chief Audit Executive',
+        attestationConfirmed: true,
+        signedAt: '2026-10-25T09:00:00Z',
+        signatureToken: 'sig-cia-mock-token-01',
+        observationsSummary: 'All key controls verified.'
+      }
+    ],
+    unresolvedMaterialWeaknesses: []
+  });
+
+  assert.ok(memo.includes('ITEM 9A. CONTROLS AND PROCEDURES'));
+  assert.ok(memo.includes('PricewaterhouseCoopers LLP'));
+  assert.ok(memo.includes('EFFECTIVE INTERNAL CONTROL OVER FINANCIAL REPORTING (ICFR)'));
+  assert.ok(memo.includes('Marcus Sterling, CIA'));
+});
+
+test('internal-audit: validators enforce schema invariants and reject malformed payloads', () => {
+  const badCtrl = validateSoxControlInput(null);
+  assert.equal(badCtrl.ok, false);
+
+  const goodCtrl = validateSoxControlInput({
+    controlCode: 'BPC-FIN-01',
+    title: 'Bank Reconciliation 3-Way Match',
+    description: 'Automated matching of bank statement lines against ERP ledger.',
+    category: 'business_process',
+    nature: 'detective_automated',
+    frequency: 'daily',
+    cosoPrinciple: 'p10_select_control_activities',
+    primaryAssertion: 'existence_occurrence',
+    controlOwner: 'Assistant Controller',
+    testingStatus: 'operating_effectively',
+    deficiencyClassification: 'none',
+    sampleSize: 30,
+    exceptionsIdentified: 0,
+    mitigationEfficacyFactor: 0.92
+  });
+  assert.equal(goodCtrl.ok, true);
+
+  const badRisk = validateEnterpriseRiskInput({});
+  assert.equal(badRisk.ok, false);
+
+  const goodRisk = validateEnterpriseRiskInput({
+    riskCode: 'ERM-CYB-01',
+    title: 'Multi-Tenant Data Spill Vulnerability',
+    category: 'cybersecurity_information',
+    inherentLikelihood: 3,
+    inherentImpact: 4,
+    boardAppetiteThreshold: 10,
+    responseStrategy: 'mitigate_controls',
+    mappedControlCodes: ['ITGC-AC-01'],
+    maxPotentialFinancialLossUsd: 2500000,
+    riskOwner: 'VP Security Architecture'
+  });
+  assert.equal(goodRisk.ok, true);
+
+  const badCcm = validateCcmEventInput({});
+  assert.equal(badCcm.ok, false);
+
+  const goodCcm = validateCcmEventInput({
+    eventCode: 'CCM-SOD-001',
+    eventType: 'sod_conflict_detected',
+    severity: 'high',
+    actorId: 'usr-dev-9',
+    actorEmail: 'engineer@jobtrack.internal',
+    resourceTarget: 'prod-migration-pipeline',
+    privilegeDistance: 0.85,
+    exposureVolumeUsd: 450000,
+    compensatingControlActive: false,
+    evidencePayload: { commitSha: 'a1b2c3d', branch: 'main' }
+  });
+  assert.equal(goodCcm.ok, true);
+
+  const badWbh = validateWhistleblowerReportInput({});
+  assert.equal(badWbh.ok, false);
+
+  const goodWbh = validateWhistleblowerReportInput({
+    category: 'accounting_fraud',
+    allegationSummary: 'Premature revenue recognition observed in enterprise renewals.',
+    detailedNarrative: 'Contract signatures backdated prior to end of Q3 to artificially inflate ARR metrics before quarterly board audit review.',
+    involvedPersonsMasked: ['Sales VP', 'Deal Desk Lead'],
+    estimatedFinancialExposureUsd: 350000,
+    evidenceAttachmentsCount: 2
+  });
+  assert.equal(goodWbh.ok, true);
+
+  const badCapa = validateRemediationPlanInput({});
+  assert.equal(badCapa.ok, false);
+
+  const goodCapa = validateRemediationPlanInput({
+    capaCode: 'CAPA-2026-001',
+    title: 'Enforce Dual-Custodian Sign-Off on Master Ledger Journal Entries',
+    description: 'Implement mandatory dual authorization in ERP for journal entries exceeding $50k.',
+    sourceType: 'sox_deficiency',
+    sourceReferenceId: 'ctrl-1',
+    actionOwner: 'Chief Accounting Officer',
+    targetRemediationDate: '2026-11-15',
+    compensatingControlsInPlace: 'Weekly retrospective manual review by Controller'
+  });
+  assert.equal(goodCapa.ok, true);
+
+  const badSign = validateTripartiteSignOffInput({});
+  assert.equal(badSign.ok, false);
+
+  const goodSign = validateTripartiteSignOffInput({
+    role: 'board_audit_committee_chair',
+    signerName: 'Senator Evelyn Vance',
+    signerTitle: 'Audit Committee Chair',
+    attestationConfirmed: true,
+    signedAt: '2026-10-25T11:00:00Z',
+    signatureToken: 'sig-board-chair-verified-token',
+    observationsSummary: 'Ratified following independent executive session.'
+  });
+  assert.equal(goodSign.ok, true);
+});
+
 
 

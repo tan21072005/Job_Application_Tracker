@@ -49,3 +49,4 @@ export * from './esg-sustainability-studio.ts';
 export * from './supply-chain-resilience-studio.ts';
 export * from './workforce-total-rewards-studio.ts';
 export * from './corporate-treasury-nexus.ts';
+export * from './internal-audit-erm-nexus.ts';

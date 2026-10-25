@@ -111,6 +111,7 @@ import { EsgSustainabilityStudioService } from './services/esg-sustainability-st
 import { SupplyChainResilienceStudioService } from './services/supply-chain-resilience-studio-service.ts';
 import { WorkforceTotalRewardsStudioService } from './services/workforce-total-rewards-studio-service.ts';
 import { CorporateTreasuryNexusService } from './services/corporate-treasury-nexus-service.ts';
+import { InternalAuditErmNexusService } from './services/internal-audit-erm-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -128,7 +129,13 @@ import {
   validateFxSimulationInput,
   validateBailInStressInput,
   validateGenerateTreasuryBoardMemoInput,
-  validateSignoffTreasuryBoardMemoInput
+  validateSignoffTreasuryBoardMemoInput,
+  validateSoxControlInput,
+  validateEnterpriseRiskInput,
+  validateCcmEventInput,
+  validateWhistleblowerReportInput,
+  validateRemediationPlanInput,
+  validateTripartiteSignOffInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -268,6 +275,7 @@ export const esgSustainabilityStudioService = new EsgSustainabilityStudioService
 export const supplyChainResilienceStudioService = new SupplyChainResilienceStudioService(pool);
 export const workforceTotalRewardsStudioService = new WorkforceTotalRewardsStudioService(pool);
 export const corporateTreasuryNexusService = new CorporateTreasuryNexusService(pool);
+export const internalAuditErmNexusService = new InternalAuditErmNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -4685,6 +4693,224 @@ app.post(['/api/corporate-treasury-nexus/board-memos/:id/signoff', '/api/treasur
   } catch (err) {
     if ((err as Error).message.includes('not found')) {
       return res.status(404).json({ code: 'memo_not_found', error: 'Board memorandum not found' });
+    }
+    res.status(400).json({ code: 'sign_off_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/internal-audit-erm/overview', '/api/sox/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await internalAuditErmNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    res.status(500).json({ code: 'internal_error', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/internal-audit-erm/controls', '/api/sox/controls'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const controls = await internalAuditErmNexusService.listControls(userId);
+    res.json(controls);
+  } catch (err) {
+    res.status(500).json({ code: 'internal_error', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/internal-audit-erm/controls', '/api/sox/controls'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateSoxControlInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const created = await internalAuditErmNexusService.createControl(userId, req.body);
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(400).json({ code: 'control_creation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/internal-audit-erm/controls/:id/test', '/api/sox/controls/:id/test'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const controlId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updated = await internalAuditErmNexusService.executeControlTest(userId, controlId, req.body);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'control_not_found', error: 'Control not found' });
+    }
+    res.status(400).json({ code: 'control_test_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/internal-audit-erm/risks', '/api/sox/risks'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const risks = await internalAuditErmNexusService.listRisks(userId);
+    res.json(risks);
+  } catch (err) {
+    res.status(500).json({ code: 'internal_error', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/internal-audit-erm/risks', '/api/sox/risks'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateEnterpriseRiskInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const created = await internalAuditErmNexusService.createRisk(userId, req.body);
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(400).json({ code: 'risk_creation_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/internal-audit-erm/risks/heatmap', '/api/sox/risks/heatmap'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const heatmap = await internalAuditErmNexusService.getRiskHeatmap(userId);
+    res.json(heatmap);
+  } catch (err) {
+    res.status(500).json({ code: 'internal_error', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/internal-audit-erm/ccm/events', '/api/sox/ccm/events'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const events = await internalAuditErmNexusService.listCcmEvents(userId);
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ code: 'internal_error', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/internal-audit-erm/ccm/evaluate-sod', '/api/sox/ccm/evaluate-sod'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const result = await internalAuditErmNexusService.evaluateSod(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ code: 'sod_evaluation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/internal-audit-erm/ccm/events/:id/remediate', '/api/sox/ccm/events/:id/remediate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const eventId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const { resolutionStatus, compensatingControlActive } = req.body;
+    const updated = await internalAuditErmNexusService.remediateCcmEvent(
+      userId,
+      eventId,
+      resolutionStatus || 'remediated',
+      Boolean(compensatingControlActive)
+    );
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'ccm_event_not_found', error: 'CCM event not found' });
+    }
+    res.status(400).json({ code: 'ccm_remediation_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/internal-audit-erm/whistleblower/reports', '/api/sox/whistleblower/reports'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await internalAuditErmNexusService.getOverview(userId);
+    res.json(overview.whistleblowerReports);
+  } catch (err) {
+    res.status(500).json({ code: 'internal_error', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/internal-audit-erm/whistleblower/reports', '/api/sox/whistleblower/reports'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateWhistleblowerReportInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const outcome = await internalAuditErmNexusService.submitWhistleblowerReport(userId, req.body);
+    res.status(201).json(outcome);
+  } catch (err) {
+    res.status(400).json({ code: 'whistleblower_submission_failed', error: (err as Error).message });
+  }
+});
+
+app.put(['/api/internal-audit-erm/whistleblower/reports/:id/triage', '/api/sox/whistleblower/reports/:id/triage'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const reportId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updated = await internalAuditErmNexusService.triageWhistleblowerReport(userId, reportId, req.body);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'report_not_found', error: 'Whistleblower report not found' });
+    }
+    res.status(400).json({ code: 'triage_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/internal-audit-erm/remediations', '/api/sox/remediations'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const remediations = await internalAuditErmNexusService.listRemediations(userId);
+    res.json(remediations);
+  } catch (err) {
+    res.status(500).json({ code: 'internal_error', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/internal-audit-erm/remediations', '/api/sox/remediations'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateRemediationPlanInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const created = await internalAuditErmNexusService.createRemediation(userId, req.body);
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(400).json({ code: 'remediation_creation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/internal-audit-erm/board-war-room/generate-memo', '/api/sox/board-war-room/generate-memo'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const { fiscalPeriod = 'Q3-2026', fiscalYear = 2026, auditorFirmName = 'PricewaterhouseCoopers LLP', managementEvaluationDate = '2026-09-30' } = req.body;
+    const memo = await internalAuditErmNexusService.generateSecItem9AMemo(userId, {
+      fiscalPeriod,
+      fiscalYear: Number(fiscalYear),
+      auditorFirmName,
+      managementEvaluationDate
+    });
+    res.status(201).json(memo);
+  } catch (err) {
+    res.status(400).json({ code: 'memo_generation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/internal-audit-erm/board-war-room/certifications/:id/signoff', '/api/sox/board-war-room/certifications/:id/signoff'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateTripartiteSignOffInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const certId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updated = await internalAuditErmNexusService.signoffCertification(userId, certId, req.body);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'certification_not_found', error: 'Audit certification not found' });
     }
     res.status(400).json({ code: 'sign_off_failed', error: (err as Error).message });
   }

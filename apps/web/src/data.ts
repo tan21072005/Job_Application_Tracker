@@ -424,7 +424,34 @@ import {
   calculateHedgeEffectivenessRatio,
   simulateBankBailInHaircut,
   calculateCompositeTrlsScore,
-  generateTreasuryBoardMemorandumMarkdown
+  generateTreasuryBoardMemorandumMarkdown,
+  type SoxInternalControlDTO,
+  type SoxInternalControlMutationDTO,
+  type EnterpriseRiskDTO,
+  type EnterpriseRiskMutationDTO,
+  type RiskHeatmapMatrixDTO,
+  type CcmAuditEventDTO,
+  type WhistleblowerReportDTO,
+  type WhistleblowerReportIntakeDTO,
+  type WhistleblowerTriageMutationDTO,
+  type RemediationActionPlanDTO,
+  type RemediationActionPlanMutationDTO,
+  type SoxTripartiteSignOffDTO,
+  type SoxAuditCertificationDTO,
+  type AuditRiskHealthScoreDTO,
+  type SecItem9AMemoRequestDTO,
+  type SecItem9AMemoResponseDTO,
+  type InternalAuditErmOverviewDTO,
+  type ExecuteControlTestRequestDTO,
+  type EvaluateSodRequestDTO,
+  type RecordTripartiteSignOffRequestDTO,
+  type CcmResolutionStatus,
+  calculateResidualRisk,
+  calculateSodSeverityIndex,
+  calculateDeficiencyImpactWeight,
+  calculateAuditRiskHealthScore,
+  generateRiskHeatmapMatrix,
+  generateSecItem9AMemoMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -18117,6 +18144,983 @@ export const corporateTreasuryNexusRepository = {
     }
   }
 };
+
+const DEMO_INTERNAL_AUDIT_KEY = 'jobtrack_demo_internal_audit_erm_v1';
+
+function getDefaultDemoInternalAuditOverview(): InternalAuditErmOverviewDTO {
+  const defaultControls: SoxInternalControlDTO[] = [
+    {
+      id: 'ctrl-1',
+      userId: 'demo-user',
+      controlCode: 'ITGC-AC-01',
+      title: 'Multi-Factor Authentication & IAM Least-Privilege Provisioning',
+      description: 'Enforces hardware MFA tokens and role-based access for all cloud control plane and production database endpoints.',
+      category: 'it_general_control',
+      nature: 'preventive_automated',
+      frequency: 'continuous',
+      cosoPrinciple: 'p11_general_controls_tech',
+      primaryAssertion: 'existence_occurrence',
+      controlOwner: 'SRE & Cloud Security Director',
+      testingStatus: 'operating_effectively',
+      deficiencyClassification: 'none',
+      sampleSize: 50,
+      exceptionsIdentified: 0,
+      mitigationEfficacyFactor: 0.95,
+      lastTestedAt: '2026-10-15T10:00:00.000Z',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-15T10:00:00.000Z'
+    },
+    {
+      id: 'ctrl-2',
+      userId: 'demo-user',
+      controlCode: 'ITGC-CM-02',
+      title: 'CI/CD Change Management Gate & Peer Code Review Verification',
+      description: 'Surveils git commit chains requiring branch protection, two independent approvals, and automated security scans before deployment.',
+      category: 'it_general_control',
+      nature: 'preventive_automated',
+      frequency: 'continuous',
+      cosoPrinciple: 'p11_general_controls_tech',
+      primaryAssertion: 'completeness',
+      controlOwner: 'VP of Platform Engineering',
+      testingStatus: 'operating_effectively',
+      deficiencyClassification: 'none',
+      sampleSize: 40,
+      exceptionsIdentified: 0,
+      mitigationEfficacyFactor: 0.92,
+      lastTestedAt: '2026-10-16T11:00:00.000Z',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-16T11:00:00.000Z'
+    },
+    {
+      id: 'ctrl-3',
+      userId: 'demo-user',
+      controlCode: 'BPC-REV-01',
+      title: 'ASC 606 Contract Revenue Cutoff & Automated Performance Obligation Matching',
+      description: 'Automates customer contract asset valuation and defers subscription revenue until delivery milestones are recorded.',
+      category: 'business_process',
+      nature: 'detective_automated',
+      frequency: 'monthly',
+      cosoPrinciple: 'p10_select_control_activities',
+      primaryAssertion: 'valuation_allocation',
+      controlOwner: 'Corporate Controller',
+      testingStatus: 'operating_effectively',
+      deficiencyClassification: 'none',
+      sampleSize: 25,
+      exceptionsIdentified: 0,
+      mitigationEfficacyFactor: 0.88,
+      lastTestedAt: '2026-10-18T14:30:00.000Z',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-18T14:30:00.000Z'
+    },
+    {
+      id: 'ctrl-4',
+      userId: 'demo-user',
+      controlCode: 'BPC-TRS-02',
+      title: 'Dual-Authorization Corporate Treasury Wire Disbursements',
+      description: 'Requires independent cryptographic approvals for any external bank outflow exceeding $100,000 USD.',
+      category: 'business_process',
+      nature: 'preventive_automated',
+      frequency: 'continuous',
+      cosoPrinciple: 'p10_select_control_activities',
+      primaryAssertion: 'rights_obligations',
+      controlOwner: 'Head of Global Treasury',
+      testingStatus: 'operating_effectively',
+      deficiencyClassification: 'none',
+      sampleSize: 30,
+      exceptionsIdentified: 0,
+      mitigationEfficacyFactor: 0.94,
+      lastTestedAt: '2026-10-19T09:00:00.000Z',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-19T09:00:00.000Z'
+    },
+    {
+      id: 'ctrl-5',
+      userId: 'demo-user',
+      controlCode: 'ELC-ETH-01',
+      title: 'Annual Code of Conduct Attestation & Whistleblower Policy Distribution',
+      description: 'Verifies 100% active employee attestation to anti-corruption, insider trading, and anonymous escalation channels.',
+      category: 'entity_level',
+      nature: 'detective_manual',
+      frequency: 'annual',
+      cosoPrinciple: 'p01_integrity_ethical_values',
+      primaryAssertion: 'presentation_disclosure',
+      controlOwner: 'Chief Compliance Officer',
+      testingStatus: 'operating_effectively',
+      deficiencyClassification: 'none',
+      sampleSize: 100,
+      exceptionsIdentified: 1,
+      mitigationEfficacyFactor: 0.80,
+      lastTestedAt: '2026-10-14T16:00:00.000Z',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-14T16:00:00.000Z'
+    }
+  ];
+
+  const defaultRisks: EnterpriseRiskDTO[] = [
+    {
+      id: 'risk-1',
+      userId: 'demo-user',
+      riskCode: 'ERM-FIN-01',
+      title: 'ASC 606 Revenue Recognition Timing Misstatement',
+      category: 'financial_reporting',
+      inherentLikelihood: 4,
+      inherentImpact: 4,
+      inherentScore: 16,
+      residualLikelihood: 2,
+      residualImpact: 2,
+      residualScore: 4.80,
+      boardAppetiteThreshold: 8,
+      appetiteZone: 'within_appetite_green',
+      responseStrategy: 'mitigate_controls',
+      mappedControlCodes: ['BPC-REV-01'],
+      maxPotentialFinancialLossUsd: 4500000,
+      riskOwner: 'Chief Accounting Officer',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-15T00:00:00.000Z'
+    },
+    {
+      id: 'risk-2',
+      userId: 'demo-user',
+      riskCode: 'ERM-CYB-02',
+      title: 'Cloud Infrastructure Privilege Escalation & Data Exfiltration',
+      category: 'cybersecurity_information',
+      inherentLikelihood: 4,
+      inherentImpact: 5,
+      inherentScore: 20,
+      residualLikelihood: 2,
+      residualImpact: 3,
+      residualScore: 6.20,
+      boardAppetiteThreshold: 10,
+      appetiteZone: 'within_appetite_green',
+      responseStrategy: 'mitigate_controls',
+      mappedControlCodes: ['ITGC-AC-01', 'ITGC-CM-02'],
+      maxPotentialFinancialLossUsd: 12000000,
+      riskOwner: 'Chief Information Security Officer',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-15T00:00:00.000Z'
+    },
+    {
+      id: 'risk-3',
+      userId: 'demo-user',
+      riskCode: 'ERM-OPS-03',
+      title: 'Single Depository Partner Liquidity Lockup & Bank Run Exposure',
+      category: 'operational_infrastructure',
+      inherentLikelihood: 3,
+      inherentImpact: 4,
+      inherentScore: 12,
+      residualLikelihood: 2,
+      residualImpact: 2,
+      residualScore: 5.10,
+      boardAppetiteThreshold: 9,
+      appetiteZone: 'within_appetite_green',
+      responseStrategy: 'mitigate_controls',
+      mappedControlCodes: ['BPC-TRS-02'],
+      maxPotentialFinancialLossUsd: 8000000,
+      riskOwner: 'Corporate Treasurer',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-15T00:00:00.000Z'
+    },
+    {
+      id: 'risk-4',
+      userId: 'demo-user',
+      riskCode: 'ERM-REG-04',
+      title: 'EU AI Act & Global Cross-Border Data Transfer Sanctions',
+      category: 'regulatory_compliance',
+      inherentLikelihood: 3,
+      inherentImpact: 3,
+      inherentScore: 9,
+      residualLikelihood: 2,
+      residualImpact: 2,
+      residualScore: 4.20,
+      boardAppetiteThreshold: 10,
+      appetiteZone: 'within_appetite_green',
+      responseStrategy: 'mitigate_controls',
+      mappedControlCodes: ['ELC-ETH-01'],
+      maxPotentialFinancialLossUsd: 3500000,
+      riskOwner: 'General Counsel',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-15T00:00:00.000Z'
+    }
+  ];
+
+  const defaultHeatmap = generateRiskHeatmapMatrix(defaultRisks);
+
+  const defaultCcmEvents: CcmAuditEventDTO[] = [
+    {
+      id: 'ccm-1',
+      userId: 'demo-user',
+      eventCode: 'CCM-SOD-001',
+      eventType: 'sod_conflict_detected',
+      severity: 'medium',
+      actorId: 'user_fin_982',
+      actorEmail: 'finance.lead@jobtrack.internal',
+      resourceTarget: 'erp_vendor_master / payment_run_batch',
+      sodConflictRuleId: 'SOD_RULE_VENDOR_CREATE_AND_DISBURSE',
+      privilegeDistance: 0.40,
+      exposureVolumeUsd: 85000,
+      compensatingControlActive: true,
+      sodSeverityScore: 32.5,
+      resolutionStatus: 'investigating',
+      evidencePayload: { conflict: 'Vendor master creation authority combined with invoice release approval' },
+      detectedAt: '2026-10-21T08:20:00.000Z'
+    },
+    {
+      id: 'ccm-2',
+      userId: 'demo-user',
+      eventCode: 'CCM-ITGC-002',
+      eventType: 'change_management_bypass',
+      severity: 'low',
+      actorId: 'devops_deployer_01',
+      actorEmail: 'devops-bot@jobtrack.internal',
+      resourceTarget: 'production_k8s_cluster',
+      sodConflictRuleId: 'ITGC_HOTFIX_UNLINKED_PR',
+      privilegeDistance: 0.20,
+      exposureVolumeUsd: 0,
+      compensatingControlActive: true,
+      sodSeverityScore: 22.0,
+      resolutionStatus: 'remediated',
+      evidencePayload: { alert: 'Emergency patch applied with post-deployment audit sign-off logged' },
+      detectedAt: '2026-10-20T17:40:00.000Z',
+      resolvedAt: '2026-10-20T19:00:00.000Z'
+    }
+  ];
+
+  const defaultWbh: WhistleblowerReportDTO[] = [
+    {
+      id: 'wbh-1',
+      userId: 'demo-user',
+      reportTrackingNumber: 'WBH-2026-0042',
+      category: 'accounting_fraud',
+      severity: 'high',
+      triageStatus: 'preliminary_inquiry',
+      allegationSummary: 'Allegation of deferred billing recognition adjustment to inflate Q4 net revenue prior to audit cutoff.',
+      involvedPersonsMasked: ['Masked Executive Subject #1'],
+      estimatedFinancialExposureUsd: 180000,
+      legalHoldActive: true,
+      auditCommitteeEscalated: false,
+      assignedLeadInvestigator: 'Special Legal Audit Counsel',
+      receiptTokenHash: '8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a',
+      reportedAt: '2026-10-18T11:15:00.000Z',
+      updatedAt: '2026-10-19T09:00:00.000Z'
+    }
+  ];
+
+  const defaultCapas: RemediationActionPlanDTO[] = [
+    {
+      id: 'capa-1',
+      userId: 'demo-user',
+      capaCode: 'CAPA-2026-01',
+      title: 'Automated Enforcement of Vendor Creation / Payment Release SoD in ERP',
+      description: 'Configure strict ERP role segregation preventing users from simultaneously holding vendor record maintenance and disbursement batch approval permissions.',
+      sourceType: 'ccm_incident',
+      sourceReferenceId: 'CCM-SOD-001',
+      actionOwner: 'Finance Systems Lead',
+      targetRemediationDate: '2026-11-30',
+      status: 'in_progress',
+      compensatingControlsInPlace: 'Manual dual-signature signoff required on all payments over $10K pending software restriction',
+      createdAt: '2026-10-21T09:00:00.000Z',
+      updatedAt: '2026-10-21T09:00:00.000Z'
+    }
+  ];
+
+  const defaultSignOffs: SoxTripartiteSignOffDTO[] = [
+    {
+      role: 'head_of_internal_audit',
+      signerName: 'Victoria Sterling, CIA, CISA',
+      signerTitle: 'Head of Internal Audit & Risk Assurance',
+      attestationConfirmed: true,
+      signedAt: '2026-10-20T14:30:00.000Z',
+      signatureToken: 'SIG_HIA_7f8a9b2c3d4e',
+      observationsSummary: 'Comprehensive COSO 2013 control matrix testing completed with zero unmitigated material weaknesses.'
+    },
+    {
+      role: 'general_counsel_cro',
+      signerName: 'Jonathan Vance, Esq.',
+      signerTitle: 'General Counsel & Chief Risk Officer',
+      attestationConfirmed: true,
+      signedAt: '2026-10-21T09:15:00.000Z',
+      signatureToken: 'SIG_GC_CRO_1a2b3c4d5e6f',
+      observationsSummary: 'Whistleblower hotline intake triaged, legal hold protocols verified, regulatory disclosures validated.'
+    },
+    {
+      role: 'board_audit_committee_chair',
+      signerName: 'Hon. Margaret Holloway',
+      signerTitle: 'Audit Committee Chair & Financial Expert',
+      attestationConfirmed: true,
+      signedAt: '2026-10-22T16:45:00.000Z',
+      signatureToken: 'SIG_BAC_CHAIR_9z8y7x6w5v4u',
+      observationsSummary: 'Independent Audit Committee ratification executed. Management ICFR evaluation certified for SEC Item 9A.'
+    }
+  ];
+
+  const arhs = calculateAuditRiskHealthScore({
+    totalControls: defaultControls.length,
+    effectiveControls: 5,
+    inProgressControls: 0,
+    deficiencyImpactWeight: 0,
+    materialWeaknessCount: 0,
+    averageResidualRisk: 5.08,
+    boardAppetiteBreachCount: 0,
+    totalRisksCount: defaultRisks.length,
+    activeSodViolationsCount: 1,
+    accumulatedCcmSeveritySum: 54.5,
+    unresolvedBypassesCount: 0,
+    criticalOpenWhistleblowerCount: 0,
+    highOpenWhistleblowerCount: 1,
+    overdueRemediationsCount: 0
+  });
+
+  const memoMarkdown = generateSecItem9AMemoMarkdown({
+    fiscalPeriod: 'Q3-2026',
+    fiscalYear: 2026,
+    auditorFirmName: 'PricewaterhouseCoopers LLP',
+    managementEvaluationDate: '2026-09-30',
+    arhs,
+    controls: defaultControls,
+    risks: defaultRisks,
+    signOffs: defaultSignOffs,
+    unresolvedMaterialWeaknesses: []
+  });
+
+  const latestCert: SoxAuditCertificationDTO = {
+    id: 'cert-q3-2026',
+    userId: 'demo-user',
+    fiscalPeriod: 'Q3-2026',
+    fiscalYear: 2026,
+    overallIcfrAssessment: 'effective',
+    arhsScore: 88.5,
+    arhsHealthBand: 'substantial_compliance',
+    materialWeaknessCount: 0,
+    significantDeficiencyCount: 0,
+    controlDeficiencyCount: 0,
+    signOffs: defaultSignOffs,
+    secItem9AMemoMarkdown: memoMarkdown,
+    certifiedAt: '2026-10-22T16:45:00.000Z',
+    createdAt: '2026-10-20T00:00:00.000Z',
+    updatedAt: '2026-10-22T16:45:00.000Z'
+  };
+
+  return {
+    studio: {
+      id: 'studio-demo-sox',
+      userId: 'demo-user',
+      enterpriseName: 'JobTrack Enterprise Holdings',
+      arhsScore: 88.5,
+      arhsBand: 'substantial_compliance',
+      totalControlsCount: 5,
+      effectiveControlsCount: 5,
+      openDeficienciesCount: 0
+    },
+    controls: defaultControls,
+    risks: defaultRisks,
+    heatmap: defaultHeatmap,
+    ccmEvents: defaultCcmEvents,
+    whistleblowerReports: defaultWbh,
+    remediationPlans: defaultCapas,
+    arhs,
+    latestCertification: latestCert
+  };
+}
+
+function loadDemoInternalAuditOverview(): InternalAuditErmOverviewDTO {
+  try {
+    const raw = localStorage.getItem(DEMO_INTERNAL_AUDIT_KEY);
+    if (!raw) {
+      const def = getDefaultDemoInternalAuditOverview();
+      localStorage.setItem(DEMO_INTERNAL_AUDIT_KEY, JSON.stringify(def));
+      return def;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return getDefaultDemoInternalAuditOverview();
+  }
+}
+
+function saveDemoInternalAuditOverview(ov: InternalAuditErmOverviewDTO): void {
+  try {
+    localStorage.setItem(DEMO_INTERNAL_AUDIT_KEY, JSON.stringify(ov));
+  } catch {}
+}
+
+function recalculateDemoArhs(ov: InternalAuditErmOverviewDTO): void {
+  const effectiveCount = ov.controls.filter(c => c.testingStatus === 'operating_effectively').length;
+  const inProgressCount = ov.controls.filter(c => c.testingStatus === 'in_progress').length;
+  const mwCount = ov.controls.filter(c => c.deficiencyClassification === 'material_weakness').length;
+  const sdCount = ov.controls.filter(c => c.deficiencyClassification === 'significant_deficiency').length;
+  const cdCount = ov.controls.filter(c => c.deficiencyClassification === 'control_deficiency').length;
+
+  const defWeight = calculateDeficiencyImpactWeight(mwCount, sdCount, cdCount, 0, 5000000);
+  const avgRes = ov.risks.length > 0 ? ov.risks.reduce((acc, r) => acc + r.residualScore, 0) / ov.risks.length : 5.0;
+  const breachCount = ov.risks.filter(r => r.residualScore > r.boardAppetiteThreshold).length;
+  const activeSodCount = ov.ccmEvents.filter(e => e.eventType === 'sod_conflict_detected' && e.resolutionStatus !== 'remediated').length;
+  const ccmSevSum = ov.ccmEvents.reduce((acc, e) => acc + e.sodSeverityScore, 0);
+  const bypassCount = ov.ccmEvents.filter(e => e.eventType === 'change_management_bypass' && e.resolutionStatus !== 'remediated').length;
+  const critWbhCount = ov.whistleblowerReports.filter(w => w.severity === 'critical_material' && w.triageStatus !== 'closed_remediated').length;
+  const highWbhCount = ov.whistleblowerReports.filter(w => w.severity === 'high' && w.triageStatus !== 'closed_remediated').length;
+  const overdueCapaCount = ov.remediationPlans.filter(p => p.status === 'overdue' || (p.status === 'open' && new Date(p.targetRemediationDate) < new Date())).length;
+
+  ov.arhs = calculateAuditRiskHealthScore({
+    totalControls: ov.controls.length,
+    effectiveControls: effectiveCount,
+    inProgressControls: inProgressCount,
+    deficiencyImpactWeight: defWeight,
+    materialWeaknessCount: mwCount,
+    averageResidualRisk: avgRes,
+    boardAppetiteBreachCount: breachCount,
+    totalRisksCount: ov.risks.length,
+    activeSodViolationsCount: activeSodCount,
+    accumulatedCcmSeveritySum: ccmSevSum,
+    unresolvedBypassesCount: bypassCount,
+    criticalOpenWhistleblowerCount: critWbhCount,
+    highOpenWhistleblowerCount: highWbhCount,
+    overdueRemediationsCount: overdueCapaCount
+  });
+
+  ov.studio.arhsScore = ov.arhs.compositeScore;
+  ov.studio.arhsBand = ov.arhs.healthBand;
+  ov.studio.totalControlsCount = ov.controls.length;
+  ov.studio.effectiveControlsCount = effectiveCount;
+  ov.studio.openDeficienciesCount = mwCount + sdCount + cdCount;
+  ov.heatmap = generateRiskHeatmapMatrix(ov.risks);
+}
+
+function executeControlTestDemo(controlId: string, testData: ExecuteControlTestRequestDTO): SoxInternalControlDTO {
+  const ov = loadDemoInternalAuditOverview();
+  const c = ov.controls.find(item => item.id === controlId);
+  if (!c) throw new Error(`Control ${controlId} not found`);
+
+  c.testingStatus = testData.testingStatus || c.testingStatus;
+  c.deficiencyClassification = testData.deficiencyClassification || c.deficiencyClassification;
+  if (testData.sampleSize !== undefined) c.sampleSize = testData.sampleSize;
+  if (testData.exceptionsIdentified !== undefined) c.exceptionsIdentified = testData.exceptionsIdentified;
+  c.lastTestedAt = new Date().toISOString();
+  c.updatedAt = new Date().toISOString();
+
+  recalculateDemoArhs(ov);
+  saveDemoInternalAuditOverview(ov);
+  return c;
+}
+
+function executeCreateRiskDemo(input: EnterpriseRiskMutationDTO): EnterpriseRiskDTO {
+  const ov = loadDemoInternalAuditOverview();
+  const mapped = ov.controls.filter(c => (input.mappedControlCodes || []).includes(c.controlCode)).map(c => ({
+    testingStatus: c.testingStatus,
+    nature: c.nature,
+    deficiencyClassification: c.deficiencyClassification,
+    mitigationEfficacyFactor: c.mitigationEfficacyFactor
+  }));
+  const calc = calculateResidualRisk(input.inherentLikelihood, input.inherentImpact, mapped);
+
+  const newRisk: EnterpriseRiskDTO = {
+    id: `risk-${Date.now()}`,
+    userId: 'demo-user',
+    riskCode: input.riskCode,
+    title: input.title,
+    category: input.category,
+    inherentLikelihood: input.inherentLikelihood,
+    inherentImpact: input.inherentImpact,
+    inherentScore: calc.inherentScore,
+    residualLikelihood: calc.residualLikelihood,
+    residualImpact: calc.residualImpact,
+    residualScore: calc.residualScore,
+    boardAppetiteThreshold: input.boardAppetiteThreshold || 10,
+    appetiteZone: calc.appetiteZone,
+    responseStrategy: input.responseStrategy,
+    mappedControlCodes: input.mappedControlCodes || [],
+    maxPotentialFinancialLossUsd: input.maxPotentialFinancialLossUsd || 0,
+    riskOwner: input.riskOwner,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  ov.risks.push(newRisk);
+  recalculateDemoArhs(ov);
+  saveDemoInternalAuditOverview(ov);
+  return newRisk;
+}
+
+function executeEvaluateSodDemo(input: EvaluateSodRequestDTO): { severityScore: number; riskRating: string; recommendations: string[] } {
+  const score = calculateSodSeverityIndex(
+    input.eventType,
+    input.toxicWeight,
+    input.exposureVolumeUsd,
+    input.privilegeDistance,
+    input.compensatingControlActive
+  );
+
+  let rating = 'LOW';
+  const recs: string[] = [];
+
+  if (score >= 70.0) {
+    rating = 'CRITICAL';
+    recs.push('Immediately revoke secondary conflicting IAM role or transaction approval privilege.');
+    recs.push('Enforce mandatory out-of-band supervisory authorization before batch execution.');
+    recs.push('File urgent incident review with Internal Audit and Security Operations Center.');
+  } else if (score >= 45.0) {
+    rating = 'HIGH';
+    recs.push('Activate mandatory dual-custody verification workflow for the target resource.');
+    recs.push('Initiate 30-day lookback forensic log analysis on all transactions by this actor.');
+  } else if (score >= 25.0) {
+    rating = 'MEDIUM';
+    recs.push('Validate compensating control documentation and monthly supervisory review logs.');
+  } else {
+    recs.push('Maintain periodic continuous monitoring review on quarterly cadence.');
+  }
+
+  return { severityScore: score, riskRating: rating, recommendations: recs };
+}
+
+function executeRemediateCcmDemo(eventId: string, resolutionStatus: CcmResolutionStatus, compensatingControlActive: boolean): CcmAuditEventDTO {
+  const ov = loadDemoInternalAuditOverview();
+  const ev = ov.ccmEvents.find(e => e.id === eventId);
+  if (!ev) throw new Error(`CCM event ${eventId} not found`);
+
+  ev.resolutionStatus = resolutionStatus;
+  ev.compensatingControlActive = compensatingControlActive;
+  ev.sodSeverityScore = calculateSodSeverityIndex(ev.eventType, 1.5, ev.exposureVolumeUsd, ev.privilegeDistance, compensatingControlActive);
+  if (resolutionStatus === 'remediated') ev.resolvedAt = new Date().toISOString();
+
+  recalculateDemoArhs(ov);
+  saveDemoInternalAuditOverview(ov);
+  return ev;
+}
+
+function executeSubmitWhistleblowerDemo(input: WhistleblowerReportIntakeDTO): { report: WhistleblowerReportDTO; receiptToken: string } {
+  const ov = loadDemoInternalAuditOverview();
+  const rawSecret = `WBH_SECRET_${Math.random().toString(36).substring(2, 12).toUpperCase()}`;
+  const isAccountingFraud = input.category === 'accounting_fraud' || input.category === 'internal_controls_circumvention';
+  const isMaterialExposure = input.estimatedFinancialExposureUsd >= 250000;
+  const severity = (isAccountingFraud && isMaterialExposure) ? 'critical_material' : (isAccountingFraud || isMaterialExposure ? 'high' : 'medium');
+
+  const report: WhistleblowerReportDTO = {
+    id: `wbh-${Date.now()}`,
+    userId: 'demo-user',
+    reportTrackingNumber: `WBH-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+    category: input.category,
+    severity,
+    triageStatus: 'intake',
+    allegationSummary: input.allegationSummary,
+    involvedPersonsMasked: input.involvedPersonsMasked || [],
+    estimatedFinancialExposureUsd: input.estimatedFinancialExposureUsd || 0,
+    legalHoldActive: true,
+    auditCommitteeEscalated: severity === 'critical_material',
+    assignedLeadInvestigator: 'Special Audit Intake Counsel',
+    receiptTokenHash: 'mock_token_hash_for_demo',
+    reportedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  ov.whistleblowerReports.unshift(report);
+  recalculateDemoArhs(ov);
+  saveDemoInternalAuditOverview(ov);
+  return { report, receiptToken: rawSecret };
+}
+
+function executeCreateRemediationDemo(input: RemediationActionPlanMutationDTO): RemediationActionPlanDTO {
+  const ov = loadDemoInternalAuditOverview();
+  const capa: RemediationActionPlanDTO = {
+    id: `capa-${Date.now()}`,
+    userId: 'demo-user',
+    capaCode: input.capaCode,
+    title: input.title,
+    description: input.description,
+    sourceType: input.sourceType,
+    sourceReferenceId: input.sourceReferenceId,
+    actionOwner: input.actionOwner,
+    targetRemediationDate: input.targetRemediationDate,
+    status: 'open',
+    compensatingControlsInPlace: input.compensatingControlsInPlace || '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  ov.remediationPlans.unshift(capa);
+  recalculateDemoArhs(ov);
+  saveDemoInternalAuditOverview(ov);
+  return capa;
+}
+
+function executeGenerateSecItem9AMemoDemo(request: SecItem9AMemoRequestDTO): SecItem9AMemoResponseDTO {
+  const ov = loadDemoInternalAuditOverview();
+  const mwControls = ov.controls.filter(c => c.deficiencyClassification === 'material_weakness').map(c => `${c.controlCode}: ${c.title}`);
+
+  const defaultSignOffs: SoxTripartiteSignOffDTO[] = [
+    {
+      role: 'head_of_internal_audit',
+      signerName: 'Victoria Sterling, CIA, CISA',
+      signerTitle: 'Head of Internal Audit',
+      attestationConfirmed: true,
+      signedAt: new Date().toISOString(),
+      signatureToken: `SIG_HIA_${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      observationsSummary: 'Assessed testing sample and concluded on design and operating effectiveness.'
+    },
+    {
+      role: 'general_counsel_cro',
+      signerName: 'Jonathan Vance, Esq.',
+      signerTitle: 'General Counsel & CRO',
+      attestationConfirmed: false,
+      signedAt: '',
+      signatureToken: '',
+      observationsSummary: ''
+    },
+    {
+      role: 'board_audit_committee_chair',
+      signerName: 'Hon. Margaret Holloway',
+      signerTitle: 'Audit Committee Chair',
+      attestationConfirmed: false,
+      signedAt: '',
+      signatureToken: '',
+      observationsSummary: ''
+    }
+  ];
+
+  const markdown = generateSecItem9AMemoMarkdown({
+    fiscalPeriod: request.fiscalPeriod,
+    fiscalYear: request.fiscalYear,
+    auditorFirmName: request.auditorFirmName,
+    managementEvaluationDate: request.managementEvaluationDate,
+    arhs: ov.arhs,
+    controls: ov.controls,
+    risks: ov.risks,
+    signOffs: defaultSignOffs,
+    unresolvedMaterialWeaknesses: mwControls
+  });
+
+  const isEffective = ov.arhs.materialWeaknessesCount === 0 && mwControls.length === 0;
+  const conclusion = isEffective ? 'effective' : 'adverse_material_weakness';
+
+  ov.latestCertification = {
+    id: `cert-${Date.now()}`,
+    userId: 'demo-user',
+    fiscalPeriod: request.fiscalPeriod,
+    fiscalYear: request.fiscalYear,
+    overallIcfrAssessment: conclusion,
+    arhsScore: ov.arhs.compositeScore,
+    arhsHealthBand: ov.arhs.healthBand,
+    materialWeaknessCount: ov.arhs.materialWeaknessesCount,
+    significantDeficiencyCount: ov.arhs.significantDeficienciesCount,
+    controlDeficiencyCount: ov.arhs.controlDeficienciesCount,
+    signOffs: defaultSignOffs,
+    secItem9AMemoMarkdown: markdown,
+    certifiedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  saveDemoInternalAuditOverview(ov);
+
+  return {
+    memoTitle: `Item 9A Controls and Procedures - ${request.fiscalPeriod}`,
+    fiscalPeriod: request.fiscalPeriod,
+    memoMarkdown: markdown,
+    overallConclusion: conclusion,
+    arhsScore: ov.arhs.compositeScore,
+    arhsHealthBand: ov.arhs.healthBand
+  };
+}
+
+function executeSignoffCertificationDemo(certId: string, signOff: RecordTripartiteSignOffRequestDTO): SoxAuditCertificationDTO {
+  const ov = loadDemoInternalAuditOverview();
+  if (!ov.latestCertification || ov.latestCertification.id !== certId) {
+    if (ov.latestCertification) {
+      certId = ov.latestCertification.id;
+    } else {
+      throw new Error(`Certification ${certId} not found`);
+    }
+  }
+
+  const cert = ov.latestCertification!;
+  const currentSignOffs: SoxTripartiteSignOffDTO[] = cert.signOffs || [];
+  const existingIdx = currentSignOffs.findIndex(s => s.role === signOff.role);
+  const updatedRecord: SoxTripartiteSignOffDTO = {
+    role: signOff.role,
+    signerName: signOff.signerName,
+    signerTitle: signOff.signerTitle,
+    attestationConfirmed: signOff.attestationConfirmed,
+    signedAt: new Date().toISOString(),
+    signatureToken: `SIG_${signOff.role.toUpperCase()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+    observationsSummary: signOff.observationsSummary
+  };
+
+  if (existingIdx >= 0) {
+    currentSignOffs[existingIdx] = updatedRecord;
+  } else {
+    currentSignOffs.push(updatedRecord);
+  }
+
+  cert.signOffs = currentSignOffs;
+  if (currentSignOffs.length >= 3 && currentSignOffs.every(s => s.attestationConfirmed)) {
+    cert.certifiedAt = new Date().toISOString();
+  }
+  cert.updatedAt = new Date().toISOString();
+
+  saveDemoInternalAuditOverview(ov);
+  return cert;
+}
+
+export const internalAuditErmNexusRepository = {
+  async getOverview(): Promise<InternalAuditErmOverviewDTO> {
+    if (demoMode) {
+      return loadDemoInternalAuditOverview();
+    }
+    try {
+      return await request<InternalAuditErmOverviewDTO>('/sox/overview');
+    } catch {
+      return loadDemoInternalAuditOverview();
+    }
+  },
+
+  async listControls(): Promise<SoxInternalControlDTO[]> {
+    if (demoMode) {
+      return loadDemoInternalAuditOverview().controls;
+    }
+    try {
+      return await request<SoxInternalControlDTO[]>('/sox/controls');
+    } catch {
+      return loadDemoInternalAuditOverview().controls;
+    }
+  },
+
+  async createControl(input: SoxInternalControlMutationDTO): Promise<SoxInternalControlDTO> {
+    if (demoMode) {
+      const ov = loadDemoInternalAuditOverview();
+      const newCtrl: SoxInternalControlDTO = {
+        id: `ctrl-${Date.now()}`,
+        userId: 'demo-user',
+        ...input,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.controls.push(newCtrl);
+      recalculateDemoArhs(ov);
+      saveDemoInternalAuditOverview(ov);
+      return newCtrl;
+    }
+    try {
+      return await request<SoxInternalControlDTO>('/sox/controls', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoInternalAuditOverview();
+      const newCtrl: SoxInternalControlDTO = {
+        id: `ctrl-${Date.now()}`,
+        userId: 'demo-user',
+        ...input,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.controls.push(newCtrl);
+      recalculateDemoArhs(ov);
+      saveDemoInternalAuditOverview(ov);
+      return newCtrl;
+    }
+  },
+
+  async executeControlTest(controlId: string, testData: ExecuteControlTestRequestDTO): Promise<SoxInternalControlDTO> {
+    if (demoMode) {
+      return executeControlTestDemo(controlId, testData);
+    }
+    try {
+      return await request<SoxInternalControlDTO>(`/sox/controls/${encodeURIComponent(controlId)}/test`, {
+        method: 'POST',
+        body: JSON.stringify(testData)
+      });
+    } catch {
+      return executeControlTestDemo(controlId, testData);
+    }
+  },
+
+  async listRisks(): Promise<EnterpriseRiskDTO[]> {
+    if (demoMode) {
+      return loadDemoInternalAuditOverview().risks;
+    }
+    try {
+      return await request<EnterpriseRiskDTO[]>('/sox/risks');
+    } catch {
+      return loadDemoInternalAuditOverview().risks;
+    }
+  },
+
+  async createRisk(input: EnterpriseRiskMutationDTO): Promise<EnterpriseRiskDTO> {
+    if (demoMode) {
+      return executeCreateRiskDemo(input);
+    }
+    try {
+      return await request<EnterpriseRiskDTO>('/sox/risks', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeCreateRiskDemo(input);
+    }
+  },
+
+  async getRiskHeatmap(): Promise<RiskHeatmapMatrixDTO> {
+    if (demoMode) {
+      return loadDemoInternalAuditOverview().heatmap;
+    }
+    try {
+      return await request<RiskHeatmapMatrixDTO>('/sox/risks/heatmap');
+    } catch {
+      return loadDemoInternalAuditOverview().heatmap;
+    }
+  },
+
+  async listCcmEvents(): Promise<CcmAuditEventDTO[]> {
+    if (demoMode) {
+      return loadDemoInternalAuditOverview().ccmEvents;
+    }
+    try {
+      return await request<CcmAuditEventDTO[]>('/sox/ccm/events');
+    } catch {
+      return loadDemoInternalAuditOverview().ccmEvents;
+    }
+  },
+
+  async evaluateSod(input: EvaluateSodRequestDTO): Promise<{ severityScore: number; riskRating: string; recommendations: string[] }> {
+    if (demoMode) {
+      return executeEvaluateSodDemo(input);
+    }
+    try {
+      return await request<{ severityScore: number; riskRating: string; recommendations: string[] }>('/sox/ccm/evaluate-sod', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeEvaluateSodDemo(input);
+    }
+  },
+
+  async remediateCcmEvent(eventId: string, resolutionStatus: CcmResolutionStatus, compensatingControlActive: boolean): Promise<CcmAuditEventDTO> {
+    if (demoMode) {
+      return executeRemediateCcmDemo(eventId, resolutionStatus, compensatingControlActive);
+    }
+    try {
+      return await request<CcmAuditEventDTO>(`/sox/ccm/events/${encodeURIComponent(eventId)}/remediate`, {
+        method: 'POST',
+        body: JSON.stringify({ resolutionStatus, compensatingControlActive })
+      });
+    } catch {
+      return executeRemediateCcmDemo(eventId, resolutionStatus, compensatingControlActive);
+    }
+  },
+
+  async listWhistleblowerReports(): Promise<WhistleblowerReportDTO[]> {
+    if (demoMode) {
+      return loadDemoInternalAuditOverview().whistleblowerReports;
+    }
+    try {
+      return await request<WhistleblowerReportDTO[]>('/sox/whistleblower/reports');
+    } catch {
+      return loadDemoInternalAuditOverview().whistleblowerReports;
+    }
+  },
+
+  async submitWhistleblowerReport(input: WhistleblowerReportIntakeDTO): Promise<{ report: WhistleblowerReportDTO; receiptToken: string }> {
+    if (demoMode) {
+      return executeSubmitWhistleblowerDemo(input);
+    }
+    try {
+      return await request<{ report: WhistleblowerReportDTO; receiptToken: string }>('/sox/whistleblower/reports', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeSubmitWhistleblowerDemo(input);
+    }
+  },
+
+  async triageWhistleblowerReport(reportId: string, triage: WhistleblowerTriageMutationDTO): Promise<WhistleblowerReportDTO> {
+    if (demoMode) {
+      const ov = loadDemoInternalAuditOverview();
+      const r = ov.whistleblowerReports.find(w => w.id === reportId);
+      if (!r) throw new Error(`Report ${reportId} not found`);
+      r.severity = triage.severity;
+      r.triageStatus = triage.triageStatus;
+      r.legalHoldActive = triage.legalHoldActive;
+      r.auditCommitteeEscalated = triage.auditCommitteeEscalated;
+      if (triage.assignedLeadInvestigator) r.assignedLeadInvestigator = triage.assignedLeadInvestigator;
+      r.updatedAt = new Date().toISOString();
+      recalculateDemoArhs(ov);
+      saveDemoInternalAuditOverview(ov);
+      return r;
+    }
+    try {
+      return await request<WhistleblowerReportDTO>(`/sox/whistleblower/reports/${encodeURIComponent(reportId)}/triage`, {
+        method: 'PUT',
+        body: JSON.stringify(triage)
+      });
+    } catch {
+      const ov = loadDemoInternalAuditOverview();
+      const r = ov.whistleblowerReports.find(w => w.id === reportId);
+      if (!r) throw new Error(`Report ${reportId} not found`);
+      r.severity = triage.severity;
+      r.triageStatus = triage.triageStatus;
+      r.legalHoldActive = triage.legalHoldActive;
+      r.auditCommitteeEscalated = triage.auditCommitteeEscalated;
+      if (triage.assignedLeadInvestigator) r.assignedLeadInvestigator = triage.assignedLeadInvestigator;
+      r.updatedAt = new Date().toISOString();
+      recalculateDemoArhs(ov);
+      saveDemoInternalAuditOverview(ov);
+      return r;
+    }
+  },
+
+  async listRemediations(): Promise<RemediationActionPlanDTO[]> {
+    if (demoMode) {
+      return loadDemoInternalAuditOverview().remediationPlans;
+    }
+    try {
+      return await request<RemediationActionPlanDTO[]>('/sox/remediations');
+    } catch {
+      return loadDemoInternalAuditOverview().remediationPlans;
+    }
+  },
+
+  async createRemediation(input: RemediationActionPlanMutationDTO): Promise<RemediationActionPlanDTO> {
+    if (demoMode) {
+      return executeCreateRemediationDemo(input);
+    }
+    try {
+      return await request<RemediationActionPlanDTO>('/sox/remediations', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeCreateRemediationDemo(input);
+    }
+  },
+
+  async generateSecItem9AMemo(requestInput: SecItem9AMemoRequestDTO): Promise<SecItem9AMemoResponseDTO> {
+    if (demoMode) {
+      return executeGenerateSecItem9AMemoDemo(requestInput);
+    }
+    try {
+      return await request<SecItem9AMemoResponseDTO>('/sox/board-war-room/generate-memo', {
+        method: 'POST',
+        body: JSON.stringify(requestInput)
+      });
+    } catch {
+      return executeGenerateSecItem9AMemoDemo(requestInput);
+    }
+  },
+
+  async signoffCertification(certificationId: string, signOff: RecordTripartiteSignOffRequestDTO): Promise<SoxAuditCertificationDTO> {
+    if (demoMode) {
+      return executeSignoffCertificationDemo(certificationId, signOff);
+    }
+    try {
+      return await request<SoxAuditCertificationDTO>(`/sox/board-war-room/certifications/${encodeURIComponent(certificationId)}/signoff`, {
+        method: 'POST',
+        body: JSON.stringify(signOff)
+      });
+    } catch {
+      return executeSignoffCertificationDemo(certificationId, signOff);
+    }
+  }
+};
+
 
 
 
