@@ -461,7 +461,25 @@ import {
   type WhistleblowerReportDTO,
   type RemediationActionPlanDTO,
   type SoxAuditCertificationDTO,
-  type AuditRiskHealthScoreDTO
+  type AuditRiskHealthScoreDTO,
+  calculatePQDI,
+  calculateCRDI,
+  assessASC450Contingency,
+  calculateLRCI,
+  generateSecItem103Disclosure,
+  validateLegalEntityInput,
+  validateMaterialContractInput,
+  validateLitigationMatterInput,
+  validateLegalHoldInput,
+  validateBoardSignoffInput,
+  type LegalEntityDTO,
+  type IPAssetDTO,
+  type MaterialContractDTO,
+  type LitigationMatterDTO,
+  type CustodianLegalHoldDTO,
+  type OutsideCounselInvoiceDTO,
+  type LegalBoardMemorandumDTO,
+  type LegalOperationsOverviewDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -9209,6 +9227,209 @@ test('internal-audit: validators enforce schema invariants and reject malformed 
     observationsSummary: 'Ratified following independent executive session.'
   });
   assert.equal(goodSign.ok, true);
+});
+
+test('contract: calculatePQDI calculates patent quality and defensibility deterministically', () => {
+  const highQuality = calculatePQDI({
+    independentClaimsCount: 4,
+    totalClaimsCount: 22,
+    forwardCitationsCount: 25,
+    benchmarkForwardCitations: 12,
+    officeActionsCount: 1,
+    rceFilingsCount: 0,
+    statutoryExtensionsCount: 0,
+    foreignFamilyCount: 5
+  });
+  assert.ok(highQuality > 80);
+  assert.ok(highQuality <= 100);
+
+  const lowQuality = calculatePQDI({
+    independentClaimsCount: 1,
+    totalClaimsCount: 3,
+    forwardCitationsCount: 0,
+    benchmarkForwardCitations: 12,
+    officeActionsCount: 5,
+    rceFilingsCount: 3,
+    statutoryExtensionsCount: 4,
+    foreignFamilyCount: 0
+  });
+  assert.ok(lowQuality < 45);
+  assert.ok(lowQuality >= 0);
+});
+
+test('contract: calculateCRDI computes commercial contract risk deviation score', () => {
+  const standardLowRisk = calculateCRDI({
+    liabilityCapType: 'STANDARD_1X_ACV',
+    hasUncappedIndemnity: false,
+    governingLaw: 'DELAWARE_US',
+    disputeForum: 'DELAWARE_CHANCERY_COURT',
+    hasMfnClause: false,
+    hasExclusivityOrNonCompete: false,
+    autoRenewalNoticeDays: 60,
+    terminationForConvenienceNoticeDays: 30
+  });
+  assert.equal(standardLowRisk, 5);
+
+  const highRiskUncapped = calculateCRDI({
+    liabilityCapType: 'UNCAPPED_EXPOSURE',
+    hasUncappedIndemnity: true,
+    governingLaw: 'NON_STANDARD_FOREIGN',
+    disputeForum: 'ICC_INTERNATIONAL_COURT',
+    hasMfnClause: true,
+    hasExclusivityOrNonCompete: true,
+    autoRenewalNoticeDays: 15,
+    terminationForConvenienceNoticeDays: 0
+  });
+  assert.ok(highRiskUncapped >= 80);
+});
+
+test('contract: assessASC450Contingency properly categorizes Probable, Reasonably Possible, and Remote reserves', () => {
+  const probableResult = assessASC450Contingency({
+    probabilityPercent: 85,
+    estimatedLossMinUsd: 1000000,
+    estimatedLossMaxUsd: 4000000,
+    singlePointEstimateUsd: 1500000
+  });
+  assert.equal(probableResult.classification, 'PROBABLE');
+  assert.equal(probableResult.accruedAmountUsd, 1500000);
+  assert.equal(probableResult.isBalanceSheetAccrualRequired, true);
+  assert.equal(probableResult.isFootnoteDisclosureRequired, true);
+
+  const reasonPossible = assessASC450Contingency({
+    probabilityPercent: 50,
+    estimatedLossMinUsd: 500000,
+    estimatedLossMaxUsd: 2500000
+  });
+  assert.equal(reasonPossible.classification, 'REASONABLY_POSSIBLE');
+  assert.equal(reasonPossible.accruedAmountUsd, 0);
+  assert.equal(reasonPossible.isBalanceSheetAccrualRequired, false);
+  assert.equal(reasonPossible.isFootnoteDisclosureRequired, true);
+
+  const remoteResult = assessASC450Contingency({
+    probabilityPercent: 10,
+    estimatedLossMinUsd: 200000,
+    estimatedLossMaxUsd: 800000
+  });
+  assert.equal(remoteResult.classification, 'REMOTE');
+  assert.equal(remoteResult.accruedAmountUsd, 0);
+  assert.equal(remoteResult.isBalanceSheetAccrualRequired, false);
+  assert.equal(remoteResult.isFootnoteDisclosureRequired, false);
+});
+
+test('contract: calculateLRCI computes composite legal risk index and handles litigation cliff', () => {
+  const lowRisk = calculateLRCI({
+    subsidiaryComplianceScore: 98,
+    averagePqdiScore: 90,
+    averageCrdiScore: 10,
+    activeMattersCount: 1,
+    probableAccruedLossUsd: 0,
+    reasonablyPossibleLossMaxUsd: 500000,
+    outsideCounselBudgetVariancePercent: 5,
+    materialityThresholdUsd: 10000000
+  });
+  assert.ok(lowRisk.compositeScore < 25);
+  assert.equal(lowRisk.riskBand, 'SOVEREIGN_FORTRESS');
+  assert.equal(lowRisk.litigationCliffPenalty, 0);
+
+  const cliffRisk = calculateLRCI({
+    subsidiaryComplianceScore: 80,
+    averagePqdiScore: 70,
+    averageCrdiScore: 35,
+    activeMattersCount: 6,
+    probableAccruedLossUsd: 15000000,
+    reasonablyPossibleLossMaxUsd: 25000000,
+    outsideCounselBudgetVariancePercent: 45,
+    materialityThresholdUsd: 10000000
+  });
+  assert.ok(cliffRisk.compositeScore > 50);
+  assert.ok(cliffRisk.litigationCliffPenalty >= 25);
+});
+
+test('contract: generateSecItem103Disclosure generates compliant disclosure text', () => {
+  const text = generateSecItem103Disclosure({
+    registrantName: 'JobTrack Technologies Inc.',
+    fiscalYear: 2026,
+    reportingQuarter: 'Q3',
+    activeMatters: [
+      {
+        id: 'lit-1',
+        userId: 'u1',
+        entityId: 'e1',
+        caseCaption: 'Alpha v. JobTrack',
+        docketNumber: '1:26-cv-00123',
+        tribunal: 'US_FEDERAL_DISTRICT_COURT',
+        filingDate: '2026-02-10',
+        leadOutsideCounselFirm: 'Cravath',
+        opposingParty: 'Alpha Corp',
+        claimsSummary: 'Patent infringement assertion.',
+        reliefClaimedAmountUsd: 8000000,
+        asc450Classification: 'PROBABLE',
+        accruedReserveAmountUsd: 2000000,
+        estimatedLossRangeMinUsd: 2000000,
+        estimatedLossRangeMaxUsd: 5000000,
+        matterStatus: 'ACTIVE',
+        legalHolds: [],
+        outsideCounselInvoices: []
+      }
+    ],
+    totalProbableReserveUsd: 2000000,
+    totalReasonablyPossibleMaxUsd: 5000000
+  });
+
+  assert.ok(text.includes('REGISTRANT: JOBTRACK TECHNOLOGIES INC.'));
+  assert.ok(text.includes('ITEM 103. LEGAL PROCEEDINGS'));
+  assert.ok(text.includes('Alpha v. JobTrack'));
+  assert.ok(text.includes('Accrued Contingent Reserve: $2,000,000 USD'));
+});
+
+test('contract: legal operations validators validate correct and reject invalid schemas', () => {
+  const badEntity = validateLegalEntityInput({});
+  assert.equal(badEntity.isValid, false);
+  const goodEntity = validateLegalEntityInput({
+    legalName: 'JobTrack UK Limited',
+    jurisdiction: 'UNITED_KINGDOM',
+    entityType: 'PRIVATE_LIMITED_COMPANY',
+    registrationNumber: 'UK-992100'
+  });
+  assert.equal(goodEntity.isValid, true);
+
+  const badContract = validateMaterialContractInput({});
+  assert.equal(badContract.isValid, false);
+  const goodContract = validateMaterialContractInput({
+    title: 'Enterprise MSA',
+    counterpartyLegalName: 'Acme Corp',
+    annualContractValue: 500000,
+    liabilityCapType: 'STANDARD_1X_ACV'
+  });
+  assert.equal(goodContract.isValid, true);
+
+  const badMatter = validateLitigationMatterInput({});
+  assert.equal(badMatter.isValid, false);
+  const goodMatter = validateLitigationMatterInput({
+    caseCaption: 'Corp A v. Corp B',
+    docketNumber: '25-cv-100',
+    opposingParty: 'Corp A',
+    asc450Classification: 'REASONABLY_POSSIBLE'
+  });
+  assert.equal(goodMatter.isValid, true);
+
+  const badHold = validateLegalHoldInput({});
+  assert.equal(badHold.isValid, false);
+  const goodHold = validateLegalHoldInput({
+    matterId: 'mat-1',
+    holdTitle: 'Patent Litigation Hold',
+    scopeDescription: 'Preserve all communications and code.'
+  });
+  assert.equal(goodHold.isValid, true);
+
+  const badSignoff = validateBoardSignoffInput({});
+  assert.equal(badSignoff.isValid, false);
+  const goodSignoff = validateBoardSignoffInput({
+    memoId: 'memo-1',
+    role: 'general_counsel_corporate_secretary',
+    signerName: 'Victoria Sterling'
+  });
+  assert.equal(goodSignoff.isValid, true);
 });
 
 

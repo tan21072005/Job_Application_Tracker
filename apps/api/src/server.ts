@@ -112,6 +112,7 @@ import { SupplyChainResilienceStudioService } from './services/supply-chain-resi
 import { WorkforceTotalRewardsStudioService } from './services/workforce-total-rewards-studio-service.ts';
 import { CorporateTreasuryNexusService } from './services/corporate-treasury-nexus-service.ts';
 import { InternalAuditErmNexusService } from './services/internal-audit-erm-nexus-service.ts';
+import { LegalOperationsNexusService } from './services/legal-operations-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -135,7 +136,12 @@ import {
   validateCcmEventInput,
   validateWhistleblowerReportInput,
   validateRemediationPlanInput,
-  validateTripartiteSignOffInput
+  validateTripartiteSignOffInput,
+  validateLegalEntityInput,
+  validateMaterialContractInput,
+  validateLitigationMatterInput,
+  validateLegalHoldInput,
+  validateBoardSignoffInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -276,6 +282,7 @@ export const supplyChainResilienceStudioService = new SupplyChainResilienceStudi
 export const workforceTotalRewardsStudioService = new WorkforceTotalRewardsStudioService(pool);
 export const corporateTreasuryNexusService = new CorporateTreasuryNexusService(pool);
 export const internalAuditErmNexusService = new InternalAuditErmNexusService(pool);
+export const legalOperationsNexusService = new LegalOperationsNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -4913,6 +4920,118 @@ app.post(['/api/internal-audit-erm/board-war-room/certifications/:id/signoff', '
       return res.status(404).json({ code: 'certification_not_found', error: 'Audit certification not found' });
     }
     res.status(400).json({ code: 'sign_off_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/legal-operations-nexus/overview', '/api/legal/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await legalOperationsNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/legal-operations-nexus/entities', '/api/legal/entities'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateLegalEntityInput(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const created = await legalOperationsNexusService.createEntity(userId, req.body);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/legal-operations-nexus/ip-portfolio/calculate-pqdi', '/api/legal/ip-portfolio/calculate-pqdi'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const { assetId, parameters } = req.body;
+    if (!assetId || !parameters) {
+      return res.status(400).json({ error: 'assetId and parameters are required' });
+    }
+    const updated = await legalOperationsNexusService.updateAssetPqdi(userId, assetId, parameters);
+    res.json({ assetId, pqdiScore: updated.pqdiScore, asset: updated });
+  } catch (error) {
+    if ((error as Error).message.includes('not found')) {
+      return res.status(404).json({ error: (error as Error).message });
+    }
+    next(error);
+  }
+});
+
+app.post(['/api/legal-operations-nexus/contracts', '/api/legal/contracts'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateMaterialContractInput(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const created = await legalOperationsNexusService.createContract(userId, req.body);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/legal-operations-nexus/litigation/asc450-assessment', '/api/legal/litigation/asc450-assessment'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const { matterId, probabilityPercent, estimatedLossMinUsd, estimatedLossMaxUsd, singlePointEstimateUsd } = req.body;
+    if (!matterId || typeof probabilityPercent !== 'number') {
+      return res.status(400).json({ error: 'matterId and probabilityPercent are required' });
+    }
+    const updated = await legalOperationsNexusService.updateMatterAsc450(userId, matterId, {
+      probabilityPercent,
+      estimatedLossMinUsd: estimatedLossMinUsd || 0,
+      estimatedLossMaxUsd: estimatedLossMaxUsd || 0,
+      singlePointEstimateUsd
+    });
+    res.json(updated);
+  } catch (error) {
+    if ((error as Error).message.includes('not found')) {
+      return res.status(404).json({ error: (error as Error).message });
+    }
+    next(error);
+  }
+});
+
+app.post(['/api/legal-operations-nexus/legal-holds', '/api/legal/legal-holds'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateLegalHoldInput(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const created = await legalOperationsNexusService.createLegalHold(userId, req.body);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/legal-operations-nexus/board-war-room/sign-off', '/api/legal/board-war-room/sign-off'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateBoardSignoffInput(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const updated = await legalOperationsNexusService.executeDigitalSignoff(userId, req.body.memoId, {
+      role: req.body.role,
+      signerName: req.body.signerName,
+      signerTitle: req.body.signerTitle
+    });
+    res.json(updated);
+  } catch (error) {
+    if ((error as Error).message.includes('not found')) {
+      return res.status(404).json({ error: (error as Error).message });
+    }
+    next(error);
   }
 });
 

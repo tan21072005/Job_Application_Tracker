@@ -3726,4 +3726,8 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .sox-nexus-sidebar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:10px;border:none;background:transparent;color:#475569;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s ease}
 .sox-nexus-sidebar-btn:hover{background:#eef2ff;color:#4f46e5}
 
+.legal-ops-sidebar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:10px;border:none;background:transparent;color:#475569;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s ease}
+.legal-ops-sidebar-btn:hover{background:#e0e7ff;color:#4338ca}
+
+
 

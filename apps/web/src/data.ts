@@ -451,7 +451,48 @@ import {
   calculateDeficiencyImpactWeight,
   calculateAuditRiskHealthScore,
   generateRiskHeatmapMatrix,
-  generateSecItem9AMemoMarkdown
+  generateSecItem9AMemoMarkdown,
+  type LegalEntityJurisdiction,
+  type LegalEntityType,
+  type EntityGoodStandingStatus,
+  type IPAssetType,
+  type PatentOfficeJurisdiction,
+  type PatentProsecutionStatus,
+  type PPHStatus,
+  type CommercialContractType,
+  type LiabilityCapType,
+  type GoverningLawJurisdiction,
+  type DisputeResolutionForum,
+  type LitigationForumType,
+  type ASC450ContingencyClassification,
+  type CustodianHoldStatus,
+  type LegalSignoffRole,
+  type LegalBoardMemoStatus,
+  type StatutoryRegisterRecordDTO,
+  type StatutoryFilingDeadlineDTO,
+  type LegalEntityDTO,
+  type PatentDocketMilestoneDTO,
+  type IPAssetDTO,
+  type MaterialContractDTO,
+  type CustodianAcknowledgmentRecordDTO,
+  type CustodianLegalHoldDTO,
+  type OutsideCounselInvoiceDTO,
+  type LitigationMatterDTO,
+  type DigitalExecutiveSignatureDTO,
+  type LegalBoardMemorandumDTO,
+  type LegalOperationsOverviewDTO,
+  type PqdiCalculationParams,
+  type CrdiCalculationParams,
+  type Asc450ReserveAssessmentParams,
+  type Asc450ReserveResult,
+  type LrciCalculationParams,
+  type LrciCalculationResult,
+  type Item103GeneratorParams,
+  calculatePQDI,
+  calculateCRDI,
+  assessASC450Contingency,
+  calculateLRCI,
+  generateSecItem103Disclosure
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -19120,6 +19161,728 @@ export const internalAuditErmNexusRepository = {
     }
   }
 };
+
+const DEMO_LEGAL_OPERATIONS_KEY = 'jobtrack_demo_legal_operations_nexus_v1';
+
+function createDefaultLegalOperationsOverview(): LegalOperationsOverviewDTO {
+  const deEntityId = 'ent-delaware-parent';
+  const ukEntityId = 'ent-uk-ltd';
+  const assetId = 'pat-us-001';
+  const matterId = 'lit-001-nexus-v-synapse';
+  const holdId = 'hold-synapse-01';
+  const memoId = 'memo-q3-2026';
+
+  const entities: LegalEntityDTO[] = [
+    {
+      id: deEntityId,
+      userId: 'demo-user',
+      legalName: 'JobTrack Global Enterprise Technologies Inc.',
+      entityType: 'C_CORPORATION',
+      jurisdiction: 'DELAWARE_US',
+      registrationNumber: 'DE-7892104',
+      incorporationDate: '2019-01-15',
+      status: 'GOOD_STANDING',
+      registeredAgent: 'The Corporation Trust Company, Wilmington DE',
+      principalOfficeAddress: '1209 North Orange Street, Wilmington, DE 19801',
+      taxIdentificationNumber: 'US-83-2940192',
+      intercompanyAgreementCount: 4,
+      statutoryFilings: [
+        {
+          id: 'file-de-annual-report',
+          entityId: deEntityId,
+          filingTitle: 'Delaware Annual Franchise Tax & Annual Report',
+          filingAuthority: 'Delaware Secretary of State',
+          statutoryDeadline: '2027-03-01',
+          filingStatus: 'COMPLETED',
+          penaltyExposureUsd: 200.00,
+          completedDate: '2026-02-14'
+        }
+      ],
+      statutoryRegisters: [
+        {
+          id: 'reg-dir-1',
+          entityId: deEntityId,
+          registerType: 'DIRECTOR',
+          fullName: 'Eleanor Vance',
+          nationalityOrJurisdiction: 'United States',
+          appointmentDate: '2019-01-15',
+          isSanctionScreened: true
+        }
+      ]
+    },
+    {
+      id: ukEntityId,
+      userId: 'demo-user',
+      legalName: 'JobTrack EMEA Operations Limited',
+      entityType: 'PRIVATE_LIMITED_COMPANY',
+      jurisdiction: 'UNITED_KINGDOM',
+      registrationNumber: 'UK-12894012',
+      incorporationDate: '2020-06-10',
+      status: 'GOOD_STANDING',
+      registeredAgent: 'Corporate Secretarial Services UK LLP',
+      principalOfficeAddress: '25 Bank Street, Canary Wharf, London E14 5JP',
+      taxIdentificationNumber: 'GB-340-9182-44',
+      intercompanyAgreementCount: 3,
+      statutoryFilings: [
+        {
+          id: 'file-uk-cs01',
+          entityId: ukEntityId,
+          filingTitle: 'Companies House Annual Confirmation Statement (CS01)',
+          filingAuthority: 'Companies House Cardiff',
+          statutoryDeadline: '2026-11-20',
+          filingStatus: 'UPCOMING',
+          penaltyExposureUsd: 1500.00
+        }
+      ],
+      statutoryRegisters: [
+        {
+          id: 'reg-psc-1',
+          entityId: ukEntityId,
+          registerType: 'BENEFICIAL_OWNER_PSC',
+          fullName: 'JobTrack Global Enterprise Technologies Inc.',
+          nationalityOrJurisdiction: 'United States',
+          appointmentDate: '2020-06-10',
+          ownershipPercentage: 100.00,
+          votingRightsPercentage: 100.00,
+          isSanctionScreened: true
+        }
+      ]
+    }
+  ];
+
+  const ipAssets: IPAssetDTO[] = [
+    {
+      id: assetId,
+      userId: 'demo-user',
+      entityId: deEntityId,
+      entityName: 'JobTrack Global Enterprise Technologies Inc.',
+      ipType: 'UTILITY_PATENT',
+      title: 'Distributed Multi-Tenant Application Tracking & Verification Architecture',
+      registrationOrAppNumber: 'US 11,894,302 B2',
+      office: 'USPTO',
+      filingDate: '2021-03-12',
+      grantDate: '2023-08-15',
+      expirationDate: '2041-03-12',
+      status: 'PATENT_GRANTED',
+      pphStatus: 'ACCELERATED_EXAMINATION',
+      claimsCount: 24,
+      independentClaimsCount: 3,
+      forwardCitationsCount: 18,
+      backwardCitationsCount: 32,
+      officeActionsCount: 1,
+      rceFilingsCount: 0,
+      statutoryExtensionsCount: 0,
+      foreignFamilyCount: 4,
+      pqdiScore: 92.40,
+      docketMilestones: [
+        {
+          id: 'mil-maint-35',
+          assetId,
+          milestoneTitle: 'USPTO 3.5-Year Patent Maintenance Fee Window',
+          actionCode: 'USPTO-M35',
+          issuanceDate: '2023-08-15',
+          statutoryDueDate: '2027-02-15',
+          extensionAvailableMonths: 6,
+          isCompleted: false
+        }
+      ]
+    }
+  ];
+
+  const materialContracts: MaterialContractDTO[] = [
+    {
+      id: 'con-msa-apex',
+      userId: 'demo-user',
+      entityId: deEntityId,
+      entityName: 'JobTrack Global Enterprise Technologies Inc.',
+      title: 'Global Master Services Agreement - Apex Financial Group',
+      counterpartyLegalName: 'Apex Financial Holdings Corp',
+      contractType: 'MASTER_SERVICES_AGREEMENT',
+      effectiveDate: '2024-01-01',
+      expirationDate: '2027-01-01',
+      annualContractValue: 2400000.00,
+      totalContractValue: 7200000.00,
+      liabilityCapType: 'STANDARD_1X_ACV',
+      liabilityCapUsd: 2400000.00,
+      hasUncappedIndemnity: false,
+      governingLaw: 'DELAWARE_US',
+      disputeForum: 'DELAWARE_CHANCERY_COURT',
+      hasMfnClause: false,
+      hasExclusivityOrNonCompete: false,
+      autoRenewalNoticeDays: 60,
+      renewalNoticeDeadline: '2026-11-02',
+      terminationForConvenienceNoticeDays: 30,
+      crdiScore: 5.00,
+      contractStatus: 'ACTIVE'
+    }
+  ];
+
+  const litigationMatters: LitigationMatterDTO[] = [
+    {
+      id: matterId,
+      userId: 'demo-user',
+      entityId: deEntityId,
+      caseCaption: 'Synapse AI LLC v. JobTrack Global Enterprise Technologies Inc.',
+      docketNumber: '1:25-cv-01492-RGA',
+      tribunal: 'US_FEDERAL_DISTRICT_COURT',
+      filingDate: '2025-04-10',
+      leadOutsideCounselFirm: 'Quinn Emanuel Urquhart & Sullivan LLP',
+      opposingParty: 'Synapse AI LLC (Non-Practicing Entity)',
+      claimsSummary: 'Patent infringement allegations regarding distributed data ingestion under US Patent 9,921,042.',
+      reliefClaimedAmountUsd: 15000000.00,
+      asc450Classification: 'REASONABLY_POSSIBLE',
+      accruedReserveAmountUsd: 0.00,
+      estimatedLossRangeMinUsd: 500000.00,
+      estimatedLossRangeMaxUsd: 2500000.00,
+      matterStatus: 'ACTIVE',
+      legalHolds: [
+        {
+          id: holdId,
+          userId: 'demo-user',
+          matterId,
+          holdTitle: 'Synapse Patent Dispute Document & Communications Preservation',
+          scopeDescription: 'Preserve all engineering logs, architectural specifications, and patent disclosures relating to event pipeline.',
+          issuedAt: '2025-04-12T14:00:00Z',
+          status: 'ACTIVE_ISSUED',
+          totalCustodiansCount: 14,
+          acknowledgedCount: 14,
+          spoliationRiskScore: 0.00,
+          custodians: [
+            {
+              id: 'cust-1',
+              holdId,
+              custodianName: 'Marcus Sterling',
+              custodianEmail: 'marcus.sterling@jobtrack.internal',
+              department: 'Platform Architecture',
+              noticeSentAt: '2025-04-12T14:30:00Z',
+              acknowledgedAt: '2025-04-12T15:10:00Z',
+              escalationCount: 0,
+              isOffboardingFlagged: false
+            }
+          ]
+        }
+      ],
+      outsideCounselInvoices: [
+        {
+          id: 'inv-quinn-001',
+          userId: 'demo-user',
+          matterId,
+          lawFirmName: 'Quinn Emanuel Urquhart & Sullivan LLP',
+          ledesInvoiceNumber: 'QE-2026-9041',
+          invoiceDate: '2026-09-30',
+          billedAmountUsd: 142000.00,
+          auditedApprovedAmountUsd: 135000.00,
+          allocatedMatterBudgetUsd: 500000.00,
+          blendedHourlyRateUsd: 875.00,
+          efficiencyScore: 94.00
+        }
+      ]
+    }
+  ];
+
+  const memoSignatures: DigitalExecutiveSignatureDTO[] = [
+    {
+      role: 'deputy_general_counsel',
+      signerName: 'Sarah Jenkins, Esq.',
+      signerTitle: 'Deputy General Counsel, Commercial & Regulatory',
+      signedAt: '2026-10-02T10:15:00Z',
+      signatureDigestSha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+    },
+    {
+      role: 'chief_intellectual_property_counsel',
+      signerName: 'David K. Thorne, Registered Patent Attorney',
+      signerTitle: 'Chief Intellectual Property Counsel',
+      signedAt: '2026-10-02T14:30:00Z',
+      signatureDigestSha256: 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'
+    },
+    {
+      role: 'general_counsel_corporate_secretary',
+      signerName: 'Victoria Sterling, Esq.',
+      signerTitle: 'Chief Legal Officer, General Counsel & Corporate Secretary',
+      signedAt: '2026-10-03T09:00:00Z',
+      signatureDigestSha256: '4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce'
+    }
+  ];
+
+  const item103Text = generateSecItem103Disclosure({
+    registrantName: 'JobTrack Global Enterprise Technologies Inc.',
+    fiscalYear: 2026,
+    reportingQuarter: 'Q3',
+    activeMatters: litigationMatters,
+    totalProbableReserveUsd: 1250000.00,
+    totalReasonablyPossibleMaxUsd: 2500000.00
+  });
+
+  const activeBoardMemorandum: LegalBoardMemorandumDTO = {
+    id: memoId,
+    userId: 'demo-user',
+    reportingQuarter: 'Q3',
+    fiscalYear: 2026,
+    generatedAt: '2026-10-01T08:00:00Z',
+    lrciCompositeScore: 22.40,
+    totalAsc450AccruedReserveUsd: 1250000.00,
+    totalAsc450PossibleExposureUsd: 2500000.00,
+    item103DisclosureText: item103Text,
+    memoStatus: 'BOARD_CERTIFIED_LOCKED',
+    signatures: memoSignatures,
+    cryptographicIntegrityDigest: 'f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2'
+  };
+
+  return {
+    userId: 'demo-user',
+    generatedAt: new Date().toISOString(),
+    lrciCompositeScore: 22.40,
+    lrciRiskBand: 'SOVEREIGN_FORTRESS',
+    subsidiaryComplianceScore: 100.00,
+    averagePqdiScore: 92.40,
+    averageCrdiScore: 5.00,
+    litigationExposureScore: 14.50,
+    totalLitigationReserveAccruedUsd: 1250000.00,
+    totalAnnualContractValueCoveredUsd: 2400000.00,
+    totalActivePatentsAndTrademarksCount: 1,
+    activeLitigationMattersCount: 1,
+    activeLegalHoldsCount: 1,
+    entities,
+    ipAssets,
+    materialContracts,
+    litigationMatters,
+    activeBoardMemorandum
+  };
+}
+
+function loadDemoLegalOverview(): LegalOperationsOverviewDTO {
+  const stored = localStorage.getItem(DEMO_LEGAL_OPERATIONS_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored) as LegalOperationsOverviewDTO;
+    } catch {
+      localStorage.removeItem(DEMO_LEGAL_OPERATIONS_KEY);
+    }
+  }
+  const defaultState = createDefaultLegalOperationsOverview();
+  localStorage.setItem(DEMO_LEGAL_OPERATIONS_KEY, JSON.stringify(defaultState));
+  return defaultState;
+}
+
+function saveDemoLegalOverview(overview: LegalOperationsOverviewDTO): void {
+  localStorage.setItem(DEMO_LEGAL_OPERATIONS_KEY, JSON.stringify(overview));
+}
+
+function recalculateDemoLegalLrci(overview: LegalOperationsOverviewDTO): void {
+  const goodStandingCount = overview.entities.filter((e) => e.status === 'GOOD_STANDING').length;
+  const subsidiaryComplianceScore = overview.entities.length > 0
+    ? Math.round((goodStandingCount / overview.entities.length) * 10000) / 100
+    : 100.0;
+  const averagePqdiScore = overview.ipAssets.length > 0
+    ? Math.round((overview.ipAssets.reduce((sum, a) => sum + a.pqdiScore, 0) / overview.ipAssets.length) * 100) / 100
+    : 85.0;
+  const averageCrdiScore = overview.materialContracts.length > 0
+    ? Math.round((overview.materialContracts.reduce((sum, c) => sum + c.crdiScore, 0) / overview.materialContracts.length) * 100) / 100
+    : 15.0;
+  const totalLitigationReserveAccruedUsd = overview.litigationMatters.reduce((sum, m) => sum + m.accruedReserveAmountUsd, 0);
+  const totalPossibleMaxUsd = overview.litigationMatters.reduce((sum, m) => sum + m.estimatedLossRangeMaxUsd, 0);
+
+  const lrci = calculateLRCI({
+    subsidiaryComplianceScore,
+    averagePqdiScore,
+    averageCrdiScore,
+    activeMattersCount: overview.litigationMatters.length,
+    probableAccruedLossUsd: totalLitigationReserveAccruedUsd,
+    reasonablyPossibleLossMaxUsd: totalPossibleMaxUsd,
+    outsideCounselBudgetVariancePercent: 5.0,
+    materialityThresholdUsd: 10000000.0
+  });
+
+  overview.lrciCompositeScore = lrci.compositeScore;
+  overview.lrciRiskBand = lrci.riskBand;
+  overview.subsidiaryComplianceScore = subsidiaryComplianceScore;
+  overview.averagePqdiScore = averagePqdiScore;
+  overview.averageCrdiScore = averageCrdiScore;
+  overview.litigationExposureScore = Math.round(lrci.baseScore * 100) / 100;
+  overview.totalLitigationReserveAccruedUsd = totalLitigationReserveAccruedUsd;
+  overview.totalAnnualContractValueCoveredUsd = overview.materialContracts.reduce((sum, c) => sum + c.annualContractValue, 0);
+  overview.totalActivePatentsAndTrademarksCount = overview.ipAssets.length;
+  overview.activeLitigationMattersCount = overview.litigationMatters.length;
+}
+
+export const legalOperationsNexusRepository = {
+  async getOverview(): Promise<LegalOperationsOverviewDTO> {
+    if (demoMode) {
+      return loadDemoLegalOverview();
+    }
+    try {
+      return await request<LegalOperationsOverviewDTO>('/legal-operations-nexus/overview');
+    } catch {
+      return loadDemoLegalOverview();
+    }
+  },
+
+  async createEntity(input: any): Promise<LegalEntityDTO> {
+    if (demoMode) {
+      const overview = loadDemoLegalOverview();
+      const newEntity: LegalEntityDTO = {
+        id: `ent-${Date.now()}`,
+        userId: 'demo-user',
+        legalName: input.legalName,
+        entityType: input.entityType,
+        jurisdiction: input.jurisdiction,
+        registrationNumber: input.registrationNumber,
+        incorporationDate: input.incorporationDate || new Date().toISOString().slice(0, 10),
+        status: input.status || 'GOOD_STANDING',
+        registeredAgent: input.registeredAgent || 'Statutory Agent LLC',
+        principalOfficeAddress: input.principalOfficeAddress || '100 Enterprise Way',
+        taxIdentificationNumber: input.taxIdentificationNumber || 'US-99-0000000',
+        intercompanyAgreementCount: input.intercompanyAgreementCount || 0,
+        statutoryFilings: [],
+        statutoryRegisters: []
+      };
+      overview.entities.push(newEntity);
+      recalculateDemoLegalLrci(overview);
+      saveDemoLegalOverview(overview);
+      return newEntity;
+    }
+    try {
+      return await request<LegalEntityDTO>('/legal-operations-nexus/entities', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const overview = loadDemoLegalOverview();
+      const newEntity: LegalEntityDTO = {
+        id: `ent-${Date.now()}`,
+        userId: 'demo-user',
+        legalName: input.legalName,
+        entityType: input.entityType,
+        jurisdiction: input.jurisdiction,
+        registrationNumber: input.registrationNumber,
+        incorporationDate: input.incorporationDate || new Date().toISOString().slice(0, 10),
+        status: input.status || 'GOOD_STANDING',
+        registeredAgent: input.registeredAgent || 'Statutory Agent LLC',
+        principalOfficeAddress: input.principalOfficeAddress || '100 Enterprise Way',
+        taxIdentificationNumber: input.taxIdentificationNumber || 'US-99-0000000',
+        intercompanyAgreementCount: input.intercompanyAgreementCount || 0,
+        statutoryFilings: [],
+        statutoryRegisters: []
+      };
+      overview.entities.push(newEntity);
+      recalculateDemoLegalLrci(overview);
+      saveDemoLegalOverview(overview);
+      return newEntity;
+    }
+  },
+
+  async calculatePqdi(assetId: string, params: PqdiCalculationParams): Promise<IPAssetDTO> {
+    const score = calculatePQDI(params);
+    if (demoMode) {
+      const overview = loadDemoLegalOverview();
+      const asset = overview.ipAssets.find((a) => a.id === assetId);
+      if (asset) {
+        asset.pqdiScore = score;
+        asset.claimsCount = params.totalClaimsCount;
+        asset.independentClaimsCount = params.independentClaimsCount;
+        asset.forwardCitationsCount = params.forwardCitationsCount;
+        asset.officeActionsCount = params.officeActionsCount;
+        asset.rceFilingsCount = params.rceFilingsCount;
+        asset.statutoryExtensionsCount = params.statutoryExtensionsCount;
+        asset.foreignFamilyCount = params.foreignFamilyCount;
+        recalculateDemoLegalLrci(overview);
+        saveDemoLegalOverview(overview);
+        return asset;
+      }
+      throw new Error(`Asset ${assetId} not found`);
+    }
+    try {
+      const res = await request<{ assetId: string; pqdiScore: number; asset: IPAssetDTO }>('/legal-operations-nexus/ip-portfolio/calculate-pqdi', {
+        method: 'POST',
+        body: JSON.stringify({ assetId, parameters: params })
+      });
+      return res.asset;
+    } catch {
+      const overview = loadDemoLegalOverview();
+      const asset = overview.ipAssets.find((a) => a.id === assetId);
+      if (asset) {
+        asset.pqdiScore = score;
+        recalculateDemoLegalLrci(overview);
+        saveDemoLegalOverview(overview);
+        return asset;
+      }
+      throw new Error(`Asset ${assetId} not found`);
+    }
+  },
+
+  async createContract(input: any): Promise<MaterialContractDTO> {
+    const crdiScore = calculateCRDI({
+      liabilityCapType: input.liabilityCapType,
+      hasUncappedIndemnity: Boolean(input.hasUncappedIndemnity),
+      governingLaw: input.governingLaw || 'DELAWARE_US',
+      disputeForum: input.disputeForum || 'DELAWARE_CHANCERY_COURT',
+      hasMfnClause: Boolean(input.hasMfnClause),
+      hasExclusivityOrNonCompete: Boolean(input.hasExclusivityOrNonCompete),
+      autoRenewalNoticeDays: input.autoRenewalNoticeDays || 30,
+      terminationForConvenienceNoticeDays: input.terminationForConvenienceNoticeDays || 30
+    });
+
+    if (demoMode) {
+      const overview = loadDemoLegalOverview();
+      const newContract: MaterialContractDTO = {
+        id: `con-${Date.now()}`,
+        userId: 'demo-user',
+        entityId: input.entityId || (overview.entities[0] ? overview.entities[0].id : 'ent-1'),
+        entityName: overview.entities[0] ? overview.entities[0].legalName : 'Operating Entity',
+        title: input.title,
+        counterpartyLegalName: input.counterpartyLegalName,
+        contractType: input.contractType || 'MASTER_SERVICES_AGREEMENT',
+        effectiveDate: input.effectiveDate || new Date().toISOString().slice(0, 10),
+        expirationDate: input.expirationDate || '2028-12-31',
+        annualContractValue: input.annualContractValue || 0,
+        totalContractValue: input.totalContractValue || input.annualContractValue || 0,
+        liabilityCapType: input.liabilityCapType || 'STANDARD_1X_ACV',
+        liabilityCapUsd: input.liabilityCapUsd || input.annualContractValue || 0,
+        hasUncappedIndemnity: Boolean(input.hasUncappedIndemnity),
+        governingLaw: input.governingLaw || 'DELAWARE_US',
+        disputeForum: input.disputeForum || 'DELAWARE_CHANCERY_COURT',
+        hasMfnClause: Boolean(input.hasMfnClause),
+        hasExclusivityOrNonCompete: Boolean(input.hasExclusivityOrNonCompete),
+        autoRenewalNoticeDays: input.autoRenewalNoticeDays || 30,
+        renewalNoticeDeadline: input.renewalNoticeDeadline || '2028-11-01',
+        terminationForConvenienceNoticeDays: input.terminationForConvenienceNoticeDays || 30,
+        crdiScore,
+        contractStatus: input.contractStatus || 'ACTIVE'
+      };
+      overview.materialContracts.push(newContract);
+      recalculateDemoLegalLrci(overview);
+      saveDemoLegalOverview(overview);
+      return newContract;
+    }
+    try {
+      return await request<MaterialContractDTO>('/legal-operations-nexus/contracts', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const overview = loadDemoLegalOverview();
+      const newContract: MaterialContractDTO = {
+        id: `con-${Date.now()}`,
+        userId: 'demo-user',
+        entityId: input.entityId || (overview.entities[0] ? overview.entities[0].id : 'ent-1'),
+        entityName: overview.entities[0] ? overview.entities[0].legalName : 'Operating Entity',
+        title: input.title,
+        counterpartyLegalName: input.counterpartyLegalName,
+        contractType: input.contractType || 'MASTER_SERVICES_AGREEMENT',
+        effectiveDate: input.effectiveDate || new Date().toISOString().slice(0, 10),
+        expirationDate: input.expirationDate || '2028-12-31',
+        annualContractValue: input.annualContractValue || 0,
+        totalContractValue: input.totalContractValue || input.annualContractValue || 0,
+        liabilityCapType: input.liabilityCapType || 'STANDARD_1X_ACV',
+        liabilityCapUsd: input.liabilityCapUsd || input.annualContractValue || 0,
+        hasUncappedIndemnity: Boolean(input.hasUncappedIndemnity),
+        governingLaw: input.governingLaw || 'DELAWARE_US',
+        disputeForum: input.disputeForum || 'DELAWARE_CHANCERY_COURT',
+        hasMfnClause: Boolean(input.hasMfnClause),
+        hasExclusivityOrNonCompete: Boolean(input.hasExclusivityOrNonCompete),
+        autoRenewalNoticeDays: input.autoRenewalNoticeDays || 30,
+        renewalNoticeDeadline: input.renewalNoticeDeadline || '2028-11-01',
+        terminationForConvenienceNoticeDays: input.terminationForConvenienceNoticeDays || 30,
+        crdiScore,
+        contractStatus: input.contractStatus || 'ACTIVE'
+      };
+      overview.materialContracts.push(newContract);
+      recalculateDemoLegalLrci(overview);
+      saveDemoLegalOverview(overview);
+      return newContract;
+    }
+  },
+
+  async assessAsc450(matterId: string, assessmentInput: Asc450ReserveAssessmentParams): Promise<LitigationMatterDTO> {
+    const result = assessASC450Contingency(assessmentInput);
+    if (demoMode) {
+      const overview = loadDemoLegalOverview();
+      const matter = overview.litigationMatters.find((m) => m.id === matterId);
+      if (matter) {
+        matter.asc450Classification = result.classification;
+        matter.accruedReserveAmountUsd = result.accruedAmountUsd;
+        matter.estimatedLossRangeMinUsd = result.footnoteDisclosedMinUsd;
+        matter.estimatedLossRangeMaxUsd = result.footnoteDisclosedMaxUsd;
+        recalculateDemoLegalLrci(overview);
+        saveDemoLegalOverview(overview);
+        return matter;
+      }
+      throw new Error(`Matter ${matterId} not found`);
+    }
+    try {
+      return await request<LitigationMatterDTO>('/legal-operations-nexus/litigation/asc450-assessment', {
+        method: 'POST',
+        body: JSON.stringify({ matterId, ...assessmentInput })
+      });
+    } catch {
+      const overview = loadDemoLegalOverview();
+      const matter = overview.litigationMatters.find((m) => m.id === matterId);
+      if (matter) {
+        matter.asc450Classification = result.classification;
+        matter.accruedReserveAmountUsd = result.accruedAmountUsd;
+        matter.estimatedLossRangeMinUsd = result.footnoteDisclosedMinUsd;
+        matter.estimatedLossRangeMaxUsd = result.footnoteDisclosedMaxUsd;
+        recalculateDemoLegalLrci(overview);
+        saveDemoLegalOverview(overview);
+        return matter;
+      }
+      throw new Error(`Matter ${matterId} not found`);
+    }
+  },
+
+  async createLegalHold(input: any): Promise<CustodianLegalHoldDTO> {
+    if (demoMode) {
+      const overview = loadDemoLegalOverview();
+      const matter = overview.litigationMatters.find((m) => m.id === input.matterId) || overview.litigationMatters[0];
+      const holdId = `hold-${Date.now()}`;
+      const newHold: CustodianLegalHoldDTO = {
+        id: holdId,
+        userId: 'demo-user',
+        matterId: matter.id,
+        holdTitle: input.holdTitle,
+        scopeDescription: input.scopeDescription,
+        issuedAt: new Date().toISOString(),
+        status: 'ACTIVE_ISSUED',
+        totalCustodiansCount: 1,
+        acknowledgedCount: 1,
+        spoliationRiskScore: 0.00,
+        custodians: [
+          {
+            id: `cust-${Date.now()}`,
+            holdId,
+            custodianName: input.initialCustodianName || 'Lead Systems Architect',
+            custodianEmail: input.initialCustodianEmail || 'architect@jobtrack.internal',
+            department: input.initialCustodianDepartment || 'Core Architecture',
+            noticeSentAt: new Date().toISOString(),
+            acknowledgedAt: new Date().toISOString(),
+            escalationCount: 0,
+            isOffboardingFlagged: false
+          }
+        ]
+      };
+      matter.legalHolds.push(newHold);
+      overview.activeLegalHoldsCount = overview.litigationMatters.reduce((acc, m) => acc + m.legalHolds.length, 0);
+      saveDemoLegalOverview(overview);
+      return newHold;
+    }
+    try {
+      return await request<CustodianLegalHoldDTO>('/legal-operations-nexus/legal-holds', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const overview = loadDemoLegalOverview();
+      const matter = overview.litigationMatters.find((m) => m.id === input.matterId) || overview.litigationMatters[0];
+      const holdId = `hold-${Date.now()}`;
+      const newHold: CustodianLegalHoldDTO = {
+        id: holdId,
+        userId: 'demo-user',
+        matterId: matter.id,
+        holdTitle: input.holdTitle,
+        scopeDescription: input.scopeDescription,
+        issuedAt: new Date().toISOString(),
+        status: 'ACTIVE_ISSUED',
+        totalCustodiansCount: 1,
+        acknowledgedCount: 1,
+        spoliationRiskScore: 0.00,
+        custodians: [
+          {
+            id: `cust-${Date.now()}`,
+            holdId,
+            custodianName: input.initialCustodianName || 'Lead Systems Architect',
+            custodianEmail: input.initialCustodianEmail || 'architect@jobtrack.internal',
+            department: input.initialCustodianDepartment || 'Core Architecture',
+            noticeSentAt: new Date().toISOString(),
+            acknowledgedAt: new Date().toISOString(),
+            escalationCount: 0,
+            isOffboardingFlagged: false
+          }
+        ]
+      };
+      matter.legalHolds.push(newHold);
+      overview.activeLegalHoldsCount = overview.litigationMatters.reduce((acc, m) => acc + m.legalHolds.length, 0);
+      saveDemoLegalOverview(overview);
+      return newHold;
+    }
+  },
+
+  async signOffBoardMemo(
+    memoId: string,
+    signoff: { role: LegalSignoffRole; signerName: string; signerTitle?: string }
+  ): Promise<LegalBoardMemorandumDTO> {
+    if (demoMode) {
+      const overview = loadDemoLegalOverview();
+      const memo = overview.activeBoardMemorandum;
+      const existingIdx = memo.signatures.findIndex((s) => s.role === signoff.role);
+      const newSig: DigitalExecutiveSignatureDTO = {
+        role: signoff.role,
+        signerName: signoff.signerName,
+        signerTitle: signoff.signerTitle || 'Authorized Legal Counsel Signatory',
+        signedAt: new Date().toISOString(),
+        signatureDigestSha256: `digest-${signoff.role}-${Date.now().toString(16)}`
+      };
+      if (existingIdx >= 0) {
+        memo.signatures[existingIdx] = newSig;
+      } else {
+        memo.signatures.push(newSig);
+      }
+      const hasDgc = memo.signatures.some((s) => s.role === 'deputy_general_counsel');
+      const hasCipc = memo.signatures.some((s) => s.role === 'chief_intellectual_property_counsel');
+      const hasGc = memo.signatures.some((s) => s.role === 'general_counsel_corporate_secretary');
+      if (hasDgc && hasCipc && hasGc) {
+        memo.memoStatus = 'BOARD_CERTIFIED_LOCKED';
+      } else if (hasDgc && hasCipc) {
+        memo.memoStatus = 'PENDING_GC_APPROVAL';
+      } else if (hasDgc) {
+        memo.memoStatus = 'PENDING_CIPC_APPROVAL';
+      }
+      saveDemoLegalOverview(overview);
+      return memo;
+    }
+    try {
+      return await request<LegalBoardMemorandumDTO>('/legal-operations-nexus/board-war-room/sign-off', {
+        method: 'POST',
+        body: JSON.stringify({ memoId, ...signoff })
+      });
+    } catch {
+      const overview = loadDemoLegalOverview();
+      const memo = overview.activeBoardMemorandum;
+      const existingIdx = memo.signatures.findIndex((s) => s.role === signoff.role);
+      const newSig: DigitalExecutiveSignatureDTO = {
+        role: signoff.role,
+        signerName: signoff.signerName,
+        signerTitle: signoff.signerTitle || 'Authorized Legal Counsel Signatory',
+        signedAt: new Date().toISOString(),
+        signatureDigestSha256: `digest-${signoff.role}-${Date.now().toString(16)}`
+      };
+      if (existingIdx >= 0) {
+        memo.signatures[existingIdx] = newSig;
+      } else {
+        memo.signatures.push(newSig);
+      }
+      saveDemoLegalOverview(overview);
+      return memo;
+    }
+  },
+
+  async generateSecItem103Text(memoId: string): Promise<string> {
+    const overview = await this.getOverview();
+    const text = generateSecItem103Disclosure({
+      registrantName: 'JobTrack Global Enterprise Technologies Inc.',
+      fiscalYear: overview.activeBoardMemorandum.fiscalYear,
+      reportingQuarter: overview.activeBoardMemorandum.reportingQuarter,
+      activeMatters: overview.litigationMatters,
+      totalProbableReserveUsd: overview.totalLitigationReserveAccruedUsd,
+      totalReasonablyPossibleMaxUsd: overview.litigationMatters.reduce((acc, m) => acc + m.estimatedLossRangeMaxUsd, 0)
+    });
+    if (demoMode) {
+      overview.activeBoardMemorandum.item103DisclosureText = text;
+      saveDemoLegalOverview(overview);
+    }
+    return text;
+  }
+};
+
 
 
 
