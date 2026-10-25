@@ -425,7 +425,24 @@ import {
   validateSection83bArbitrageInput,
   validateGenerateCdaBoardMemoInput,
   validateSignoffCdaBoardMemoInput,
-  type TotalRewardsStudioOverviewDTO
+  type TotalRewardsStudioOverviewDTO,
+  calculateCashConversionCycle,
+  calculateIntercompanyLoanInterest,
+  calculateNotionalPoolArbitrage,
+  calculateParametricFxVaR95,
+  calculateHedgeEffectivenessRatio,
+  calculateImpliedDefaultProbability,
+  simulateBankBailInHaircut,
+  calculateCompositeTrlsScore,
+  generateTreasuryBoardMemorandumMarkdown,
+  validateBankAccountInput,
+  validateWorkingCapitalSimulationInput,
+  validateFxSimulationInput,
+  validateBailInStressInput,
+  validateGenerateTreasuryBoardMemoInput,
+  validateSignoffTreasuryBoardMemoInput,
+  type CorporateTreasuryOverviewDTO,
+  type BankCounterpartyDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -8616,4 +8633,258 @@ test('workforce-total-rewards: validators enforce boundaries and reject malforme
   });
   assert.equal(goodSign.ok, true);
 });
+
+test('corporate-treasury: calculateCashConversionCycle, calculateIntercompanyLoanInterest, and calculateNotionalPoolArbitrage', () => {
+  const leanCcc = calculateCashConversionCycle(18, 38, 45);
+  assert.equal(leanCcc.netCcc, 11);
+  assert.equal(leanCcc.status, 'lean');
+
+  const acceptableCcc = calculateCashConversionCycle(25, 45, 30);
+  assert.equal(acceptableCcc.netCcc, 40);
+  assert.equal(acceptableCcc.status, 'acceptable');
+
+  const inefficientCcc = calculateCashConversionCycle(30, 60, 25);
+  assert.equal(inefficientCcc.netCcc, 65);
+  assert.equal(inefficientCcc.status, 'inefficient');
+
+  const loanInterest = calculateIntercompanyLoanInterest(1000000, 5.0, 30, 10.0);
+  assert.equal(loanInterest.grossInterestUsd, 4166.67);
+  assert.equal(loanInterest.withholdingTaxUsd, 416.67);
+  assert.equal(loanInterest.netInterestUsd, 3750);
+
+  const arbitrage = calculateNotionalPoolArbitrage(20000000, 5000000, 3.5, 7.0, 4.5);
+  assert.equal(arbitrage.standaloneNetEarnedUsd, 350000);
+  assert.equal(arbitrage.pooledNetEarnedUsd, 675000);
+  assert.equal(arbitrage.annualizedArbitrageUsd, 325000);
+});
+
+test('corporate-treasury: calculateParametricFxVaR95 and calculateHedgeEffectivenessRatio', () => {
+  const varResult = calculateParametricFxVaR95(10000000, 0.008, 10);
+  assert.ok(varResult.var1Day95Usd > 130000 && varResult.var1Day95Usd < 135000);
+  assert.ok(varResult.var10Day99Usd > 580000 && varResult.var10Day99Usd < 600000);
+
+  const effective = calculateHedgeEffectivenessRatio(98000, 100000);
+  assert.equal(effective.dollarOffsetRatioPercent, 98);
+  assert.equal(effective.isAsc815Compliant, true);
+
+  const ineffective = calculateHedgeEffectivenessRatio(50000, 100000);
+  assert.equal(ineffective.dollarOffsetRatioPercent, 50);
+  assert.equal(ineffective.isAsc815Compliant, false);
+
+  const zeroDelta = calculateHedgeEffectivenessRatio(0, 0);
+  assert.equal(zeroDelta.dollarOffsetRatioPercent, 100);
+  assert.equal(zeroDelta.isAsc815Compliant, true);
+});
+
+test('corporate-treasury: calculateImpliedDefaultProbability and simulateBankBailInHaircut', () => {
+  const pd = calculateImpliedDefaultProbability(60, 0.40);
+  assert.ok(pd > 0.9 && pd < 1.1);
+
+  const mockBank: BankCounterpartyDTO = {
+    id: 'bank-1',
+    bankName: 'JPMorgan Chase & Co.',
+    holdingGroup: 'JPMorgan Chase',
+    jurisdiction: 'United States',
+    spRating: 'AA_MINUS',
+    moodysRating: 'AA',
+    fitchRating: 'AA_MINUS',
+    fiveYearCdsSpreadBps: 52,
+    impliedDefaultProbabilityPercent: 0.86,
+    baselLiquidityCoverageRatioPercent: 142,
+    baselNetStableFundingRatioPercent: 126,
+    tier1CommonEquityRatioPercent: 15.2,
+    totalDepositsHeldUsd: 12500000,
+    portfolioDepositorySharePercent: 25.8,
+    boardApprovedExposureLimitUsd: 15000000,
+    limitUtilizationPercent: 83.3,
+    uninsuredDepositsUsd: 12250000,
+    simulatedHaircutLossUsd: 0
+  };
+
+  const stressResult = simulateBankBailInHaircut(mockBank, 20);
+  assert.equal(stressResult.stressedBankName, 'JPMorgan Chase & Co.');
+  assert.equal(stressResult.uninsuredDepositsSubjectToHaircutUsd, 12250000);
+  assert.equal(stressResult.projectedHaircutLossUsd, 2450000);
+  assert.ok(stressResult.postStressAvailableLiquidityUsd > 10000000);
+  assert.ok(stressResult.contingentFundingRecommendation.includes('CRITICAL'));
+});
+
+test('corporate-treasury: calculateCompositeTrlsScore evaluates score bands correctly', () => {
+  const fortress = calculateCompositeTrlsScore({
+    zbaSweepingEfficiency: 95,
+    forecastAccuracyScore: 94,
+    hedgeRatioPercent: 90,
+    counterpartyConcentrationMax: 18,
+    governanceSignoffRatio: 1.0
+  });
+  assert.ok(fortress.score >= 90);
+  assert.equal(fortress.band, 'sovereign_fortress');
+
+  const stable = calculateCompositeTrlsScore({
+    zbaSweepingEfficiency: 82,
+    forecastAccuracyScore: 84,
+    hedgeRatioPercent: 80,
+    counterpartyConcentrationMax: 22,
+    governanceSignoffRatio: 0.66
+  });
+  assert.ok(stable.score >= 75 && stable.score < 90);
+
+  const distressed = calculateCompositeTrlsScore({
+    zbaSweepingEfficiency: 40,
+    forecastAccuracyScore: 50,
+    hedgeRatioPercent: 30,
+    counterpartyConcentrationMax: 45,
+    governanceSignoffRatio: 0.0
+  });
+  assert.ok(distressed.score < 65);
+  assert.equal(distressed.band, 'critical_liquidity_alert');
+});
+
+test('corporate-treasury: generateTreasuryBoardMemorandumMarkdown produces structured report', () => {
+  const mockOverview: CorporateTreasuryOverviewDTO = {
+    studioId: 'studio-1',
+    enterpriseName: 'JobTrack Enterprise Holdings',
+    lastUpdated: '2026-10-25T10:00:00Z',
+    compositeTrlsScore: 89.4,
+    trlsBand: 'defensible_stability',
+    cashConcentration: {
+      totalGlobalLiquidityUsd: 48500000,
+      pooledNetBalanceUsd: 32000000,
+      physicalSweptTodayUsd: 6200000,
+      annualizedPoolingYieldArbitrageUsd: 142500,
+      activeZbaCount: 8,
+      activeNotionalPoolCount: 2,
+      accounts: [],
+      entities: []
+    },
+    cashForecast: {
+      forecastWeeksCount: 13,
+      forecastAccuracyScorePercent: 95.8,
+      minimumProjectedRunwayMonths: 11.2,
+      minimumOperationalBufferUsd: 8500000,
+      precautionaryReserveUsd: 12000000,
+      totalExcessDeployableLiquidityUsd: 28000000,
+      workingCapitalCycle: {
+        daysSalesOutstanding: 38,
+        daysInventoryOutstanding: 18,
+        daysPayableOutstanding: 45,
+        netCashConversionCycleDays: 11,
+        targetCashConversionCycleDays: 15,
+        capitalTiedUpInWorkingCapitalUsd: 4200000,
+        potentialInterestReleaseUsd: 185000
+      },
+      weeklyForecasts: []
+    },
+    fxHedging: {
+      totalNetExposureUsd: 18500000,
+      totalHedgedNotionalUsd: 16000000,
+      weightedHedgeRatioPercent: 86.5,
+      portfolio1DayVaR95Usd: 124500,
+      portfolio10DayVaR99Usd: 550000,
+      unrealizedMtmGainLossUsd: 42500,
+      exposures: [],
+      contracts: []
+    },
+    counterpartyRisk: {
+      weightedAverageRating: 'AA_MINUS',
+      totalUninsuredDepositsUsd: 36000000,
+      maxSingleBankExposurePercent: 19.5,
+      limitBreachCount: 0,
+      counterparties: []
+    }
+  };
+
+  const md = generateTreasuryBoardMemorandumMarkdown(mockOverview, {
+    fiscalQuarter: 'Q1-2026',
+    title: 'Q1-2026 Corporate Treasury Risk Review',
+    stressTestScenarioIncluded: true
+  });
+
+  assert.ok(md.includes('MEMO-TR-Q1-2026'));
+  assert.ok(md.includes('89.4 / 100'));
+  assert.ok(md.includes('DEFENSIBLE STABILITY'));
+  assert.ok(md.includes('$48.50M USD'));
+  assert.ok(md.includes('Pillar A'));
+  assert.ok(md.includes('Pillar B'));
+  assert.ok(md.includes('Pillar C'));
+  assert.ok(md.includes('Pillar D'));
+  assert.ok(md.includes('Pillar E'));
+});
+
+test('corporate-treasury: validators enforce boundaries and types accurately', () => {
+  const badBank = validateBankAccountInput(null);
+  assert.equal(badBank.ok, false);
+
+  const goodBank = validateBankAccountInput({
+    bankName: 'JPMorgan Chase',
+    bankBicSwift: 'CHASUS33XXX',
+    currency: 'USD',
+    currentBalance: 15000000,
+    targetBalanceFloor: 100000,
+    targetBalanceCeiling: 5000000
+  });
+  assert.equal(goodBank.ok, true);
+
+  const invertedBank = validateBankAccountInput({
+    bankName: 'JPMorgan Chase',
+    bankBicSwift: 'CHASUS33XXX',
+    currency: 'USD',
+    currentBalance: 15000000,
+    targetBalanceFloor: 5000000,
+    targetBalanceCeiling: 100000
+  });
+  assert.equal(invertedBank.ok, false);
+
+  const badWc = validateWorkingCapitalSimulationInput({});
+  assert.equal(badWc.ok, false);
+
+  const goodWc = validateWorkingCapitalSimulationInput({
+    adjustedDso: 35,
+    adjustedDpo: 50
+  });
+  assert.equal(goodWc.ok, true);
+
+  const badFx = validateFxSimulationInput({});
+  assert.equal(badFx.ok, false);
+
+  const goodFx = validateFxSimulationInput({
+    currencyPair: 'EUR/USD',
+    shockPercentage: 10,
+    holdingPeriodDays: 10,
+    confidenceInterval: 0.95,
+    hedgingCoverageAdjustmentPercent: 85
+  });
+  assert.equal(goodFx.ok, true);
+
+  const badBailIn = validateBailInStressInput({});
+  assert.equal(badBailIn.ok, false);
+
+  const goodBailIn = validateBailInStressInput({
+    stressedBankId: 'bank-1',
+    haircutLossPercentage: 25,
+    sovereignSpreadShockBps: 150
+  });
+  assert.equal(goodBailIn.ok, true);
+
+  const badMemo = validateGenerateTreasuryBoardMemoInput({});
+  assert.equal(badMemo.ok, false);
+
+  const goodMemo = validateGenerateTreasuryBoardMemoInput({
+    fiscalQuarter: 'Q1-2026',
+    title: 'Q1-2026 Executive Treasury Review',
+    stressTestScenarioIncluded: true
+  });
+  assert.equal(goodMemo.ok, true);
+
+  const badSign = validateSignoffTreasuryBoardMemoInput({});
+  assert.equal(badSign.ok, false);
+
+  const goodSign = validateSignoffTreasuryBoardMemoInput({
+    role: 'corporate_treasurer',
+    signerName: 'Alexandra Chen, CFA',
+    comments: 'Certified'
+  });
+  assert.equal(goodSign.ok, true);
+});
+
 

@@ -110,6 +110,7 @@ import { CyberRiskGovernanceStudioService } from './services/cyber-risk-governan
 import { EsgSustainabilityStudioService } from './services/esg-sustainability-studio-service.ts';
 import { SupplyChainResilienceStudioService } from './services/supply-chain-resilience-studio-service.ts';
 import { WorkforceTotalRewardsStudioService } from './services/workforce-total-rewards-studio-service.ts';
+import { CorporateTreasuryNexusService } from './services/corporate-treasury-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -122,7 +123,12 @@ import {
   validateSection83bArbitrageInput,
   validateGenerateCdaBoardMemoInput,
   validateSignoffCdaBoardMemoInput,
-  type TotalRewardsBoardSignoffRole
+  type TotalRewardsBoardSignoffRole,
+  validateWorkingCapitalSimulationInput,
+  validateFxSimulationInput,
+  validateBailInStressInput,
+  validateGenerateTreasuryBoardMemoInput,
+  validateSignoffTreasuryBoardMemoInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -261,6 +267,7 @@ export const cyberRiskGovernanceStudioService = new CyberRiskGovernanceStudioSer
 export const esgSustainabilityStudioService = new EsgSustainabilityStudioService(pool);
 export const supplyChainResilienceStudioService = new SupplyChainResilienceStudioService(pool);
 export const workforceTotalRewardsStudioService = new WorkforceTotalRewardsStudioService(pool);
+export const corporateTreasuryNexusService = new CorporateTreasuryNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -4577,6 +4584,103 @@ app.post(['/api/workforce-total-rewards-studio/board-memos/:id/signoff', '/api/t
     }
     const memoId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const updated = await workforceTotalRewardsStudioService.signoffBoardMemo(userId, memoId, req.body);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'memo_not_found', error: 'Board memorandum not found' });
+    }
+    res.status(400).json({ code: 'sign_off_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/corporate-treasury-nexus/overview', '/api/treasury-nexus/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await corporateTreasuryNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/corporate-treasury-nexus/sweeps/execute', '/api/treasury-nexus/sweeps/execute'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const result = await corporateTreasuryNexusService.executeCashSweep(userId, req.body || {});
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ code: 'sweep_execution_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/corporate-treasury-nexus/forecast/simulate-ccc', '/api/treasury-nexus/forecast/simulate-ccc'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateWorkingCapitalSimulationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const result = await corporateTreasuryNexusService.simulateWorkingCapital(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ code: 'working_capital_simulation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/corporate-treasury-nexus/fx/simulate-var', '/api/treasury-nexus/fx/simulate-var'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateFxSimulationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const result = await corporateTreasuryNexusService.simulateFxSensitivity(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ code: 'fx_simulation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/corporate-treasury-nexus/counterparty/simulate-bailin', '/api/treasury-nexus/counterparty/simulate-bailin'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateBailInStressInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const result = await corporateTreasuryNexusService.simulateBailInStress(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'counterparty_not_found', error: (err as Error).message });
+    }
+    res.status(400).json({ code: 'bailin_simulation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/corporate-treasury-nexus/board-memos/generate', '/api/treasury-nexus/board-memos/generate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateGenerateTreasuryBoardMemoInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const memo = await corporateTreasuryNexusService.generateBoardMemo(userId, req.body);
+    res.status(201).json(memo);
+  } catch (err) {
+    res.status(400).json({ code: 'memo_generation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/corporate-treasury-nexus/board-memos/:id/signoff', '/api/treasury-nexus/board-memos/:id/signoff'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateSignoffTreasuryBoardMemoInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const memoId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updated = await corporateTreasuryNexusService.signoffBoardMemo(userId, memoId, req.body);
     res.json(updated);
   } catch (err) {
     if ((err as Error).message.includes('not found')) {

@@ -403,7 +403,28 @@ import {
   calculateSection83bTaxArbitrage,
   calculateTotalRewardsAlignmentIndex,
   assessSayOnPayShareholderRisk,
-  generateSecItem402CdaMemorandum
+  generateSecItem402CdaMemorandum,
+  type CorporateTreasuryOverviewDTO,
+  type CashSweepExecutionResultDTO,
+  type ExecuteCashSweepRequestDTO,
+  type WorkingCapitalSimulationRequestDTO,
+  type WorkingCapitalSimulationResultDTO,
+  type FxSensitivitySimulationRequestDTO,
+  type FxSensitivitySimulationResultDTO,
+  type BailInStressTestRequestDTO,
+  type BailInStressTestResultDTO,
+  type GenerateTreasuryBoardMemoRequestDTO,
+  type SignoffTreasuryBoardMemoRequestDTO,
+  type TreasuryBoardMemorandumDTO,
+  type TreasuryBoardSignoffRole,
+  calculateCashConversionCycle,
+  calculateIntercompanyLoanInterest,
+  calculateNotionalPoolArbitrage,
+  calculateParametricFxVaR95,
+  calculateHedgeEffectivenessRatio,
+  simulateBankBailInHaircut,
+  calculateCompositeTrlsScore,
+  generateTreasuryBoardMemorandumMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -17231,6 +17252,872 @@ export const workforceTotalRewardsStudioRepository = {
     }
   }
 };
+
+const DEMO_TREASURY_STORAGE_KEY = 'jobtrack_demo_corporate_treasury_v1';
+
+function createDefaultCorporateTreasuryOverview(): CorporateTreasuryOverviewDTO {
+  const accounts = [
+    {
+      id: 'acc-1',
+      entityId: 'ent-1',
+      entityName: 'JobTrack Holdings Inc. (Delaware)',
+      bankName: 'JPMorgan Chase Bank, N.A.',
+      bankBicSwift: 'CHASUS33XXX',
+      accountNumberMasked: '•••• 8821',
+      currency: 'USD',
+      accountType: 'operating_disbursement' as const,
+      sweepingType: 'zero_balance_account' as const,
+      currentBalance: 14200000,
+      currentBalanceUsd: 14200000,
+      targetBalanceFloor: 1000000,
+      targetBalanceCeiling: 15000000,
+      bankCreditRating: 'AA_MINUS' as const,
+      insuredDepositLimitUsd: 250000,
+      isZbaChild: true,
+      parentAccountId: 'acc-2'
+    },
+    {
+      id: 'acc-2',
+      entityId: 'ent-1',
+      entityName: 'JobTrack Holdings Inc. (Delaware)',
+      bankName: 'JPMorgan Chase Bank, N.A.',
+      bankBicSwift: 'CHASUS33XXX',
+      accountNumberMasked: '•••• 9102',
+      currency: 'USD',
+      accountType: 'master_concentration' as const,
+      sweepingType: 'physical_eod_sweep' as const,
+      currentBalance: 18500000,
+      currentBalanceUsd: 18500000,
+      targetBalanceFloor: 5000000,
+      targetBalanceCeiling: 25000000,
+      bankCreditRating: 'AA_MINUS' as const,
+      insuredDepositLimitUsd: 250000,
+      isZbaChild: false
+    },
+    {
+      id: 'acc-3',
+      entityId: 'ent-2',
+      entityName: 'JobTrack Europe Treasury DAC (Ireland)',
+      bankName: 'BNP Paribas SA',
+      bankBicSwift: 'BNPAFRPPXXX',
+      accountNumberMasked: '•••• 4419',
+      currency: 'EUR',
+      accountType: 'operating_disbursement' as const,
+      sweepingType: 'zero_balance_account' as const,
+      currentBalance: 4800000,
+      currentBalanceUsd: 5208000,
+      targetBalanceFloor: 500000,
+      targetBalanceCeiling: 6000000,
+      bankCreditRating: 'A_PLUS' as const,
+      insuredDepositLimitUsd: 108500,
+      isZbaChild: true,
+      parentAccountId: 'acc-2'
+    },
+    {
+      id: 'acc-4',
+      entityId: 'ent-2',
+      entityName: 'JobTrack Europe Treasury DAC (Ireland)',
+      bankName: 'BNP Paribas SA',
+      bankBicSwift: 'BNPAFRPPXXX',
+      accountNumberMasked: '•••• 5520',
+      currency: 'EUR',
+      accountType: 'master_concentration' as const,
+      sweepingType: 'multi_currency_notional_pool' as const,
+      currentBalance: 3500000,
+      currentBalanceUsd: 3797500,
+      targetBalanceFloor: 1000000,
+      targetBalanceCeiling: 8000000,
+      bankCreditRating: 'A_PLUS' as const,
+      insuredDepositLimitUsd: 108500,
+      isZbaChild: false
+    },
+    {
+      id: 'acc-5',
+      entityId: 'ent-3',
+      entityName: 'JobTrack UK Operations Ltd (London)',
+      bankName: 'Barclays Bank PLC',
+      bankBicSwift: 'BARCGB22XXX',
+      accountNumberMasked: '•••• 6631',
+      currency: 'GBP',
+      accountType: 'operating_disbursement' as const,
+      sweepingType: 'zero_balance_account' as const,
+      currentBalance: 2400000,
+      currentBalanceUsd: 3052800,
+      targetBalanceFloor: 250000,
+      targetBalanceCeiling: 3500000,
+      bankCreditRating: 'A' as const,
+      insuredDepositLimitUsd: 108000,
+      isZbaChild: true,
+      parentAccountId: 'acc-2'
+    },
+    {
+      id: 'acc-6',
+      entityId: 'ent-4',
+      entityName: 'JobTrack Asia-Pacific Pte Ltd (Singapore)',
+      bankName: 'DBS Bank Ltd',
+      bankBicSwift: 'DBSSSGSGXXX',
+      accountNumberMasked: '•••• 7712',
+      currency: 'SGD',
+      accountType: 'operating_disbursement' as const,
+      sweepingType: 'target_balance_account' as const,
+      currentBalance: 2100000,
+      currentBalanceUsd: 1575000,
+      targetBalanceFloor: 200000,
+      targetBalanceCeiling: 2500000,
+      bankCreditRating: 'AA_MINUS' as const,
+      insuredDepositLimitUsd: 75000,
+      isZbaChild: false
+    },
+    {
+      id: 'acc-7',
+      entityId: 'ent-6',
+      entityName: 'JobTrack Japan KK (Tokyo)',
+      bankName: 'Sumitomo Mitsui Banking Corp',
+      bankBicSwift: 'SMBCJPJTXXX',
+      accountNumberMasked: '•••• 3309',
+      currency: 'JPY',
+      accountType: 'operating_disbursement' as const,
+      sweepingType: 'zero_balance_account' as const,
+      currentBalance: 180000000,
+      currentBalanceUsd: 1166700,
+      targetBalanceFloor: 20000000,
+      targetBalanceCeiling: 250000000,
+      bankCreditRating: 'A_PLUS' as const,
+      insuredDepositLimitUsd: 65000,
+      isZbaChild: true,
+      parentAccountId: 'acc-2'
+    },
+    {
+      id: 'acc-8',
+      entityId: 'ent-1',
+      entityName: 'JobTrack Holdings Inc. (Delaware)',
+      bankName: 'Goldman Sachs Bank USA',
+      bankBicSwift: 'GSUSUS33XXX',
+      accountNumberMasked: '•••• 1120',
+      currency: 'USD',
+      accountType: 'liquidity_reserve_ladder' as const,
+      sweepingType: 'physical_eod_sweep' as const,
+      currentBalance: 1000000,
+      currentBalanceUsd: 1000000,
+      targetBalanceFloor: 0,
+      targetBalanceCeiling: 5000000,
+      bankCreditRating: 'A_PLUS' as const,
+      insuredDepositLimitUsd: 250000,
+      isZbaChild: false
+    }
+  ];
+
+  const entities = [
+    {
+      id: 'ent-1',
+      legalEntityName: 'JobTrack Holdings Inc.',
+      jurisdiction: 'United States (Delaware)',
+      functionalCurrency: 'USD',
+      entityRole: 'parent_holding' as const,
+      intercompanyCreditLimitUsd: 25000000,
+      currentIntercompanyBalanceUsd: 0,
+      armLengthInterestRatePercent: 5.35,
+      withholdingTaxRatePercent: 0.0
+    },
+    {
+      id: 'ent-2',
+      legalEntityName: 'JobTrack Europe Treasury DAC',
+      jurisdiction: 'Ireland (Dublin)',
+      functionalCurrency: 'EUR',
+      entityRole: 'regional_treasury_hub' as const,
+      intercompanyCreditLimitUsd: 15000000,
+      currentIntercompanyBalanceUsd: 4200000,
+      armLengthInterestRatePercent: 4.85,
+      withholdingTaxRatePercent: 0.0
+    },
+    {
+      id: 'ent-3',
+      legalEntityName: 'JobTrack UK Operations Ltd',
+      jurisdiction: 'United Kingdom (London)',
+      functionalCurrency: 'GBP',
+      entityRole: 'operating_subsidiary' as const,
+      intercompanyCreditLimitUsd: 8000000,
+      currentIntercompanyBalanceUsd: 1800000,
+      armLengthInterestRatePercent: 5.10,
+      withholdingTaxRatePercent: 0.0
+    },
+    {
+      id: 'ent-4',
+      legalEntityName: 'JobTrack Asia-Pacific Pte Ltd',
+      jurisdiction: 'Singapore',
+      functionalCurrency: 'SGD',
+      entityRole: 'operating_subsidiary' as const,
+      intercompanyCreditLimitUsd: 5000000,
+      currentIntercompanyBalanceUsd: 950000,
+      armLengthInterestRatePercent: 4.60,
+      withholdingTaxRatePercent: 10.0
+    },
+    {
+      id: 'ent-5',
+      legalEntityName: 'JobTrack Brasil Tecnologia Ltda',
+      jurisdiction: 'Brazil (Sao Paulo)',
+      functionalCurrency: 'BRL',
+      entityRole: 'operating_subsidiary' as const,
+      intercompanyCreditLimitUsd: 2000000,
+      currentIntercompanyBalanceUsd: 450000,
+      armLengthInterestRatePercent: 11.25,
+      withholdingTaxRatePercent: 15.0
+    },
+    {
+      id: 'ent-6',
+      legalEntityName: 'JobTrack Japan KK',
+      jurisdiction: 'Japan (Tokyo)',
+      functionalCurrency: 'JPY',
+      entityRole: 'operating_subsidiary' as const,
+      intercompanyCreditLimitUsd: 4000000,
+      currentIntercompanyBalanceUsd: 650000,
+      armLengthInterestRatePercent: 1.85,
+      withholdingTaxRatePercent: 10.0
+    }
+  ];
+
+  const weeklyForecasts = [];
+  const baseDate = new Date('2026-10-26T00:00:00Z');
+  let runningCash = 48500000;
+  for (let w = 1; w <= 13; w++) {
+    const d = new Date(baseDate.getTime() + (w - 1) * 7 * 86400000);
+    const dateStr = d.toISOString().split('T')[0];
+    const collections = 3200000 + (w % 3) * 200000;
+    const payroll = w % 2 === 0 ? 1800000 : 350000;
+    const ap = 950000 + (w % 4) * 80000;
+    const tax = w === 4 || w === 8 || w === 12 ? 650000 : 50000;
+    const capex = 250000;
+    const net = collections - (payroll + ap + tax + capex);
+    runningCash += net;
+    weeklyForecasts.push({
+      weekIndex: w,
+      weekStartingDate: dateStr,
+      projectedCustomerCollectionsUsd: collections,
+      projectedPayrollDisbursementsUsd: payroll,
+      projectedVendorApDisbursementsUsd: ap,
+      projectedTaxAndRegulatoryUsd: tax,
+      projectedCapExAndDebtServiceUsd: capex,
+      netWeeklyCashFlowUsd: net,
+      closingCashP10DownsideUsd: Math.round(runningCash * 0.94),
+      closingCashP50BaselineUsd: runningCash,
+      closingCashP90UpsideUsd: Math.round(runningCash * 1.05),
+      bufferDeficitFlag: false
+    });
+  }
+
+  const contracts = [
+    {
+      id: 'hdg-1',
+      contractReference: 'HEDGE-FWD-EUR-01',
+      counterpartyBankName: 'BNP Paribas SA',
+      currencyPair: 'EUR/USD',
+      instrumentType: 'fx_forward' as const,
+      notionalAmountForeign: 6000000,
+      notionalAmountUsd: 6510000,
+      strikeRate: 1.0850,
+      inceptionDate: '2026-10-01',
+      maturityDate: '2026-12-18',
+      markToMarketGainLossUsd: 45000,
+      dollarOffsetRatioPercent: 98.4,
+      accountingStatus: 'asc815_highly_effective' as const
+    },
+    {
+      id: 'hdg-2',
+      contractReference: 'HEDGE-FWD-GBP-01',
+      counterpartyBankName: 'Barclays Bank PLC',
+      currencyPair: 'GBP/USD',
+      instrumentType: 'fx_forward' as const,
+      notionalAmountForeign: 3300000,
+      notionalAmountUsd: 4197600,
+      strikeRate: 1.2720,
+      inceptionDate: '2026-10-01',
+      maturityDate: '2026-11-27',
+      markToMarketGainLossUsd: -12000,
+      dollarOffsetRatioPercent: 96.8,
+      accountingStatus: 'asc815_highly_effective' as const
+    },
+    {
+      id: 'hdg-3',
+      contractReference: 'HEDGE-COL-JPY-01',
+      counterpartyBankName: 'Sumitomo Mitsui Banking Corp',
+      currencyPair: 'USD/JPY',
+      instrumentType: 'fx_zero_cost_collar' as const,
+      notionalAmountForeign: 450000000,
+      notionalAmountUsd: 2916667,
+      strikeRate: 154.28,
+      collarCeilingRate: 157.00,
+      collarFloorRate: 150.50,
+      inceptionDate: '2026-10-01',
+      maturityDate: '2027-01-29',
+      markToMarketGainLossUsd: 18500,
+      dollarOffsetRatioPercent: 102.1,
+      accountingStatus: 'asc815_highly_effective' as const
+    },
+    {
+      id: 'hdg-4',
+      contractReference: 'HEDGE-CCS-EUR-01',
+      counterpartyBankName: 'JPMorgan Chase Bank, N.A.',
+      currencyPair: 'EUR/USD',
+      instrumentType: 'cross_currency_swap' as const,
+      notionalAmountForeign: 2100000,
+      notionalAmountUsd: 2291100,
+      strikeRate: 1.0910,
+      inceptionDate: '2026-10-01',
+      maturityDate: '2027-06-30',
+      markToMarketGainLossUsd: -9000,
+      dollarOffsetRatioPercent: 88.5,
+      accountingStatus: 'asc815_retrospective_pass' as const
+    }
+  ];
+
+  const exposures = [
+    {
+      id: 'exp-1',
+      currencyPair: 'EUR/USD',
+      exposureType: 'transactional' as const,
+      baseCurrency: 'USD',
+      targetCurrency: 'EUR',
+      grossExposureTargetCurrency: 7500000,
+      grossExposureUsd: 8137500,
+      hedgedNotionalUsd: 6510000,
+      netUnhedgedExposureUsd: 1627500,
+      hedgeRatioPercent: 80.0,
+      currentSpotRate: 1.0850,
+      stressShockMinus10PctUsd: -162750,
+      stressShockPlus10PctUsd: 162750
+    },
+    {
+      id: 'exp-2',
+      currencyPair: 'GBP/USD',
+      exposureType: 'transactional' as const,
+      baseCurrency: 'USD',
+      targetCurrency: 'GBP',
+      grossExposureTargetCurrency: 3800000,
+      grossExposureUsd: 4833600,
+      hedgedNotionalUsd: 4197600,
+      netUnhedgedExposureUsd: 636000,
+      hedgeRatioPercent: 86.8,
+      currentSpotRate: 1.2720,
+      stressShockMinus10PctUsd: -63600,
+      stressShockPlus10PctUsd: 63600
+    },
+    {
+      id: 'exp-3',
+      currencyPair: 'USD/JPY',
+      exposureType: 'transactional' as const,
+      baseCurrency: 'USD',
+      targetCurrency: 'JPY',
+      grossExposureTargetCurrency: 520000000,
+      grossExposureUsd: 3370058,
+      hedgedNotionalUsd: 2916667,
+      netUnhedgedExposureUsd: 453391,
+      hedgeRatioPercent: 86.5,
+      currentSpotRate: 154.30,
+      stressShockMinus10PctUsd: -45339,
+      stressShockPlus10PctUsd: 45339
+    },
+    {
+      id: 'exp-4',
+      currencyPair: 'EUR/USD',
+      exposureType: 'translational' as const,
+      baseCurrency: 'USD',
+      targetCurrency: 'EUR',
+      grossExposureTargetCurrency: 2400000,
+      grossExposureUsd: 2604000,
+      hedgedNotionalUsd: 2291100,
+      netUnhedgedExposureUsd: 312900,
+      hedgeRatioPercent: 88.0,
+      currentSpotRate: 1.0850,
+      stressShockMinus10PctUsd: -31290,
+      stressShockPlus10PctUsd: 31290
+    }
+  ];
+
+  const counterparties = [
+    {
+      id: 'bank-1',
+      bankName: 'JPMorgan Chase & Co.',
+      holdingGroup: 'JPMorgan Chase',
+      jurisdiction: 'United States',
+      spRating: 'AA_MINUS' as const,
+      moodysRating: 'AA' as const,
+      fitchRating: 'AA_MINUS' as const,
+      fiveYearCdsSpreadBps: 52,
+      impliedDefaultProbabilityPercent: 0.86,
+      baselLiquidityCoverageRatioPercent: 142,
+      baselNetStableFundingRatioPercent: 126,
+      tier1CommonEquityRatioPercent: 15.2,
+      totalDepositsHeldUsd: 14200000,
+      portfolioDepositorySharePercent: 29.3,
+      boardApprovedExposureLimitUsd: 15000000,
+      limitUtilizationPercent: 94.7,
+      uninsuredDepositsUsd: 13950000,
+      simulatedHaircutLossUsd: 0
+    },
+    {
+      id: 'bank-2',
+      bankName: 'BNP Paribas SA',
+      holdingGroup: 'BNP Paribas',
+      jurisdiction: 'France / European Union',
+      spRating: 'A_PLUS' as const,
+      moodysRating: 'AA_MINUS' as const,
+      fitchRating: 'A_PLUS' as const,
+      fiveYearCdsSpreadBps: 68,
+      impliedDefaultProbabilityPercent: 1.13,
+      baselLiquidityCoverageRatioPercent: 136,
+      baselNetStableFundingRatioPercent: 121,
+      tier1CommonEquityRatioPercent: 13.8,
+      totalDepositsHeldUsd: 9005500,
+      portfolioDepositorySharePercent: 18.6,
+      boardApprovedExposureLimitUsd: 12000000,
+      limitUtilizationPercent: 75.0,
+      uninsuredDepositsUsd: 8788500,
+      simulatedHaircutLossUsd: 0
+    },
+    {
+      id: 'bank-3',
+      bankName: 'Barclays PLC',
+      holdingGroup: 'Barclays',
+      jurisdiction: 'United Kingdom',
+      spRating: 'A' as const,
+      moodysRating: 'A_PLUS' as const,
+      fitchRating: 'A_PLUS' as const,
+      fiveYearCdsSpreadBps: 74,
+      impliedDefaultProbabilityPercent: 1.23,
+      baselLiquidityCoverageRatioPercent: 138,
+      baselNetStableFundingRatioPercent: 124,
+      tier1CommonEquityRatioPercent: 13.5,
+      totalDepositsHeldUsd: 3052800,
+      portfolioDepositorySharePercent: 6.3,
+      boardApprovedExposureLimitUsd: 8000000,
+      limitUtilizationPercent: 38.2,
+      uninsuredDepositsUsd: 2944800,
+      simulatedHaircutLossUsd: 0
+    },
+    {
+      id: 'bank-4',
+      bankName: 'Goldman Sachs Group, Inc.',
+      holdingGroup: 'Goldman Sachs',
+      jurisdiction: 'United States',
+      spRating: 'A_PLUS' as const,
+      moodysRating: 'A' as const,
+      fitchRating: 'A_PLUS' as const,
+      fiveYearCdsSpreadBps: 62,
+      impliedDefaultProbabilityPercent: 1.03,
+      baselLiquidityCoverageRatioPercent: 140,
+      baselNetStableFundingRatioPercent: 128,
+      tier1CommonEquityRatioPercent: 14.9,
+      totalDepositsHeldUsd: 1000000,
+      portfolioDepositorySharePercent: 2.1,
+      boardApprovedExposureLimitUsd: 10000000,
+      limitUtilizationPercent: 10.0,
+      uninsuredDepositsUsd: 750000,
+      simulatedHaircutLossUsd: 0
+    }
+  ];
+
+  const initialMemo: TreasuryBoardMemorandumDTO = {
+    id: 'memo-treasury-q1-2026',
+    memoReference: 'MEMO-TR-Q1-2026-2026-10-25',
+    fiscalQuarter: 'Q1-2026',
+    title: 'Q1-2026 Executive Treasury Committee & Board Financial Risk Review',
+    status: 'draft',
+    compositeTrlsScore: 89.4,
+    trlsBand: 'defensible_stability',
+    totalTreasuryAssetsUsd: 48500000,
+    netCashConversionCycleDays: 11,
+    fx1DayVaR95Usd: 124500,
+    counterpartySafetyIndex: 94.5,
+    generatedMarkdownContent: `# Executive Treasury Committee & Board Financial Risk Memorandum
+**Reference:** MEMO-TR-Q1-2026-2026-10-25
+**Target Body:** Board of Directors Audit & Finance Committee
+**Reporting Period:** Q1-2026
+**Entity Scope:** JobTrack Holdings Inc. & Global Operating Subsidiaries
+**Classification:** STRICTLY CONFIDENTIAL - TREASURY & MARKET RISK GOVERNANCE
+**Date Certified:** 2026-10-25
+
+---
+
+## 1. Executive Summary & Composite Treasury Risk Rating
+- **Composite Treasury Risk & Liquidity Score (TRLS):** **89.4 / 100**
+- **Sovereign Governance Classification:** **DEFENSIBLE STABILITY**
+- **Total Global Consolidated Liquidity:** **$48.50M USD**
+- **Consolidated Cash Conversion Cycle (CCC):** **11.0 Days**
+- **1-Day 95% Parametric Value at Risk (VaR-95):** **$124.5K USD**
+- **Weighted Counterparty Credit Quality:** **AA_MINUS**
+
+---
+
+## 2. Global Cash Concentration & Intercompany Sweeping Architecture (Pillar A)
+The enterprise executes automated daily cash pooling across all licensed banking partners:
+- **Zero Balance Accounts (ZBA):** 5 operating accounts swept to zero daily into regional treasury hubs.
+- **Physical Sweeping Volume:** $6.20M USD swept upstream in the last operating cycle.
+- **Multi-Currency Notional Pooling Arbitrage:** Virtual netting generated **$142.5K USD** in annualized net interest savings by eliminating cross-border conversion spread drag.
+- **OECD BEPS Transfer Pricing Compliance:** All intercompany advances maintain formal arm's-length credit spreads over SOFR and EURIBOR, with statutory bilateral withholding taxes documented and accrued.
+
+---
+
+## 3. 13-Week Cash Flow Forecasting & Working Capital Cycle Optimization (Pillar B)
+Working capital efficiency metrics demonstrate substantial progress toward committee directives:
+- **Current Working Capital Cycle:** DIO of 18.0 days + DSO of 38.0 days - DPO of 45.0 days = **11.0 Days** (Target: <= 15.0 Days).
+- **Working Capital Capital Release:** Achieving the committee target releases **$185.0K USD** in annual interest income.
+- **13-Week Forecast Accuracy:** Historical forecasting fidelity stands at **95.8%**.
+- **Consolidated Liquidity Runway:** Unencumbered reserves support **11.2 Months** of normalized operating expenses.
+- **Investment Ladder Allocation:** Surplus operational liquidity is allocated across overnight reserves (Tier 1), Treasury Bills (Tier 2: 4.85%), and prime Commercial Paper (Tier 3: 5.15%).
+
+---
+
+## 4. FX Risk Management, Value at Risk (VaR-95) & ASC 815 Hedge Accounting (Pillar C)
+The derivative hedging program mitigates currency volatility across operating cash flows:
+- **Net Cross-Currency Exposure:** $18.95M USD across EUR, GBP, JPY, and CAD.
+- **Hedge Program Coverage:** **84.0%** of net transaction exposure hedged through forward contracts and zero-cost collars.
+- **Value at Risk (VaR-95):** 1-Day 95% Parametric VaR is restricted to $124.5K USD, representing < 0.85% of treasury portfolio assets.
+- **Hedge Accounting Status:** All qualifying forward contracts satisfy ASC 815 / IFRS 9 retrospective dollar-offset testing (corridor 80.0% to 125.0%), preserving OCI cash flow hedge accounting.
+
+---
+
+## 5. Counterparty Credit Risk, Sovereign Exposure & Bail-In Haircut Stress (Pillar D)
+Depository counterparty risk is governed under conservative board mandates:
+- **Single Bank Concentration Ceiling:** Maximum depository concentration stands at **29.3%**, with syndication scheduled to align to 20.0%.
+- **Regulatory Surveillance:** All depository partners exceed Basel III requirements with average LCR of 139% and NSFR of 124%.
+- **Bail-In Haircut Stress Simulation:** Under a simulated 30.0% bail-in haircut scenario applied to uninsured deposits during a hypothetical bank resolution, the enterprise retains adequate operational runway.
+
+---
+
+## 6. Executive Governance & Tripartite Sign-off Verification (Pillar E)
+This document has been reviewed and certified by the designated tripartite executive sign-off authority.
+
+\`\`\`
+[ ] Corporate Treasurer: Operational Liquidity & Reconciliations
+[ ] Chief Financial Officer: Balance Sheet Solvency & Working Capital
+[ ] Board Audit & Finance Chair: Fiduciary Risk Policy Compliance
+\`\`\`
+`,
+    createdAt: '2026-10-25T08:00:00.000Z',
+    updatedAt: '2026-10-25T08:00:00.000Z',
+    signoffs: []
+  };
+
+  return {
+    studioId: 'studio-jobtrack-treasury-01',
+    enterpriseName: 'JobTrack Global Enterprise Holdings',
+    lastUpdated: '2026-10-26T00:00:00.000Z',
+    compositeTrlsScore: 89.4,
+    trlsBand: 'defensible_stability',
+    cashConcentration: {
+      totalGlobalLiquidityUsd: 48500000,
+      pooledNetBalanceUsd: 32000000,
+      physicalSweptTodayUsd: 6200000,
+      annualizedPoolingYieldArbitrageUsd: 142500,
+      activeZbaCount: 5,
+      activeNotionalPoolCount: 1,
+      accounts,
+      entities
+    },
+    cashForecast: {
+      forecastWeeksCount: 13,
+      forecastAccuracyScorePercent: 95.8,
+      minimumProjectedRunwayMonths: 11.2,
+      minimumOperationalBufferUsd: 8500000,
+      precautionaryReserveUsd: 12000000,
+      totalExcessDeployableLiquidityUsd: 28000000,
+      workingCapitalCycle: {
+        daysSalesOutstanding: 38,
+        daysInventoryOutstanding: 18,
+        daysPayableOutstanding: 45,
+        netCashConversionCycleDays: 11,
+        targetCashConversionCycleDays: 15,
+        capitalTiedUpInWorkingCapitalUsd: 4200000,
+        potentialInterestReleaseUsd: 185000
+      },
+      weeklyForecasts
+    },
+    fxHedging: {
+      totalNetExposureUsd: 18945158,
+      totalHedgedNotionalUsd: 15915367,
+      weightedHedgeRatioPercent: 84.0,
+      portfolio1DayVaR95Usd: 124500,
+      portfolio10DayVaR99Usd: 550000,
+      unrealizedMtmGainLossUsd: 42500,
+      exposures,
+      contracts
+    },
+    counterpartyRisk: {
+      weightedAverageRating: 'AA_MINUS',
+      totalUninsuredDepositsUsd: 26433300,
+      maxSingleBankExposurePercent: 29.3,
+      limitBreachCount: 0,
+      counterparties
+    },
+    latestBoardMemo: initialMemo
+  };
+}
+
+function loadDemoCorporateTreasuryOverview(): CorporateTreasuryOverviewDTO {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_TREASURY_STORAGE_KEY) : null;
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch {
+  }
+  const initial = createDefaultCorporateTreasuryOverview();
+  saveDemoCorporateTreasuryOverview(initial);
+  return initial;
+}
+
+function saveDemoCorporateTreasuryOverview(ov: CorporateTreasuryOverviewDTO): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(DEMO_TREASURY_STORAGE_KEY, JSON.stringify(ov));
+    }
+  } catch {
+  }
+}
+
+function executeCashSweepDemo(_req: ExecuteCashSweepRequestDTO): CashSweepExecutionResultDTO {
+  const ov = loadDemoCorporateTreasuryOverview();
+  ov.cashConcentration.physicalSweptTodayUsd = 6200000;
+  ov.lastUpdated = new Date().toISOString();
+  saveDemoCorporateTreasuryOverview(ov);
+
+  const loanAccrual = calculateIntercompanyLoanInterest(6200000, 5.25, 1, 0.0);
+  const arbitrage = calculateNotionalPoolArbitrage(28000000, 6000000, 3.5, 7.0, 4.6);
+
+  return {
+    sweptAccountsCount: ov.cashConcentration.activeZbaCount,
+    totalAmountSweptUsd: 6200000,
+    annualizedArbitrageUsd: arbitrage.annualizedArbitrageUsd,
+    intercompanyLoanInterestAccruedUsd: loanAccrual.grossInterestUsd,
+    executedAt: new Date().toISOString(),
+    summary: 'Automated physical cash concentration completed across all designated ZBA accounts.'
+  };
+}
+
+function executeWorkingCapitalSimulationDemo(req: WorkingCapitalSimulationRequestDTO): WorkingCapitalSimulationResultDTO {
+  const ov = loadDemoCorporateTreasuryOverview();
+  const dio = req.adjustedDio ?? 18;
+  const previous = calculateCashConversionCycle(18, 38, 45);
+  const revised = calculateCashConversionCycle(dio, req.adjustedDso, req.adjustedDpo);
+  const improvementDays = previous.netCcc - revised.netCcc;
+  const dailyOpCost = 280000;
+  const freedCapital = Math.max(0, Math.round(improvementDays * dailyOpCost));
+  const annualInterestSaved = Math.round(freedCapital * 0.051);
+  const revisedRunway = Math.round((11.2 + (freedCapital / 4200000)) * 10) / 10;
+
+  ov.cashForecast.workingCapitalCycle.daysSalesOutstanding = req.adjustedDso;
+  ov.cashForecast.workingCapitalCycle.daysPayableOutstanding = req.adjustedDpo;
+  ov.cashForecast.workingCapitalCycle.netCashConversionCycleDays = revised.netCcc;
+  ov.cashForecast.minimumProjectedRunwayMonths = revisedRunway;
+  ov.lastUpdated = new Date().toISOString();
+  saveDemoCorporateTreasuryOverview(ov);
+
+  return {
+    previousCccDays: previous.netCcc,
+    revisedCccDays: revised.netCcc,
+    daysImprovement: Math.round(improvementDays * 10) / 10,
+    freedWorkingCapitalUsd: freedCapital,
+    annualInterestSavedUsd: annualInterestSaved,
+    status: revised.status,
+    runwayMonths: revisedRunway
+  };
+}
+
+function executeFxSensitivitySimulationDemo(req: FxSensitivitySimulationRequestDTO): FxSensitivitySimulationResultDTO {
+  const grossNotional = 8137500;
+  const coverage = req.hedgingCoverageAdjustmentPercent / 100;
+  const hedgedNotional = grossNotional * coverage;
+  const netUnhedged = grossNotional - hedgedNotional;
+  const shockDecimal = req.shockPercentage / 100;
+
+  const unhedgedImpact = Math.round(grossNotional * shockDecimal);
+  const hedgedImpact = Math.round(netUnhedged * shockDecimal);
+  const varianceReduction = Math.round(Math.abs(unhedgedImpact) - Math.abs(hedgedImpact));
+
+  const varCalc = calculateParametricFxVaR95(netUnhedged, 0.0082, req.holdingPeriodDays);
+  const historicalVaR = Math.round(varCalc.var1Day95Usd * 1.08);
+  const effectiveness = calculateHedgeEffectivenessRatio(Math.abs(unhedgedImpact - hedgedImpact), Math.abs(unhedgedImpact));
+
+  return {
+    currencyPair: req.currencyPair,
+    shockPercentage: req.shockPercentage,
+    unhedgedPnlImpactUsd: unhedgedImpact,
+    hedgedPnlImpactUsd: hedgedImpact,
+    netVarianceReductionUsd: varianceReduction,
+    parametricVaRUsd: varCalc.var1Day95Usd,
+    historicalVaRUsd: historicalVaR,
+    asc815CompliancePreserved: effectiveness.isAsc815Compliant,
+    projectedDollarOffsetRatio: effectiveness.dollarOffsetRatioPercent
+  };
+}
+
+function executeBailInStressTestDemo(req: BailInStressTestRequestDTO): BailInStressTestResultDTO {
+  const ov = loadDemoCorporateTreasuryOverview();
+  const bank = ov.counterpartyRisk.counterparties.find(c => c.id === req.stressedBankId) || ov.counterpartyRisk.counterparties[0];
+  const result = simulateBankBailInHaircut(bank, req.haircutLossPercentage);
+
+  bank.simulatedHaircutLossUsd = result.projectedHaircutLossUsd;
+  ov.lastUpdated = new Date().toISOString();
+  saveDemoCorporateTreasuryOverview(ov);
+
+  return result;
+}
+
+function executeGenerateTreasuryBoardMemoDemo(req: GenerateTreasuryBoardMemoRequestDTO): TreasuryBoardMemorandumDTO {
+  const ov = loadDemoCorporateTreasuryOverview();
+  const md = generateTreasuryBoardMemorandumMarkdown(ov, req);
+  const memo: TreasuryBoardMemorandumDTO = {
+    id: `memo-${Date.now()}`,
+    memoReference: `MEMO-TR-${req.fiscalQuarter}-${new Date().toISOString().split('T')[0]}`,
+    fiscalQuarter: req.fiscalQuarter,
+    title: req.title,
+    status: 'draft',
+    compositeTrlsScore: ov.compositeTrlsScore,
+    trlsBand: ov.trlsBand,
+    totalTreasuryAssetsUsd: ov.cashConcentration.totalGlobalLiquidityUsd,
+    netCashConversionCycleDays: ov.cashForecast.workingCapitalCycle.netCashConversionCycleDays,
+    fx1DayVaR95Usd: ov.fxHedging.portfolio1DayVaR95Usd,
+    counterpartySafetyIndex: 94.5,
+    generatedMarkdownContent: md,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    signoffs: []
+  };
+
+  ov.latestBoardMemo = memo;
+  ov.lastUpdated = new Date().toISOString();
+  saveDemoCorporateTreasuryOverview(ov);
+  return memo;
+}
+
+function executeSignoffTreasuryBoardMemoDemo(memoId: string, req: SignoffTreasuryBoardMemoRequestDTO): TreasuryBoardMemorandumDTO {
+  const ov = loadDemoCorporateTreasuryOverview();
+  const memo = ov.latestBoardMemo && ov.latestBoardMemo.id === memoId
+    ? ov.latestBoardMemo
+    : (ov.latestBoardMemo || createDefaultCorporateTreasuryOverview().latestBoardMemo!);
+
+  const existingSignoffs = memo.signoffs || [];
+  const newSignoff = {
+    role: req.role,
+    signedBy: req.signerName,
+    signedAt: new Date().toISOString(),
+    signatureToken: `SIG-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+    commentsSummary: req.comments
+  };
+
+  memo.signoffs = [...existingSignoffs.filter(s => s.role !== req.role), newSignoff];
+  if (req.role === 'corporate_treasurer') {
+    memo.status = 'treasurer_certified';
+  } else if (req.role === 'chief_financial_officer') {
+    memo.status = 'cfo_approved';
+  } else if (req.role === 'board_audit_finance_chair') {
+    memo.status = 'board_ratified';
+  }
+  memo.updatedAt = new Date().toISOString();
+
+  ov.latestBoardMemo = memo;
+  ov.lastUpdated = new Date().toISOString();
+  saveDemoCorporateTreasuryOverview(ov);
+  return memo;
+}
+
+export const corporateTreasuryNexusRepository = {
+  async getOverview(): Promise<CorporateTreasuryOverviewDTO> {
+    if (demoMode) {
+      return loadDemoCorporateTreasuryOverview();
+    }
+    try {
+      return await request<CorporateTreasuryOverviewDTO>('/corporate-treasury-nexus/overview');
+    } catch {
+      return loadDemoCorporateTreasuryOverview();
+    }
+  },
+
+  async executeCashSweep(input: ExecuteCashSweepRequestDTO = {}): Promise<CashSweepExecutionResultDTO> {
+    if (demoMode) {
+      return executeCashSweepDemo(input);
+    }
+    try {
+      return await request<CashSweepExecutionResultDTO>('/corporate-treasury-nexus/sweeps/execute', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeCashSweepDemo(input);
+    }
+  },
+
+  async simulateWorkingCapital(input: WorkingCapitalSimulationRequestDTO): Promise<WorkingCapitalSimulationResultDTO> {
+    if (demoMode) {
+      return executeWorkingCapitalSimulationDemo(input);
+    }
+    try {
+      return await request<WorkingCapitalSimulationResultDTO>('/corporate-treasury-nexus/forecast/simulate-ccc', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeWorkingCapitalSimulationDemo(input);
+    }
+  },
+
+  async simulateFxSensitivity(input: FxSensitivitySimulationRequestDTO): Promise<FxSensitivitySimulationResultDTO> {
+    if (demoMode) {
+      return executeFxSensitivitySimulationDemo(input);
+    }
+    try {
+      return await request<FxSensitivitySimulationResultDTO>('/corporate-treasury-nexus/fx/simulate-var', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeFxSensitivitySimulationDemo(input);
+    }
+  },
+
+  async simulateBailInStress(input: BailInStressTestRequestDTO): Promise<BailInStressTestResultDTO> {
+    if (demoMode) {
+      return executeBailInStressTestDemo(input);
+    }
+    try {
+      return await request<BailInStressTestResultDTO>('/corporate-treasury-nexus/counterparty/simulate-bailin', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeBailInStressTestDemo(input);
+    }
+  },
+
+  async generateBoardMemo(input: GenerateTreasuryBoardMemoRequestDTO): Promise<TreasuryBoardMemorandumDTO> {
+    if (demoMode) {
+      return executeGenerateTreasuryBoardMemoDemo(input);
+    }
+    try {
+      return await request<TreasuryBoardMemorandumDTO>('/corporate-treasury-nexus/board-memos/generate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeGenerateTreasuryBoardMemoDemo(input);
+    }
+  },
+
+  async signoffBoardMemo(memoId: string, input: SignoffTreasuryBoardMemoRequestDTO): Promise<TreasuryBoardMemorandumDTO> {
+    if (demoMode) {
+      return executeSignoffTreasuryBoardMemoDemo(memoId, input);
+    }
+    try {
+      return await request<TreasuryBoardMemorandumDTO>(`/corporate-treasury-nexus/board-memos/${encodeURIComponent(memoId)}/signoff`, {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeSignoffTreasuryBoardMemoDemo(memoId, input);
+    }
+  }
+};
+
 
 
 

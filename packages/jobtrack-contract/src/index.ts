@@ -48,3 +48,4 @@ export * from './cyber-risk-governance-studio.ts';
 export * from './esg-sustainability-studio.ts';
 export * from './supply-chain-resilience-studio.ts';
 export * from './workforce-total-rewards-studio.ts';
+export * from './corporate-treasury-nexus.ts';
