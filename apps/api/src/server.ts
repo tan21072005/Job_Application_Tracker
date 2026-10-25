@@ -109,13 +109,20 @@ import { SuccessionPipelineStudioService } from './services/succession-pipeline-
 import { CyberRiskGovernanceStudioService } from './services/cyber-risk-governance-studio-service.ts';
 import { EsgSustainabilityStudioService } from './services/esg-sustainability-studio-service.ts';
 import { SupplyChainResilienceStudioService } from './services/supply-chain-resilience-studio-service.ts';
+import { WorkforceTotalRewardsStudioService } from './services/workforce-total-rewards-studio-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
   validateHubComparisonInput,
   validateSupplyChainBoardMemoGenerateInput,
   validateSupplyChainSignoffInput,
-  type BoardSignoffRole
+  type BoardSignoffRole,
+  validateSalaryBandGradeInput,
+  validateRelativeTsrSimulationInput,
+  validateSection83bArbitrageInput,
+  validateGenerateCdaBoardMemoInput,
+  validateSignoffCdaBoardMemoInput,
+  type TotalRewardsBoardSignoffRole
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -253,6 +260,7 @@ export const successionPipelineStudioService = new SuccessionPipelineStudioServi
 export const cyberRiskGovernanceStudioService = new CyberRiskGovernanceStudioService(pool);
 export const esgSustainabilityStudioService = new EsgSustainabilityStudioService(pool);
 export const supplyChainResilienceStudioService = new SupplyChainResilienceStudioService(pool);
+export const workforceTotalRewardsStudioService = new WorkforceTotalRewardsStudioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -4499,6 +4507,76 @@ app.post(['/api/supply-chain-resilience-studio/board-memos/:id/approve', '/api/s
       return res.status(400).json({ code: 'validation_error', errors: val.errors });
     }
     const updated = await supplyChainResilienceStudioService.signOffBoardMemorandum(userId, req.params.id, req.body.role as BoardSignoffRole, req.body.signoffNotes);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'memo_not_found', error: 'Board memorandum not found' });
+    }
+    res.status(400).json({ code: 'sign_off_failed', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/workforce-total-rewards-studio/overview', '/api/total-rewards-studio/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await workforceTotalRewardsStudioService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/workforce-total-rewards-studio/lti/simulate-tsr', '/api/total-rewards-studio/lti/simulate-tsr'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateRelativeTsrSimulationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const result = await workforceTotalRewardsStudioService.simulateRelativeTsr(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ code: 'simulation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/workforce-total-rewards-studio/tax/optimize', '/api/total-rewards-studio/tax/optimize'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateSection83bArbitrageInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const result = await workforceTotalRewardsStudioService.optimizeEquityTax(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ code: 'tax_optimization_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/workforce-total-rewards-studio/board-memos', '/api/total-rewards-studio/board-memos'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateGenerateCdaBoardMemoInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const memo = await workforceTotalRewardsStudioService.generateBoardMemo(userId, req.body);
+    res.status(201).json(memo);
+  } catch (err) {
+    res.status(400).json({ code: 'memo_generation_failed', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/workforce-total-rewards-studio/board-memos/:id/signoff', '/api/total-rewards-studio/board-memos/:id/signoff'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateSignoffCdaBoardMemoInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_error', errors: val.errors });
+    }
+    const memoId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updated = await workforceTotalRewardsStudioService.signoffBoardMemo(userId, memoId, req.body);
     res.json(updated);
   } catch (err) {
     if ((err as Error).message.includes('not found')) {

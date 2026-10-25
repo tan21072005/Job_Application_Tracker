@@ -374,7 +374,36 @@ import {
   type GenerateSupplyChainBoardMemoRequestDTO,
   type BoardSignoffRole,
   calculateSafetyStock,
-  generateExecutiveSupplyChainMemorandum
+  generateExecutiveSupplyChainMemorandum,
+  type TotalRewardsStudioOverviewDTO,
+  type SalaryBandGradeDTO,
+  type EmployeeCompensationProfileDTO,
+  type JobArchitectureSummaryDTO,
+  type ExecutiveLtiGrantDTO,
+  type RelativeTsrSimulationRequestDTO,
+  type RelativeTsrSimulationResultDTO,
+  type EquityDilutionBurnOverviewDTO,
+  type Section83bArbitrageRequestDTO,
+  type Section83bArbitrageResultDTO,
+  type CrossBorderEquityTaxProfileDTO,
+  type EquityTaxOverviewDTO,
+  type PayEquityCohortRegressionDTO,
+  type StatutoryComplianceAuditStatusDTO,
+  type PayEquityAuditOverviewDTO,
+  type TotalRewardsAlignmentBreakdownDTO,
+  type SayOnPayRiskAssessmentDTO,
+  type TotalRewardsBoardMemorandumDTO,
+  type GenerateCdaBoardMemoRequestDTO,
+  type SignoffCdaBoardMemoRequestDTO,
+  type TotalRewardsBoardSignoffRole,
+  calculateCompaRatio,
+  calculateRangePenetration,
+  evaluateSalaryCircleStatus,
+  simulateRelativeTsrMonteCarlo,
+  calculateSection83bTaxArbitrage,
+  calculateTotalRewardsAlignmentIndex,
+  assessSayOnPayShareholderRisk,
+  generateSecItem402CdaMemorandum
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -16674,6 +16703,535 @@ export const supplyChainResilienceStudioRepository = {
     }
   }
 };
+
+const DEMO_TOTAL_REWARDS_STORAGE_KEY = 'jobtrack_demo_workforce_total_rewards_v1';
+
+function createDefaultTotalRewardsOverview(): TotalRewardsStudioOverviewDTO {
+  const salaryBands: SalaryBandGradeDTO[] = [
+    {
+      id: 'band-ic4',
+      levelCode: 'IC4',
+      levelTrack: 'individual_contributor',
+      jobTitle: 'Senior Software Engineer',
+      jobFamily: 'engineering',
+      compensationZone: 'zone_tier_1_bay_area_ny',
+      currency: 'USD',
+      baseSalaryMin: 155000,
+      baseSalaryMid: 185000,
+      baseSalaryMax: 215000,
+      rangeSpreadPercent: 38.7,
+      geoDifferentialFactor: 1.0,
+      purchasingPowerParityIndex: 1.0,
+      targetIncentiveBonusPercent: 15.0,
+      equityTargetUsd: 65000,
+      headcountCount: 310,
+      redCircleCount: 4,
+      greenCircleCount: 5,
+      averageCompaRatio: 99.2
+    },
+    {
+      id: 'band-ic5',
+      levelCode: 'IC5',
+      levelTrack: 'individual_contributor',
+      jobTitle: 'Staff Software Engineer / Tech Lead',
+      jobFamily: 'engineering',
+      compensationZone: 'zone_tier_1_bay_area_ny',
+      currency: 'USD',
+      baseSalaryMin: 195000,
+      baseSalaryMid: 235000,
+      baseSalaryMax: 275000,
+      rangeSpreadPercent: 41.0,
+      geoDifferentialFactor: 1.0,
+      purchasingPowerParityIndex: 1.0,
+      targetIncentiveBonusPercent: 20.0,
+      equityTargetUsd: 120000,
+      headcountCount: 145,
+      redCircleCount: 2,
+      greenCircleCount: 3,
+      averageCompaRatio: 98.8
+    },
+    {
+      id: 'band-m3',
+      levelCode: 'M3',
+      levelTrack: 'management',
+      jobTitle: 'Engineering Manager',
+      jobFamily: 'engineering',
+      compensationZone: 'zone_tier_2_seattle_austin_london',
+      currency: 'USD',
+      baseSalaryMin: 180000,
+      baseSalaryMid: 215000,
+      baseSalaryMax: 250000,
+      rangeSpreadPercent: 38.9,
+      geoDifferentialFactor: 0.90,
+      purchasingPowerParityIndex: 0.92,
+      targetIncentiveBonusPercent: 25.0,
+      equityTargetUsd: 95000,
+      headcountCount: 48,
+      redCircleCount: 1,
+      greenCircleCount: 2,
+      averageCompaRatio: 100.5
+    },
+    {
+      id: 'band-ic6',
+      levelCode: 'IC6',
+      levelTrack: 'individual_contributor',
+      jobTitle: 'Principal Software Architect',
+      jobFamily: 'engineering',
+      compensationZone: 'zone_tier_1_bay_area_ny',
+      currency: 'USD',
+      baseSalaryMin: 240000,
+      baseSalaryMid: 290000,
+      baseSalaryMax: 340000,
+      rangeSpreadPercent: 41.7,
+      geoDifferentialFactor: 1.0,
+      purchasingPowerParityIndex: 1.0,
+      targetIncentiveBonusPercent: 25.0,
+      equityTargetUsd: 210000,
+      headcountCount: 32,
+      redCircleCount: 1,
+      greenCircleCount: 1,
+      averageCompaRatio: 97.4
+    }
+  ];
+
+  const sampleProfiles: EmployeeCompensationProfileDTO[] = [
+    {
+      id: 'emp-001',
+      employeeNumber: 'E-10492',
+      fullName: 'Alexander Wright',
+      email: 'alexander.wright@jobtrack.enterprise',
+      jobTitle: 'Senior Software Engineer',
+      jobFamily: 'engineering',
+      levelCode: 'IC4',
+      compensationZone: 'zone_tier_1_bay_area_ny',
+      country: 'United States',
+      currency: 'USD',
+      currentBaseSalary: 182000,
+      salaryBandMidpoint: 185000,
+      compaRatioPercent: calculateCompaRatio(182000, 185000),
+      rangePenetrationPercent: calculateRangePenetration(182000, 155000, 215000),
+      salaryCircleStatus: evaluateSalaryCircleStatus(182000, 155000, 215000),
+      gender: 'male',
+      ethnicity: 'Caucasian',
+      tenureYears: 3.5,
+      performanceRating: 4.2,
+      lastMeritIncreasePercent: 4.5
+    },
+    {
+      id: 'emp-002',
+      employeeNumber: 'E-10884',
+      fullName: 'Maya Lin',
+      email: 'maya.lin@jobtrack.enterprise',
+      jobTitle: 'Staff Software Engineer / Tech Lead',
+      jobFamily: 'engineering',
+      levelCode: 'IC5',
+      compensationZone: 'zone_tier_1_bay_area_ny',
+      country: 'United States',
+      currency: 'USD',
+      currentBaseSalary: 232000,
+      salaryBandMidpoint: 235000,
+      compaRatioPercent: calculateCompaRatio(232000, 235000),
+      rangePenetrationPercent: calculateRangePenetration(232000, 195000, 275000),
+      salaryCircleStatus: evaluateSalaryCircleStatus(232000, 195000, 275000),
+      gender: 'female',
+      ethnicity: 'Asian',
+      tenureYears: 4.8,
+      performanceRating: 4.7,
+      lastMeritIncreasePercent: 5.0
+    }
+  ];
+
+  const executiveGrants: ExecutiveLtiGrantDTO[] = [
+    {
+      id: 'grant-01',
+      executiveName: 'Eleanor Vance',
+      executiveTitle: 'Chief Executive Officer',
+      grantDate: '2026-01-15',
+      performancePeriodYears: 3,
+      equityVehicle: 'performance_share_units',
+      vestingSchedule: 'three_year_annual_cliff_psu',
+      targetUnitsGranted: 250000,
+      grantPriceUsd: 18.50,
+      targetGrantValueUsd: 4625000,
+      peerBenchmarkIndex: 'sp500_information_technology',
+      thresholdPayoutPercent: 50.0,
+      targetPayoutPercent: 100.0,
+      maximumPayoutPercent: 200.0,
+      negativeTsrCapEnforced: true,
+      dilutionOverhangContributionPercent: 0.25,
+      projectedVestingDate: '2029-01-15'
+    },
+    {
+      id: 'grant-02',
+      executiveName: 'Marcus Sterling',
+      executiveTitle: 'Chief Technology Officer',
+      grantDate: '2026-01-15',
+      performancePeriodYears: 3,
+      equityVehicle: 'performance_share_units',
+      vestingSchedule: 'three_year_annual_cliff_psu',
+      targetUnitsGranted: 140000,
+      grantPriceUsd: 18.50,
+      targetGrantValueUsd: 2590000,
+      peerBenchmarkIndex: 'sp500_information_technology',
+      thresholdPayoutPercent: 50.0,
+      targetPayoutPercent: 100.0,
+      maximumPayoutPercent: 200.0,
+      negativeTsrCapEnforced: true,
+      dilutionOverhangContributionPercent: 0.14,
+      projectedVestingDate: '2029-01-15'
+    }
+  ];
+
+  const taxProfiles: CrossBorderEquityTaxProfileDTO[] = [
+    {
+      id: 'tax-01',
+      executiveId: 'exec-01',
+      executiveName: 'Eleanor Vance',
+      citizenshipCountry: 'United States',
+      residentCountry: 'United States',
+      grantType: 'performance_share_units',
+      grantDate: '2024-01-15',
+      vestingDate: '2027-01-15',
+      totalVestingWorkdays: 1000,
+      fairMarketValueAtVestingUsd: 28.50,
+      exerciseSpreadUsd: 10.00,
+      irsSection83bStatus: 'filed_timely_acknowledged',
+      irsSection83bFilingDeadlineDate: '2024-02-14',
+      isoAlternativeMinimumTaxPreferenceUsd: 0.0,
+      estimatedIsoAmtLiabilityUsd: 0.0,
+      totalWithholdingTaxUsd: 185000.00,
+      jurisdictionAllocations: [
+        {
+          jurisdictionCode: 'US-CA',
+          jurisdictionName: 'California, US',
+          workdaysInJurisdiction: 700,
+          allocationPercent: 70.0,
+          localMarginalWithholdingRatePercent: 49.3,
+          allocatedTaxableGainUsd: 1400000,
+          estimatedWithholdingTaxUsd: 690200
+        },
+        {
+          jurisdictionCode: 'UK',
+          jurisdictionName: 'United Kingdom',
+          workdaysInJurisdiction: 300,
+          allocationPercent: 30.0,
+          localMarginalWithholdingRatePercent: 45.0,
+          allocatedTaxableGainUsd: 600000,
+          estimatedWithholdingTaxUsd: 270000
+        }
+      ]
+    }
+  ];
+
+  const cohortRegressions: PayEquityCohortRegressionDTO[] = [
+    {
+      jobFamily: 'engineering',
+      cohortHeadcount: 580,
+      unadjustedGenderPayGapPercent: -6.2,
+      adjustedGenderPayGapPercent: -1.2,
+      rSquaredModelFit: 0.88,
+      tStatistic: 1.42,
+      pValueStatisticalSignificance: 0.16,
+      isStatisticallySignificant: false,
+      controllingCovariates: ['tenure_years', 'job_level_rank', 'performance_rating', 'location_tier_factor'],
+      recommendedRemediationBudgetUsd: 185000,
+      affectedEmployeesCount: 14
+    },
+    {
+      jobFamily: 'product_design',
+      cohortHeadcount: 210,
+      unadjustedGenderPayGapPercent: -4.8,
+      adjustedGenderPayGapPercent: -0.9,
+      rSquaredModelFit: 0.85,
+      tStatistic: 1.10,
+      pValueStatisticalSignificance: 0.27,
+      isStatisticallySignificant: false,
+      controllingCovariates: ['tenure_years', 'job_level_rank', 'performance_rating', 'location_tier_factor'],
+      recommendedRemediationBudgetUsd: 65000,
+      affectedEmployeesCount: 6
+    }
+  ];
+
+  const statutoryAudits: StatutoryComplianceAuditStatusDTO[] = [
+    {
+      framework: 'eu_pay_transparency_directive',
+      jurisdictionRegion: 'European Union (All EU Member Entities)',
+      mandatoryReportingDeadline: '2026-06-07',
+      statutoryThresholdPayGapPercent: 5.0,
+      measuredEntityPayGapPercent: 1.2,
+      complianceVerdict: 'fully_compliant',
+      penaltyExposureRiskUsd: 0,
+      remediationActionPlanRequired: false
+    },
+    {
+      framework: 'california_sb_1162',
+      jurisdictionRegion: 'California, US',
+      mandatoryReportingDeadline: '2026-05-13',
+      statutoryThresholdPayGapPercent: 0.0,
+      measuredEntityPayGapPercent: 1.1,
+      complianceVerdict: 'fully_compliant',
+      penaltyExposureRiskUsd: 0,
+      remediationActionPlanRequired: false
+    }
+  ];
+
+  const initialMemo: TotalRewardsBoardMemorandumDTO = {
+    id: 'memo-init-2026',
+    fiscalYear: 'FY2026',
+    title: 'Executive Total Rewards Alignment & SEC CD&A Briefing',
+    status: 'draft',
+    compositeTrai: 89.5,
+    ratingBand: 'defensible_compliant',
+    sayOnPayProjectedApprovalPercent: 94.2,
+    totalExecutiveLtiPoolBudgetUsd: 12500000.00,
+    totalRemediationBudgetUsd: 420000.00,
+    executiveSummaryMarkdown: '# BOARD COMPENSATION COMMITTEE GOVERNANCE MEMORANDUM & SEC ITEM 402 CD&A\n**Document Control:** Confidential - Board of Directors Executive Compensation Session\n**Fiscal Period:** FY2026\n**Total Rewards Alignment Index (TRAI):** 89.5 / 100 (DEFENSIBLE COMPLIANT)\n**Say-on-Pay Projected Approval Rate:** 94.2%',
+    basePayArchitectureSection: 'Base Pay Grade IC1-IC8/M1-M6 architecture overview',
+    executiveLtiPsuSection: 'Stochastic rTSR PSU grant simulation overview',
+    equityTax409aSection: 'Section 409A and 83(b) tax optimization review',
+    payEquityComplianceSection: 'Pay equity and EU Pay Transparency compliance audit',
+    cdaBoardDisclosuresSection: 'Board SEC Item 402 compensation disclosures',
+    createdAt: '2026-10-25T08:00:00.000Z',
+    updatedAt: '2026-10-25T08:00:00.000Z'
+  };
+
+  const alignmentBreakdown: TotalRewardsAlignmentBreakdownDTO = calculateTotalRewardsAlignmentIndex({
+    basePayRangeDisciplineScore: 90,
+    payForPerformanceSensitivityScore: 88,
+    equityDilutionBurnHealthScore: 91,
+    payEquityStatutoryComplianceScore: 92,
+    taxOptimizationGovernanceScore: 87
+  });
+
+  const sayOnPayAssessment: SayOnPayRiskAssessmentDTO = assessSayOnPayShareholderRisk({
+    ceoToMedianWorkerRatio: 176,
+    threeYearGrossBurnRatePercent: 1.85,
+    dilutionOverhangPercent: 9.8,
+    controlledGenderGapPercent: -1.1,
+    payVsTsrAlignmentScore: 88
+  });
+
+  return {
+    compositeTrai: 89.5,
+    ratingBand: 'defensible_compliant',
+    sayOnPayProjectedApprovalPercent: 94.2,
+    totalHeadcount: 1450,
+    totalAnnualPayrollUsd: 198500000.00,
+    redCircleEmployeeCount: 14,
+    greenCircleEmployeeCount: 22,
+    currentDilutionOverhangPercent: 9.8,
+    annualGrossBurnRatePercent: 1.85,
+    overallEnterpriseControlledGenderGapPercent: -1.1,
+    totalRemediationBudgetRequiredUsd: 420000.00,
+    irc409aFmvPerShareUsd: 18.50,
+    active83bTimelyFilingsCount: 38,
+    ceoToMedianWorkerPayRatio: 176,
+    alignmentBreakdown,
+    sayOnPayAssessment,
+    jobArchitectureSummary: {
+      totalHeadcount: 1450,
+      totalAnnualPayrollUsd: 198500000.00,
+      globalAverageCompaRatio: 98.4,
+      redCircleEmployeeCount: 14,
+      greenCircleEmployeeCount: 22,
+      totalSalaryBandsConfigured: salaryBands.length,
+      averageRangeSpreadPercent: 40.1,
+      salaryBands,
+      sampleProfiles
+    },
+    equityDilutionOverview: {
+      totalCommonSharesOutstanding: 100000000,
+      totalUnvestedRestrictedShares: 4500000,
+      totalOptionsOutstandingExercisable: 2300000,
+      availableSharePoolRemaining: 3000000,
+      currentDilutionOverhangPercent: 9.8,
+      maxApprovedOverhangLimitPercent: 12.0,
+      annualGrossBurnRatePercent: 1.85,
+      annualNetBurnRatePercent: 1.55,
+      threeYearAverageGrossBurnRatePercent: 1.9,
+      burnRateComplianceStatus: 'compliant_defensible',
+      executiveGrants
+    },
+    taxOverview: {
+      currentIrc409aFmvPerShareUsd: 18.50,
+      last409aValuationDate: '2026-03-31',
+      daysUntil409aExpiry: 156,
+      active83bFilingsCount: 38,
+      pending83bDeadlineFilingsCount: 4,
+      missed83bDeadlineCount: 0,
+      totalIsoAmtPreferenceTrackedUsd: 1250000,
+      crossBorderMobileEmployeesTracked: 18,
+      taxProfiles
+    },
+    payEquityOverview: {
+      overallEnterpriseUnadjustedGenderGapPercent: -5.8,
+      overallEnterpriseControlledGenderGapPercent: -1.1,
+      overallEnterpriseControlledEthnicityGapPercent: -0.7,
+      totalRemediationBudgetRequiredUsd: 420000.00,
+      totalRemediatedEmployeesCount: 31,
+      cohortRegressions,
+      statutoryAudits
+    },
+    recentMemos: [initialMemo]
+  };
+}
+
+function loadDemoTotalRewardsOverview(): TotalRewardsStudioOverviewDTO {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_TOTAL_REWARDS_STORAGE_KEY) : null;
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch {
+  }
+  const initial = createDefaultTotalRewardsOverview();
+  saveDemoTotalRewardsOverview(initial);
+  return initial;
+}
+
+function saveDemoTotalRewardsOverview(ov: TotalRewardsStudioOverviewDTO): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(DEMO_TOTAL_REWARDS_STORAGE_KEY, JSON.stringify(ov));
+    }
+  } catch {
+  }
+}
+
+function executeRelativeTsrSimulationDemo(input: RelativeTsrSimulationRequestDTO): RelativeTsrSimulationResultDTO {
+  return simulateRelativeTsrMonteCarlo(input);
+}
+
+function executeSection83bArbitrageDemo(input: Section83bArbitrageRequestDTO): Section83bArbitrageResultDTO {
+  return calculateSection83bTaxArbitrage(input);
+}
+
+function executeGenerateCdaBoardMemoDemo(input: GenerateCdaBoardMemoRequestDTO): TotalRewardsBoardMemorandumDTO {
+  const ov = loadDemoTotalRewardsOverview();
+  const markdown = generateSecItem402CdaMemorandum({
+    title: input.title,
+    fiscalYear: input.fiscalYear,
+    overview: ov
+  });
+
+  const memo: TotalRewardsBoardMemorandumDTO = {
+    id: `memo-${Date.now()}`,
+    fiscalYear: input.fiscalYear,
+    title: input.title,
+    status: 'draft',
+    compositeTrai: ov.compositeTrai,
+    ratingBand: ov.ratingBand,
+    sayOnPayProjectedApprovalPercent: ov.sayOnPayProjectedApprovalPercent,
+    totalExecutiveLtiPoolBudgetUsd: 12500000.00,
+    totalRemediationBudgetUsd: ov.totalRemediationBudgetRequiredUsd,
+    executiveSummaryMarkdown: markdown,
+    basePayArchitectureSection: 'Base Pay Grade IC1-IC8/M1-M6 architecture overview',
+    executiveLtiPsuSection: 'Stochastic rTSR PSU grant simulation overview',
+    equityTax409aSection: 'Section 409A and 83(b) tax optimization review',
+    payEquityComplianceSection: 'Pay equity and EU Pay Transparency compliance audit',
+    cdaBoardDisclosuresSection: 'Board SEC Item 402 compensation disclosures',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  ov.recentMemos.unshift(memo);
+  saveDemoTotalRewardsOverview(ov);
+  return memo;
+}
+
+function executeCdaSignOffDemo(memoId: string, role: TotalRewardsBoardSignoffRole, signoffDate?: string): TotalRewardsBoardMemorandumDTO {
+  const ov = loadDemoTotalRewardsOverview();
+  const memo = ov.recentMemos.find((m) => m.id === memoId) || ov.recentMemos[0];
+  const dateStr = signoffDate || new Date().toISOString();
+
+  if (role === 'chief_human_resources_officer') {
+    memo.approvedByChroAt = dateStr;
+  } else if (role === 'chief_financial_officer') {
+    memo.approvedByCfoAt = dateStr;
+  } else if (role === 'board_compensation_chair') {
+    memo.approvedByCompChairAt = dateStr;
+  }
+
+  if (memo.approvedByChroAt && memo.approvedByCfoAt && memo.approvedByCompChairAt) {
+    memo.status = 'committee_approved';
+  } else {
+    memo.status = 'under_review';
+  }
+  memo.updatedAt = dateStr;
+
+  saveDemoTotalRewardsOverview(ov);
+  return memo;
+}
+
+export const workforceTotalRewardsStudioRepository = {
+  async getOverview(): Promise<TotalRewardsStudioOverviewDTO> {
+    if (demoMode) {
+      return loadDemoTotalRewardsOverview();
+    }
+    try {
+      return await request<TotalRewardsStudioOverviewDTO>('/workforce-total-rewards-studio/overview');
+    } catch {
+      return loadDemoTotalRewardsOverview();
+    }
+  },
+
+  async simulateRelativeTsr(input: RelativeTsrSimulationRequestDTO): Promise<RelativeTsrSimulationResultDTO> {
+    if (demoMode) {
+      return executeRelativeTsrSimulationDemo(input);
+    }
+    try {
+      return await request<RelativeTsrSimulationResultDTO>('/workforce-total-rewards-studio/lti/simulate-tsr', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeRelativeTsrSimulationDemo(input);
+    }
+  },
+
+  async optimizeEquityTax(input: Section83bArbitrageRequestDTO): Promise<Section83bArbitrageResultDTO> {
+    if (demoMode) {
+      return executeSection83bArbitrageDemo(input);
+    }
+    try {
+      return await request<Section83bArbitrageResultDTO>('/workforce-total-rewards-studio/tax/optimize', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeSection83bArbitrageDemo(input);
+    }
+  },
+
+  async generateBoardMemorandum(input: GenerateCdaBoardMemoRequestDTO): Promise<TotalRewardsBoardMemorandumDTO> {
+    if (demoMode) {
+      return executeGenerateCdaBoardMemoDemo(input);
+    }
+    try {
+      return await request<TotalRewardsBoardMemorandumDTO>('/workforce-total-rewards-studio/board-memos', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeGenerateCdaBoardMemoDemo(input);
+    }
+  },
+
+  async signOffBoardMemorandum(memoId: string, role: TotalRewardsBoardSignoffRole, signoffDate?: string): Promise<TotalRewardsBoardMemorandumDTO> {
+    if (demoMode) {
+      return executeCdaSignOffDemo(memoId, role, signoffDate);
+    }
+    try {
+      return await request<TotalRewardsBoardMemorandumDTO>(`/workforce-total-rewards-studio/board-memos/${encodeURIComponent(memoId)}/signoff`, {
+        method: 'POST',
+        body: JSON.stringify({ role, signoffDate })
+      });
+    } catch {
+      return executeCdaSignOffDemo(memoId, role, signoffDate);
+    }
+  }
+};
+
 
 
 

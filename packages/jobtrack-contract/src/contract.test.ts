@@ -404,7 +404,28 @@ import {
   validateDisruptionSimulationInput,
   validateHubComparisonInput,
   validateSupplyChainBoardMemoGenerateInput,
-  validateSupplyChainSignoffInput
+  validateSupplyChainSignoffInput,
+  calculateCompaRatio,
+  calculateRangePenetration,
+  evaluateSalaryCircleStatus,
+  adjustSalaryForPurchasingPowerParity,
+  calculateDilutionOverhang,
+  calculateShareBurnRate,
+  simulateRelativeTsrMonteCarlo,
+  calculateSection83bTaxArbitrage,
+  calculateIsoAlternativeMinimumTaxPreference,
+  calculateCrossBorderTrailingTaxAllocation,
+  solveMultivariatePayEquityRegression,
+  calculateRemediationBudget,
+  calculateTotalRewardsAlignmentIndex,
+  assessSayOnPayShareholderRisk,
+  generateSecItem402CdaMemorandum,
+  validateSalaryBandGradeInput,
+  validateRelativeTsrSimulationInput,
+  validateSection83bArbitrageInput,
+  validateGenerateCdaBoardMemoInput,
+  validateSignoffCdaBoardMemoInput,
+  type TotalRewardsStudioOverviewDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -8295,3 +8316,304 @@ test('supply-chain: schema validators enforce boundaries and reject invalid inpu
   });
   assert.equal(goodSign.ok, true);
 });
+
+test('workforce-total-rewards: calculateCompaRatio, calculateRangePenetration, evaluateSalaryCircleStatus, and adjustSalaryForPurchasingPowerParity', () => {
+  assert.equal(calculateCompaRatio(160000, 160000), 100);
+  assert.equal(calculateCompaRatio(140000, 160000), 87.5);
+  assert.equal(calculateCompaRatio(180000, 160000), 112.5);
+  assert.equal(calculateCompaRatio(150000, 0), 100);
+
+  assert.equal(calculateRangePenetration(140000, 120000, 160000), 50);
+  assert.equal(calculateRangePenetration(120000, 120000, 160000), 0);
+  assert.equal(calculateRangePenetration(160000, 120000, 160000), 100);
+  assert.equal(calculateRangePenetration(110000, 120000, 160000), -25);
+  assert.equal(calculateRangePenetration(170000, 120000, 160000), 125);
+  assert.equal(calculateRangePenetration(140000, 160000, 160000), 50);
+
+  assert.equal(evaluateSalaryCircleStatus(150000, 120000, 160000), 'normal_band');
+  assert.equal(evaluateSalaryCircleStatus(165000, 120000, 160000), 'red_circle_overpaid');
+  assert.equal(evaluateSalaryCircleStatus(115000, 120000, 160000), 'green_circle_underpaid');
+
+  const adjusted = adjustSalaryForPurchasingPowerParity(200000, 0.85, 0.9);
+  assert.equal(adjusted, Math.round(200000 * 0.85 * 0.9));
+});
+
+test('workforce-total-rewards: calculateDilutionOverhang and calculateShareBurnRate compute equity governance ratios', () => {
+  const overhang = calculateDilutionOverhang({
+    unvestedShares: 5000000,
+    optionsOutstanding: 2000000,
+    availableSharePool: 3000000,
+    commonSharesOutstanding: 100000000
+  });
+  assert.equal(overhang, 10);
+
+  const burn = calculateShareBurnRate({
+    grossSharesGranted: 2200000,
+    sharesForfeitedOrCancelled: 200000,
+    weightedAverageCommonShares: 100000000
+  });
+  assert.equal(burn.grossBurnRatePercent, 2.2);
+  assert.equal(burn.netBurnRatePercent, 2.0);
+});
+
+test('workforce-total-rewards: simulateRelativeTsrMonteCarlo models rTSR distribution and negative TSR cap', () => {
+  const sim = simulateRelativeTsrMonteCarlo({
+    performancePeriodYears: 3,
+    companyAnnualizedDrift: 0.12,
+    companyVolatility: 0.35,
+    peerGroupMeanDrift: 0.10,
+    peerGroupMeanVolatility: 0.30,
+    peerCorrelationFactor: 0.55,
+    numPeers: 12,
+    iterationsCount: 200,
+    negativeTsrCapEnforced: true,
+    maximumPayoutMultiplier: 200
+  });
+  assert.equal(sim.iterationsCount, 200);
+  assert.equal(sim.performancePeriodYears, 3);
+  assert.ok(typeof sim.companyMedianTsrPercent === 'number');
+  assert.ok(typeof sim.expectedPayoutMultiplierPercent === 'number');
+  assert.ok(sim.expectedPayoutMultiplierPercent >= 0);
+  assert.ok(sim.probabilityOfZeroPayoutPercent >= 0 && sim.probabilityOfZeroPayoutPercent <= 100);
+  assert.ok(sim.probabilityOfMaxPayoutPercent >= 0 && sim.probabilityOfMaxPayoutPercent <= 100);
+  assert.ok(sim.simulatedTsrDistribution.percentileP50 !== undefined);
+  assert.ok(sim.recommendedFairValueDiscountPercent >= 5);
+});
+
+test('workforce-total-rewards: calculateSection83bTaxArbitrage, calculateIsoAlternativeMinimumTaxPreference, and calculateCrossBorderTrailingTaxAllocation', () => {
+  const arb = calculateSection83bTaxArbitrage({
+    sharesGranted: 50000,
+    grantDateFmvUsd: 1.0,
+    strikeOrPurchasePriceUsd: 0.1,
+    projectedLiquiditySharePriceUsd: 25.0,
+    ordinaryIncomeTaxRatePercent: 40.0,
+    longTermCapitalGainsRatePercent: 20.0,
+    netInvestmentIncomeTaxPercent: 3.8,
+    holdingPeriodYears: 4,
+    riskOfForfeitureProbabilityPercent: 10
+  });
+  assert.ok(arb.taxPaidAtGrantWith83bUsd > 0);
+  assert.ok(arb.projectedTaxAtVestingWithout83bUsd > arb.taxPaidAtGrantWith83bUsd);
+  assert.ok(arb.netProjectedTaxSavingsUsd > 0);
+  assert.equal(arb.recommendationDirective, 'strongly_recommended_file_83b');
+
+  const amt = calculateIsoAlternativeMinimumTaxPreference(20000, 15.0, 3.0, 28);
+  assert.equal(amt.amtSpreadUsd, 240000);
+  assert.equal(amt.estimatedAmtLiabilityUsd, 67200);
+  assert.ok(amt.minimumTaxCreditPotentialUsd > 0);
+
+  const cross = calculateCrossBorderTrailingTaxAllocation({
+    vestingGainUsd: 100000,
+    totalVestingWorkdays: 1000,
+    jurisdictionWorkdays: [
+      { code: 'US', name: 'United States', workdays: 600, localWithholdingRatePercent: 37 },
+      { code: 'UK', name: 'United Kingdom', workdays: 400, localWithholdingRatePercent: 45 }
+    ]
+  });
+  assert.equal(cross.allocations.length, 2);
+  assert.equal(cross.allocations[0].allocationPercent, 60);
+  assert.equal(cross.allocations[1].allocationPercent, 40);
+  assert.equal(cross.allocations[0].allocatedTaxableGainUsd, 60000);
+  assert.equal(cross.allocations[1].allocatedTaxableGainUsd, 40000);
+  assert.equal(cross.totalWithholdingTaxUsd, Math.round(60000 * 0.37 + 40000 * 0.45));
+});
+
+test('workforce-total-rewards: solveMultivariatePayEquityRegression and calculateRemediationBudget', () => {
+  const dataPoints = [
+    { logSalary: Math.log(120000), genderDummy: 1, ethnicityDummy: 0, tenureYears: 3, levelRank: 3, performanceRating: 4, locationTierRank: 1 },
+    { logSalary: Math.log(125000), genderDummy: 0, ethnicityDummy: 0, tenureYears: 3, levelRank: 3, performanceRating: 4, locationTierRank: 1 },
+    { logSalary: Math.log(150000), genderDummy: 1, ethnicityDummy: 1, tenureYears: 5, levelRank: 4, performanceRating: 4, locationTierRank: 2 },
+    { logSalary: Math.log(155000), genderDummy: 0, ethnicityDummy: 0, tenureYears: 5, levelRank: 4, performanceRating: 4, locationTierRank: 2 },
+    { logSalary: Math.log(180000), genderDummy: 1, ethnicityDummy: 0, tenureYears: 7, levelRank: 5, performanceRating: 5, locationTierRank: 1 },
+    { logSalary: Math.log(185000), genderDummy: 0, ethnicityDummy: 0, tenureYears: 7, levelRank: 5, performanceRating: 5, locationTierRank: 1 }
+  ];
+  const reg = solveMultivariatePayEquityRegression(dataPoints);
+  assert.ok(typeof reg.unadjustedGenderGapPercent === 'number');
+  assert.ok(typeof reg.adjustedGenderGapPercent === 'number');
+  assert.ok(reg.rSquared > 0);
+
+  const budget = calculateRemediationBudget([
+    { id: 'e1', currentBaseSalary: 110000, controlledModelPredictedSalary: 120000, gender: 'female', salaryCircleStatus: 'green_circle_underpaid' },
+    { id: 'e2', currentBaseSalary: 130000, controlledModelPredictedSalary: 125000, gender: 'male', salaryCircleStatus: 'normal_band' }
+  ]);
+  assert.equal(budget.totalRemediationBudgetUsd, 10000);
+  assert.equal(budget.remediatedEmployeesCount, 1);
+  assert.ok(budget.averageAdjustmentPercent > 0);
+});
+
+test('workforce-total-rewards: calculateTotalRewardsAlignmentIndex and assessSayOnPayShareholderRisk', () => {
+  const trai = calculateTotalRewardsAlignmentIndex({
+    basePayRangeDisciplineScore: 92,
+    payForPerformanceSensitivityScore: 88,
+    equityDilutionBurnHealthScore: 85,
+    payEquityStatutoryComplianceScore: 95,
+    taxOptimizationGovernanceScore: 90
+  });
+  assert.ok(trai.compositeTrai >= 88);
+  assert.equal(trai.ratingBand, 'defensible_compliant');
+
+  const sayRisk = assessSayOnPayShareholderRisk({
+    ceoToMedianWorkerRatio: 175,
+    threeYearGrossBurnRatePercent: 2.1,
+    dilutionOverhangPercent: 10.5,
+    controlledGenderGapPercent: -1.2,
+    payVsTsrAlignmentScore: 85
+  });
+  assert.ok(sayRisk.projectedShareholderApprovalRatePercent >= 85);
+  assert.ok(sayRisk.issAdverseRecommendationRisk !== 'high_adverse_risk');
+});
+
+test('workforce-total-rewards: generateSecItem402CdaMemorandum outputs complete SEC Item 402 markdown', () => {
+  const dummyOverview: TotalRewardsStudioOverviewDTO = {
+    compositeTrai: 89.5,
+    ratingBand: 'defensible_compliant',
+    sayOnPayProjectedApprovalPercent: 94.2,
+    totalHeadcount: 1450,
+    totalAnnualPayrollUsd: 198500000,
+    redCircleEmployeeCount: 14,
+    greenCircleEmployeeCount: 22,
+    currentDilutionOverhangPercent: 9.8,
+    annualGrossBurnRatePercent: 1.85,
+    overallEnterpriseControlledGenderGapPercent: -1.1,
+    totalRemediationBudgetRequiredUsd: 420000,
+    irc409aFmvPerShareUsd: 18.5,
+    active83bTimelyFilingsCount: 38,
+    ceoToMedianWorkerPayRatio: 176,
+    alignmentBreakdown: {
+      basePayRangeDisciplineScore: 90,
+      payForPerformanceSensitivityScore: 88,
+      equityDilutionBurnHealthScore: 91,
+      payEquityStatutoryComplianceScore: 92,
+      taxOptimizationGovernanceScore: 87,
+      compositeTrai: 89.5,
+      ratingBand: 'defensible_compliant'
+    },
+    sayOnPayAssessment: {
+      projectedShareholderApprovalRatePercent: 94.2,
+      issAdverseRecommendationRisk: 'low_minimal_risk',
+      glassLewisAdverseRisk: 'low_minimal_risk',
+      ceoToMedianWorkerPayRatio: 176,
+      ceoTotalCompensationUsd: 14500000,
+      medianWorkerTotalCompensationUsd: 82500,
+      payVsTsrAlignmentScore: 88,
+      primaryRiskDrivers: []
+    },
+    jobArchitectureSummary: {
+      totalHeadcount: 1450,
+      totalAnnualPayrollUsd: 198500000,
+      globalAverageCompaRatio: 98.4,
+      redCircleEmployeeCount: 14,
+      greenCircleEmployeeCount: 22,
+      totalSalaryBandsConfigured: 48,
+      averageRangeSpreadPercent: 50,
+      salaryBands: [],
+      sampleProfiles: []
+    },
+    equityDilutionOverview: {
+      totalCommonSharesOutstanding: 100000000,
+      totalUnvestedRestrictedShares: 4500000,
+      totalOptionsOutstandingExercisable: 2300000,
+      availableSharePoolRemaining: 3000000,
+      currentDilutionOverhangPercent: 9.8,
+      maxApprovedOverhangLimitPercent: 12.0,
+      annualGrossBurnRatePercent: 1.85,
+      annualNetBurnRatePercent: 1.55,
+      threeYearAverageGrossBurnRatePercent: 1.9,
+      burnRateComplianceStatus: 'compliant_defensible',
+      executiveGrants: []
+    },
+    taxOverview: {
+      currentIrc409aFmvPerShareUsd: 18.5,
+      last409aValuationDate: '2026-03-31',
+      daysUntil409aExpiry: 156,
+      active83bFilingsCount: 38,
+      pending83bDeadlineFilingsCount: 4,
+      missed83bDeadlineCount: 0,
+      totalIsoAmtPreferenceTrackedUsd: 1250000,
+      crossBorderMobileEmployeesTracked: 18,
+      taxProfiles: []
+    },
+    payEquityOverview: {
+      overallEnterpriseUnadjustedGenderGapPercent: -5.8,
+      overallEnterpriseControlledGenderGapPercent: -1.1,
+      overallEnterpriseControlledEthnicityGapPercent: -0.7,
+      totalRemediationBudgetRequiredUsd: 420000,
+      totalRemediatedEmployeesCount: 31,
+      cohortRegressions: [],
+      statutoryAudits: []
+    },
+    recentMemos: []
+  };
+
+  const md = generateSecItem402CdaMemorandum({
+    title: 'FY2026 Executive Compensation Review & SEC CD&A Strategy',
+    fiscalYear: 'FY2026',
+    overview: dummyOverview
+  });
+  assert.ok(md.includes('BOARD COMPENSATION COMMITTEE GOVERNANCE MEMORANDUM & SEC ITEM 402 CD&A'));
+  assert.ok(md.includes('FY2026'));
+  assert.ok(md.includes('Total Rewards Alignment Index (TRAI)'));
+  assert.ok(md.includes('Chief Human Resources Officer (CHRO)'));
+  assert.ok(md.includes('Chief Financial Officer (CFO)'));
+  assert.ok(md.includes('Board Compensation Committee Chair'));
+});
+
+test('workforce-total-rewards: validators enforce boundaries and reject malformed payloads', () => {
+  const badBand = validateSalaryBandGradeInput({});
+  assert.equal(badBand.ok, false);
+
+  const goodBand = validateSalaryBandGradeInput({
+    levelCode: 'IC4',
+    jobTitle: 'Senior Software Engineer',
+    jobFamily: 'engineering',
+    baseSalaryMin: 150000,
+    baseSalaryMid: 180000,
+    baseSalaryMax: 210000,
+    geoDifferentialFactor: 1.0
+  });
+  assert.equal(goodBand.ok, true);
+
+  const badSim = validateRelativeTsrSimulationInput({});
+  assert.equal(badSim.ok, false);
+
+  const goodSim = validateRelativeTsrSimulationInput({
+    performancePeriodYears: 3,
+    companyVolatility: 0.35,
+    peerGroupMeanVolatility: 0.30,
+    peerCorrelationFactor: 0.5,
+    numPeers: 12,
+    iterationsCount: 1000
+  });
+  assert.equal(goodSim.ok, true);
+
+  const bad83b = validateSection83bArbitrageInput({});
+  assert.equal(bad83b.ok, false);
+
+  const good83b = validateSection83bArbitrageInput({
+    sharesGranted: 50000,
+    grantDateFmvUsd: 1.0,
+    strikeOrPurchasePriceUsd: 0.1,
+    projectedLiquiditySharePriceUsd: 25.0,
+    ordinaryIncomeTaxRatePercent: 37.0,
+    longTermCapitalGainsRatePercent: 20.0
+  });
+  assert.equal(good83b.ok, true);
+
+  const badMemo = validateGenerateCdaBoardMemoInput({});
+  assert.equal(badMemo.ok, false);
+
+  const goodMemo = validateGenerateCdaBoardMemoInput({
+    fiscalYear: 'FY2026',
+    title: 'FY2026 Executive Total Rewards Review'
+  });
+  assert.equal(goodMemo.ok, true);
+
+  const badSign = validateSignoffCdaBoardMemoInput({});
+  assert.equal(badSign.ok, false);
+
+  const goodSign = validateSignoffCdaBoardMemoInput({
+    role: 'chief_human_resources_officer'
+  });
+  assert.equal(goodSign.ok, true);
+});
+
