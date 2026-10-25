@@ -492,7 +492,46 @@ import {
   calculateCRDI,
   assessASC450Contingency,
   calculateLRCI,
-  generateSecItem103Disclosure
+  generateSecItem103Disclosure,
+  type ShareClassType,
+  type InstitutionalInvestorType,
+  type SecFilingType,
+  type AvisRiskLevel,
+  type EarningsTimingType,
+  type MeetingFormatType,
+  type CapitalFinancingType,
+  type IsiAlignmentBand,
+  type IrSignoffRole,
+  type Form8KStatus,
+  type CapTableShareClassDTO,
+  type InstitutionalShareholderDTO,
+  type Rule10b51PlanDTO,
+  type ActivistVulnerabilityDTO,
+  type SellSideConsensusMetricDTO,
+  type NonGaapReconciliationItemDTO,
+  type EarningsCycleDTO,
+  type InvestorConferenceDTO,
+  type NdrInvestorMeetingDTO,
+  type CapitalScenarioDTO,
+  type ShareRepurchaseProgramDTO,
+  type SecForm8KSignoffDTO,
+  type SecForm8KDisclosureDTO,
+  type InvestorRelationsOverviewDTO,
+  type SimulateActivistRequestDTO,
+  type ActivistVulnerabilityResultDTO,
+  type NonGaapReconciliationRequestDTO,
+  type NonGaapReconciliationResultDTO,
+  type LogNdrMeetingRequestDTO,
+  type SimulateCapitalScenarioRequestDTO,
+  type CapitalScenarioResultDTO,
+  type GenerateForm8KRequestDTO,
+  type SignoffForm8KRequestDTO,
+  calculateAVIS,
+  calculateWACC,
+  calculateEPSAccretionDilution,
+  calculateRule10b18DailyLimit,
+  calculateISI,
+  generateSecForm8KDisclosure
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -19880,6 +19919,794 @@ export const legalOperationsNexusRepository = {
       saveDemoLegalOverview(overview);
     }
     return text;
+  }
+};
+
+const DEMO_INVESTOR_RELATIONS_KEY = 'jobtrack_demo_investor_relations_nexus_v1';
+
+function createDefaultDemoInvestorRelationsOverview(): InvestorRelationsOverviewDTO {
+  const default8KMarkdown = `# UNITED STATES SECURITIES AND EXCHANGE COMMISSION
+Washington, D.C. 20549
+
+FORM 8-K
+CURRENT REPORT
+Pursuant to Section 13 or 15(d) of the Securities Exchange Act of 1934
+
+Date of Report (Date of earliest event reported): 2026-10-25
+
+JobTrack Enterprise Technologies Inc.
+(Exact name of registrant as specified in its charter)
+
+Commission File Number: 001-41920
+IRS Employer Identification No.: 88-3491024
+CIK: 0001984210
+
+State of Incorporation: Delaware
+Trading Symbol: JBTR
+Exchange: The Nasdaq Stock Market LLC (Nasdaq Global Select Market)
+
+---
+
+## Item 2.02 Results of Operations and Financial Condition
+On October 25, 2026, JobTrack Enterprise Technologies Inc. (the "Company") issued a press release announcing its financial results for the fiscal quarter ended Q3-2026. A copy of the press release is furnished as Exhibit 99.1 to this Current Report on Form 8-K.
+
+The information in this Item 2.02 and Exhibit 99.1 attached hereto is being furnished and shall not be deemed "filed" for purposes of Section 18 of the Securities Exchange Act of 1934, as amended (the "Exchange Act"), nor shall it be deemed incorporated by reference in any filing under the Securities Act of 1933, as amended.
+
+### Non-GAAP Financial Measures & Regulation G Reconciliation
+In addition to financial measures prepared in accordance with U.S. generally accepted accounting principles ("GAAP"), this report includes certain Non-GAAP financial measures, including Adjusted EBITDA, Non-GAAP Net Income, and Free Cash Flow.
+
+---
+
+## Item 7.01 Regulation FD Disclosure
+Representatives of the Company will present the investor presentation materials attached hereto as Exhibit 99.2 during institutional investor conferences and non-deal roadshows scheduled for Q3-2026.
+
+---
+
+## Item 9.01 Financial Statements and Exhibits
+(d) Exhibits:
+- Exhibit 99.1: Press Release dated 2026-10-25 announcing financial results for Q3-2026.
+- Exhibit 99.2: Investor Presentation dated 2026-10-25 for Q3-2026 Non-Deal Roadshows.
+- Exhibit 104: Cover Page Interactive Data File.
+
+---
+
+## SIGNATURES
+Pursuant to the requirements of the Securities Exchange Act of 1934, the registrant has duly caused this report to be signed on its behalf by the undersigned hereunto duly authorized.
+
+[x] VERIFIED & CERTIFIED: VP of Investor Relations
+    Status: Consensus Metrics & Non-GAAP Reg G Reconciliations Audited
+
+[x] APPROVED: Chief Financial Officer (Principal Financial Officer)
+    Status: Financial Statements, Guidance & WACC Calculations Ratified
+
+[ ] PENDING RATIFICATION: Chief Executive Officer (Principal Executive Officer)
+`;
+
+  return {
+    studioId: 'ir-studio-demo-1',
+    companyName: 'JobTrack Enterprise Technologies Inc.',
+    tickerSymbol: 'JBTR',
+    lastUpdated: new Date().toISOString(),
+    compositeIsiScore: 84.50,
+    isiBand: 'strong_institutional_conviction',
+    stockPriceUsd: 64.50,
+    marketCapUsd: 4837500000.00,
+    sharesOutstanding: 75000000,
+    publicFloatShares: 58500000,
+    capTable: {
+      shareClasses: [
+        {
+          id: 'sc-1',
+          shareClassName: 'Common Stock Class A',
+          shareClassType: 'common_class_a',
+          sharesAuthorized: 200000000,
+          sharesOutstanding: 58500000,
+          votesPerShare: 1,
+          parValueUsd: 0.0001,
+          isPubliclyTraded: true,
+          cusip: '478160104'
+        },
+        {
+          id: 'sc-2',
+          shareClassName: 'Common Stock Class B (Founders & Executive)',
+          shareClassType: 'common_class_b',
+          sharesAuthorized: 50000000,
+          sharesOutstanding: 16500000,
+          votesPerShare: 10,
+          parValueUsd: 0.0001,
+          isPubliclyTraded: false,
+          cusip: '478160112'
+        }
+      ],
+      topShareholders: [
+        {
+          id: 'sh-1',
+          institutionName: 'The Vanguard Group, Inc.',
+          investorType: 'passive_index',
+          sharesHeld: 6200000,
+          percentOwnership: 8.27,
+          votingPowerPercent: 2.77,
+          filingType: 'form_13f',
+          filingDate: '2026-09-30',
+          portfolioWeightPercent: 1.45,
+          quarterlyChangeShares: 150000,
+          isKnownActivist: false
+        },
+        {
+          id: 'sh-2',
+          institutionName: 'BlackRock Institutional Trust Company',
+          investorType: 'passive_index',
+          sharesHeld: 5500000,
+          percentOwnership: 7.33,
+          votingPowerPercent: 2.46,
+          filingType: 'form_13f',
+          filingDate: '2026-09-30',
+          portfolioWeightPercent: 1.20,
+          quarterlyChangeShares: 85000,
+          isKnownActivist: false
+        },
+        {
+          id: 'sh-3',
+          institutionName: 'Capital World Investors (Capital Group)',
+          investorType: 'fundamental_long_only',
+          sharesHeld: 4800000,
+          percentOwnership: 6.40,
+          votingPowerPercent: 2.15,
+          filingType: 'schedule_13g',
+          filingDate: '2026-09-30',
+          portfolioWeightPercent: 2.10,
+          quarterlyChangeShares: 320000,
+          isKnownActivist: false
+        },
+        {
+          id: 'sh-4',
+          institutionName: 'Fidelity Management & Research (FMR LLC)',
+          investorType: 'growth_garp',
+          sharesHeld: 4100000,
+          percentOwnership: 5.47,
+          votingPowerPercent: 1.83,
+          filingType: 'schedule_13g',
+          filingDate: '2026-09-30',
+          portfolioWeightPercent: 1.85,
+          quarterlyChangeShares: -45000,
+          isKnownActivist: false
+        },
+        {
+          id: 'sh-5',
+          institutionName: 'T. Rowe Price Associates, Inc.',
+          investorType: 'fundamental_long_only',
+          sharesHeld: 3400000,
+          percentOwnership: 4.53,
+          votingPowerPercent: 1.52,
+          filingType: 'form_13f',
+          filingDate: '2026-09-30',
+          portfolioWeightPercent: 1.60,
+          quarterlyChangeShares: 110000,
+          isKnownActivist: false
+        },
+        {
+          id: 'sh-6',
+          institutionName: 'State Street Global Advisors (SSgA)',
+          investorType: 'passive_index',
+          sharesHeld: 2900000,
+          percentOwnership: 3.87,
+          votingPowerPercent: 1.30,
+          filingType: 'form_13f',
+          filingDate: '2026-09-30',
+          portfolioWeightPercent: 0.95,
+          quarterlyChangeShares: 25000,
+          isKnownActivist: false
+        },
+        {
+          id: 'sh-7',
+          institutionName: 'Two Sigma Investments, LP',
+          investorType: 'multi_strategy_quant',
+          sharesHeld: 1850000,
+          percentOwnership: 2.47,
+          votingPowerPercent: 0.83,
+          filingType: 'form_13f',
+          filingDate: '2026-09-30',
+          portfolioWeightPercent: 0.75,
+          quarterlyChangeShares: -120000,
+          isKnownActivist: false
+        },
+        {
+          id: 'sh-8',
+          institutionName: 'Elliott Management Corporation',
+          investorType: 'activist_hedge_fund',
+          sharesHeld: 1125000,
+          percentOwnership: 1.50,
+          votingPowerPercent: 0.50,
+          filingType: 'form_13f',
+          filingDate: '2026-09-30',
+          portfolioWeightPercent: 0.80,
+          quarterlyChangeShares: 220000,
+          isKnownActivist: true
+        }
+      ],
+      insiderPlans: [
+        {
+          id: 'plan-1',
+          insiderName: 'David Chen',
+          insiderTitle: 'Chief Executive Officer & Founder',
+          adoptionDate: '2026-06-15',
+          coolingOffExpiryDate: '2026-09-15',
+          totalPlannedShares: 150000,
+          executedShares: 25000,
+          remainingShares: 125000,
+          expirationDate: '2027-06-15',
+          isCompliant: true
+        },
+        {
+          id: 'plan-2',
+          insiderName: 'Elena Rostova',
+          insiderTitle: 'Chief Financial Officer',
+          adoptionDate: '2026-07-01',
+          coolingOffExpiryDate: '2026-10-01',
+          totalPlannedShares: 60000,
+          executedShares: 10000,
+          remainingShares: 50000,
+          expirationDate: '2027-07-01',
+          isCompliant: true
+        }
+      ],
+      activistVulnerability: {
+        compositeAvisScore: 24.6,
+        riskLevel: 'fortified_low',
+        tsrUnderperformancePercent: 4.5,
+        valuationDiscountPercent: 6.2,
+        governanceDefenseScore: 88.0,
+        freeCashFlowMarginGap: 2.1,
+        activistOwnershipPercent: 1.5,
+        vulnerabilityFactors: [
+          { factorName: '3-Year TSR vs Benchmark', score: 9.0, weight: 0.25, severity: 'low' },
+          { factorName: 'EV/NTM Multiple Peer Discount', score: 12.4, weight: 0.20, severity: 'low' },
+          { factorName: 'Governance Defense Vulnerability', score: 12.0, weight: 0.20, severity: 'low' },
+          { factorName: 'FCF Conversion Shortfall', score: 10.5, weight: 0.15, severity: 'low' },
+          { factorName: 'Activist Shareholder Infiltration', score: 7.5, weight: 0.20, severity: 'low' }
+        ],
+        recommendedDefenses: [
+          'Maintain Dual-Class 10:1 voting structure integrity',
+          'Execute disciplined Rule 10b-18 share repurchase under 25% ADTV limit',
+          'Proactively engage Tier-1 fundamental long-only asset managers'
+        ]
+      }
+    },
+    earnings: {
+      id: 'cycle-1',
+      fiscalQuarter: 'Q3-2026',
+      earningsReleaseDate: '2026-11-05',
+      timing: 'after_market_close',
+      quietPeriodStartDate: '2026-10-15',
+      isQuietPeriodActive: true,
+      webcastUrl: 'https:' + '/' + '/investors.jobtrack.com/webcasts/q3-2026-earnings-call',
+      consensusMetrics: [
+        {
+          metricName: 'GAAP Revenue',
+          consensusMean: 125.40,
+          consensusMedian: 125.00,
+          consensusHigh: 128.50,
+          consensusLow: 122.00,
+          analystCount: 14,
+          guidanceMidpoint: 126.00,
+          guidanceVariancePercent: 0.48,
+          unit: 'usd_millions'
+        },
+        {
+          metricName: 'Non-GAAP Diluted EPS',
+          consensusMean: 0.38,
+          consensusMedian: 0.38,
+          consensusHigh: 0.41,
+          consensusLow: 0.35,
+          analystCount: 14,
+          guidanceMidpoint: 0.39,
+          guidanceVariancePercent: 2.63,
+          unit: 'usd_per_share'
+        },
+        {
+          metricName: 'Adjusted EBITDA',
+          consensusMean: 32.80,
+          consensusMedian: 32.50,
+          consensusHigh: 34.50,
+          consensusLow: 30.50,
+          analystCount: 12,
+          guidanceMidpoint: 33.00,
+          guidanceVariancePercent: 0.61,
+          unit: 'usd_millions'
+        },
+        {
+          metricName: 'Free Cash Flow',
+          consensusMean: 24.20,
+          consensusMedian: 24.00,
+          consensusHigh: 26.00,
+          consensusLow: 22.00,
+          analystCount: 10,
+          guidanceMidpoint: 24.50,
+          guidanceVariancePercent: 1.24,
+          unit: 'usd_millions'
+        }
+      ],
+      reconciliations: [
+        {
+          lineItemName: 'Net Income to Adjusted EBITDA Bridge',
+          gaapAmountUsd: 18400000.00,
+          adjustmentsUsd: 14400000.00,
+          nonGaapAmountUsd: 32800000.00,
+          adjustmentDetails: [
+            { category: 'Stock-Based Compensation', amountUsd: 8200000.00 },
+            { category: 'Depreciation & Amortization', amountUsd: 3800000.00 },
+            { category: 'Provision for Income Taxes', amountUsd: 1400000.00 },
+            { category: 'Interest and Other Net', amountUsd: 1000000.00 }
+          ]
+        }
+      ],
+      safeHarborScript: 'Good afternoon and welcome to JobTrack Enterprise Technologies Third Quarter 2026 Financial Results Conference Call. Today remarks contain forward-looking statements within the meaning of Section 27A of the Securities Act of 1933 and Section 21E of the Securities Exchange Act of 1934.'
+    },
+    roadshows: {
+      upcomingConferences: [
+        {
+          id: 'conf-1',
+          conferenceName: 'Morgan Stanley Global Technology, Media & Telecom Conference',
+          hostBroker: 'Morgan Stanley',
+          location: 'San Francisco, CA',
+          startDate: '2026-11-18',
+          endDate: '2026-11-20',
+          executiveAttendees: ['David Chen (CEO)', 'Elena Rostova (CFO)', 'Alexander Vance (VP IR)'],
+          confirmedMeetingsCount: 14
+        },
+        {
+          id: 'conf-2',
+          conferenceName: 'Goldman Sachs Communacopia + Technology Conference',
+          hostBroker: 'Goldman Sachs',
+          location: 'San Francisco, CA',
+          startDate: '2026-12-08',
+          endDate: '2026-12-10',
+          executiveAttendees: ['Elena Rostova (CFO)', 'Alexander Vance (VP IR)'],
+          confirmedMeetingsCount: 12
+        }
+      ],
+      recentMeetings: [
+        {
+          id: 'meet-1',
+          conferenceId: 'conf-1',
+          institutionName: 'Capital World Investors (Capital Group)',
+          leadInvestorName: 'Sarah Jenkins, Portfolio Manager',
+          investorType: 'fundamental_long_only',
+          meetingDate: '2026-10-22',
+          meetingFormat: 'one_on_one_in_person',
+          executiveAttendees: ['David Chen (CEO)', 'Alexander Vance (VP IR)'],
+          sentimentScore: 0.75,
+          keyTopicsDiscussed: [
+            'Enterprise gross margin durability',
+            'AI agent ARR monetization velocity',
+            'Free cash flow conversion rate'
+          ],
+          followUpDeliverables: [
+            'Provide updated cohort retention schedule',
+            'Arrange product architecture deep-dive'
+          ]
+        }
+      ],
+      averageSentimentScore: 0.75,
+      buySideConvictionScore: 82.0
+    },
+    capitalMarkets: {
+      activeScenarios: [
+        {
+          id: 'scen-1',
+          scenarioName: 'Series Convertible Senior Notes 2031',
+          financingType: 'convertible_senior_notes',
+          targetGrossProceedsUsd: 200000000.00,
+          discountToVwapPercent: 0.00,
+          underwriterSpreadPercent: 2.25,
+          netProceedsUsd: 195500000.00,
+          proFormaSharesIssued: 2432000,
+          proFormaDilutionPercent: 3.24,
+          couponRatePercent: 1.75,
+          conversionPremiumPercent: 27.50,
+          calculatedWaccPercent: 8.95,
+          proFormaEpsAccretionPercent: 4.20
+        }
+      ],
+      repurchaseProgram: {
+        id: 'rep-1',
+        programAuthorizationUsd: 250000000.00,
+        utilizedAmountUsd: 85400000.00,
+        remainingAuthorizationUsd: 164600000.00,
+        adtvShares: 750000,
+        rule10b18DailyShareLimit: 187500,
+        repurchasedSharesCount: 1380000,
+        averageExecutionPriceUsd: 61.88,
+        programExpiryDate: '2027-12-31',
+        isActive: true
+      },
+      currentWaccPercent: 8.95,
+      costOfEquityPercent: 10.85,
+      costOfDebtAfterTaxPercent: 3.95
+    },
+    latestForm8K: {
+      id: '8k-1',
+      fiscalQuarter: 'Q3-2026',
+      filingTitle: 'Current Report Pursuant to Section 13 or 15(d) of the Exchange Act',
+      status: 'cfo_approved',
+      itemsIncluded: ['Item 2.02', 'Item 7.01', 'Item 9.01'],
+      markdownContent: default8KMarkdown,
+      createdAt: '2026-10-25T08:00:00Z',
+      updatedAt: '2026-10-25T09:15:00Z',
+      signoffs: [
+        {
+          role: 'vp_investor_relations',
+          signedBy: 'Alexander Vance',
+          signedAt: '2026-10-25T08:30:00Z',
+          signatureToken: 'sig_ir_vance_9281a',
+          verificationNotes: 'Audited consensus models and Reg G reconciliations.'
+        },
+        {
+          role: 'chief_financial_officer',
+          signedBy: 'Elena Rostova',
+          signedAt: '2026-10-25T09:15:00Z',
+          signatureToken: 'sig_cfo_rostova_4190c',
+          verificationNotes: 'Approved financial statements and forward guidance.'
+        }
+      ]
+    }
+  };
+}
+
+function loadDemoInvestorRelationsOverview(): InvestorRelationsOverviewDTO {
+  try {
+    const raw = localStorage.getItem(DEMO_INVESTOR_RELATIONS_KEY);
+    if (!raw) {
+      const initial = createDefaultDemoInvestorRelationsOverview();
+      localStorage.setItem(DEMO_INVESTOR_RELATIONS_KEY, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(raw) as InvestorRelationsOverviewDTO;
+  } catch {
+    return createDefaultDemoInvestorRelationsOverview();
+  }
+}
+
+function saveDemoInvestorRelationsOverview(overview: InvestorRelationsOverviewDTO): void {
+  try {
+    localStorage.setItem(DEMO_INVESTOR_RELATIONS_KEY, JSON.stringify(overview));
+  } catch {}
+}
+
+export const investorRelationsNexusRepository = {
+  async getOverview(): Promise<InvestorRelationsOverviewDTO> {
+    if (demoMode) {
+      return loadDemoInvestorRelationsOverview();
+    }
+    try {
+      return await request<InvestorRelationsOverviewDTO>('/investor-relations-nexus/overview');
+    } catch {
+      return loadDemoInvestorRelationsOverview();
+    }
+  },
+
+  async simulateActivistVulnerability(
+    req: SimulateActivistRequestDTO
+  ): Promise<ActivistVulnerabilityResultDTO> {
+    if (demoMode) {
+      const { score, riskLevel } = calculateAVIS(req);
+      const overview = loadDemoInvestorRelationsOverview();
+      overview.capTable.activistVulnerability.compositeAvisScore = score;
+      overview.capTable.activistVulnerability.riskLevel = riskLevel;
+      overview.capTable.activistVulnerability.tsrUnderperformancePercent = req.tsrUnderperformancePercent;
+      overview.capTable.activistVulnerability.valuationDiscountPercent = req.valuationDiscountPercent;
+      overview.capTable.activistVulnerability.governanceDefenseScore = req.governanceDefenseScore;
+      overview.capTable.activistVulnerability.freeCashFlowMarginGap = req.freeCashFlowMarginGap;
+      overview.capTable.activistVulnerability.activistOwnershipPercent = req.activistOwnershipPercent;
+      saveDemoInvestorRelationsOverview(overview);
+
+      return {
+        compositeAvisScore: score,
+        riskLevel,
+        primaryVulnerabilityDriver: req.tsrUnderperformancePercent > 20
+          ? 'Severe 3-Year Total Shareholder Return Lag'
+          : req.activistOwnershipPercent > 5
+          ? 'Rapid Infiltration of Dedicated Activist Funds'
+          : 'Balanced Operational & Market Alignment',
+        recommendedActions: [
+          'Fortify dual-class share covenants and poison pill readiness',
+          'Optimize capital return program via Rule 10b-18 buybacks',
+          'Deploy investor engagement roadshows with Tier-1 long-only institutions'
+        ]
+      };
+    }
+    try {
+      return await request<ActivistVulnerabilityResultDTO>('/investor-relations-nexus/activist/simulate', {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      const { score, riskLevel } = calculateAVIS(req);
+      return {
+        compositeAvisScore: score,
+        riskLevel,
+        primaryVulnerabilityDriver: 'Balanced Operational & Market Alignment',
+        recommendedActions: [
+          'Fortify dual-class share covenants and poison pill readiness',
+          'Optimize capital return program via Rule 10b-18 buybacks'
+        ]
+      };
+    }
+  },
+
+  async reconcileNonGaapEarnings(
+    req: NonGaapReconciliationRequestDTO
+  ): Promise<NonGaapReconciliationResultDTO> {
+    if (demoMode) {
+      const adjustedEbitdaUsd =
+        req.gaapNetIncomeUsd +
+        req.stockBasedCompensationUsd +
+        req.amortizationIntangiblesUsd +
+        req.acquisitionRestructuringCostsUsd +
+        req.interestExpenseUsd +
+        req.provisionForTaxesUsd +
+        req.depreciationUsd;
+
+      const nonGaapNetIncomeUsd =
+        req.gaapNetIncomeUsd +
+        req.stockBasedCompensationUsd +
+        req.amortizationIntangiblesUsd +
+        req.acquisitionRestructuringCostsUsd -
+        req.taxEffectOfAdjustmentsUsd;
+
+      const cautionaryStatementMarkdown = `
+### Statutory Cautionary Statement Regarding Non-GAAP Financial Measures (SEC Regulation G & Item 10(e))
+To supplement our consolidated financial statements presented in accordance with U.S. GAAP, management utilizes Non-GAAP financial measures including Adjusted EBITDA and Non-GAAP Net Income. Management believes that these Non-GAAP measures provide useful insights into operating performance.
+`;
+
+      const overview = loadDemoInvestorRelationsOverview();
+      const existingRecon = overview.earnings.reconciliations[0];
+      if (existingRecon) {
+        existingRecon.gaapAmountUsd = req.gaapNetIncomeUsd;
+        existingRecon.nonGaapAmountUsd = adjustedEbitdaUsd;
+        existingRecon.adjustmentsUsd = adjustedEbitdaUsd - req.gaapNetIncomeUsd;
+      }
+      saveDemoInvestorRelationsOverview(overview);
+
+      return {
+        adjustedEbitdaUsd,
+        nonGaapNetIncomeUsd,
+        cautionaryStatementMarkdown
+      };
+    }
+    try {
+      return await request<NonGaapReconciliationResultDTO>('/investor-relations-nexus/earnings/reconcile', {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      return {
+        adjustedEbitdaUsd: 32800000.00,
+        nonGaapNetIncomeUsd: 28500000.00,
+        cautionaryStatementMarkdown: 'SEC Regulation G Statutory Reconciliation'
+      };
+    }
+  },
+
+  async logInvestorMeeting(
+    req: LogNdrMeetingRequestDTO
+  ): Promise<NdrInvestorMeetingDTO> {
+    if (demoMode) {
+      const overview = loadDemoInvestorRelationsOverview();
+      const meetingId = `meet-${Date.now()}`;
+      const newMeeting: NdrInvestorMeetingDTO = {
+        id: meetingId,
+        conferenceId: req.conferenceId,
+        institutionName: req.institutionName,
+        leadInvestorName: req.leadInvestorName,
+        investorType: req.investorType,
+        meetingDate: req.meetingDate,
+        meetingFormat: req.meetingFormat,
+        executiveAttendees: req.executiveAttendees,
+        sentimentScore: req.sentimentScore,
+        keyTopicsDiscussed: req.keyTopics,
+        followUpDeliverables: req.followUps
+      };
+      overview.roadshows.recentMeetings.unshift(newMeeting);
+      const totalSent = overview.roadshows.recentMeetings.reduce((acc, m) => acc + m.sentimentScore, 0);
+      overview.roadshows.averageSentimentScore = Math.round((totalSent / overview.roadshows.recentMeetings.length) * 100) / 100;
+      overview.roadshows.buySideConvictionScore = Math.round((overview.roadshows.averageSentimentScore + 1.0) * 50 * 10) / 10;
+      saveDemoInvestorRelationsOverview(overview);
+      return newMeeting;
+    }
+    try {
+      return await request<NdrInvestorMeetingDTO>('/investor-relations-nexus/roadshow/meetings', {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      const overview = loadDemoInvestorRelationsOverview();
+      const meetingId = `meet-${Date.now()}`;
+      const newMeeting: NdrInvestorMeetingDTO = {
+        id: meetingId,
+        conferenceId: req.conferenceId,
+        institutionName: req.institutionName,
+        leadInvestorName: req.leadInvestorName,
+        investorType: req.investorType,
+        meetingDate: req.meetingDate,
+        meetingFormat: req.meetingFormat,
+        executiveAttendees: req.executiveAttendees,
+        sentimentScore: req.sentimentScore,
+        keyTopicsDiscussed: req.keyTopics,
+        followUpDeliverables: req.followUps
+      };
+      overview.roadshows.recentMeetings.unshift(newMeeting);
+      saveDemoInvestorRelationsOverview(overview);
+      return newMeeting;
+    }
+  },
+
+  async simulateCapitalScenario(
+    req: SimulateCapitalScenarioRequestDTO
+  ): Promise<CapitalScenarioResultDTO> {
+    const underwriterSpread = req.grossAmountUsd * 0.035;
+    const legalFees = 750000;
+    const netProceedsUsd = req.grossAmountUsd - underwriterSpread - legalFees;
+
+    const sharesIssued = req.financingType === 'convertible_senior_notes'
+      ? Math.round((req.grossAmountUsd / (req.stockPriceUsd * 1.30)))
+      : req.financingType === 'rule_10b18_share_repurchase'
+      ? -Math.round(req.grossAmountUsd / req.stockPriceUsd)
+      : Math.round(req.grossAmountUsd / (req.stockPriceUsd * 0.96));
+
+    const proFormaDilutionPercent = Math.round((sharesIssued / req.currentSharesCount) * 1000) / 10;
+
+    const equityVal = req.stockPriceUsd * req.currentSharesCount;
+    const calculatedWaccPercent = calculateWACC(
+      req.costOfEquityPercent,
+      req.preTaxCostOfDebtPercent,
+      req.marginalTaxRatePercent,
+      equityVal,
+      req.grossAmountUsd
+    );
+
+    const incrementalAnnualInterestUsd = req.financingType === 'convertible_senior_notes'
+      ? req.grossAmountUsd * 0.0175
+      : 0;
+
+    const standaloneEps = req.currentAnnualNetIncomeUsd / req.currentSharesCount;
+    const epsResult = calculateEPSAccretionDilution({
+      standaloneNetIncomeUsd: req.currentAnnualNetIncomeUsd,
+      standaloneSharesCount: req.currentSharesCount,
+      standaloneEps,
+      financingType: req.financingType,
+      incrementalSharesCount: sharesIssued,
+      incrementalAnnualInterestUsd,
+      marginalTaxRatePercent: req.marginalTaxRatePercent
+    });
+
+    const result: CapitalScenarioResultDTO = {
+      scenarioName: req.scenarioName,
+      financingType: req.financingType,
+      netProceedsUsd,
+      proFormaSharesIssued: sharesIssued,
+      proFormaDilutionPercent,
+      calculatedWaccPercent,
+      proFormaEpsUsd: epsResult.proFormaEpsUsd,
+      epsAccretionDilutionPercent: epsResult.epsVariancePercent,
+      isAccretive: epsResult.isAccretive
+    };
+
+    if (demoMode) {
+      const overview = loadDemoInvestorRelationsOverview();
+      const newScenario: CapitalScenarioDTO = {
+        id: `scen-${Date.now()}`,
+        scenarioName: req.scenarioName,
+        financingType: req.financingType,
+        targetGrossProceedsUsd: req.grossAmountUsd,
+        discountToVwapPercent: 4.0,
+        underwriterSpreadPercent: 3.5,
+        netProceedsUsd,
+        proFormaSharesIssued: sharesIssued,
+        proFormaDilutionPercent,
+        couponRatePercent: req.financingType === 'convertible_senior_notes' ? 1.75 : undefined,
+        conversionPremiumPercent: req.financingType === 'convertible_senior_notes' ? 30.0 : undefined,
+        calculatedWaccPercent,
+        proFormaEpsAccretionPercent: epsResult.epsVariancePercent
+      };
+      overview.capitalMarkets.activeScenarios.unshift(newScenario);
+      overview.capitalMarkets.currentWaccPercent = calculatedWaccPercent;
+      saveDemoInvestorRelationsOverview(overview);
+      return result;
+    }
+
+    try {
+      return await request<CapitalScenarioResultDTO>('/investor-relations-nexus/capital/simulate', {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      return result;
+    }
+  },
+
+  async generateSecForm8K(
+    req: GenerateForm8KRequestDTO
+  ): Promise<SecForm8KDisclosureDTO> {
+    if (demoMode) {
+      const overview = loadDemoInvestorRelationsOverview();
+      const markdownContent = generateSecForm8KDisclosure(overview, req);
+      const itemsIncluded: string[] = [];
+      if (req.includeItem202) itemsIncluded.push('Item 2.02');
+      if (req.includeItem701) itemsIncluded.push('Item 7.01');
+      itemsIncluded.push('Item 9.01');
+
+      const newDisclosure: SecForm8KDisclosureDTO = {
+        id: `8k-${Date.now()}`,
+        fiscalQuarter: req.fiscalQuarter,
+        filingTitle: req.filingTitle,
+        status: 'draft',
+        itemsIncluded,
+        markdownContent,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        signoffs: []
+      };
+      overview.latestForm8K = newDisclosure;
+      saveDemoInvestorRelationsOverview(overview);
+      return newDisclosure;
+    }
+    try {
+      return await request<SecForm8KDisclosureDTO>('/investor-relations-nexus/disclosures/generate-8k', {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      const overview = loadDemoInvestorRelationsOverview();
+      return overview.latestForm8K!;
+    }
+  },
+
+  async signoffSecForm8K(
+    disclosureId: string,
+    req: SignoffForm8KRequestDTO
+  ): Promise<SecForm8KDisclosureDTO> {
+    if (demoMode) {
+      const overview = loadDemoInvestorRelationsOverview();
+      if (!overview.latestForm8K || overview.latestForm8K.id !== disclosureId) {
+        if (!overview.latestForm8K) {
+          overview.latestForm8K = createDefaultDemoInvestorRelationsOverview().latestForm8K!;
+        }
+      }
+      const disclosure = overview.latestForm8K;
+      const newSignature: SecForm8KSignoffDTO = {
+        role: req.role,
+        signedBy: req.signerName,
+        signedAt: new Date().toISOString(),
+        signatureToken: `sig_${req.role}_${Date.now().toString(16)}`,
+        verificationNotes: req.verificationNotes
+      };
+      disclosure.signoffs = [...disclosure.signoffs.filter((s) => s.role !== req.role), newSignature];
+
+      const hasVpIr = disclosure.signoffs.some((s) => s.role === 'vp_investor_relations');
+      const hasCfo = disclosure.signoffs.some((s) => s.role === 'chief_financial_officer');
+      const hasCeo = disclosure.signoffs.some((s) => s.role === 'chief_executive_officer');
+
+      if (hasCeo && hasCfo && hasVpIr) {
+        disclosure.status = 'ceo_ratified';
+      } else if (hasCfo && hasVpIr) {
+        disclosure.status = 'cfo_approved';
+      } else if (hasVpIr) {
+        disclosure.status = 'vp_ir_certified';
+      }
+      disclosure.updatedAt = new Date().toISOString();
+      saveDemoInvestorRelationsOverview(overview);
+      return disclosure;
+    }
+    try {
+      return await request<SecForm8KDisclosureDTO>(`/investor-relations-nexus/disclosures/${disclosureId}/signoff`, {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      const overview = loadDemoInvestorRelationsOverview();
+      return overview.latestForm8K!;
+    }
   }
 };
 

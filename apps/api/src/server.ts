@@ -113,6 +113,7 @@ import { WorkforceTotalRewardsStudioService } from './services/workforce-total-r
 import { CorporateTreasuryNexusService } from './services/corporate-treasury-nexus-service.ts';
 import { InternalAuditErmNexusService } from './services/internal-audit-erm-nexus-service.ts';
 import { LegalOperationsNexusService } from './services/legal-operations-nexus-service.ts';
+import { InvestorRelationsNexusService } from './services/investor-relations-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -141,7 +142,12 @@ import {
   validateMaterialContractInput,
   validateLitigationMatterInput,
   validateLegalHoldInput,
-  validateBoardSignoffInput
+  validateBoardSignoffInput,
+  validateShareholderInput as validateIrShareholderInput,
+  validateConsensusGuidanceInput as validateIrConsensusGuidanceInput,
+  validateNdrMeetingInput as validateIrNdrMeetingInput,
+  validateCapitalFinancingInput as validateIrCapitalFinancingInput,
+  validateForm8KSignoffInput as validateIrForm8KSignoffInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -283,6 +289,7 @@ export const workforceTotalRewardsStudioService = new WorkforceTotalRewardsStudi
 export const corporateTreasuryNexusService = new CorporateTreasuryNexusService(pool);
 export const internalAuditErmNexusService = new InternalAuditErmNexusService(pool);
 export const legalOperationsNexusService = new LegalOperationsNexusService(pool);
+export const investorRelationsNexusService = new InvestorRelationsNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -5035,7 +5042,114 @@ app.post(['/api/legal-operations-nexus/board-war-room/sign-off', '/api/legal/boa
   }
 });
 
+app.get(['/api/investor-relations-nexus/overview', '/api/ir/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await investorRelationsNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+});
 
+app.post(['/api/investor-relations-nexus/activist/simulate', '/api/ir/activist/simulate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const {
+      tsrUnderperformancePercent,
+      valuationDiscountPercent,
+      governanceDefenseScore,
+      freeCashFlowMarginGap,
+      activistOwnershipPercent
+    } = req.body;
+    if (
+      typeof tsrUnderperformancePercent !== 'number' ||
+      typeof valuationDiscountPercent !== 'number' ||
+      typeof governanceDefenseScore !== 'number' ||
+      typeof freeCashFlowMarginGap !== 'number' ||
+      typeof activistOwnershipPercent !== 'number'
+    ) {
+      return res.status(400).json({ error: 'All simulation parameters are required numbers' });
+    }
+    const result = await investorRelationsNexusService.simulateActivistVulnerability(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/investor-relations-nexus/earnings/reconcile', '/api/ir/earnings/reconcile'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const { fiscalQuarter, gaapNetIncomeUsd } = req.body;
+    if (!fiscalQuarter || typeof gaapNetIncomeUsd !== 'number') {
+      return res.status(400).json({ error: 'fiscalQuarter and gaapNetIncomeUsd are required' });
+    }
+    const result = await investorRelationsNexusService.reconcileNonGaapEarnings(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/investor-relations-nexus/roadshow/meetings', '/api/ir/roadshow/meetings'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateIrNdrMeetingInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const created = await investorRelationsNexusService.logInvestorMeeting(userId, req.body);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/investor-relations-nexus/capital/simulate', '/api/ir/capital/simulate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateIrCapitalFinancingInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await investorRelationsNexusService.simulateCapitalScenario(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/investor-relations-nexus/disclosures/generate-8k', '/api/ir/disclosures/generate-8k'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const { fiscalQuarter, filingTitle } = req.body;
+    if (!fiscalQuarter || !filingTitle) {
+      return res.status(400).json({ error: 'fiscalQuarter and filingTitle are required' });
+    }
+    const created = await investorRelationsNexusService.generateSecForm8K(userId, req.body);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/investor-relations-nexus/disclosures/:id/signoff', '/api/ir/disclosures/:id/signoff'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateIrForm8KSignoffInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const updated = await investorRelationsNexusService.signoffSecForm8K(userId, req.params.id, req.body);
+    res.json(updated);
+  } catch (error) {
+    if ((error as Error).message.includes('not found')) {
+      return res.status(404).json({ error: (error as Error).message });
+    }
+    next(error);
+  }
+});
 
 app.get('/api/ai/grants', auth, async (req, res, next) => {
   try {

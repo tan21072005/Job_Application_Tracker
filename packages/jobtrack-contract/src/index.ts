@@ -51,3 +51,4 @@ export * from './workforce-total-rewards-studio.ts';
 export * from './corporate-treasury-nexus.ts';
 export * from './internal-audit-erm-nexus.ts';
 export * from './legal-operations-nexus.ts';
+export * from './investor-relations-nexus.ts';

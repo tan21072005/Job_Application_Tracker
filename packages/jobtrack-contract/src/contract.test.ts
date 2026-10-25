@@ -479,7 +479,20 @@ import {
   type CustodianLegalHoldDTO,
   type OutsideCounselInvoiceDTO,
   type LegalBoardMemorandumDTO,
-  type LegalOperationsOverviewDTO
+  type LegalOperationsOverviewDTO,
+  calculateAVIS,
+  calculateWACC,
+  calculateEPSAccretionDilution,
+  calculateRule10b18DailyLimit,
+  calculateISI,
+  generateSecForm8KDisclosure,
+  validateShareholderInput as validateIrShareholderInput,
+  validateConsensusGuidanceInput as validateIrConsensusGuidanceInput,
+  validateNdrMeetingInput as validateIrNdrMeetingInput,
+  validateCapitalFinancingInput as validateIrCapitalFinancingInput,
+  validateForm8KSignoffInput as validateIrForm8KSignoffInput,
+  type InvestorRelationsOverviewDTO,
+  type GenerateForm8KRequestDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -9431,6 +9444,132 @@ test('contract: legal operations validators validate correct and reject invalid 
   });
   assert.equal(goodSignoff.isValid, true);
 });
+
+test('contract: investor relations nexus algorithms compute exact financial indices', () => {
+  const avisLow = calculateAVIS({
+    tsrUnderperformancePercent: 5.0,
+    valuationDiscountPercent: 8.0,
+    governanceDefenseScore: 85.0,
+    freeCashFlowMarginGap: 2.0,
+    activistOwnershipPercent: 1.5
+  });
+  assert.equal(avisLow.riskLevel, 'fortified_low');
+  assert.ok(avisLow.score >= 0 && avisLow.score < 30.0);
+
+  const avisHigh = calculateAVIS({
+    tsrUnderperformancePercent: 45.0,
+    valuationDiscountPercent: 40.0,
+    governanceDefenseScore: 20.0,
+    freeCashFlowMarginGap: 18.0,
+    activistOwnershipPercent: 12.0
+  });
+  assert.equal(avisHigh.riskLevel, 'critical_activist_target');
+  assert.ok(avisHigh.score >= 75.0);
+
+  const wacc = calculateWACC(11.5, 6.0, 21.0, 4000000000, 1000000000);
+  assert.ok(wacc > 0);
+  assert.equal(wacc, 10.15);
+
+  const epsScenario = calculateEPSAccretionDilution({
+    standaloneNetIncomeUsd: 150000000,
+    standaloneSharesCount: 75000000,
+    standaloneEps: 2.00,
+    financingType: 'convertible_senior_notes',
+    incrementalSharesCount: 2000000,
+    incrementalAnnualInterestUsd: 3000000,
+    marginalTaxRatePercent: 21.0
+  });
+  assert.ok(epsScenario.proFormaEpsUsd > 0);
+  assert.equal(epsScenario.isAccretive, false);
+
+  const rule10b18 = calculateRule10b18DailyLimit(800000, false);
+  assert.equal(rule10b18.standardDailyLimitShares, 200000);
+  assert.equal(rule10b18.effectiveLimitShares, 200000);
+
+  const rule10b18Block = calculateRule10b18DailyLimit(800000, true);
+  assert.equal(rule10b18Block.effectiveLimitShares, 1000000);
+
+  const isi = calculateISI({
+    analystRevisionsScore: 88.0,
+    avisScore: 22.0,
+    ndrFeedbackScore: 85.0,
+    institutionalInflowOutflowScore: 80.0,
+    consensusDispersionScore: 90.0
+  });
+  assert.equal(isi.band, 'strong_institutional_conviction');
+  assert.ok(isi.score >= 80.0);
+});
+
+test('contract: generateSecForm8KDisclosure produces statutory SEC text', () => {
+  const dummyOverview = {
+    companyName: 'JobTrack Enterprise Technologies Inc.',
+    tickerSymbol: 'JBTR'
+  } as unknown as InvestorRelationsOverviewDTO;
+
+  const request: GenerateForm8KRequestDTO = {
+    fiscalQuarter: 'Q3-2026',
+    filingTitle: 'Current Report under Item 2.02 and Item 7.01',
+    includeItem202: true,
+    includeItem701: true
+  };
+
+  const disclosure = generateSecForm8KDisclosure(dummyOverview, request);
+  assert.ok(disclosure.includes('FORM 8-K'));
+  assert.ok(disclosure.includes('JBTR'));
+  assert.ok(disclosure.includes('Item 2.02 Results of Operations and Financial Condition'));
+  assert.ok(disclosure.includes('Item 7.01 Regulation FD Disclosure'));
+  assert.ok(disclosure.includes('VP of Investor Relations'));
+  assert.ok(disclosure.includes('Chief Financial Officer'));
+  assert.ok(disclosure.includes('Chief Executive Officer'));
+});
+
+test('contract: investor relations nexus validators enforce correct schemas and reject invalid payloads', () => {
+  const badShareholder = validateIrShareholderInput({});
+  assert.equal(badShareholder.ok, false);
+  const goodShareholder = validateIrShareholderInput({
+    institutionName: 'Vanguard Group Inc.',
+    sharesHeld: 6200000,
+    percentOwnership: 8.27
+  });
+  assert.equal(goodShareholder.ok, true);
+
+  const badConsensus = validateIrConsensusGuidanceInput({});
+  assert.equal(badConsensus.ok, false);
+  const goodConsensus = validateIrConsensusGuidanceInput({
+    metricName: 'GAAP Revenue',
+    consensusMean: 125.4,
+    analystCount: 14
+  });
+  assert.equal(goodConsensus.ok, true);
+
+  const badMeeting = validateIrNdrMeetingInput({});
+  assert.equal(badMeeting.ok, false);
+  const goodMeeting = validateIrNdrMeetingInput({
+    institutionName: 'Capital Group',
+    meetingDate: '2026-10-25',
+    sentimentScore: 0.85
+  });
+  assert.equal(goodMeeting.ok, true);
+
+  const badFinancing = validateIrCapitalFinancingInput({});
+  assert.equal(badFinancing.ok, false);
+  const goodFinancing = validateIrCapitalFinancingInput({
+    scenarioName: 'Series Convertible 2031',
+    grossAmountUsd: 250000000,
+    stockPriceUsd: 64.50
+  });
+  assert.equal(goodFinancing.ok, true);
+
+  const badSignoff = validateIrForm8KSignoffInput({});
+  assert.equal(badSignoff.ok, false);
+  const goodSignoff = validateIrForm8KSignoffInput({
+    role: 'vp_investor_relations',
+    signerName: 'Alexander Vance',
+    verificationNotes: 'Audited consensus models and Reg G reconciliations.'
+  });
+  assert.equal(goodSignoff.ok, true);
+});
+
 
 
 
