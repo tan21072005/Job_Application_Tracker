@@ -565,7 +565,21 @@ import {
   validateCreateMergerTransactionInput,
   validateDefineMarketInput,
   validateProposeDivestiturePackageInput,
-  validateSubmitAntitrustSignoffInput
+  validateSubmitAntitrustSignoffInput,
+  calculateTransferRiskIndex,
+  evaluateStatutorySlaCountdown,
+  calculateDpiaResidualRisk,
+  calculateDifferentialPrivacyLeakage,
+  calculateMultiJurisdictionalFineExposure,
+  computeTripartiteSha256Seal,
+  validateEvaluateTransferInput,
+  validateCreateDsrRequestInput,
+  validateTriggerDsrExtensionInput,
+  validateCreateRopaActivityInput,
+  validateCreateDpiaAssessmentInput,
+  validateRegisterAiCorpusInput,
+  validateGenerateSyntheticDatasetInput,
+  validateSignTripartiteRatificationInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -10642,6 +10656,223 @@ test('contract: antitrust input validation functions reject invalid payloads and
     statementAcknowledged: 'Antitrust defense strategy and HSR Item 4(c)/4(d) filing vetted under 15 U.S.C. Section 18a.'
   });
   assert.equal(goodSignoff.ok, true);
+});
+
+test('contract: privacy-data-sovereignty calculateTransferRiskIndex evaluates corridors and thresholds', () => {
+  const safeRes = calculateTransferRiskIndex({
+    destinationJurisdictionTier: 'adequacy_recognized',
+    transferMechanism: 'adequacy_decision',
+    supplementaryTechnicalMeasure: 'eea_sovereign_hsm_encryption',
+    dataSensitivityCategory: 'b2b_professional_contacts',
+    annualDataSubjectVolume: 5000
+  });
+  assert.equal(safeRes.riskTier, 'safe_harbor');
+  assert.equal(safeRes.isTransferPermissible, true);
+  assert.ok(safeRes.transferRiskIndex <= 20.0);
+
+  const riskyRes = calculateTransferRiskIndex({
+    destinationJurisdictionTier: 'authoritarian_unbounded_access',
+    transferMechanism: 'article_49_derogation',
+    supplementaryTechnicalMeasure: 'cleartext_none',
+    dataSensitivityCategory: 'special_category_art_9_10',
+    annualDataSubjectVolume: 500000
+  });
+  assert.equal(riskyRes.riskTier, 'prohibitive_unlawful');
+  assert.equal(riskyRes.isTransferPermissible, false);
+  assert.ok(riskyRes.transferRiskIndex > 70.0);
+});
+
+test('contract: privacy-data-sovereignty evaluateStatutorySlaCountdown tracks deadlines and extensions', () => {
+  const gdprNormal = evaluateStatutorySlaCountdown(
+    'gdpr_eu',
+    '2026-10-01T00:00:00.000Z',
+    false,
+    undefined,
+    '2026-10-10T00:00:00.000Z'
+  );
+  assert.equal(gdprNormal.totalAllocatedDays, 30);
+  assert.equal(gdprNormal.isBreached, false);
+  assert.equal(gdprNormal.isExtensionPermitted, true);
+  assert.equal(gdprNormal.calendarDaysRemaining, 21);
+
+  const gdprExtended = evaluateStatutorySlaCountdown(
+    'gdpr_eu',
+    '2026-10-01T00:00:00.000Z',
+    true,
+    undefined,
+    '2026-10-10T00:00:00.000Z'
+  );
+  assert.equal(gdprExtended.totalAllocatedDays, 90);
+  assert.equal(gdprExtended.isExtensionPermitted, false);
+
+  const ccpaNormal = evaluateStatutorySlaCountdown(
+    'ccpa_cpra_us',
+    '2026-10-01T00:00:00.000Z',
+    false,
+    undefined,
+    '2026-10-10T00:00:00.000Z'
+  );
+  assert.equal(ccpaNormal.totalAllocatedDays, 45);
+});
+
+test('contract: privacy-data-sovereignty calculateDpiaResidualRisk evaluates threats and triggers', () => {
+  const lowRisk = calculateDpiaResidualRisk([
+    { likelihood: 1, severity: 2, controlWeight: 1.0 }
+  ], 10.0, 0);
+  assert.ok(lowRisk.residualRiskScore <= 25.0);
+  assert.equal(lowRisk.priorConsultationRequired, false);
+  assert.equal(lowRisk.approvalStatus, 'approved');
+
+  const severeRisk = calculateDpiaResidualRisk([
+    { likelihood: 5, severity: 5, controlWeight: 0.1 },
+    { likelihood: 5, severity: 4, controlWeight: 0.1 }
+  ], 85.0, 4);
+  assert.ok(severeRisk.residualRiskScore > 75.0);
+  assert.equal(severeRisk.priorConsultationRequired, true);
+  assert.equal(severeRisk.approvalStatus, 'prior_consultation_required');
+});
+
+test('contract: privacy-data-sovereignty differential privacy leakage and fine exposure models', () => {
+  const dpRes = calculateDifferentialPrivacyLeakage(0.5, 1e-6, 0.05, 1.0);
+  assert.equal(dpRes.isPrivacyPreserving, true);
+  assert.ok(dpRes.wassersteinUtilityScore >= 80.0);
+  assert.ok(dpRes.membershipInferenceAdvantageUpper < 1.0);
+
+  const fines = calculateMultiJurisdictionalFineExposure({
+    annualGlobalTurnoverEur: 1000000000,
+    intentionalInfractionsCount: 5,
+    unintentionalInfractionsCount: 10,
+    activeBreachRecordsCount: 10000,
+    demonstratedCooperationMitigationCredit: 0.40
+  });
+  assert.equal(fines.gdprMaxFineEur, 40000000);
+  assert.ok(fines.totalConservativeExposureEur > 45000000);
+  assert.ok(fines.totalExpectedRiskAdjustedExposureEur < fines.totalConservativeExposureEur);
+
+  const seal = computeTripartiteSha256Seal(
+    'CYCLE-2026-Q4',
+    18.5,
+    14500000,
+    'Dr. Hélène Rousseau, DPO',
+    'Marcus Sterling, Esq., CPO',
+    'Elena Rostova, CEO',
+    '2026-10-25T12:00:00.000Z'
+  );
+  assert.equal(seal.length, 64);
+});
+
+test('contract: privacy-data-sovereignty validators accept valid and reject invalid schemas', () => {
+  const badTransfer = validateEvaluateTransferInput({});
+  assert.equal(badTransfer.ok, false);
+
+  const goodTransfer = validateEvaluateTransferInput({
+    corridorCode: 'EU-US-PROD-01',
+    originCountry: 'DEU',
+    destinationCountry: 'USA',
+    destinationJurisdictionTier: 'dpf_certified_participant',
+    transferMechanism: 'eu_us_dpf_certified',
+    legalInstrumentReference: 'DPF Self-Cert #US-882190',
+    dataSensitivityCategory: 'consumer_pii',
+    supplementaryTechnicalMeasure: 'eea_sovereign_hsm_encryption',
+    annualDataSubjectVolume: 250000
+  });
+  assert.equal(goodTransfer.ok, true);
+
+  const badDsr = validateCreateDsrRequestInput({ subjectEmail: 'invalid' });
+  assert.equal(badDsr.ok, false);
+
+  const goodDsr = validateCreateDsrRequestInput({
+    subjectIdentifier: 'USR-89214',
+    subjectEmail: 'data.subject@domain.de',
+    regulatoryFramework: 'gdpr_eu',
+    requestType: 'erasure_deletion',
+    identityVerificationMethod: 'nist_ial2_authenticator'
+  });
+  assert.equal(goodDsr.ok, true);
+
+  const goodExtension = validateTriggerDsrExtensionInput({
+    dsrRequestId: 'dsr-001',
+    extensionReason: 'Complex multi-jurisdictional financial archive retrieval required under Art 12(3).'
+  });
+  assert.equal(goodExtension.ok, true);
+
+  const goodRopa = validateCreateRopaActivityInput({
+    activityCode: 'ROPA-ENG-01',
+    name: 'Customer Talent Identity Indexing',
+    businessUnit: 'Engineering',
+    processOwner: 'VP of Platform Engineering',
+    processingPurpose: 'Searchable talent profile discovery for enterprise recruiters',
+    gdprArticle6Basis: 'contract_performance',
+    dataCategories: ['professional_experience', 'skills', 'education'],
+    specialCategoriesPresent: false,
+    dataSubjectsCategory: 'Platform Job Applicants',
+    recipientCategories: ['Cloud Infrastructure Providers', 'Enterprise Hiring Managers'],
+    crossBorderTransferInvolved: true,
+    retentionPeriodMonths: 24,
+    retentionLegalGround: 'Statutory recruitment and labor law record obligations',
+    technicalSecurityMeasures: ['AES-256 GCM at rest', 'TLS 1.3 in transit', 'RBAC least privilege'],
+    isDpiaRequired: true
+  });
+  assert.equal(goodRopa.ok, true);
+
+  const goodDpia = validateCreateDpiaAssessmentInput({
+    ropaActivityId: 'ropa-001',
+    dpiaReference: 'DPIA-2026-09',
+    title: 'High-Scale AI Career Matching Profile Ingestion',
+    systematicMonitoringFlag: true,
+    largeScaleProcessingFlag: true,
+    innovativeTechFlag: true,
+    vulnerableSubjectsFlag: false,
+    automatedDecisionFlag: false,
+    threatItems: [
+      {
+        threatScenario: 'Model inversion attack revealing applicant salary history',
+        privacyHarmType: 'Financial profiling and loss of confidentiality',
+        likelihoodRating: 2,
+        severityRating: 4,
+        mitigationControls: 'Differential privacy DP-SGD gradient clipping and noise injection',
+        controlWeight: 0.85
+      }
+    ],
+    dpoOpinion: 'Processing deemed acceptable conditional on differential privacy epsilon <= 1.0.'
+  });
+  assert.equal(goodDpia.ok, true);
+
+  const goodAi = validateRegisterAiCorpusInput({
+    corpusIdentifier: 'CORPUS-LLM-CAREER-V4',
+    datasetName: 'Global Resume and Career Trajectory Foundation Corpus',
+    originSourceUri: 's3://jobtrack-sovereign-ai-datasets/curated-v4/',
+    collectionJurisdiction: 'FRA',
+    legalBasisForTraining: 'GDPR Article 6(1)(f) Legitimate Interests with Art 21 Opt-out',
+    optOutMechanismSupported: true,
+    copyrightLicenseType: 'Apache-2.0 and Permissive Open Web',
+    textDataMiningOptOut: false,
+    fairUseFourFactorScore: 3.8,
+    piiExtractionRiskScore: 12.5,
+    euAiActArticle10Compliant: true,
+    totalTokenOrRecordCount: 4500000000
+  });
+  assert.equal(goodAi.ok, true);
+
+  const goodSynthetic = validateGenerateSyntheticDatasetInput({
+    datasetCode: 'SYNTH-BENCHMARK-2026',
+    synthesisAlgorithm: 'DP-PATE-GAN-Conditional',
+    epsilonBudgetSpent: 0.85,
+    deltaBoundParameter: 1e-6,
+    noiseMechanism: 'subsampled_gaussian_rdp',
+    syntheticRecordCount: 500000,
+    storageS3Bucket: 'jobtrack-synthetic-data-eu-central-1',
+    storageS3Key: 'datasets/benchmark-2026-v1.parquet'
+  });
+  assert.equal(goodSynthetic.ok, true);
+
+  const goodRatification = validateSignTripartiteRatificationInput({
+    ratificationId: 'ratif-2026-q4',
+    role: 'data_protection_officer',
+    signatoryFullName: 'Dr. Hélène Rousseau, DPO',
+    notes: 'Approved without reservations.'
+  });
+  assert.equal(goodRatification.ok, true);
 });
 
 

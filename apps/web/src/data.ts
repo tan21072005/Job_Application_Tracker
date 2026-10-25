@@ -705,7 +705,52 @@ import {
   calculateRemedyDefensibilityIndex,
   calculateHsrStatutoryFee,
   evaluateHsrStatutoryThresholds,
-  computeRatificationHash
+  computeRatificationHash,
+  type TransferRiskTier,
+  type DestinationJurisdictionTier,
+  type TransferMechanism,
+  type SupplementaryTechMeasure,
+  type DataSensitivityCategory,
+  type RegulatoryFramework,
+  type DsrRequestType,
+  type DsrVerificationStatus,
+  type DsrStatus,
+  type SubsystemTarget,
+  type SubsystemExecutionStatus,
+  type RoPaLegalBasisArt6,
+  type RoPaLegalBasisArt9,
+  type DpiaApprovalStatus,
+  type AiCorpusGovernanceStatus,
+  type DifferentialPrivacyNoiseMechanism,
+  type TripartiteRole,
+  type RatificationStatus,
+  type CrossBorderTransfer,
+  type TransferImpactAssessment,
+  type DsrRequest,
+  type DsrOrchestrationTask,
+  type RopaActivity,
+  type DpiaAssessment,
+  type DpiaRiskItem,
+  type AiCorpusLineage,
+  type SyntheticDataset,
+  type RegulatoryFineModel,
+  type BoardRatification,
+  type PrivacyAuditEvent,
+  type PrivacyNexusOverview,
+  type EvaluateTransferInput,
+  type CreateDsrRequestInput,
+  type TriggerDsrExtensionInput,
+  type CreateRopaActivityInput,
+  type CreateDpiaAssessmentInput,
+  type RegisterAiCorpusInput,
+  type GenerateSyntheticDatasetInput,
+  type SignTripartiteRatificationInput,
+  calculateTransferRiskIndex,
+  evaluateStatutorySlaCountdown,
+  calculateDpiaResidualRisk,
+  calculateDifferentialPrivacyLeakage,
+  calculateMultiJurisdictionalFineExposure,
+  computeTripartiteSha256Seal
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -23959,6 +24004,865 @@ export const antitrustNexusRepository = {
 
     const store = createDefaultDemoAntitrustStore();
     saveDemoAntitrustStore(store);
+    return store.overview;
+  }
+};
+
+const DEMO_PRIVACY_STORAGE_KEY = 'jobtrack_demo_privacy_data_sovereignty_nexus';
+
+interface DemoPrivacyStore {
+  overview: PrivacyNexusOverview;
+}
+
+function createDefaultDemoPrivacyNexusStore(): DemoPrivacyStore {
+  const now = new Date();
+  const nowIso = now.toISOString();
+
+  const transfers: CrossBorderTransfer[] = [
+    {
+      id: 'trans-01',
+      userId: 'demo-user',
+      corridorCode: 'EU-US-PROD-01',
+      originCountry: 'DEU',
+      destinationCountry: 'USA',
+      destinationJurisdictionTier: 'dpf_certified_participant',
+      transferMechanism: 'eu_us_dpf_certified',
+      legalInstrumentReference: 'DPF Self-Cert #US-882190',
+      dataSensitivityCategory: 'consumer_pii',
+      supplementaryTechnicalMeasure: 'eea_sovereign_hsm_encryption',
+      annualDataSubjectVolume: 450000,
+      transferRiskIndex: 18.2,
+      riskTier: 'safe_harbor',
+      isActive: true,
+      lastEvaluatedAt: nowIso,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'trans-02',
+      userId: 'demo-user',
+      corridorCode: 'EU-GB-BACKUP',
+      originCountry: 'FRA',
+      destinationCountry: 'GBR',
+      destinationJurisdictionTier: 'adequacy_recognized',
+      transferMechanism: 'adequacy_decision',
+      legalInstrumentReference: 'EC Adequacy Decision 2021/1772',
+      dataSensitivityCategory: 'b2b_professional_contacts',
+      supplementaryTechnicalMeasure: 'provider_managed_kms',
+      annualDataSubjectVolume: 120000,
+      transferRiskIndex: 8.4,
+      riskTier: 'safe_harbor',
+      isActive: true,
+      lastEvaluatedAt: nowIso,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'trans-03',
+      userId: 'demo-user',
+      corridorCode: 'EU-CN-ANALYTICS',
+      originCountry: 'IRL',
+      destinationCountry: 'CHN',
+      destinationJurisdictionTier: 'authoritarian_unbounded_access',
+      transferMechanism: 'cac_security_assessment',
+      legalInstrumentReference: 'CAC Outbound Security Approval #2026-SH-991',
+      dataSensitivityCategory: 'financial_geolocation',
+      supplementaryTechnicalMeasure: 'irreversible_tokenization',
+      annualDataSubjectVolume: 65000,
+      transferRiskIndex: 39.8,
+      riskTier: 'managed_risk',
+      isActive: true,
+      lastEvaluatedAt: nowIso,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'trans-04',
+      userId: 'demo-user',
+      corridorCode: 'EU-IN-DEVELOPMENT',
+      originCountry: 'NLD',
+      destinationCountry: 'IND',
+      destinationJurisdictionTier: 'moderate_safeguards_rule_of_law',
+      transferMechanism: 'scc_module_2_c2p',
+      legalInstrumentReference: 'SCC 2021/914 Module 2 TIA V3',
+      dataSensitivityCategory: 'special_category_art_9_10',
+      supplementaryTechnicalMeasure: 'eea_sovereign_hsm_encryption',
+      annualDataSubjectVolume: 25000,
+      transferRiskIndex: 28.5,
+      riskTier: 'managed_risk',
+      isActive: true,
+      lastEvaluatedAt: nowIso,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    }
+  ];
+
+  const pendingDsrRequests: DsrRequest[] = [
+    {
+      id: 'dsr-01',
+      userId: 'demo-user',
+      ticketReference: 'DSR-884102',
+      subjectIdentifier: 'CUST-EU-9921',
+      subjectEmail: 'claire.bernard@paris-tech.fr',
+      regulatoryFramework: 'gdpr_eu',
+      requestType: 'erasure_deletion',
+      identityVerificationStatus: 'ial2_verified',
+      identityVerificationMethod: 'bank_id_oidc_token',
+      statutorySlaDays: 30,
+      statutoryDeadlineAt: new Date(now.getTime() + 18 * 86400000).toISOString(),
+      isExtensionTriggered: false,
+      status: 'orchestrating',
+      orchestrationProgressPct: 60.0,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'dsr-02',
+      userId: 'demo-user',
+      ticketReference: 'DSR-884103',
+      subjectIdentifier: 'CUST-US-1029',
+      subjectEmail: 'david.miller@sf-venture.com',
+      regulatoryFramework: 'ccpa_cpra_us',
+      requestType: 'access_portability',
+      identityVerificationStatus: 'ial2_verified',
+      identityVerificationMethod: 'nist_authenticator_ial2',
+      statutorySlaDays: 45,
+      statutoryDeadlineAt: new Date(now.getTime() + 7 * 86400000).toISOString(),
+      isExtensionTriggered: false,
+      status: 'identity_verified',
+      orchestrationProgressPct: 30.0,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'dsr-03',
+      userId: 'demo-user',
+      ticketReference: 'DSR-884104',
+      subjectIdentifier: 'CUST-DE-4412',
+      subjectEmail: 'wolfgang.schmidt@berlin-corp.de',
+      regulatoryFramework: 'gdpr_eu',
+      requestType: 'rectification',
+      identityVerificationStatus: 'token_confirmed',
+      identityVerificationMethod: 'email_magic_link_totp',
+      statutorySlaDays: 30,
+      statutoryDeadlineAt: new Date(now.getTime() + 32 * 86400000).toISOString(),
+      isExtensionTriggered: false,
+      status: 'intake',
+      orchestrationProgressPct: 10.0,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    }
+  ];
+
+  const ropaActivities: RopaActivity[] = [
+    {
+      id: 'ropa-01',
+      userId: 'demo-user',
+      activityCode: 'ROPA-ENG-01',
+      name: 'Enterprise Talent Identity & Career Telemetry',
+      businessUnit: 'Platform Engineering',
+      processOwner: 'VP Infrastructure',
+      processingPurpose: 'Real-time candidate profile discovery and AI applicant screening',
+      gdprArticle6Basis: 'contract_performance',
+      dataCategories: ['career_history', 'skills', 'salary_expectations', 'work_authorization'],
+      specialCategoriesPresent: false,
+      dataSubjectsCategory: 'Job Seekers & Platform Candidates',
+      recipientCategories: ['Hiring Enterprise Clients', 'Cloud Hosting Infrastructure'],
+      crossBorderTransferInvolved: true,
+      transferCorridorId: 'trans-01',
+      retentionPeriodMonths: 24,
+      retentionLegalGround: 'Statutory labor and recruitment record keeping',
+      technicalSecurityMeasures: ['AES-256 GCM', 'TLS 1.3 Strict', 'Zero Trust IAM'],
+      isDpiaRequired: true,
+      status: 'active',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'ropa-02',
+      userId: 'demo-user',
+      activityCode: 'ROPA-AI-02',
+      name: 'Foundation Model Career Matching & Sentiment Synthesis',
+      businessUnit: 'AI Research Lab',
+      processOwner: 'Head of AI Research',
+      processingPurpose: 'Autonomous resume tailoring and interview response semantic evaluation',
+      gdprArticle6Basis: 'legitimate_interests',
+      dataCategories: ['interview_transcripts', 'resume_variants', 'evaluation_rubrics'],
+      specialCategoriesPresent: false,
+      dataSubjectsCategory: 'Enterprise Candidates',
+      recipientCategories: ['Internal Model Pipelines', 'LLM Inference Nodes'],
+      crossBorderTransferInvolved: true,
+      transferCorridorId: 'trans-01',
+      retentionPeriodMonths: 36,
+      retentionLegalGround: 'Legitimate interest in product safety and model efficacy under Art 6(1)(f)',
+      technicalSecurityMeasures: ['Differential Privacy DP-SGD', 'Homomorphic Encryption POC', 'Air-Gapped Vault'],
+      isDpiaRequired: true,
+      status: 'active',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'ropa-03',
+      userId: 'demo-user',
+      activityCode: 'ROPA-FIN-03',
+      name: 'Cross-Border Contractor Payroll & Tax Compliance',
+      businessUnit: 'Corporate Finance',
+      processOwner: 'Global Controller',
+      processingPurpose: 'Statutory payroll execution and cross-border withholding tax remittance',
+      gdprArticle6Basis: 'legal_obligation',
+      dataCategories: ['bank_routing', 'taxpayer_id', 'gross_earnings', 'statutory_withholding'],
+      specialCategoriesPresent: false,
+      dataSubjectsCategory: 'Global Contractors & Employees',
+      recipientCategories: ['Tax Authorities', 'Banking Partners', 'Payroll Processors'],
+      crossBorderTransferInvolved: false,
+      retentionPeriodMonths: 84,
+      retentionLegalGround: 'Statutory tax retention period under corporate finance law',
+      technicalSecurityMeasures: ['Field-Level Tokenization', 'Dual-Control Key Custody'],
+      isDpiaRequired: false,
+      status: 'active',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    }
+  ];
+
+  const dpiaAssessments: DpiaAssessment[] = [
+    {
+      id: 'dpia-01',
+      userId: 'demo-user',
+      ropaActivityId: 'ropa-01',
+      dpiaReference: 'DPIA-2026-01',
+      title: 'Algorithmic Candidate Ranking & Automated Profiling',
+      systematicMonitoringFlag: true,
+      largeScaleProcessingFlag: true,
+      innovativeTechFlag: true,
+      vulnerableSubjectsFlag: false,
+      automatedDecisionFlag: true,
+      inherentRiskScore: 80.0,
+      controlEffectivenessFactor: 0.72,
+      residualRiskScore: 24.8,
+      priorConsultationRequired: false,
+      dpoOpinion: 'Approved under condition that continuous differential privacy auditing is enforced.',
+      approvalStatus: 'approved',
+      approvedByDpoAt: nowIso,
+      nextReassessmentDueAt: new Date(now.getTime() + 180 * 86400000).toISOString(),
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'dpia-02',
+      userId: 'demo-user',
+      ropaActivityId: 'ropa-02',
+      dpiaReference: 'DPIA-2026-02',
+      title: 'High-Risk AI Interview Transcript Sentiment Extraction',
+      systematicMonitoringFlag: false,
+      largeScaleProcessingFlag: true,
+      innovativeTechFlag: true,
+      vulnerableSubjectsFlag: false,
+      automatedDecisionFlag: false,
+      inherentRiskScore: 72.0,
+      controlEffectivenessFactor: 0.65,
+      residualRiskScore: 31.4,
+      priorConsultationRequired: false,
+      dpoOpinion: 'Under active DPO review pending verification of biometric data exclusion protocols.',
+      approvalStatus: 'under_dpo_review',
+      nextReassessmentDueAt: new Date(now.getTime() + 120 * 86400000).toISOString(),
+      createdAt: nowIso,
+      updatedAt: nowIso
+    }
+  ];
+
+  const aiCorpora: AiCorpusLineage[] = [
+    {
+      id: 'corpus-01',
+      userId: 'demo-user',
+      corpusIdentifier: 'CORPUS-CAREER-V4',
+      datasetName: 'Global Resume & Career Trajectory LLM Corpus',
+      originSourceUri: 's3://jobtrack-ai-lineage/curated-v4/',
+      collectionJurisdiction: 'FRA',
+      legalBasisForTraining: 'GDPR Art 6(1)(f) Legitimate Interest with Art 21 Opt-Out',
+      consentTrackingToken: 'CONSENT-HASH-99120',
+      optOutMechanismSupported: true,
+      copyrightLicenseType: 'Permissive Open Web & Proprietary Licenses',
+      textDataMiningOptOut: false,
+      fairUseFourFactorScore: 3.85,
+      piiExtractionRiskScore: 14.2,
+      euAiActArticle10Compliant: true,
+      totalTokenOrRecordCount: 6500000000,
+      governanceStatus: 'production_approved',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'corpus-02',
+      userId: 'demo-user',
+      corpusIdentifier: 'CORPUS-INTERVIEW-Q2',
+      datasetName: 'Synthetic Interview Dialogues & Scoring Benchmarks',
+      originSourceUri: 's3://jobtrack-ai-lineage/synthetic-v2/',
+      collectionJurisdiction: 'DEU',
+      legalBasisForTraining: 'GDPR Art 6(1)(a) Explicit User Consent',
+      consentTrackingToken: 'CONSENT-HASH-10492',
+      optOutMechanismSupported: true,
+      copyrightLicenseType: 'CC-BY-4.0 Enterprise Curated',
+      textDataMiningOptOut: false,
+      fairUseFourFactorScore: 4.0,
+      piiExtractionRiskScore: 6.5,
+      euAiActArticle10Compliant: true,
+      totalTokenOrRecordCount: 850000000,
+      governanceStatus: 'production_approved',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    }
+  ];
+
+  const syntheticDatasets: SyntheticDataset[] = [
+    {
+      id: 'synth-01',
+      userId: 'demo-user',
+      sourceCorpusId: 'corpus-01',
+      datasetCode: 'SYNTH-BENCHMARK-2026',
+      synthesisAlgorithm: 'DP-PATE-GAN-Conditional',
+      epsilonBudgetSpent: 0.75,
+      deltaBoundParameter: 1e-6,
+      noiseMechanism: 'subsampled_gaussian_rdp',
+      wassersteinUtilityScore: 91.5,
+      membershipInferenceAdvantage: 0.082,
+      differentialPrivacyCertified: true,
+      syntheticRecordCount: 1200000,
+      storageS3Bucket: 'jobtrack-synthetic-eu-west-1',
+      storageS3Key: 'benchmarks/2026/synth-v1.parquet',
+      status: 'active',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'synth-02',
+      userId: 'demo-user',
+      sourceCorpusId: 'corpus-01',
+      datasetCode: 'SYNTH-ATTR-EVAL-V1',
+      synthesisAlgorithm: 'Gaussian-Copula-DP',
+      epsilonBudgetSpent: 1.12,
+      deltaBoundParameter: 5e-6,
+      noiseMechanism: 'gaussian',
+      wassersteinUtilityScore: 88.2,
+      membershipInferenceAdvantage: 0.114,
+      differentialPrivacyCertified: true,
+      syntheticRecordCount: 450000,
+      storageS3Bucket: 'jobtrack-synthetic-eu-west-1',
+      storageS3Key: 'benchmarks/2026/attributes-v1.parquet',
+      status: 'active',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    }
+  ];
+
+  const regulatoryFines: RegulatoryFineModel[] = [
+    {
+      id: 'fine-01',
+      userId: 'demo-user',
+      modelReference: 'FINE-GDPR-2026',
+      jurisdictionCode: 'EU',
+      regulatoryFramework: 'gdpr_eu',
+      annualGlobalTurnoverEur: 1200000000.0,
+      turnoverRatePct: 4.0,
+      statutoryCeilingEur: 20000000.0,
+      activeBreachRecordsCount: 0,
+      intentionalInfractionsCount: 0,
+      unintentionalInfractionsCount: 1,
+      statutoryMaxFineEur: 48000000.0,
+      cooperationMitigationCredit: 0.45,
+      expectedRegulatoryExposureEur: 3960000.0,
+      calculatedAt: nowIso,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'fine-02',
+      userId: 'demo-user',
+      modelReference: 'FINE-CCPA-2026',
+      jurisdictionCode: 'US-CA',
+      regulatoryFramework: 'ccpa_cpra_us',
+      annualGlobalTurnoverEur: 1200000000.0,
+      turnoverRatePct: 0.0,
+      statutoryCeilingEur: 0.0,
+      activeBreachRecordsCount: 2500,
+      intentionalInfractionsCount: 0,
+      unintentionalInfractionsCount: 2,
+      statutoryMaxFineEur: 1880000.0,
+      cooperationMitigationCredit: 0.4,
+      expectedRegulatoryExposureEur: 103776.0,
+      calculatedAt: nowIso,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    },
+    {
+      id: 'fine-03',
+      userId: 'demo-user',
+      modelReference: 'FINE-PIPL-2026',
+      jurisdictionCode: 'CN',
+      regulatoryFramework: 'china_pipl',
+      annualGlobalTurnoverEur: 1200000000.0,
+      turnoverRatePct: 5.0,
+      statutoryCeilingEur: 6410256.0,
+      activeBreachRecordsCount: 0,
+      intentionalInfractionsCount: 0,
+      unintentionalInfractionsCount: 1,
+      statutoryMaxFineEur: 9000000.0,
+      cooperationMitigationCredit: 0.35,
+      expectedRegulatoryExposureEur: 456300.0,
+      calculatedAt: nowIso,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    }
+  ];
+
+  const seal = computeTripartiteSha256Seal(
+    'CYCLE-2026-Q4',
+    23.7,
+    4520076,
+    'Dr. Hélène Rousseau, DPO',
+    'Marcus Sterling, Esq., CPO',
+    'Elena Rostova, CEO',
+    nowIso
+  );
+
+  const latestRatification: BoardRatification = {
+    id: 'ratif-01',
+    userId: 'demo-user',
+    cycleCode: 'CYCLE-2026-Q4',
+    reportingPeriod: 'Q4 2026 Annual Privacy Audit',
+    triCompositeIndex: 23.7,
+    dpiaHighRiskOpenCount: 1,
+    dsrSlaCompliancePct: 94.5,
+    totalRegulatoryFineExposureEur: 4520076.0,
+    dpoFullName: 'Dr. Hélène Rousseau, DPO',
+    dpoSignedAt: nowIso,
+    cpoFullName: 'Marcus Sterling, Esq., CPO',
+    ceoFullName: 'Elena Rostova, CEO',
+    tripartiteSealSha256: seal,
+    ratificationStatus: 'pending_cpo',
+    boardSubmissionNotes: 'Annual comprehensive data protection officer audit report presented to Board of Directors Audit Committee.',
+    createdAt: nowIso,
+    updatedAt: nowIso
+  };
+
+  return {
+    overview: {
+      summary: {
+        activeCorridorsCount: transfers.filter((t) => t.isActive).length,
+        compositeTransferRiskIndex: 23.7,
+        openDsrRequestsCount: pendingDsrRequests.length,
+        dsrSlaAdherencePct: 94.5,
+        activeRopaActivitiesCount: ropaActivities.filter((r) => r.status === 'active').length,
+        highRiskDpiaPendingCount: 1,
+        aiCorpusApprovedCount: 2,
+        totalRegulatoryFineExposureEur: 4520076.0,
+        currentRatificationStatus: 'pending_cpo'
+      },
+      transfers,
+      pendingDsrRequests,
+      ropaActivities,
+      dpiaAssessments,
+      aiCorpora,
+      syntheticDatasets,
+      regulatoryFines,
+      latestRatification
+    }
+  };
+}
+
+function loadDemoPrivacyNexusStore(): DemoPrivacyStore {
+  try {
+    const raw = localStorage.getItem(DEMO_PRIVACY_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+    const store = createDefaultDemoPrivacyNexusStore();
+    saveDemoPrivacyNexusStore(store);
+    return store;
+  } catch {
+    const store = createDefaultDemoPrivacyNexusStore();
+    saveDemoPrivacyNexusStore(store);
+    return store;
+  }
+}
+
+function saveDemoPrivacyNexusStore(store: DemoPrivacyStore): void {
+  try {
+    localStorage.setItem(DEMO_PRIVACY_STORAGE_KEY, JSON.stringify(store));
+  } catch {}
+}
+
+export const privacyDataSovereigntyRepository = {
+  async getOverview(): Promise<PrivacyNexusOverview> {
+    if (demoMode) {
+      return loadDemoPrivacyNexusStore().overview;
+    }
+    try {
+      return await request<PrivacyNexusOverview>('/privacy/overview');
+    } catch {
+      return loadDemoPrivacyNexusStore().overview;
+    }
+  },
+
+  async evaluateTransfer(input: EvaluateTransferInput): Promise<CrossBorderTransfer> {
+    if (!demoMode) {
+      try {
+        return await request<CrossBorderTransfer>('/privacy/transfers', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoPrivacyNexusStore();
+    const evaluation = calculateTransferRiskIndex({
+      destinationJurisdictionTier: input.destinationJurisdictionTier,
+      transferMechanism: input.transferMechanism,
+      supplementaryTechnicalMeasure: input.supplementaryTechnicalMeasure,
+      dataSensitivityCategory: input.dataSensitivityCategory,
+      annualDataSubjectVolume: input.annualDataSubjectVolume
+    });
+
+    const newTransfer: CrossBorderTransfer = {
+      id: `trans-${Date.now()}`,
+      userId: 'demo-user',
+      corridorCode: input.corridorCode,
+      originCountry: input.originCountry,
+      destinationCountry: input.destinationCountry,
+      destinationJurisdictionTier: input.destinationJurisdictionTier,
+      transferMechanism: input.transferMechanism,
+      legalInstrumentReference: input.legalInstrumentReference,
+      dataSensitivityCategory: input.dataSensitivityCategory,
+      supplementaryTechnicalMeasure: input.supplementaryTechnicalMeasure,
+      annualDataSubjectVolume: input.annualDataSubjectVolume,
+      transferRiskIndex: evaluation.transferRiskIndex,
+      riskTier: evaluation.riskTier,
+      isActive: true,
+      lastEvaluatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    store.overview.transfers.unshift(newTransfer);
+    store.overview.summary.activeCorridorsCount = store.overview.transfers.filter((t) => t.isActive).length;
+    const total = store.overview.transfers.reduce((acc, t) => acc + t.transferRiskIndex, 0);
+    store.overview.summary.compositeTransferRiskIndex = Number(
+      (total / store.overview.transfers.length).toFixed(2)
+    );
+
+    saveDemoPrivacyNexusStore(store);
+    return newTransfer;
+  },
+
+  async createDsrRequest(input: CreateDsrRequestInput): Promise<DsrRequest> {
+    if (!demoMode) {
+      try {
+        return await request<DsrRequest>('/privacy/dsr', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoPrivacyNexusStore();
+    const now = new Date();
+    const statutoryDays = input.regulatoryFramework === 'ccpa_cpra_us' ? 45 : 30;
+    const deadline = new Date(now.getTime() + statutoryDays * 86400000);
+
+    const newDsr: DsrRequest = {
+      id: `dsr-${Date.now()}`,
+      userId: 'demo-user',
+      ticketReference: `DSR-${Date.now().toString().slice(-6)}`,
+      subjectIdentifier: input.subjectIdentifier,
+      subjectEmail: input.subjectEmail,
+      regulatoryFramework: input.regulatoryFramework,
+      requestType: input.requestType,
+      identityVerificationStatus: 'ial2_verified',
+      identityVerificationMethod: input.identityVerificationMethod,
+      statutorySlaDays: statutoryDays,
+      statutoryDeadlineAt: deadline.toISOString(),
+      isExtensionTriggered: false,
+      status: 'orchestrating',
+      orchestrationProgressPct: 20.0,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString()
+    };
+
+    store.overview.pendingDsrRequests.unshift(newDsr);
+    store.overview.summary.openDsrRequestsCount = store.overview.pendingDsrRequests.length;
+
+    saveDemoPrivacyNexusStore(store);
+    return newDsr;
+  },
+
+  async triggerDsrExtension(input: TriggerDsrExtensionInput): Promise<DsrRequest> {
+    if (!demoMode) {
+      try {
+        return await request<DsrRequest>('/privacy/dsr/extend', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoPrivacyNexusStore();
+    const dsr = store.overview.pendingDsrRequests.find((d) => d.id === input.dsrRequestId);
+    if (!dsr) throw new Error('DSR Request not found');
+
+    const bonusDays = dsr.regulatoryFramework === 'ccpa_cpra_us' ? 45 : 60;
+    const createdDate = new Date(dsr.createdAt);
+    const extendedDeadline = new Date(createdDate.getTime() + (dsr.statutorySlaDays + bonusDays) * 86400000);
+
+    dsr.isExtensionTriggered = true;
+    dsr.extensionReason = input.extensionReason;
+    dsr.extendedDeadlineAt = extendedDeadline.toISOString();
+    dsr.status = 'extended';
+    dsr.updatedAt = new Date().toISOString();
+
+    saveDemoPrivacyNexusStore(store);
+    return dsr;
+  },
+
+  async createRopaActivity(input: CreateRopaActivityInput): Promise<RopaActivity> {
+    if (!demoMode) {
+      try {
+        return await request<RopaActivity>('/privacy/ropa', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoPrivacyNexusStore();
+    const newRopa: RopaActivity = {
+      id: `ropa-${Date.now()}`,
+      userId: 'demo-user',
+      activityCode: input.activityCode,
+      name: input.name,
+      businessUnit: input.businessUnit,
+      processOwner: input.processOwner,
+      processingPurpose: input.processingPurpose,
+      gdprArticle6Basis: input.gdprArticle6Basis,
+      gdprArticle9Basis: input.gdprArticle9Basis,
+      dataCategories: input.dataCategories,
+      specialCategoriesPresent: input.specialCategoriesPresent,
+      dataSubjectsCategory: input.dataSubjectsCategory,
+      recipientCategories: input.recipientCategories,
+      crossBorderTransferInvolved: input.crossBorderTransferInvolved,
+      transferCorridorId: input.transferCorridorId,
+      retentionPeriodMonths: input.retentionPeriodMonths,
+      retentionLegalGround: input.retentionLegalGround,
+      technicalSecurityMeasures: input.technicalSecurityMeasures,
+      isDpiaRequired: input.isDpiaRequired,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    store.overview.ropaActivities.unshift(newRopa);
+    store.overview.summary.activeRopaActivitiesCount = store.overview.ropaActivities.filter((r) => r.status === 'active').length;
+
+    saveDemoPrivacyNexusStore(store);
+    return newRopa;
+  },
+
+  async createDpiaAssessment(input: CreateDpiaAssessmentInput): Promise<DpiaAssessment> {
+    if (!demoMode) {
+      try {
+        return await request<DpiaAssessment>('/privacy/dpia', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoPrivacyNexusStore();
+    const triggersCount =
+      (input.systematicMonitoringFlag ? 1 : 0) +
+      (input.largeScaleProcessingFlag ? 1 : 0) +
+      (input.innovativeTechFlag ? 1 : 0) +
+      (input.vulnerableSubjectsFlag ? 1 : 0) +
+      (input.automatedDecisionFlag ? 1 : 0);
+
+    const evaluation = calculateDpiaResidualRisk(
+      input.threatItems.map((t) => ({
+        likelihood: t.likelihoodRating,
+        severity: t.severityRating,
+        controlWeight: t.controlWeight
+      })),
+      25.0,
+      triggersCount
+    );
+
+    const now = new Date();
+    const newDpia: DpiaAssessment = {
+      id: `dpia-${Date.now()}`,
+      userId: 'demo-user',
+      ropaActivityId: input.ropaActivityId,
+      dpiaReference: input.dpiaReference,
+      title: input.title,
+      systematicMonitoringFlag: input.systematicMonitoringFlag,
+      largeScaleProcessingFlag: input.largeScaleProcessingFlag,
+      innovativeTechFlag: input.innovativeTechFlag,
+      vulnerableSubjectsFlag: input.vulnerableSubjectsFlag,
+      automatedDecisionFlag: input.automatedDecisionFlag,
+      inherentRiskScore: evaluation.inherentRiskScore,
+      controlEffectivenessFactor: evaluation.controlEffectivenessFactor,
+      residualRiskScore: evaluation.residualRiskScore,
+      priorConsultationRequired: evaluation.priorConsultationRequired,
+      dpoOpinion: input.dpoOpinion,
+      approvalStatus: evaluation.approvalStatus,
+      nextReassessmentDueAt: new Date(now.getTime() + 180 * 86400000).toISOString(),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString()
+    };
+
+    store.overview.dpiaAssessments.unshift(newDpia);
+    store.overview.summary.highRiskDpiaPendingCount = store.overview.dpiaAssessments.filter(
+      (d) => d.residualRiskScore > 50.0 || d.approvalStatus === 'prior_consultation_required'
+    ).length;
+
+    saveDemoPrivacyNexusStore(store);
+    return newDpia;
+  },
+
+  async registerAiCorpus(input: RegisterAiCorpusInput): Promise<AiCorpusLineage> {
+    if (!demoMode) {
+      try {
+        return await request<AiCorpusLineage>('/privacy/ai-corpus', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoPrivacyNexusStore();
+    const newCorpus: AiCorpusLineage = {
+      id: `corpus-${Date.now()}`,
+      userId: 'demo-user',
+      corpusIdentifier: input.corpusIdentifier,
+      datasetName: input.datasetName,
+      originSourceUri: input.originSourceUri,
+      collectionJurisdiction: input.collectionJurisdiction,
+      legalBasisForTraining: input.legalBasisForTraining,
+      consentTrackingToken: input.consentTrackingToken,
+      optOutMechanismSupported: input.optOutMechanismSupported,
+      copyrightLicenseType: input.copyrightLicenseType,
+      textDataMiningOptOut: input.textDataMiningOptOut,
+      fairUseFourFactorScore: input.fairUseFourFactorScore,
+      piiExtractionRiskScore: input.piiExtractionRiskScore,
+      euAiActArticle10Compliant: input.euAiActArticle10Compliant,
+      totalTokenOrRecordCount: input.totalTokenOrRecordCount,
+      governanceStatus: input.euAiActArticle10Compliant && input.piiExtractionRiskScore < 20.0 ? 'production_approved' : 'quarantined',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    store.overview.aiCorpora.unshift(newCorpus);
+    store.overview.summary.aiCorpusApprovedCount = store.overview.aiCorpora.filter((a) => a.governanceStatus === 'production_approved').length;
+
+    saveDemoPrivacyNexusStore(store);
+    return newCorpus;
+  },
+
+  async generateSyntheticDataset(input: GenerateSyntheticDatasetInput): Promise<SyntheticDataset> {
+    if (!demoMode) {
+      try {
+        return await request<SyntheticDataset>('/privacy/synthetic', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoPrivacyNexusStore();
+    const dpEval = calculateDifferentialPrivacyLeakage(
+      input.epsilonBudgetSpent,
+      input.deltaBoundParameter,
+      0.08,
+      1.0
+    );
+
+    const newSynth: SyntheticDataset = {
+      id: `synth-${Date.now()}`,
+      userId: 'demo-user',
+      sourceCorpusId: input.sourceCorpusId,
+      datasetCode: input.datasetCode,
+      synthesisAlgorithm: input.synthesisAlgorithm,
+      epsilonBudgetSpent: input.epsilonBudgetSpent,
+      deltaBoundParameter: input.deltaBoundParameter,
+      noiseMechanism: input.noiseMechanism,
+      wassersteinUtilityScore: dpEval.wassersteinUtilityScore,
+      membershipInferenceAdvantage: dpEval.membershipInferenceAdvantageUpper,
+      differentialPrivacyCertified: dpEval.isPrivacyPreserving,
+      syntheticRecordCount: input.syntheticRecordCount,
+      storageS3Bucket: input.storageS3Bucket,
+      storageS3Key: input.storageS3Key,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    store.overview.syntheticDatasets.unshift(newSynth);
+    saveDemoPrivacyNexusStore(store);
+    return newSynth;
+  },
+
+  async signRatification(input: SignTripartiteRatificationInput): Promise<BoardRatification> {
+    if (!demoMode) {
+      try {
+        return await request<BoardRatification>('/privacy/ratify', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoPrivacyNexusStore();
+    const ratif = store.overview.latestRatification;
+    if (!ratif) throw new Error('Ratification record not found');
+
+    const nowIso = new Date().toISOString();
+
+    if (input.role === 'data_protection_officer') {
+      ratif.dpoFullName = input.signatoryFullName;
+      ratif.dpoSignedAt = nowIso;
+      ratif.ratificationStatus = 'pending_cpo';
+    } else if (input.role === 'chief_privacy_officer') {
+      ratif.cpoFullName = input.signatoryFullName;
+      ratif.cpoSignedAt = nowIso;
+      ratif.ratificationStatus = 'pending_ceo';
+    } else if (input.role === 'chief_executive_officer') {
+      ratif.ceoFullName = input.signatoryFullName;
+      ratif.ceoSignedAt = nowIso;
+      ratif.ratificationStatus = 'fully_ratified';
+    }
+
+    ratif.tripartiteSealSha256 = computeTripartiteSha256Seal(
+      ratif.cycleCode,
+      ratif.triCompositeIndex,
+      ratif.totalRegulatoryFineExposureEur,
+      ratif.dpoFullName,
+      ratif.cpoFullName,
+      ratif.ceoFullName,
+      nowIso
+    );
+    ratif.updatedAt = nowIso;
+    store.overview.summary.currentRatificationStatus = ratif.ratificationStatus;
+
+    saveDemoPrivacyNexusStore(store);
+    return ratif;
+  },
+
+  async resetDemo(): Promise<PrivacyNexusOverview> {
+    if (!demoMode) {
+      try {
+        return await request<PrivacyNexusOverview>('/privacy/reset-demo', {
+          method: 'POST'
+        });
+      } catch {}
+    }
+
+    const store = createDefaultDemoPrivacyNexusStore();
+    saveDemoPrivacyNexusStore(store);
     return store.overview;
   }
 };

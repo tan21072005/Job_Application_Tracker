@@ -119,6 +119,7 @@ import { GlobalTradeSanctionsNexusService } from './services/global-trade-sancti
 import { StrategicCommsCrisisNexusService } from './services/strategic-comms-crisis-nexus-service.ts';
 import { ShareholderActivismDefenseNexusService } from './services/shareholder-activism-defense-nexus-service.ts';
 import { AntitrustCompetitionNexusService } from './services/antitrust-competition-nexus-service.ts';
+import { PrivacyDataSovereigntyNexusService } from './services/privacy-data-sovereignty-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -182,7 +183,15 @@ import {
   validateCreateMergerTransactionInput,
   validateDefineMarketInput,
   validateProposeDivestiturePackageInput,
-  validateSubmitAntitrustSignoffInput
+  validateSubmitAntitrustSignoffInput,
+  validateEvaluateTransferInput,
+  validateCreateDsrRequestInput,
+  validateTriggerDsrExtensionInput,
+  validateCreateRopaActivityInput,
+  validateCreateDpiaAssessmentInput,
+  validateRegisterAiCorpusInput,
+  validateGenerateSyntheticDatasetInput,
+  validateSignTripartiteRatificationInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -330,6 +339,7 @@ export const globalTradeSanctionsNexusService = new GlobalTradeSanctionsNexusSer
 export const strategicCommsCrisisNexusService = new StrategicCommsCrisisNexusService(pool);
 export const shareholderActivismDefenseNexusService = new ShareholderActivismDefenseNexusService(pool);
 export const antitrustCompetitionNexusService = new AntitrustCompetitionNexusService(pool);
+export const privacyDataSovereigntyNexusService = new PrivacyDataSovereigntyNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -5701,6 +5711,139 @@ app.post(['/api/antitrust-competition-nexus/reset-demo', '/api/antitrust/reset-d
     const userId = (req as SessionRequest).userId;
     await antitrustCompetitionNexusService.resetDemoData(userId);
     const overview = await antitrustCompetitionNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get(['/api/privacy-data-sovereignty/overview', '/api/privacy/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await privacyDataSovereigntyNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/privacy-data-sovereignty/transfers', '/api/privacy/transfers'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateEvaluateTransferInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const transfer = await privacyDataSovereigntyNexusService.evaluateTransfer(userId, validation.data);
+    res.status(201).json(transfer);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/privacy-data-sovereignty/dsr', '/api/privacy/dsr'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCreateDsrRequestInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const dsr = await privacyDataSovereigntyNexusService.createDsrRequest(userId, validation.data);
+    res.status(201).json(dsr);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/privacy-data-sovereignty/dsr/extend', '/api/privacy/dsr/extend'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateTriggerDsrExtensionInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const dsr = await privacyDataSovereigntyNexusService.triggerDsrExtension(userId, validation.data);
+    res.json(dsr);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/privacy-data-sovereignty/ropa', '/api/privacy/ropa'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCreateRopaActivityInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const ropa = await privacyDataSovereigntyNexusService.createRopaActivity(userId, validation.data);
+    res.status(201).json(ropa);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/privacy-data-sovereignty/dpia', '/api/privacy/dpia'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCreateDpiaAssessmentInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const dpia = await privacyDataSovereigntyNexusService.createDpiaAssessment(userId, validation.data);
+    res.status(201).json(dpia);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/privacy-data-sovereignty/ai-corpus', '/api/privacy/ai-corpus'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateRegisterAiCorpusInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const corpus = await privacyDataSovereigntyNexusService.registerAiCorpus(userId, validation.data);
+    res.status(201).json(corpus);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/privacy-data-sovereignty/synthetic', '/api/privacy/synthetic'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateGenerateSyntheticDatasetInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const synth = await privacyDataSovereigntyNexusService.generateSyntheticDataset(userId, validation.data);
+    res.status(201).json(synth);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/privacy-data-sovereignty/ratify', '/api/privacy/ratify'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateSignTripartiteRatificationInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const ratif = await privacyDataSovereigntyNexusService.signRatification(userId, validation.data);
+    res.json(ratif);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/privacy-data-sovereignty/reset-demo', '/api/privacy/reset-demo'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    await privacyDataSovereigntyNexusService.resetDemoData(userId);
+    const overview = await privacyDataSovereigntyNexusService.getOverview(userId);
     res.json(overview);
   } catch (error) {
     next(error);
