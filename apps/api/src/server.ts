@@ -106,6 +106,7 @@ import { ValueStreamStudioService } from './services/value-stream-studio-service
 import { CloudFinopsStudioService } from './services/cloud-finops-studio-service.ts';
 import { AiGovernanceStudioService } from './services/ai-governance-studio-service.ts';
 import { SuccessionPipelineStudioService } from './services/succession-pipeline-studio-service.ts';
+import { CyberRiskGovernanceStudioService } from './services/cyber-risk-governance-studio-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -239,6 +240,7 @@ export const valueStreamStudioService = new ValueStreamStudioService(pool);
 export const cloudFinopsStudioService = new CloudFinopsStudioService(pool);
 export const aiGovernanceStudioService = new AiGovernanceStudioService(pool);
 export const successionPipelineStudioService = new SuccessionPipelineStudioService(pool);
+export const cyberRiskGovernanceStudioService = new CyberRiskGovernanceStudioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -4074,6 +4076,144 @@ app.post(['/api/succession-pipeline-studio/plan/:id/sign-off', '/api/succession/
   } catch (err) {
     if ((err as Error).message === 'succession_plan_not_found') {
       return res.status(404).json({ code: 'succession_plan_not_found', error: 'Succession plan not found' });
+    }
+    res.status(400).json({ code: 'invalid_sign_off_payload', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/cyber-risk-governance-studio/overview', '/api/cyber-risk/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await cyberRiskGovernanceStudioService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cyber-risk-governance-studio/scenarios', '/api/cyber-risk/scenarios'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const scenario = await cyberRiskGovernanceStudioService.createScenario(userId, req.body);
+    res.status(201).json(scenario);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_scenario_payload', error: (err as Error).message });
+  }
+});
+
+app.delete(['/api/cyber-risk-governance-studio/scenarios/:id', '/api/cyber-risk/scenarios/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await cyberRiskGovernanceStudioService.deleteScenario(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'scenario_not_found', error: 'Scenario not found' });
+    }
+    res.json({ success: true, id: req.params.id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cyber-risk-governance-studio/vulnerabilities', '/api/cyber-risk/vulnerabilities'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const vuln = await cyberRiskGovernanceStudioService.createVulnerability(userId, req.body);
+    res.status(201).json(vuln);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_vulnerability_payload', error: (err as Error).message });
+  }
+});
+
+app.delete(['/api/cyber-risk-governance-studio/vulnerabilities/:id', '/api/cyber-risk/vulnerabilities/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await cyberRiskGovernanceStudioService.deleteVulnerability(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'vulnerability_not_found', error: 'Vulnerability not found' });
+    }
+    res.json({ success: true, id: req.params.id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cyber-risk-governance-studio/dark-web', '/api/cyber-risk/dark-web'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const exp = await cyberRiskGovernanceStudioService.createDarkWebExposure(userId, req.body);
+    res.status(201).json(exp);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_dark_web_payload', error: (err as Error).message });
+  }
+});
+
+app.delete(['/api/cyber-risk-governance-studio/dark-web/:id', '/api/cyber-risk/dark-web/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await cyberRiskGovernanceStudioService.deleteDarkWebExposure(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'exposure_not_found', error: 'Dark web exposure not found' });
+    }
+    res.json({ success: true, id: req.params.id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cyber-risk-governance-studio/controls', '/api/cyber-risk/controls'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const ctrl = await cyberRiskGovernanceStudioService.createComplianceControl(userId, req.body);
+    res.status(201).json(ctrl);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_control_payload', error: (err as Error).message });
+  }
+});
+
+app.delete(['/api/cyber-risk-governance-studio/controls/:id', '/api/cyber-risk/controls/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await cyberRiskGovernanceStudioService.deleteComplianceControl(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'control_not_found', error: 'Compliance control not found' });
+    }
+    res.json({ success: true, id: req.params.id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cyber-risk-governance-studio/tabletop', '/api/cyber-risk/tabletop'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const sim = await cyberRiskGovernanceStudioService.createTabletopSimulation(userId, req.body);
+    res.status(201).json(sim);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_tabletop_payload', error: (err as Error).message });
+  }
+});
+
+app.delete(['/api/cyber-risk-governance-studio/tabletop/:id', '/api/cyber-risk/tabletop/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await cyberRiskGovernanceStudioService.deleteTabletopSimulation(userId, String(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ code: 'simulation_not_found', error: 'Tabletop simulation not found' });
+    }
+    res.json({ success: true, id: req.params.id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cyber-risk-governance-studio/memorandum/:id/sign-off', '/api/cyber-risk/memorandum/:id/sign-off'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const updated = await cyberRiskGovernanceStudioService.signOffMemorandum(userId, String(req.params.id), req.body);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'memorandum_not_found', error: 'Memorandum not found' });
     }
     res.status(400).json({ code: 'invalid_sign_off_payload', error: (err as Error).message });
   }

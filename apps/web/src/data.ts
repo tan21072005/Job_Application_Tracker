@@ -255,7 +255,52 @@ import {
   calculateCompetencyGap,
   generateDevelopmentMilestones,
   calculateSuccessionHealthScore,
-  generateBoardSuccessionMemorandumMarkdown
+  generateBoardSuccessionMemorandumMarkdown,
+  type CyberRiskCategory,
+  type VulnerabilityPriorityTier,
+  type NistCsfFunction,
+  type NistMaturityTier,
+  type TabletopBreachArchetype,
+  type SecMaterialityStatus,
+  type CyberPostureTier,
+  type SignOffGovernanceRole,
+  type MemorandumWorkflowStatus,
+  type CyberRiskScenarioDTO,
+  type CyberRiskScenarioMutationDTO,
+  type ThreatVulnerabilityDTO,
+  type ThreatVulnerabilityMutationDTO,
+  type DarkWebExposureDTO,
+  type DarkWebExposureMutationDTO,
+  type ThreatLandscapeOverviewDTO,
+  type ComplianceControlDTO,
+  type ComplianceControlMutationDTO,
+  type FunctionMaturitySummaryDTO,
+  type ComplianceMatrixOverviewDTO,
+  type TabletopSimulationDTO,
+  type TabletopSimulationMutationDTO,
+  type CyberInsurancePolicyDTO,
+  type SecMaterialityDeterminationDTO,
+  type GovernanceSignOffRecordDTO,
+  type BoardCyberMemorandumDTO,
+  type BoardCyberMemorandumMutationDTO,
+  type GovernanceSignOffPayloadDTO,
+  type CyberRiskStudioOverviewDTO,
+  calculateFairRiskMetrics,
+  calculateVulnerabilityPriority,
+  calculateAttackSurfaceRating,
+  calculateDarkWebExposureIndex,
+  calculateNistComplianceMetrics,
+  calculateTabletopResilience,
+  determineSecMateriality,
+  calculateCompositeSecurityScore,
+  generateBoardCyberMemorandumMarkdown,
+  validateCyberRiskScenarioInput,
+  validateThreatVulnerabilityInput,
+  validateDarkWebExposureInput,
+  validateComplianceControlInput,
+  validateTabletopSimulationInput,
+  validateGovernanceSignOffInput,
+  validateMaterialityDeterminationInput
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -13921,6 +13966,1027 @@ export const successionPipelineStudioRepository = {
       ov.plan.boardMemorandumMarkdown = generateBoardSuccessionMemorandumMarkdown(ov.plan);
       saveDemoSuccessionOverview(ov);
       return ov.plan;
+    }
+  }
+};
+
+const DEMO_CYBER_RISK_STORAGE_KEY = 'jobtrack_cyber_risk_governance_studio_overview';
+
+const DEFAULT_DEMO_CYBER_SCENARIOS: CyberRiskScenarioDTO[] = [
+  {
+    id: 'scen-1',
+    userId: 'demo-user',
+    title: 'LockBit Ransomware Enterprise Outage',
+    category: 'ransomware_extortion',
+    assetName: 'Core Production Kubernetes Cluster',
+    threatActor: 'LockBit 3.0 Syndicate',
+    contactFrequency: 14.0,
+    probabilityOfAction: 0.35,
+    threatEventFrequency: 4.9,
+    threatCapability: 75,
+    resistanceStrength: 65,
+    vulnerabilityPercent: 55.0,
+    lossEventFrequency: 2.695,
+    primaryLossMinUsd: 250000,
+    primaryLossLikelyUsd: 750000,
+    primaryLossMaxUsd: 2500000,
+    secondaryLossMinUsd: 500000,
+    secondaryLossLikelyUsd: 1500000,
+    secondaryLossMaxUsd: 5000000,
+    singleLossExpectancyExpectedUsd: 2875000,
+    singleLossExpectancyStdDevUsd: 1125000,
+    annualizedLossExpectancyUsd: 7748125,
+    valueAtRisk95PercentUsd: 14200000,
+    inherentAleUsd: 15000000,
+    residualAleUsd: 7748125,
+    riskReductionRatio: 0.4835,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'scen-2',
+    userId: 'demo-user',
+    title: 'AWS IAM Privilege Escalation & S3 Data Leak',
+    category: 'cloud_infrastructure_compromise',
+    assetName: 'Enterprise Multi-Account AWS Organization',
+    threatActor: 'Scattered Spider / UNC3944',
+    contactFrequency: 24.0,
+    probabilityOfAction: 0.20,
+    threatEventFrequency: 4.8,
+    threatCapability: 80,
+    resistanceStrength: 70,
+    vulnerabilityPercent: 55.0,
+    lossEventFrequency: 2.64,
+    primaryLossMinUsd: 100000,
+    primaryLossLikelyUsd: 350000,
+    primaryLossMaxUsd: 1200000,
+    secondaryLossMinUsd: 200000,
+    secondaryLossLikelyUsd: 800000,
+    secondaryLossMaxUsd: 2800000,
+    singleLossExpectancyExpectedUsd: 1483333,
+    singleLossExpectancyStdDevUsd: 616667,
+    annualizedLossExpectancyUsd: 3916000,
+    valueAtRisk95PercentUsd: 7200000,
+    inherentAleUsd: 8500000,
+    residualAleUsd: 3916000,
+    riskReductionRatio: 0.5393,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'scen-3',
+    userId: 'demo-user',
+    title: 'CI/CD Build Pipeline NPM Dependency Poisoning',
+    category: 'third_party_supply_chain',
+    assetName: 'GitHub Enterprise Actions Build Matrix',
+    threatActor: 'Lazarus Group (APT38)',
+    contactFrequency: 6.0,
+    probabilityOfAction: 0.15,
+    threatEventFrequency: 0.9,
+    threatCapability: 85,
+    resistanceStrength: 60,
+    vulnerabilityPercent: 62.5,
+    lossEventFrequency: 0.5625,
+    primaryLossMinUsd: 300000,
+    primaryLossLikelyUsd: 900000,
+    primaryLossMaxUsd: 3000000,
+    secondaryLossMinUsd: 600000,
+    secondaryLossLikelyUsd: 2000000,
+    secondaryLossMaxUsd: 7000000,
+    singleLossExpectancyExpectedUsd: 3650000,
+    singleLossExpectancyStdDevUsd: 1516667,
+    annualizedLossExpectancyUsd: 2053125,
+    valueAtRisk95PercentUsd: 4100000,
+    inherentAleUsd: 6000000,
+    residualAleUsd: 2053125,
+    riskReductionRatio: 0.6578,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  }
+];
+
+const DEFAULT_DEMO_VULNERABILITIES: ThreatVulnerabilityDTO[] = [
+  {
+    id: 'vuln-1',
+    userId: 'demo-user',
+    cveId: 'CVE-2024-3094',
+    title: 'XZ Utils Embedded Liblzma Backdoor',
+    cvssScore: 10.0,
+    epssProbability: 0.94,
+    epssPercentile: 0.99,
+    cisaKevStatus: true,
+    affectedAsset: 'Base Docker Images',
+    component: 'liblzma.so.5.6.0',
+    compositeRiskScore: 97,
+    priorityTier: 'critical',
+    remediationStatus: 'mitigated',
+    patchDueDate: '2026-11-01',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'vuln-2',
+    userId: 'demo-user',
+    cveId: 'CVE-2024-21626',
+    title: 'runc Container Escape to Host Rootfs',
+    cvssScore: 8.6,
+    epssProbability: 0.42,
+    epssPercentile: 0.91,
+    cisaKevStatus: true,
+    affectedAsset: 'Production EKS Cluster Nodes',
+    component: 'runc < 1.1.12',
+    compositeRiskScore: 87,
+    priorityTier: 'critical',
+    remediationStatus: 'in_progress',
+    patchDueDate: '2026-11-05',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'vuln-3',
+    userId: 'demo-user',
+    cveId: 'CVE-2023-48795',
+    title: 'Terrapin SSH Protocol Prefix Truncation',
+    cvssScore: 5.9,
+    epssProbability: 0.08,
+    epssPercentile: 0.62,
+    cisaKevStatus: false,
+    affectedAsset: 'Internal Bastion Host Fleet',
+    component: 'OpenSSH Server',
+    compositeRiskScore: 42,
+    priorityTier: 'medium',
+    remediationStatus: 'open',
+    patchDueDate: '2026-11-20',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'vuln-4',
+    userId: 'demo-user',
+    cveId: 'CVE-2024-1709',
+    title: 'ConnectWise ScreenConnect Auth Bypass',
+    cvssScore: 9.8,
+    epssProbability: 0.76,
+    epssPercentile: 0.98,
+    cisaKevStatus: true,
+    affectedAsset: 'Remote Management Gateway',
+    component: 'ScreenConnect Server',
+    compositeRiskScore: 98,
+    priorityTier: 'critical',
+    remediationStatus: 'mitigated',
+    patchDueDate: '2026-10-30',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  }
+];
+
+const DEFAULT_DEMO_DARK_WEB: DarkWebExposureDTO[] = [
+  {
+    id: 'exp-1',
+    userId: 'demo-user',
+    targetDomain: 'enterprise-corp.com',
+    breachSource: 'RedLine Stealer Russian Market Dump',
+    exposureDate: '2026-10-20T10:00:00Z',
+    leakedEmail: 'ciso@enterprise-corp.com',
+    hasPlaintextPassword: false,
+    hasSessionToken: true,
+    isVipExecutive: true,
+    vipTitle: 'Chief Information Security Officer',
+    infostealerVariant: 'RedLine v24',
+    exposureRiskScore: 85,
+    remediationStatus: 'active',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'exp-2',
+    userId: 'demo-user',
+    targetDomain: 'enterprise-corp.com',
+    breachSource: 'LummaC2 Stealer Corporate Log Harvest',
+    exposureDate: '2026-10-11T12:00:00Z',
+    leakedEmail: 'vp-eng@enterprise-corp.com',
+    hasPlaintextPassword: true,
+    hasSessionToken: false,
+    isVipExecutive: true,
+    vipTitle: 'VP of Infrastructure Engineering',
+    infostealerVariant: 'Lumma Stealer',
+    exposureRiskScore: 75,
+    remediationStatus: 'mfa_enforced',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'exp-3',
+    userId: 'demo-user',
+    targetDomain: 'enterprise-corp.com',
+    breachSource: 'Breached Forums Credential Stuffing List',
+    exposureDate: '2026-09-10T08:00:00Z',
+    leakedEmail: 'dev-lead@enterprise-corp.com',
+    hasPlaintextPassword: true,
+    hasSessionToken: false,
+    isVipExecutive: false,
+    vipTitle: undefined,
+    infostealerVariant: 'Vidar Stealer',
+    exposureRiskScore: 40,
+    remediationStatus: 'password_reset',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  }
+];
+
+const DEFAULT_DEMO_COMPLIANCE_CONTROLS: ComplianceControlDTO[] = [
+  {
+    id: 'ctrl-1',
+    userId: 'demo-user',
+    functionCode: 'govern',
+    categoryCode: 'GV.OC',
+    subcategoryCode: 'GV.OC-01',
+    title: 'Organizational Context Defined',
+    description: 'The organizational mission, stakeholder expectations, and legal requirements are understood and integrated.',
+    iso27001Mapping: 'Clause 4.1',
+    soc2Mapping: 'CC1.1',
+    hipaaMapping: '164.308(a)(1)',
+    maturityTier: 'tier_3_repeatable',
+    maturityNumericTier: 3,
+    hasVerifiedEvidence: true,
+    lastAuditedDate: '2026-10-15',
+    auditorNotes: 'Evidence artifacts verified via Automated Compliance Collector.',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'ctrl-2',
+    userId: 'demo-user',
+    functionCode: 'identify',
+    categoryCode: 'ID.AM',
+    subcategoryCode: 'ID.AM-01',
+    title: 'Physical & Cloud Asset Inventory',
+    description: 'Inventories of physical and cloud hardware, cloud compute, and managed containers are maintained.',
+    iso27001Mapping: 'A.8.1',
+    soc2Mapping: 'CC6.1',
+    hipaaMapping: '164.310(d)(1)',
+    maturityTier: 'tier_3_repeatable',
+    maturityNumericTier: 3,
+    hasVerifiedEvidence: true,
+    lastAuditedDate: '2026-10-15',
+    auditorNotes: 'AWS Config and Kubernetes pod inventory reconciled weekly.',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'ctrl-3',
+    userId: 'demo-user',
+    functionCode: 'protect',
+    categoryCode: 'PR.AA',
+    subcategoryCode: 'PR.AA-01',
+    title: 'Phishing-Resistant MFA & PAM',
+    description: 'Identity credentials, single sign-on tokens, and privileged access are secured via FIDO2 WebAuthn keys.',
+    iso27001Mapping: 'A.9.4',
+    soc2Mapping: 'CC6.2',
+    hipaaMapping: '164.312(d)',
+    maturityTier: 'tier_2_risk_informed',
+    maturityNumericTier: 2,
+    hasVerifiedEvidence: false,
+    lastAuditedDate: '2026-10-15',
+    auditorNotes: 'Hardware security keys rolled out to 85% of privileged users.',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'ctrl-4',
+    userId: 'demo-user',
+    functionCode: 'detect',
+    categoryCode: 'DE.CM',
+    subcategoryCode: 'DE.CM-01',
+    title: 'Continuous SIEM & CloudTrail Monitoring',
+    description: 'Networks, endpoints, and cloud identity logs are continuously monitored for malicious anomalies.',
+    iso27001Mapping: 'A.12.4',
+    soc2Mapping: 'CC7.2',
+    hipaaMapping: '164.312(b)',
+    maturityTier: 'tier_3_repeatable',
+    maturityNumericTier: 3,
+    hasVerifiedEvidence: true,
+    lastAuditedDate: '2026-10-15',
+    auditorNotes: 'Datadog Security & Cloud SIEM ingestion operational 24/7.',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'ctrl-5',
+    userId: 'demo-user',
+    functionCode: 'respond',
+    categoryCode: 'RS.MA',
+    subcategoryCode: 'RS.MA-01',
+    title: 'Incident Response & SEC Escalation Plan',
+    description: 'Incident response plans include clear 4-day SEC Item 1.05 materiality determination procedures.',
+    iso27001Mapping: 'A.16.1',
+    soc2Mapping: 'CC7.3',
+    hipaaMapping: '164.308(a)(6)',
+    maturityTier: 'tier_3_repeatable',
+    maturityNumericTier: 3,
+    hasVerifiedEvidence: true,
+    lastAuditedDate: '2026-10-15',
+    auditorNotes: 'Annual executive tabletop exercise verified legal escalations.',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'ctrl-6',
+    userId: 'demo-user',
+    functionCode: 'recover',
+    categoryCode: 'RC.RP',
+    subcategoryCode: 'RC.RP-01',
+    title: 'Air-Gapped Immutable Backups & RTO Drills',
+    description: 'Disaster recovery procedures and immutable WORM backups are validated via recurring recovery drills.',
+    iso27001Mapping: 'A.12.3',
+    soc2Mapping: 'CC7.4',
+    hipaaMapping: '164.308(a)(7)',
+    maturityTier: 'tier_3_repeatable',
+    maturityNumericTier: 3,
+    hasVerifiedEvidence: true,
+    lastAuditedDate: '2026-10-15',
+    auditorNotes: 'AWS Backup vault locked with compliance lock.',
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  }
+];
+
+const DEFAULT_DEMO_TABLETOP_SIMS: TabletopSimulationDTO[] = [
+  {
+    id: 'sim-1',
+    userId: 'demo-user',
+    archetype: 'ransomware_double_extortion',
+    scenarioTitle: 'Enterprise Ransomware & Active Directory Lockdown',
+    conductedDate: '2026-09-18',
+    participantsCount: 14,
+    meanTimeToDetectHours: 1.2,
+    meanTimeToContainHours: 3.5,
+    simulatedRansomDemandedUsd: 5000000,
+    simulatedBusinessInterruptionDays: 3,
+    simulatedTotalLossUsd: 8500000,
+    immutableBackupScore: 85,
+    airgapIsolationScore: 80,
+    rtoRpoDrillScore: 90,
+    pamSegregationScore: 75,
+    ransomwareResilienceIndex: 83,
+    keyFindings: [
+      'Immutable backups succeeded with 4-hour RTO restoration',
+      'Out-of-band communication channel was operational within 15 minutes',
+      'Extortion negotiation protocol required secondary legal sign-off'
+    ],
+    remediationActionItems: [
+      'Enforce FIDO2 WebAuthn keys for all domain administrators',
+      'Accelerate Active Directory micro-segmentation',
+      'Pre-retain specialist ransomware incident counsel'
+    ],
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'sim-2',
+    userId: 'demo-user',
+    archetype: 'cloud_iam_privilege_escalation',
+    scenarioTitle: 'Compromised Cloud Admin Token & Multi-Region S3 Exfiltration',
+    conductedDate: '2026-10-12',
+    participantsCount: 10,
+    meanTimeToDetectHours: 0.8,
+    meanTimeToContainHours: 2.1,
+    simulatedRansomDemandedUsd: 0,
+    simulatedBusinessInterruptionDays: 1,
+    simulatedTotalLossUsd: 4200000,
+    immutableBackupScore: 90,
+    airgapIsolationScore: 85,
+    rtoRpoDrillScore: 85,
+    pamSegregationScore: 80,
+    ransomwareResilienceIndex: 85,
+    keyFindings: [
+      'CloudTrail detection triggered alert within 48 minutes',
+      'Automated IAM session revocation contained token exfiltration within 2.1 hours'
+    ],
+    remediationActionItems: [
+      'Automate instant quarantine of anomalous cross-region S3 egress',
+      'Deploy ephemeral Just-in-Time IAM privilege elevation'
+    ],
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  }
+];
+
+function buildDefaultDemoCyberOverview(): CyberRiskStudioOverviewDTO {
+  const scenarios = structuredClone(DEFAULT_DEMO_CYBER_SCENARIOS);
+  const vulnerabilities = structuredClone(DEFAULT_DEMO_VULNERABILITIES);
+  const darkWebExposures = structuredClone(DEFAULT_DEMO_DARK_WEB);
+  const controls = structuredClone(DEFAULT_DEMO_COMPLIANCE_CONTROLS);
+  const tabletopSimulations = structuredClone(DEFAULT_DEMO_TABLETOP_SIMS);
+
+  const asr = calculateAttackSurfaceRating({
+    exposedPortsCount: 8,
+    shadowItDomainsCount: 3,
+    cloudMisconfigurationsCount: 2,
+    criticalVulnerabilitiesCount: vulnerabilities.filter(v => v.priorityTier === 'critical').length
+  });
+
+  const clei = calculateDarkWebExposureIndex(darkWebExposures);
+
+  const threatLandscape: ThreatLandscapeOverviewDTO = {
+    attackSurfaceRating: asr,
+    credentialLeakExposureIndex: clei,
+    totalVulnerabilitiesCount: vulnerabilities.length,
+    criticalVulnerabilitiesCount: vulnerabilities.filter(v => v.priorityTier === 'critical').length,
+    cisaKevActiveCount: vulnerabilities.filter(v => v.cisaKevStatus).length,
+    vipExecutivesMonitoredCount: 8,
+    vipExecutivesCompromisedCount: darkWebExposures.filter(d => d.isVipExecutive && d.remediationStatus === 'active').length,
+    vulnerabilities,
+    darkWebExposures
+  };
+
+  const nistMetrics = calculateNistComplianceMetrics(controls);
+  const complianceMatrix: ComplianceMatrixOverviewDTO = {
+    auditDefensibilityScore: nistMetrics.auditDefensibilityScore,
+    overallMaturityAverage: nistMetrics.overallMaturityAverage,
+    totalControlsCount: controls.length,
+    totalEvidencedCount: controls.filter(c => c.hasVerifiedEvidence).length,
+    evidenceCoverageRate: controls.length > 0 ? Number(((controls.filter(c => c.hasVerifiedEvidence).length / controls.length) * 100).toFixed(1)) : 0,
+    functionSummaries: nistMetrics.functionSummaries,
+    controls
+  };
+
+  const totalAle = scenarios.reduce((acc, s) => acc + s.annualizedLossExpectancyUsd, 0);
+  const totalVaR95 = scenarios.reduce((acc, s) => acc + s.valueAtRisk95PercentUsd, 0);
+  const avgRri = tabletopSimulations.length > 0
+    ? Math.round(tabletopSimulations.reduce((acc, s) => acc + s.ransomwareResilienceIndex, 0) / tabletopSimulations.length)
+    : 80;
+
+  const insurancePolicy: CyberInsurancePolicyDTO = {
+    policyNumber: 'CYBER-2026-CHUBB-99824',
+    carrierName: 'Chubb Global Cyber Syndicate',
+    expirationDate: '2027-04-15',
+    primaryAggregateLimitUsd: 15000000,
+    ransomwareExtortionSublimitUsd: 5000000,
+    businessInterruptionSublimitUsd: 7500000,
+    regulatoryFineSublimitUsd: 5000000,
+    forensicLegalSublimitUsd: 2500000,
+    selfInsuredRetentionUsd: 250000,
+    waitingPeriodHours: 8,
+    annualPremiumUsd: 185000,
+    totalVaR95ExposureUsd: totalVaR95,
+    coverageShortfallUsd: Math.max(0, totalVaR95 - 15000000),
+    insurabilityReadinessScore: Math.min(100, Math.round(0.6 * avgRri + 0.4 * nistMetrics.auditDefensibilityScore)),
+    underwritingDeficiencies: [
+      'Ransomware sublimit is below 95% single loss expectancy',
+      'Cloud S3 bucket logging audit required quarterly'
+    ]
+  };
+
+  const inherentTotal = scenarios.reduce((acc, s) => acc + s.inherentAleUsd, 0);
+  const residualTotal = totalAle;
+  const composite = calculateCompositeSecurityScore({
+    inherentAleTotalUsd: inherentTotal,
+    residualAleTotalUsd: residualTotal,
+    attackSurfaceRating: asr,
+    darkWebExposureIndex: clei,
+    auditDefensibilityScore: nistMetrics.auditDefensibilityScore,
+    ransomwareResilienceIndex: avgRri
+  });
+
+  const mat = determineSecMateriality({
+    estimatedFinancialLossUsd: 350000,
+    annualRevenueThresholdUsd: 10000000,
+    detectionTimestamp: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+    determinationTimestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+    piiExfiltratedRecordCount: 0,
+    criticalSystemsDowntimeHours: 0,
+    intellectualPropertyCompromised: false,
+    regulatorySanctionsProbable: false,
+    reputationalDamageHigh: false
+  });
+
+  const memoObj: BoardCyberMemorandumDTO = {
+    id: 'memo-default',
+    userId: 'demo-user',
+    fiscalYear: 2026,
+    quarter: 4,
+    title: 'Q4 2026 Board Audit & Risk Committee Cybersecurity & SEC Materiality Briefing',
+    compositeSecurityPostureScore: composite.compositeSecurityPostureScore,
+    postureTier: composite.postureTier,
+    workflowStatus: 'pending_ciso',
+    secMateriality: {
+      incidentId: 'INC-2026-Q4-01',
+      incidentTitle: 'XZ Utils Proactive Threat Mitigation Assessment',
+      detectionTimestamp: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+      determinationTimestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+      status: mat.status,
+      estimatedFinancialLossUsd: 350000,
+      annualRevenueThresholdUsd: 10000000,
+      quantitativeMaterialityRatio: mat.quantitativeMaterialityRatio,
+      isQuantitativelyMaterial: mat.isQuantitativelyMaterial,
+      qualitativeScore: mat.qualitativeScore,
+      isQualitativelyMaterial: mat.isQualitativelyMaterial,
+      isMaterial: mat.isMaterial,
+      disclosureClockElapsedHours: mat.disclosureClockElapsedHours,
+      disclosureClockRemainingHours: mat.disclosureClockRemainingHours,
+      isClockBreached: mat.isClockBreached,
+      piiExfiltratedRecordCount: 0,
+      criticalSystemsDowntimeHours: 0,
+      intellectualPropertyCompromised: false,
+      regulatorySanctionsProbable: false,
+      reputationalDamageHigh: false,
+      cisoDeterminationNotes: 'Proactive scanning neutralized backdoored package before deployment.',
+      cloLegalEvaluationNotes: 'Incident non-material under SEC Item 1.05 standard.'
+    },
+    signOffs: [
+      {
+        role: 'ciso',
+        roleLabel: 'Chief Information Security Officer',
+        signatoryName: 'Marcus Vance, CISSP',
+        signatoryTitle: 'CISO & VP Enterprise Information Security',
+        isApproved: true,
+        signedAt: '2026-10-25T08:00:00Z',
+        signatureHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        attestationRemarks: 'FAIR risk simulations, EPSS telemetry, and resilience metrics verified.'
+      },
+      {
+        role: 'chief_legal_officer',
+        roleLabel: 'Chief Legal Officer',
+        signatoryName: 'Elena Rostova, JD',
+        signatoryTitle: 'General Counsel & Corporate Secretary',
+        isApproved: false,
+        attestationRemarks: undefined
+      },
+      {
+        role: 'board_audit_chair',
+        roleLabel: 'Board Audit & Risk Committee Chair',
+        signatoryName: 'Sir Arthur Sterling',
+        signatoryTitle: 'Independent Audit Committee Chair',
+        isApproved: false,
+        attestationRemarks: undefined
+      }
+    ],
+    memorandumMarkdown: '',
+    createdAt: '2026-10-25T08:00:00Z',
+    updatedAt: '2026-10-25T08:00:00Z'
+  };
+  memoObj.memorandumMarkdown = generateBoardCyberMemorandumMarkdown(memoObj);
+
+  return {
+    compositeSecurityPostureScore: composite.compositeSecurityPostureScore,
+    postureTier: composite.postureTier,
+    totalAnnualizedLossExpectancyUsd: totalAle,
+    totalValueAtRisk95Usd: totalVaR95,
+    attackSurfaceRating: asr,
+    darkWebExposureIndex: clei,
+    auditDefensibilityScore: nistMetrics.auditDefensibilityScore,
+    ransomwareResilienceIndex: avgRri,
+    insuranceCoverageGapUsd: insurancePolicy.coverageShortfallUsd,
+    activeSecDisclosureRequired: memoObj.secMateriality.isMaterial,
+    scenarios,
+    threatLandscape,
+    complianceMatrix,
+    tabletopSimulations,
+    insurancePolicy,
+    activeMemorandum: memoObj
+  };
+}
+
+function loadDemoCyberOverview(): CyberRiskStudioOverviewDTO {
+  try {
+    const raw = localStorage.getItem(DEMO_CYBER_RISK_STORAGE_KEY);
+    if (!raw) {
+      const initial = buildDefaultDemoCyberOverview();
+      localStorage.setItem(DEMO_CYBER_RISK_STORAGE_KEY, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return buildDefaultDemoCyberOverview();
+  }
+}
+
+function saveDemoCyberOverview(ov: CyberRiskStudioOverviewDTO): void {
+  try {
+    localStorage.setItem(DEMO_CYBER_RISK_STORAGE_KEY, JSON.stringify(ov));
+  } catch {}
+}
+
+function executeCreateScenarioDemo(input: CyberRiskScenarioMutationDTO): CyberRiskScenarioDTO {
+  const fair = calculateFairRiskMetrics({
+    contactFrequency: input.contactFrequency,
+    probabilityOfAction: input.probabilityOfAction,
+    threatCapability: input.threatCapability,
+    resistanceStrength: input.resistanceStrength,
+    primaryLossMinUsd: input.primaryLossMinUsd,
+    primaryLossLikelyUsd: input.primaryLossLikelyUsd,
+    primaryLossMaxUsd: input.primaryLossMaxUsd,
+    secondaryLossMinUsd: input.secondaryLossMinUsd,
+    secondaryLossLikelyUsd: input.secondaryLossLikelyUsd,
+    secondaryLossMaxUsd: input.secondaryLossMaxUsd,
+    inherentAleUsd: input.inherentAleUsd
+  });
+  const created: CyberRiskScenarioDTO = {
+    id: `scen-${Date.now()}`,
+    userId: 'demo-user',
+    title: input.title,
+    category: input.category,
+    assetName: input.assetName,
+    threatActor: input.threatActor,
+    contactFrequency: input.contactFrequency,
+    probabilityOfAction: input.probabilityOfAction,
+    threatEventFrequency: fair.threatEventFrequency,
+    threatCapability: input.threatCapability,
+    resistanceStrength: input.resistanceStrength,
+    vulnerabilityPercent: fair.vulnerabilityPercent,
+    lossEventFrequency: fair.lossEventFrequency,
+    primaryLossMinUsd: input.primaryLossMinUsd,
+    primaryLossLikelyUsd: input.primaryLossLikelyUsd,
+    primaryLossMaxUsd: input.primaryLossMaxUsd,
+    secondaryLossMinUsd: input.secondaryLossMinUsd,
+    secondaryLossLikelyUsd: input.secondaryLossLikelyUsd,
+    secondaryLossMaxUsd: input.secondaryLossMaxUsd,
+    singleLossExpectancyExpectedUsd: fair.singleLossExpectancyExpectedUsd,
+    singleLossExpectancyStdDevUsd: fair.singleLossExpectancyStdDevUsd,
+    annualizedLossExpectancyUsd: fair.annualizedLossExpectancyUsd,
+    valueAtRisk95PercentUsd: fair.valueAtRisk95PercentUsd,
+    inherentAleUsd: input.inherentAleUsd,
+    residualAleUsd: fair.residualAleUsd,
+    riskReductionRatio: fair.riskReductionRatio,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const ov = loadDemoCyberOverview();
+  ov.scenarios.unshift(created);
+  ov.totalAnnualizedLossExpectancyUsd += created.annualizedLossExpectancyUsd;
+  ov.totalValueAtRisk95Usd += created.valueAtRisk95PercentUsd;
+  saveDemoCyberOverview(ov);
+  return created;
+}
+
+function executeCreateVulnerabilityDemo(input: ThreatVulnerabilityMutationDTO): ThreatVulnerabilityDTO {
+  const priority = calculateVulnerabilityPriority(input.cvssScore, input.epssProbability, input.cisaKevStatus);
+  const created: ThreatVulnerabilityDTO = {
+    id: `vuln-${Date.now()}`,
+    userId: 'demo-user',
+    cveId: input.cveId,
+    title: input.title,
+    cvssScore: input.cvssScore,
+    epssProbability: input.epssProbability,
+    epssPercentile: input.epssPercentile,
+    cisaKevStatus: input.cisaKevStatus,
+    affectedAsset: input.affectedAsset,
+    component: input.component,
+    compositeRiskScore: priority.compositeRiskScore,
+    priorityTier: priority.priorityTier,
+    remediationStatus: input.remediationStatus,
+    patchDueDate: input.patchDueDate,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const ov = loadDemoCyberOverview();
+  ov.threatLandscape.vulnerabilities.unshift(created);
+  ov.threatLandscape.totalVulnerabilitiesCount++;
+  if (created.priorityTier === 'critical') ov.threatLandscape.criticalVulnerabilitiesCount++;
+  if (created.cisaKevStatus) ov.threatLandscape.cisaKevActiveCount++;
+  saveDemoCyberOverview(ov);
+  return created;
+}
+
+function executeCreateDarkWebExposureDemo(input: DarkWebExposureMutationDTO): DarkWebExposureDTO {
+  let score = 40;
+  if (input.hasSessionToken) score += 40;
+  else if (input.hasPlaintextPassword) score += 25;
+  if (input.isVipExecutive) score += 20;
+
+  const created: DarkWebExposureDTO = {
+    id: `exp-${Date.now()}`,
+    userId: 'demo-user',
+    targetDomain: input.targetDomain,
+    breachSource: input.breachSource,
+    exposureDate: input.exposureDate,
+    leakedEmail: input.leakedEmail,
+    hasPlaintextPassword: input.hasPlaintextPassword,
+    hasSessionToken: input.hasSessionToken,
+    isVipExecutive: input.isVipExecutive,
+    vipTitle: input.vipTitle,
+    infostealerVariant: input.infostealerVariant,
+    exposureRiskScore: Math.min(100, score),
+    remediationStatus: input.remediationStatus,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const ov = loadDemoCyberOverview();
+  ov.threatLandscape.darkWebExposures.unshift(created);
+  ov.threatLandscape.credentialLeakExposureIndex = calculateDarkWebExposureIndex(ov.threatLandscape.darkWebExposures);
+  saveDemoCyberOverview(ov);
+  return created;
+}
+
+function executeCreateComplianceControlDemo(input: ComplianceControlMutationDTO): ComplianceControlDTO {
+  let numericTier = 2;
+  if (input.maturityTier === 'tier_4_adaptive') numericTier = 4;
+  else if (input.maturityTier === 'tier_3_repeatable') numericTier = 3;
+  else if (input.maturityTier === 'tier_1_partial') numericTier = 1;
+
+  const created: ComplianceControlDTO = {
+    id: `ctrl-${Date.now()}`,
+    userId: 'demo-user',
+    functionCode: input.functionCode,
+    categoryCode: input.categoryCode,
+    subcategoryCode: input.subcategoryCode,
+    title: input.title,
+    description: input.description,
+    iso27001Mapping: input.iso27001Mapping,
+    soc2Mapping: input.soc2Mapping,
+    hipaaMapping: input.hipaaMapping,
+    maturityTier: input.maturityTier,
+    maturityNumericTier: numericTier,
+    hasVerifiedEvidence: input.hasVerifiedEvidence,
+    lastAuditedDate: input.lastAuditedDate,
+    auditorNotes: input.auditorNotes,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const ov = loadDemoCyberOverview();
+  ov.complianceMatrix.controls.push(created);
+  const metrics = calculateNistComplianceMetrics(ov.complianceMatrix.controls);
+  ov.complianceMatrix.auditDefensibilityScore = metrics.auditDefensibilityScore;
+  ov.complianceMatrix.overallMaturityAverage = metrics.overallMaturityAverage;
+  ov.complianceMatrix.functionSummaries = metrics.functionSummaries;
+  ov.complianceMatrix.totalControlsCount = ov.complianceMatrix.controls.length;
+  ov.complianceMatrix.totalEvidencedCount = ov.complianceMatrix.controls.filter(c => c.hasVerifiedEvidence).length;
+  saveDemoCyberOverview(ov);
+  return created;
+}
+
+function executeCreateTabletopSimulationDemo(input: TabletopSimulationMutationDTO): TabletopSimulationDTO {
+  const res = calculateTabletopResilience({
+    immutableBackupScore: input.immutableBackupScore,
+    airgapIsolationScore: input.airgapIsolationScore,
+    rtoRpoDrillScore: input.rtoRpoDrillScore,
+    pamSegregationScore: input.pamSegregationScore,
+    meanTimeToDetectHours: input.meanTimeToDetectHours,
+    meanTimeToContainHours: input.meanTimeToContainHours,
+    simulatedTotalLossUsd: input.simulatedTotalLossUsd,
+    insurancePrimaryLimitUsd: 15000000
+  });
+  const created: TabletopSimulationDTO = {
+    id: `sim-${Date.now()}`,
+    userId: 'demo-user',
+    archetype: input.archetype,
+    scenarioTitle: input.scenarioTitle,
+    conductedDate: input.conductedDate,
+    participantsCount: input.participantsCount,
+    meanTimeToDetectHours: input.meanTimeToDetectHours,
+    meanTimeToContainHours: input.meanTimeToContainHours,
+    simulatedRansomDemandedUsd: input.simulatedRansomDemandedUsd,
+    simulatedBusinessInterruptionDays: input.simulatedBusinessInterruptionDays,
+    simulatedTotalLossUsd: input.simulatedTotalLossUsd,
+    immutableBackupScore: input.immutableBackupScore,
+    airgapIsolationScore: input.airgapIsolationScore,
+    rtoRpoDrillScore: input.rtoRpoDrillScore,
+    pamSegregationScore: input.pamSegregationScore,
+    ransomwareResilienceIndex: res.ransomwareResilienceIndex,
+    keyFindings: input.keyFindings,
+    remediationActionItems: input.remediationActionItems,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const ov = loadDemoCyberOverview();
+  ov.tabletopSimulations.unshift(created);
+  ov.ransomwareResilienceIndex = Math.round(
+    ov.tabletopSimulations.reduce((acc, s) => acc + s.ransomwareResilienceIndex, 0) / ov.tabletopSimulations.length
+  );
+  saveDemoCyberOverview(ov);
+  return created;
+}
+
+function executeCyberSignOffDemo(memoId: string, payload: GovernanceSignOffPayloadDTO): BoardCyberMemorandumDTO {
+  const ov = loadDemoCyberOverview();
+  const existing = ov.activeMemorandum.signOffs.find(s => s.role === payload.role);
+  const now = new Date().toISOString();
+  const hash = `sig-${payload.role}-${Date.now()}`;
+  if (existing) {
+    existing.isApproved = true;
+    existing.signatoryName = payload.signatoryName;
+    existing.signatoryTitle = payload.signatoryTitle;
+    existing.signedAt = now;
+    existing.signatureHash = hash;
+    existing.attestationRemarks = payload.attestationRemarks;
+  } else {
+    ov.activeMemorandum.signOffs.push({
+      role: payload.role,
+      roleLabel: payload.role === 'ciso'
+        ? 'Chief Information Security Officer'
+        : payload.role === 'chief_legal_officer'
+          ? 'Chief Legal Officer'
+          : 'Board Audit & Risk Committee Chair',
+      signatoryName: payload.signatoryName,
+      signatoryTitle: payload.signatoryTitle,
+      isApproved: true,
+      signedAt: now,
+      signatureHash: hash,
+      attestationRemarks: payload.attestationRemarks
+    });
+  }
+
+  const allApproved = ['ciso', 'chief_legal_officer', 'board_audit_chair'].every(
+    r => ov.activeMemorandum.signOffs.some(s => s.role === r && s.isApproved)
+  );
+
+  if (allApproved) {
+    ov.activeMemorandum.workflowStatus = 'board_approved';
+  } else if (ov.activeMemorandum.signOffs.some(s => s.role === 'chief_legal_officer' && s.isApproved)) {
+    ov.activeMemorandum.workflowStatus = 'pending_board_chair';
+  } else if (ov.activeMemorandum.signOffs.some(s => s.role === 'ciso' && s.isApproved)) {
+    ov.activeMemorandum.workflowStatus = 'pending_clo';
+  }
+
+  ov.activeMemorandum.memorandumMarkdown = generateBoardCyberMemorandumMarkdown(ov.activeMemorandum);
+  saveDemoCyberOverview(ov);
+  return ov.activeMemorandum;
+}
+
+export const cyberRiskGovernanceStudioRepository = {
+  async getOverview(): Promise<CyberRiskStudioOverviewDTO> {
+    if (demoMode) {
+      return loadDemoCyberOverview();
+    }
+    try {
+      return await request<CyberRiskStudioOverviewDTO>('/cyber-risk-governance-studio/overview');
+    } catch {
+      return loadDemoCyberOverview();
+    }
+  },
+
+  async createScenario(input: CyberRiskScenarioMutationDTO): Promise<CyberRiskScenarioDTO> {
+    if (demoMode) {
+      return executeCreateScenarioDemo(input);
+    }
+    try {
+      return await request<CyberRiskScenarioDTO>('/cyber-risk-governance-studio/scenarios', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeCreateScenarioDemo(input);
+    }
+  },
+
+  async deleteScenario(id: string): Promise<void> {
+    if (demoMode) {
+      const ov = loadDemoCyberOverview();
+      ov.scenarios = ov.scenarios.filter(s => s.id !== id);
+      saveDemoCyberOverview(ov);
+      return;
+    }
+    try {
+      await request<void>(`/cyber-risk-governance-studio/scenarios/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch {
+      const ov = loadDemoCyberOverview();
+      ov.scenarios = ov.scenarios.filter(s => s.id !== id);
+      saveDemoCyberOverview(ov);
+    }
+  },
+
+  async createVulnerability(input: ThreatVulnerabilityMutationDTO): Promise<ThreatVulnerabilityDTO> {
+    if (demoMode) {
+      return executeCreateVulnerabilityDemo(input);
+    }
+    try {
+      return await request<ThreatVulnerabilityDTO>('/cyber-risk-governance-studio/vulnerabilities', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeCreateVulnerabilityDemo(input);
+    }
+  },
+
+  async deleteVulnerability(id: string): Promise<void> {
+    if (demoMode) {
+      const ov = loadDemoCyberOverview();
+      ov.threatLandscape.vulnerabilities = ov.threatLandscape.vulnerabilities.filter(v => v.id !== id);
+      saveDemoCyberOverview(ov);
+      return;
+    }
+    try {
+      await request<void>(`/cyber-risk-governance-studio/vulnerabilities/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch {
+      const ov = loadDemoCyberOverview();
+      ov.threatLandscape.vulnerabilities = ov.threatLandscape.vulnerabilities.filter(v => v.id !== id);
+      saveDemoCyberOverview(ov);
+    }
+  },
+
+  async createDarkWebExposure(input: DarkWebExposureMutationDTO): Promise<DarkWebExposureDTO> {
+    if (demoMode) {
+      return executeCreateDarkWebExposureDemo(input);
+    }
+    try {
+      return await request<DarkWebExposureDTO>('/cyber-risk-governance-studio/dark-web', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeCreateDarkWebExposureDemo(input);
+    }
+  },
+
+  async deleteDarkWebExposure(id: string): Promise<void> {
+    if (demoMode) {
+      const ov = loadDemoCyberOverview();
+      ov.threatLandscape.darkWebExposures = ov.threatLandscape.darkWebExposures.filter(d => d.id !== id);
+      saveDemoCyberOverview(ov);
+      return;
+    }
+    try {
+      await request<void>(`/cyber-risk-governance-studio/dark-web/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch {
+      const ov = loadDemoCyberOverview();
+      ov.threatLandscape.darkWebExposures = ov.threatLandscape.darkWebExposures.filter(d => d.id !== id);
+      saveDemoCyberOverview(ov);
+    }
+  },
+
+  async createComplianceControl(input: ComplianceControlMutationDTO): Promise<ComplianceControlDTO> {
+    if (demoMode) {
+      return executeCreateComplianceControlDemo(input);
+    }
+    try {
+      return await request<ComplianceControlDTO>('/cyber-risk-governance-studio/controls', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeCreateComplianceControlDemo(input);
+    }
+  },
+
+  async deleteComplianceControl(id: string): Promise<void> {
+    if (demoMode) {
+      const ov = loadDemoCyberOverview();
+      ov.complianceMatrix.controls = ov.complianceMatrix.controls.filter(c => c.id !== id);
+      saveDemoCyberOverview(ov);
+      return;
+    }
+    try {
+      await request<void>(`/cyber-risk-governance-studio/controls/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch {
+      const ov = loadDemoCyberOverview();
+      ov.complianceMatrix.controls = ov.complianceMatrix.controls.filter(c => c.id !== id);
+      saveDemoCyberOverview(ov);
+    }
+  },
+
+  async createTabletopSimulation(input: TabletopSimulationMutationDTO): Promise<TabletopSimulationDTO> {
+    if (demoMode) {
+      return executeCreateTabletopSimulationDemo(input);
+    }
+    try {
+      return await request<TabletopSimulationDTO>('/cyber-risk-governance-studio/tabletop', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeCreateTabletopSimulationDemo(input);
+    }
+  },
+
+  async deleteTabletopSimulation(id: string): Promise<void> {
+    if (demoMode) {
+      const ov = loadDemoCyberOverview();
+      ov.tabletopSimulations = ov.tabletopSimulations.filter(s => s.id !== id);
+      saveDemoCyberOverview(ov);
+      return;
+    }
+    try {
+      await request<void>(`/cyber-risk-governance-studio/tabletop/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch {
+      const ov = loadDemoCyberOverview();
+      ov.tabletopSimulations = ov.tabletopSimulations.filter(s => s.id !== id);
+      saveDemoCyberOverview(ov);
+    }
+  },
+
+  async signOffMemorandum(memoId: string, payload: GovernanceSignOffPayloadDTO): Promise<BoardCyberMemorandumDTO> {
+    if (demoMode) {
+      return executeCyberSignOffDemo(memoId, payload);
+    }
+    try {
+      return await request<BoardCyberMemorandumDTO>(`/cyber-risk-governance-studio/memorandum/${encodeURIComponent(memoId)}/sign-off`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+    } catch {
+      return executeCyberSignOffDemo(memoId, payload);
     }
   }
 };

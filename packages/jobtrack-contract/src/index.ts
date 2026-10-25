@@ -44,3 +44,4 @@ export * from './value-stream-studio.ts';
 export * from './cloud-finops-studio.ts';
 export * from './ai-governance-studio.ts';
 export * from './succession-pipeline-studio.ts';
+export * from './cyber-risk-governance-studio.ts';

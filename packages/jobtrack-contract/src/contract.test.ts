@@ -342,7 +342,29 @@ import {
   validateSuccessionPlanInput,
   validateSignOffInput,
   type SuccessionPlanDTO,
-  type TalentProfileDTO
+  type TalentProfileDTO,
+  type CyberRiskScenarioDTO,
+  type ThreatVulnerabilityDTO,
+  type DarkWebExposureDTO,
+  type ComplianceControlDTO,
+  type TabletopSimulationDTO,
+  type BoardCyberMemorandumDTO,
+  calculateFairRiskMetrics,
+  calculateVulnerabilityPriority,
+  calculateAttackSurfaceRating,
+  calculateDarkWebExposureIndex,
+  calculateNistComplianceMetrics,
+  calculateTabletopResilience,
+  determineSecMateriality,
+  calculateCompositeSecurityScore,
+  generateBoardCyberMemorandumMarkdown,
+  validateCyberRiskScenarioInput,
+  validateThreatVulnerabilityInput,
+  validateDarkWebExposureInput,
+  validateComplianceControlInput,
+  validateTabletopSimulationInput,
+  validateGovernanceSignOffInput,
+  validateMaterialityDeterminationInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -7382,4 +7404,291 @@ test('succession: input validators enforce strict bounds and schemas', () => {
   assert.throws(() => validateSignOffInput({ role: 'invalid' }), /Invalid sign-off executive role/);
   const validSign = validateSignOffInput({ role: 'ceo', comments: 'Approved by CEO' });
   assert.equal(validSign.role, 'ceo');
+});
+
+test('cyber-risk: calculateFairRiskMetrics and financial VaR-95 evaluate accurately', () => {
+  const fair = calculateFairRiskMetrics({
+    contactFrequency: 12.0,
+    probabilityOfAction: 0.25,
+    threatCapability: 70,
+    resistanceStrength: 65,
+    primaryLossMinUsd: 150000,
+    primaryLossLikelyUsd: 450000,
+    primaryLossMaxUsd: 1200000,
+    secondaryLossMinUsd: 250000,
+    secondaryLossLikelyUsd: 750000,
+    secondaryLossMaxUsd: 3500000,
+    inherentAleUsd: 2500000
+  });
+
+  assert.equal(fair.threatEventFrequency, 3.0);
+  assert.equal(fair.vulnerabilityPercent, 52.5);
+  assert.equal(fair.lossEventFrequency, 1.575);
+  assert.ok(fair.singleLossExpectancyExpectedUsd > 1000000);
+  assert.ok(fair.annualizedLossExpectancyUsd > 1500000);
+  assert.ok(fair.valueAtRisk95PercentUsd > fair.annualizedLossExpectancyUsd);
+  assert.ok(fair.riskReductionRatio >= 0 && fair.riskReductionRatio <= 1.0);
+});
+
+test('cyber-risk: calculateVulnerabilityPriority prioritizes by EPSS and CISA KEV', () => {
+  const critKev = calculateVulnerabilityPriority(9.8, 0.45, true);
+  assert.equal(critKev.priorityTier, 'critical');
+  assert.ok(critKev.compositeRiskScore > 70);
+
+  const highVuln = calculateVulnerabilityPriority(7.5, 0.12, false);
+  assert.equal(highVuln.priorityTier, 'high');
+
+  const medVuln = calculateVulnerabilityPriority(5.0, 0.02, false);
+  assert.equal(medVuln.priorityTier, 'medium');
+
+  const lowVuln = calculateVulnerabilityPriority(2.0, 0.01, false);
+  assert.equal(lowVuln.priorityTier, 'low');
+});
+
+test('cyber-risk: calculateAttackSurfaceRating and calculateDarkWebExposureIndex compute risk scores', () => {
+  const asr = calculateAttackSurfaceRating({
+    exposedPortsCount: 8,
+    shadowItDomainsCount: 3,
+    cloudMisconfigurationsCount: 2,
+    criticalVulnerabilitiesCount: 1
+  });
+  assert.ok(asr > 0 && asr <= 100);
+
+  const exposures = [
+    {
+      hasPlaintextPassword: true,
+      hasSessionToken: false,
+      isVipExecutive: true,
+      exposureDate: new Date().toISOString()
+    },
+    {
+      hasPlaintextPassword: false,
+      hasSessionToken: true,
+      isVipExecutive: false,
+      exposureDate: new Date().toISOString()
+    }
+  ];
+  const clei = calculateDarkWebExposureIndex(exposures);
+  assert.ok(clei > 10 && clei <= 100);
+
+  const emptyClei = calculateDarkWebExposureIndex([]);
+  assert.equal(emptyClei, 0);
+});
+
+test('cyber-risk: calculateNistComplianceMetrics evaluates 6 functions and audit defensibility score', () => {
+  const controls: Array<{
+    functionCode: 'govern' | 'identify' | 'protect' | 'detect' | 'respond' | 'recover';
+    maturityNumericTier: number;
+    hasVerifiedEvidence: boolean;
+  }> = [
+    { functionCode: 'govern', maturityNumericTier: 3, hasVerifiedEvidence: true },
+    { functionCode: 'identify', maturityNumericTier: 3, hasVerifiedEvidence: true },
+    { functionCode: 'protect', maturityNumericTier: 2, hasVerifiedEvidence: false },
+    { functionCode: 'detect', maturityNumericTier: 3, hasVerifiedEvidence: true },
+    { functionCode: 'respond', maturityNumericTier: 2, hasVerifiedEvidence: true },
+    { functionCode: 'recover', maturityNumericTier: 3, hasVerifiedEvidence: true }
+  ];
+
+  const nist = calculateNistComplianceMetrics(controls);
+  assert.ok(nist.overallMaturityAverage >= 2.0 && nist.overallMaturityAverage <= 4.0);
+  assert.ok(nist.auditDefensibilityScore > 50 && nist.auditDefensibilityScore <= 100);
+  assert.equal(nist.functionSummaries.govern.controlCount, 1);
+  assert.equal(nist.functionSummaries.govern.evidencedCount, 1);
+});
+
+test('cyber-risk: calculateTabletopResilience and determineSecMateriality handle breach scenarios', () => {
+  const resilience = calculateTabletopResilience({
+    immutableBackupScore: 85,
+    airgapIsolationScore: 80,
+    rtoRpoDrillScore: 90,
+    pamSegregationScore: 75,
+    meanTimeToDetectHours: 1.5,
+    meanTimeToContainHours: 3.5,
+    simulatedTotalLossUsd: 12000000,
+    insurancePrimaryLimitUsd: 10000000
+  });
+
+  assert.ok(resilience.ransomwareResilienceIndex >= 80);
+  assert.equal(resilience.insuranceCoverageGapUsd, 2000000);
+  assert.ok(resilience.insurabilityReadinessScore > 75);
+
+  const materialIncident = determineSecMateriality({
+    estimatedFinancialLossUsd: 15000000,
+    annualRevenueThresholdUsd: 10000000,
+    detectionTimestamp: new Date(Date.now() - 12 * 3600 * 1000).toISOString(),
+    determinationTimestamp: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
+    piiExfiltratedRecordCount: 250000,
+    criticalSystemsDowntimeHours: 72,
+    intellectualPropertyCompromised: true,
+    regulatorySanctionsProbable: true,
+    reputationalDamageHigh: true
+  });
+
+  assert.equal(materialIncident.isMaterial, true);
+  assert.equal(materialIncident.status, 'material_incident_declared');
+  assert.equal(materialIncident.isQuantitativelyMaterial, true);
+  assert.equal(materialIncident.isQualitativelyMaterial, true);
+  assert.ok(materialIncident.disclosureClockRemainingHours > 85);
+  assert.equal(materialIncident.isClockBreached, false);
+});
+
+test('cyber-risk: calculateCompositeSecurityScore and generateBoardCyberMemorandumMarkdown format reports', () => {
+  const score = calculateCompositeSecurityScore({
+    inherentAleTotalUsd: 5000000,
+    residualAleTotalUsd: 1200000,
+    attackSurfaceRating: 25,
+    darkWebExposureIndex: 18,
+    auditDefensibilityScore: 82,
+    ransomwareResilienceIndex: 85
+  });
+
+  assert.ok(score.compositeSecurityPostureScore >= 75);
+  assert.ok(['superior_resilience', 'robust_defensible'].includes(score.postureTier));
+
+  const memo: BoardCyberMemorandumDTO = {
+    id: 'memo-1',
+    userId: 'u-1',
+    fiscalYear: 2026,
+    quarter: 4,
+    title: 'Enterprise Cyber Security & SEC Materiality Briefing',
+    compositeSecurityPostureScore: score.compositeSecurityPostureScore,
+    postureTier: score.postureTier,
+    workflowStatus: 'board_approved',
+    secMateriality: {
+      incidentId: 'inc-0',
+      incidentTitle: 'Zero-Day Vulnerability Triage',
+      detectionTimestamp: new Date().toISOString(),
+      determinationTimestamp: new Date().toISOString(),
+      status: 'non_material',
+      estimatedFinancialLossUsd: 250000,
+      annualRevenueThresholdUsd: 5000000,
+      quantitativeMaterialityRatio: 0.05,
+      isQuantitativelyMaterial: false,
+      qualitativeScore: 15,
+      isQualitativelyMaterial: false,
+      isMaterial: false,
+      disclosureClockElapsedHours: 2,
+      disclosureClockRemainingHours: 94,
+      isClockBreached: false,
+      piiExfiltratedRecordCount: 0,
+      criticalSystemsDowntimeHours: 0,
+      intellectualPropertyCompromised: false,
+      regulatorySanctionsProbable: false,
+      reputationalDamageHigh: false,
+      cisoDeterminationNotes: 'Routine patching, no intrusion.',
+      cloLegalEvaluationNotes: 'Non-material under Item 1.05.'
+    },
+    signOffs: [
+      {
+        role: 'ciso',
+        roleLabel: 'Chief Information Security Officer',
+        signatoryName: 'Marcus Vance, CISSP',
+        isApproved: true,
+        signedAt: '2026-10-25'
+      },
+      {
+        role: 'chief_legal_officer',
+        roleLabel: 'Chief Legal Officer',
+        signatoryName: 'Elena Rostova, JD',
+        isApproved: true,
+        signedAt: '2026-10-25'
+      },
+      {
+        role: 'board_audit_chair',
+        roleLabel: 'Board Audit & Risk Committee Chair',
+        signatoryName: 'Sir Arthur Sterling',
+        isApproved: true,
+        signedAt: '2026-10-25'
+      }
+    ],
+    memorandumMarkdown: '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const md = generateBoardCyberMemorandumMarkdown(memo);
+  assert.ok(md.includes('# BOARD AUDIT & RISK COMMITTEE CYBERSECURITY MEMORANDUM'));
+  assert.ok(md.includes('Marcus Vance, CISSP'));
+  assert.ok(md.includes('Elena Rostova, JD'));
+  assert.ok(md.includes('Sir Arthur Sterling'));
+  assert.ok(md.includes('NO MATERIAL BREACH IDENTIFIED'));
+});
+
+test('cyber-risk: schema validators reject invalid inputs and accept valid payloads', () => {
+  const badScenario = validateCyberRiskScenarioInput({});
+  assert.equal(badScenario.valid, false);
+  assert.ok(badScenario.errors.length >= 4);
+
+  const goodScenario = validateCyberRiskScenarioInput({
+    title: 'Cloud Ransomware Outage',
+    category: 'ransomware_extortion',
+    assetName: 'Core Kubernetes Cluster',
+    threatActor: 'LockBit 3.0 Syndicate',
+    contactFrequency: 10,
+    probabilityOfAction: 0.5,
+    threatCapability: 75,
+    resistanceStrength: 70
+  });
+  assert.equal(goodScenario.valid, true);
+
+  const badVuln = validateThreatVulnerabilityInput({ cveId: 'INVALID-ID' });
+  assert.equal(badVuln.valid, false);
+
+  const goodVuln = validateThreatVulnerabilityInput({
+    cveId: 'CVE-2024-3094',
+    title: 'XZ Utils Backdoor',
+    cvssScore: 10.0,
+    epssProbability: 0.95
+  });
+  assert.equal(goodVuln.valid, true);
+
+  const badExposure = validateDarkWebExposureInput({ leakedEmail: 'invalidemail' });
+  assert.equal(badExposure.valid, false);
+
+  const goodExposure = validateDarkWebExposureInput({
+    targetDomain: 'enterprise.com',
+    leakedEmail: 'ciso@enterprise.com',
+    breachSource: 'RedLine Stealer Dump'
+  });
+  assert.equal(goodExposure.valid, true);
+
+  const badControl = validateComplianceControlInput({});
+  assert.equal(badControl.valid, false);
+
+  const goodControl = validateComplianceControlInput({
+    functionCode: 'govern',
+    subcategoryCode: 'GV.OC-01',
+    title: 'Organizational Context Defined'
+  });
+  assert.equal(goodControl.valid, true);
+
+  const badSim = validateTabletopSimulationInput({});
+  assert.equal(badSim.valid, false);
+
+  const goodSim = validateTabletopSimulationInput({
+    archetype: 'ransomware_double_extortion',
+    scenarioTitle: 'Active Directory Lockout Simulation',
+    meanTimeToDetectHours: 1.2,
+    meanTimeToContainHours: 3.8
+  });
+  assert.equal(goodSim.valid, true);
+
+  const badSign = validateGovernanceSignOffInput({});
+  assert.equal(badSign.valid, false);
+
+  const goodSign = validateGovernanceSignOffInput({
+    role: 'ciso',
+    signatoryName: 'Marcus Vance',
+    signatoryTitle: 'CISO'
+  });
+  assert.equal(goodSign.valid, true);
+
+  const badMat = validateMaterialityDeterminationInput({});
+  assert.equal(badMat.valid, false);
+
+  const goodMat = validateMaterialityDeterminationInput({
+    incidentId: 'INC-2026-001',
+    estimatedFinancialLossUsd: 1200000
+  });
+  assert.equal(goodMat.valid, true);
 });

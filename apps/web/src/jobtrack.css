@@ -3165,6 +3165,89 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .succession-studio-sidebar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:10px;border:none;background:transparent;color:#475569;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s ease}
 .succession-studio-sidebar-btn:hover{background:#f1f5f9;color:#4f46e5}
 
+.cyber-studio-container{max-width:1280px;width:95vw;max-height:92vh;display:flex;flex-direction:column;background:#090d16;color:#f1f5f9;border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.85)}
+.cyber-studio-header{display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,0.08);background:#0d1322}
+.cyber-studio-title-badge{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.cyber-studio-icon{font-size:1.2rem}
+.cyber-studio-category{font-size:0.7rem;font-weight:700;letter-spacing:1px;color:#38bdf8;text-transform:uppercase}
+.cyber-studio-title-group h2{margin:0;font-size:1.4rem;font-weight:700;color:#f8fafc}
+.cyber-studio-title-group p{margin:4px 0 0 0;font-size:0.85rem;color:#94a3b8}
+.cyber-studio-header-actions{display:flex;align-items:center;gap:1rem}
+.cyber-studio-csps-badge{display:flex;flex-direction:column;align-items:flex-end;padding:6px 12px;background:#090d16;border:1px solid rgba(56,189,248,0.25);border-radius:8px}
+.cyber-studio-csps-label{font-size:0.7rem;text-transform:uppercase;color:#94a3b8;font-weight:600}
+.cyber-studio-csps-score{font-size:1.2rem;color:#38bdf8}
+.cyber-studio-tier-pill{font-size:0.65rem;padding:2px 8px;border-radius:12px;font-weight:700;margin-top:2px}
+.tier-superior_resilience{background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3)}
+.tier-robust_defensible{background:rgba(96,165,250,0.15);color:#60a5fa;border:1px solid rgba(96,165,250,0.3)}
+.tier-moderate_exposure{background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3)}
+.tier-critical_vulnerability{background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3)}
+.cyber-studio-close{background:transparent;border:none;color:#94a3b8;font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:6px}
+.cyber-studio-close:hover{background:rgba(255,255,255,0.1);color:#fff}
+.cyber-studio-tabs{display:flex;gap:4px;padding:0.5rem 1.5rem;background:#0b1120;border-bottom:1px solid rgba(255,255,255,0.06);overflow-x:auto}
+.cyber-studio-tab{padding:8px 16px;background:transparent;border:none;color:#94a3b8;font-size:0.85rem;font-weight:600;border-radius:6px;cursor:pointer;transition:all 0.15s ease;white-space:nowrap}
+.cyber-studio-tab:hover{color:#f8fafc;background:rgba(255,255,255,0.04)}
+.cyber-studio-tab.active{color:#38bdf8;background:rgba(56,189,248,0.1);border-bottom:2px solid #38bdf8}
+.cyber-studio-body{padding:1.5rem;overflow-y:auto;flex:1}
+.cyber-studio-dist-panel{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.cyber-studio-kpi-card{background:#0d1322;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:1rem;display:flex;flex-direction:column;gap:4px}
+.cyber-studio-toolbar{display:flex;justify-content:space-between;align-items:center;margin:1.25rem 0 1rem 0}
+.cyber-studio-toolbar h3{margin:0;font-size:1.1rem;color:#f8fafc}
+.cyber-studio-btn-primary{background:#0284c7;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:background 0.15s ease}
+.cyber-studio-btn-primary:hover{background:#0369a1}
+.cyber-studio-btn-secondary{background:rgba(255,255,255,0.06);color:#f8fafc;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:8px 14px;font-size:0.85rem;cursor:pointer}
+.cyber-studio-btn-secondary:hover{background:rgba(255,255,255,0.1)}
+.cyber-studio-btn-danger-sm{background:transparent;border:none;color:#ef4444;cursor:pointer;padding:4px 8px;border-radius:4px}
+.cyber-studio-btn-danger-sm:hover{background:rgba(239,68,68,0.15)}
+.cyber-studio-table-wrapper{background:#0d1322;border:1px solid rgba(255,255,255,0.06);border-radius:8px;overflow-x:auto}
+.cyber-studio-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.cyber-studio-table th{background:#0a0f1d;padding:10px 14px;text-align:left;font-weight:600;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,0.08)}
+.cyber-studio-table td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:#e2e8f0}
+.threat-pill{background:rgba(244,63,94,0.12);color:#fb7185;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600}
+.cve-pill{background:#1e293b;color:#38bdf8;padding:2px 8px;border-radius:4px;font-family:monospace;font-size:0.75rem;font-weight:600}
+.kev-badge{background:#ef4444;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:700}
+.priority-badge{padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:700}
+.priority-badge.critical{background:rgba(239,68,68,0.2);color:#f87171}
+.priority-badge.high{background:rgba(249,115,22,0.2);color:#fb923c}
+.priority-badge.medium{background:rgba(234,179,8,0.2);color:#facc15}
+.priority-badge.low{background:rgba(100,116,139,0.2);color:#94a3b8}
+.email-pill{background:#1e293b;color:#cbd5e1;padding:2px 8px;border-radius:4px;font-size:0.75rem}
+.vip-badge{background:rgba(234,179,8,0.15);color:#facc15;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:700}
+.cyber-studio-grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.cyber-studio-card{background:#0d1322;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:1.25rem}
+.card-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.card-header-row h4{margin:0;color:#f8fafc;font-size:1rem}
+.vuln-list,.exposure-list{display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto}
+.vuln-item,.exposure-item{background:#090d16;border:1px solid rgba(255,255,255,0.05);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.vuln-item.tier-critical{border-left:3px solid #ef4444}
+.vuln-item.tier-high{border-left:3px solid #f97316}
+.vuln-item-header,.exposure-item-header{display:flex;align-items:center;gap:8px}
+.vuln-metrics,.exposure-details{display:flex;flex-wrap:wrap;gap:8px;color:#94a3b8}
+.btn-link-danger{margin-left:auto;background:transparent;border:none;color:#ef4444;cursor:pointer}
+.nist-function-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.nist-function-card{background:#0d1322;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:1rem}
+.fn-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.fn-header h4{margin:0;font-size:0.95rem;color:#f8fafc}
+.tier-tag{font-size:0.75rem;color:#38bdf8;font-weight:600}
+.fn-stats{display:flex;justify-content:space-between;color:#94a3b8;margin-bottom:6px}
+.progress-bar-container{width:100%;height:6px;background:#1e293b;border-radius:3px;overflow:hidden}
+.progress-bar-fill{height:100%;background:#38bdf8;border-radius:3px}
+.fn-pill{background:#1e293b;color:#38bdf8;padding:2px 6px;border-radius:4px;font-size:0.75rem;font-weight:600}
+.tabletop-sims-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.sim-card{background:#0d1322;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:1.25rem;display:flex;flex-direction:column;gap:8px}
+.sim-header{display:flex;justify-content:space-between;align-items:flex-start}
+.archetype-tag{font-size:0.7rem;color:#38bdf8;font-weight:700;letter-spacing:0.5px}
+.sim-header h4{margin:4px 0 0 0;font-size:1rem;color:#f8fafc}
+.sim-score-badge{display:flex;flex-direction:column;align-items:center;background:#090d16;border:1px solid rgba(52,211,153,0.3);border-radius:6px;padding:4px 8px;color:#34d399}
+.sim-metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:0.75rem;background:#090d16;padding:6px 10px;border-radius:6px}
+.sim-subscores{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:0.75rem;color:#94a3b8}
+.sim-findings ul{margin:4px 0 0 16px;padding:0;color:#cbd5e1}
+.sim-delete{margin-top:auto;text-align:right}
+.sec-materiality-banner{display:flex;gap:12px;background:#0d1322;border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:1rem;margin-bottom:1.25rem;align-items:center}
+.clock-indicator{display:flex;align-items:center;gap:8px;margin-top:4px}
+.clock-hours{font-size:1.1rem;color:#f87171}
+.cyber-studio-sidebar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:10px;border:none;background:transparent;color:#475569;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s ease}
+.cyber-studio-sidebar-btn:hover{background:#f1f5f9;color:#0284c7}
+
 
 
 
