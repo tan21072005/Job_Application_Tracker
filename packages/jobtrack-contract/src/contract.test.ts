@@ -492,7 +492,25 @@ import {
   validateCapitalFinancingInput as validateIrCapitalFinancingInput,
   validateForm8KSignoffInput as validateIrForm8KSignoffInput,
   type InvestorRelationsOverviewDTO,
-  type GenerateForm8KRequestDTO
+  type GenerateForm8KRequestDTO,
+  calculateStrategicFitScore,
+  calculateDcfValuation,
+  calculateLboReturns,
+  calculateSynergyNpv,
+  calculateAsc805PurchasePriceAllocation,
+  calculateFloatingCollarExchangeRatio,
+  calculateAntitrustSecondRequestRisk,
+  calculateDspiScore,
+  generateForm8KDisclosures,
+  validateCorpDevTargetInput,
+  validateVdrFindingInput,
+  validateDcfSimulationInput,
+  validateLboSimulationInput,
+  validateSynergiesSimulationInput,
+  validateCollarSimulationInput,
+  validateAntitrustAssessmentInput,
+  validateTalentRetentionInput,
+  validateCorpDevSignoffInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -9566,6 +9584,248 @@ test('contract: investor relations nexus validators enforce correct schemas and 
     role: 'vp_investor_relations',
     signerName: 'Alexander Vance',
     verificationNotes: 'Audited consensus models and Reg G reconciliations.'
+  });
+  assert.equal(goodSignoff.ok, true);
+});
+
+test('contract: corp-dev-pmi-nexus algorithms compute exact valuation and risk scores', () => {
+  const sfsClean = calculateStrategicFitScore({
+    commercialFitScore: 90.0,
+    technicalFitScore: 85.0,
+    financialFitScore: 80.0,
+    culturalFitScore: 75.0,
+    moatFitScore: 85.0,
+    findings: []
+  });
+  assert.equal(sfsClean.riskPenalty, 0);
+  assert.ok(sfsClean.sfs >= 80 && sfsClean.sfs <= 100);
+
+  const sfsCritical = calculateStrategicFitScore({
+    commercialFitScore: 90.0,
+    technicalFitScore: 85.0,
+    financialFitScore: 80.0,
+    culturalFitScore: 75.0,
+    moatFitScore: 85.0,
+    findings: [
+      { severity: 'critical_deal_killer', isResolved: false },
+      { severity: 'critical_deal_killer', isResolved: false }
+    ]
+  });
+  assert.ok(sfsCritical.sfs <= 40);
+
+  const dcf = calculateDcfValuation({
+    projectedUfcf: [15000000, 18000000, 22000000, 26000000, 30000000],
+    waccPercent: 9.5,
+    terminalGrowthRatePercent: 2.5,
+    terminalEbitdaMultiple: 12.0,
+    terminalYearEbitdaUsd: 38000000,
+    netDebtUsd: 25000000,
+    sharesOutstanding: 10000000
+  });
+  assert.ok(dcf.enterpriseValueGordonUsd > 0);
+  assert.ok(dcf.enterpriseValueMultipleUsd > 0);
+  assert.ok(dcf.impliedEquityValueUsd > 0);
+  assert.ok(dcf.impliedSharePriceUsd > 0);
+
+  const lbo = calculateLboReturns({
+    entryEbitdaUsd: 30000000,
+    entryEbitdaMultiple: 10.0,
+    seniorDebtMultiple: 4.0,
+    subordinatedDebtMultiple: 1.5,
+    exitYear: 5,
+    exitEbitdaMultiple: 11.0,
+    projectedExitEbitdaUsd: 50000000,
+    debtPaydownDuringHoldUsd: 65000000
+  });
+  assert.ok(lbo.sponsorMoic > 1.0);
+  assert.ok(lbo.sponsorIrrPercent > 0);
+
+  const syn = calculateSynergyNpv({
+    annualRunRateCostSynergyUsd: 12000000,
+    annualRunRateRevenueSynergyUsd: 20000000,
+    contributionMarginPercent: 75.0,
+    oneTimeCostToAchieveUsd: 8000000,
+    waccPercent: 9.5,
+    terminalGrowthRatePercent: 2.5
+  });
+  assert.ok(syn.synergyNpvUsd > 0);
+  assert.equal(syn.annualNetSynergies.length, 4);
+
+  const ppa = calculateAsc805PurchasePriceAllocation({
+    purchasePriceUsd: 350000000,
+    netTangibleAssetsFairValueUsd: 60000000,
+    developedTechnologyFairValueUsd: 85000000,
+    customerRelationshipsFairValueUsd: 45000000,
+    trademarksFairValueUsd: 15000000,
+    effectiveTaxRatePercent: 21.0
+  });
+  assert.equal(ppa.identifiableIntangiblesUsd, 145000000);
+  assert.equal(ppa.deferredTaxLiabilityUsd, 30450000);
+  assert.ok(ppa.calculatedGoodwillUsd > 0);
+
+  const collarFloating = calculateFloatingCollarExchangeRatio({
+    fixedTargetValueUsd: 50.0,
+    collarLowerLimitUsd: 90.0,
+    collarUpperLimitUsd: 110.0,
+    currentBuyerStockPriceUsd: 100.0
+  });
+  assert.equal(collarFloating.collarStatus, 'floating');
+  assert.equal(collarFloating.exchangeRatio, 0.5);
+
+  const collarCeiling = calculateFloatingCollarExchangeRatio({
+    fixedTargetValueUsd: 50.0,
+    collarLowerLimitUsd: 90.0,
+    collarUpperLimitUsd: 110.0,
+    currentBuyerStockPriceUsd: 80.0
+  });
+  assert.equal(collarCeiling.collarStatus, 'ceiling');
+
+  const collarFloor = calculateFloatingCollarExchangeRatio({
+    fixedTargetValueUsd: 50.0,
+    collarLowerLimitUsd: 90.0,
+    collarUpperLimitUsd: 110.0,
+    currentBuyerStockPriceUsd: 125.0
+  });
+  assert.equal(collarFloor.collarStatus, 'floor');
+
+  const antitrust = calculateAntitrustSecondRequestRisk({
+    buyerMarketSharePercent: 22.0,
+    targetMarketSharePercent: 12.0,
+    industryTotalHhiPreMerger: 2100,
+    competitorProtestsPresent: true
+  });
+  assert.equal(antitrust.deltaHhi, 528);
+  assert.equal(antitrust.postMergerHhi, 2628);
+  assert.ok(antitrust.secondRequestRiskScore >= 60.0);
+
+  const dspiHigh = calculateDspiScore({
+    diligenceHealthScore: 88.0,
+    financingCertaintyScore: 92.0,
+    antitrustClearanceScore: 85.0,
+    boardAlignmentScore: 90.0,
+    pmiReadinessScore: 82.0,
+    hasHostilePoisonPill: false,
+    hasCriticalFraudOrAccountingMisstatement: false,
+    hasFinancingWithdrawal: false
+  });
+  assert.equal(dspiHigh.band, 'HIGH_TRANSACTION_CERTAINTY');
+  assert.ok(dspiHigh.dspi >= 80.0);
+
+  const dspiKiller = calculateDspiScore({
+    diligenceHealthScore: 88.0,
+    financingCertaintyScore: 92.0,
+    antitrustClearanceScore: 85.0,
+    boardAlignmentScore: 90.0,
+    pmiReadinessScore: 82.0,
+    hasHostilePoisonPill: true,
+    hasCriticalFraudOrAccountingMisstatement: false,
+    hasFinancingWithdrawal: false
+  });
+  assert.equal(dspiKiller.band, 'ELEVATED_CLOSING_RISK');
+  assert.ok(dspiKiller.dspi < 65.0);
+});
+
+test('contract: generateForm8KDisclosures produces compliant Item 1.01 and 2.01 reports', () => {
+  const disclosure = generateForm8KDisclosures({
+    targetName: 'Apex Cloud Solutions Inc.',
+    codeName: 'Project Apex',
+    totalConsiderationUsd: 485000000,
+    cashPercent: 65,
+    stockPercent: 35,
+    buyerTerminationFeeUsd: 19400000,
+    targetBreakFeeUsd: 14550000,
+    regulatoryCovenant: 'reasonable_best_efforts',
+    filingDate: '2026-10-25'
+  });
+
+  assert.ok(disclosure.item101.includes('FORM 8-K'));
+  assert.ok(disclosure.item101.includes('Item 1.01 Entry into a Material Definitive Agreement'));
+  assert.ok(disclosure.item101.includes('Apex Cloud Solutions Inc.'));
+  assert.ok(disclosure.item101.includes('Project Apex'));
+  assert.ok(disclosure.item101.includes('$485.00 million'));
+
+  assert.ok(disclosure.item201.includes('FORM 8-K'));
+  assert.ok(disclosure.item201.includes('Item 2.01 Completion of Acquisition or Disposition of Assets'));
+  assert.ok(disclosure.item201.includes('ASC Topic 805'));
+});
+
+test('contract: corp-dev-pmi-nexus validators enforce schemas and reject invalid payloads', () => {
+  const badTarget = validateCorpDevTargetInput({});
+  assert.equal(badTarget.ok, false);
+  const goodTarget = validateCorpDevTargetInput({
+    targetName: 'Apex Cloud Solutions Inc.',
+    codeName: 'Project Apex',
+    annualRevenueUsd: 65000000,
+    targetEnterpriseValueUsd: 485000000
+  });
+  assert.equal(goodTarget.ok, true);
+
+  const badFinding = validateVdrFindingInput({});
+  assert.equal(badFinding.ok, false);
+  const goodFinding = validateVdrFindingInput({
+    targetId: 'target-uuid-1',
+    title: 'Customer concentration risk in top 3 accounts',
+    severity: 'high'
+  });
+  assert.equal(goodFinding.ok, true);
+
+  const badDcf = validateDcfSimulationInput({});
+  assert.equal(badDcf.ok, false);
+  const goodDcf = validateDcfSimulationInput({
+    projectedUfcf: [10000000, 15000000],
+    waccPercent: 9.5,
+    terminalGrowthRatePercent: 2.5
+  });
+  assert.equal(goodDcf.ok, true);
+
+  const badLbo = validateLboSimulationInput({});
+  assert.equal(badLbo.ok, false);
+  const goodLbo = validateLboSimulationInput({
+    entryEbitdaUsd: 25000000,
+    entryEbitdaMultiple: 10.0,
+    exitYear: 5
+  });
+  assert.equal(goodLbo.ok, true);
+
+  const badSynergy = validateSynergiesSimulationInput({});
+  assert.equal(badSynergy.ok, false);
+  const goodSynergy = validateSynergiesSimulationInput({
+    annualRunRateCostSynergyUsd: 10000000,
+    waccPercent: 9.0
+  });
+  assert.equal(goodSynergy.ok, true);
+
+  const badCollar = validateCollarSimulationInput({});
+  assert.equal(badCollar.ok, false);
+  const goodCollar = validateCollarSimulationInput({
+    fixedTargetValueUsd: 50.0,
+    collarLowerLimitUsd: 90.0,
+    collarUpperLimitUsd: 110.0
+  });
+  assert.equal(goodCollar.ok, true);
+
+  const badAntitrust = validateAntitrustAssessmentInput({});
+  assert.equal(badAntitrust.ok, false);
+  const goodAntitrust = validateAntitrustAssessmentInput({
+    buyerMarketSharePercent: 25.0,
+    targetMarketSharePercent: 10.0
+  });
+  assert.equal(goodAntitrust.ok, true);
+
+  const badRetention = validateTalentRetentionInput({});
+  assert.equal(badRetention.ok, false);
+  const goodRetention = validateTalentRetentionInput({
+    targetId: 'target-uuid-1',
+    employeeName: 'Dr. Sarah Connor',
+    annualCompensationUsd: 320000
+  });
+  assert.equal(goodRetention.ok, true);
+
+  const badSignoff = validateCorpDevSignoffInput({});
+  assert.equal(badSignoff.ok, false);
+  const goodSignoff = validateCorpDevSignoffInput({
+    role: 'vp_corporate_development',
+    signerName: 'Marcus Holloway'
   });
   assert.equal(goodSignoff.ok, true);
 });

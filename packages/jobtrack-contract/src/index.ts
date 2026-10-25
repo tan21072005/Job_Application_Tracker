@@ -52,3 +52,4 @@ export * from './corporate-treasury-nexus.ts';
 export * from './internal-audit-erm-nexus.ts';
 export * from './legal-operations-nexus.ts';
 export * from './investor-relations-nexus.ts';
+export * from './corp-dev-pmi-nexus.ts';

@@ -531,7 +531,45 @@ import {
   calculateEPSAccretionDilution,
   calculateRule10b18DailyLimit,
   calculateISI,
-  generateSecForm8KDisclosure
+  generateSecForm8KDisclosure,
+  type TargetStage,
+  type StrategicTheme,
+  type DiligenceStreamType,
+  type FindingSeverity,
+  type RegulatoryCovenantType,
+  type CorpDevSignoffRole,
+  type DspiConfidenceBand,
+  type CorpDevTargetDTO,
+  type VdrDiligenceStreamDTO,
+  type VdrDiligenceFindingDTO,
+  type DcfValuationModelDTO,
+  type LboFinancialModelDTO,
+  type SynergyModelDTO,
+  type PurchasePriceAllocationDTO,
+  type DealStructuringDTO,
+  type AntitrustClearanceDTO,
+  type PmiInitiativeDTO,
+  type TalentRetentionDTO,
+  type BoardWarRoomDTO,
+  type CorpDevOverviewDTO,
+  type CreateCorpDevTargetRequestDTO,
+  type CreateVdrFindingRequestDTO,
+  type SimulateDcfRequestDTO,
+  type SimulateLboRequestDTO,
+  type SimulateSynergiesRequestDTO,
+  type SimulateCollarRequestDTO,
+  type AssessAntitrustRequestDTO,
+  type LockTalentRetentionRequestDTO,
+  type CorpDevSignoffRequestDTO,
+  calculateStrategicFitScore,
+  calculateDcfValuation,
+  calculateLboReturns,
+  calculateSynergyNpv,
+  calculateAsc805PurchasePriceAllocation,
+  calculateFloatingCollarExchangeRatio,
+  calculateAntitrustSecondRequestRisk,
+  calculateDspiScore,
+  generateForm8KDisclosures
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -20709,6 +20747,598 @@ To supplement our consolidated financial statements presented in accordance with
     }
   }
 };
+
+const DEMO_CORP_DEV_PMI_NEXUS_KEY = 'jobtrack_demo_corp_dev_pmi_nexus_v1';
+
+interface DemoCorpDevTargetStore {
+  target: CorpDevTargetDTO;
+  vdrStreams: VdrDiligenceStreamDTO[];
+  findings: VdrDiligenceFindingDTO[];
+  dcfModel: DcfValuationModelDTO;
+  lboModel: LboFinancialModelDTO;
+  synergies: SynergyModelDTO;
+  ppa: PurchasePriceAllocationDTO;
+  dealStructure: DealStructuringDTO;
+  antitrust: AntitrustClearanceDTO;
+  pmiInitiatives: PmiInitiativeDTO[];
+  talentRetentions: TalentRetentionDTO[];
+  warRoom: BoardWarRoomDTO;
+}
+
+interface DemoCorpDevStore {
+  overview: CorpDevOverviewDTO;
+  details: Record<string, DemoCorpDevTargetStore>;
+}
+
+function createDefaultDemoCorpDevStore(): DemoCorpDevStore {
+  const defaultTargetId = 'target-apex-01';
+  const target: CorpDevTargetDTO = {
+    id: defaultTargetId,
+    targetName: 'Apex Cloud Solutions Inc.',
+    codeName: 'Project Apex',
+    industrySector: 'Enterprise SaaS & Multi-Cloud',
+    stage: 'binding_loi_exclusivity',
+    strategicTheme: 'vertical_tech_stack_expansion',
+    headquarters: 'Austin, TX',
+    employeeCount: 240,
+    annualRevenueUsd: 65000000,
+    ebitdaUsd: 18500000,
+    targetEnterpriseValueUsd: 485000000,
+    strategicFitScore: 88.5,
+    ndaSignedDate: '2026-08-15',
+    exclusivityExpiryDate: '2026-11-30',
+    createdAt: '2026-08-01T10:00:00Z',
+    updatedAt: '2026-10-25T08:00:00Z'
+  };
+
+  const overview: CorpDevOverviewDTO = {
+    activeTargetsCount: 1,
+    targets: [target],
+    aggregatePipelineEvUsd: 485000000,
+    activeVdrCount: 2,
+    averageStrategicFitScore: 88.5,
+    topTargets: [
+      {
+        targetName: target.targetName,
+        codeName: target.codeName,
+        stage: target.stage,
+        evUsd: target.targetEnterpriseValueUsd,
+        sfs: target.strategicFitScore
+      }
+    ]
+  };
+
+  const vdrStreams: VdrDiligenceStreamDTO[] = [
+    { id: 'vdr-1', targetId: defaultTargetId, streamType: 'financial_tax', streamLead: 'Deloitte M&A Transaction Services', completionPercent: 95.0, status: 'cleared', findingsCount: 4, criticalIssuesCount: 0, updatedAt: '2026-10-24T18:00:00Z' },
+    { id: 'vdr-2', targetId: defaultTargetId, streamType: 'legal_regulatory', streamLead: 'Gibson Dunn & Crutcher LLP', completionPercent: 88.0, status: 'in_progress', findingsCount: 6, criticalIssuesCount: 0, updatedAt: '2026-10-24T18:00:00Z' },
+    { id: 'vdr-3', targetId: defaultTargetId, streamType: 'commercial_market', streamLead: 'McKinsey Strategy Practice', completionPercent: 100.0, status: 'cleared', findingsCount: 3, criticalIssuesCount: 0, updatedAt: '2026-10-24T18:00:00Z' },
+    { id: 'vdr-4', targetId: defaultTargetId, streamType: 'technical_architecture', streamLead: 'Internal Chief Architect Office', completionPercent: 90.0, status: 'cleared', findingsCount: 5, criticalIssuesCount: 0, updatedAt: '2026-10-24T18:00:00Z' },
+    { id: 'vdr-5', targetId: defaultTargetId, streamType: 'hr_talent_culture', streamLead: 'Mercer Human Capital Advisory', completionPercent: 85.0, status: 'in_progress', findingsCount: 2, criticalIssuesCount: 0, updatedAt: '2026-10-24T18:00:00Z' },
+    { id: 'vdr-6', targetId: defaultTargetId, streamType: 'operational_esg', streamLead: 'PwC Sustainability & Supply Advisory', completionPercent: 92.0, status: 'cleared', findingsCount: 1, criticalIssuesCount: 0, updatedAt: '2026-10-24T18:00:00Z' }
+  ];
+
+  const findings: VdrDiligenceFindingDTO[] = [
+    {
+      id: 'find-1',
+      targetId: defaultTargetId,
+      streamType: 'legal_regulatory',
+      title: 'Top 2 customer contracts require change of control consent notices',
+      description: 'Enterprise customers account for 14% of annual ARR with standard 30-day notice provisions',
+      severity: 'medium',
+      financialImpactUsd: 3500000,
+      proposedRemediation: 'Secure pre-closing customer consent certificates as condition precedent in Merger Agreement',
+      isResolved: true,
+      createdAt: '2026-09-15T14:30:00Z'
+    },
+    {
+      id: 'find-2',
+      targetId: defaultTargetId,
+      streamType: 'technical_architecture',
+      title: 'Monolithic database replication lag during peak batch ingestion',
+      description: 'Secondary read replicas experience up to 45 seconds replication delay under load',
+      severity: 'medium',
+      financialImpactUsd: 450000,
+      proposedRemediation: 'Migrate to Aurora Postgres serverless cluster in 60-day PMI window',
+      isResolved: false,
+      createdAt: '2026-10-02T11:15:00Z'
+    }
+  ];
+
+  const dcfModel: DcfValuationModelDTO = {
+    id: 'dcf-1',
+    targetId: defaultTargetId,
+    modelName: 'Base Case DCF Model Q3-2026',
+    forecastYears: 5,
+    waccPercent: 9.5,
+    terminalGrowthRatePercent: 2.5,
+    terminalEbitdaMultiple: 12.0,
+    projectedUfcf: [18000000, 22500000, 28000000, 34000000, 41000000],
+    terminalValueGordonUsd: 475000000,
+    terminalValueMultipleUsd: 492000000,
+    enterpriseValueGordonUsd: 485000000,
+    enterpriseValueMultipleUsd: 498000000,
+    netDebtUsd: 20000000,
+    impliedEquityValueUsd: 465000000,
+    impliedSharePriceUsd: 46.50
+  };
+
+  const lboModel: LboFinancialModelDTO = {
+    id: 'lbo-1',
+    targetId: defaultTargetId,
+    modelName: 'Alternative LBO Recapitalization Case',
+    entryEbitdaMultiple: 11.5,
+    seniorDebtMultiple: 4.0,
+    subordinatedDebtMultiple: 1.5,
+    exitEbitdaMultiple: 12.0,
+    exitYear: 5,
+    projectedExitEbitdaUsd: 45000000,
+    sponsorEquityEntryUsd: 185000000,
+    sponsorEquityExitUsd: 490000000,
+    sponsorMoic: 2.65,
+    sponsorIrrPercent: 21.5
+  };
+
+  const synergies: SynergyModelDTO = {
+    id: 'syn-1',
+    targetId: defaultTargetId,
+    annualRunRateCostSynergyUsd: 14000000,
+    annualRunRateRevenueSynergyUsd: 25000000,
+    contributionMarginPercent: 75.0,
+    oneTimeCostToAchieveUsd: 9500000,
+    costPhasing: [0.3, 0.7, 1.0, 1.0],
+    revenuePhasing: [0.15, 0.5, 0.85, 1.0],
+    synergyNpvUsd: 84200000
+  };
+
+  const ppa: PurchasePriceAllocationDTO = {
+    id: 'ppa-1',
+    targetId: defaultTargetId,
+    totalConsiderationUsd: 485000000,
+    netTangibleAssetsFairValueUsd: 72000000,
+    developedTechnologyFairValueUsd: 135000000,
+    customerRelationshipsFairValueUsd: 68000000,
+    trademarksFairValueUsd: 24000000,
+    deferredTaxLiabilityUsd: 47670000,
+    calculatedGoodwillUsd: 233670000
+  };
+
+  const dealStructure: DealStructuringDTO = {
+    id: 'deal-1',
+    targetId: defaultTargetId,
+    cashConsiderationUsd: 315250000,
+    stockConsiderationUsd: 169750000,
+    earnoutConsiderationUsd: 0,
+    rolloverEquityUsd: 0,
+    cashPercent: 65.0,
+    stockPercent: 35.0,
+    collarUpperLimitUsd: 110.00,
+    collarLowerLimitUsd: 90.00,
+    fixedTargetValueUsd: 50.00,
+    buyerTerminationFeeUsd: 19400000,
+    targetBreakFeeUsd: 14550000
+  };
+
+  const antitrust: AntitrustClearanceDTO = {
+    id: 'anti-1',
+    targetId: defaultTargetId,
+    requiresHsrFiling: true,
+    preMergerHhi: 1850,
+    postMergerHhi: 2110,
+    deltaHhi: 260,
+    secondRequestRiskScore: 32.4,
+    filingDate: '2026-09-10',
+    waitingPeriodExpiryDate: '2026-10-10',
+    regulatoryCovenant: 'reasonable_best_efforts',
+    clearanceStatus: 'cleared'
+  };
+
+  const pmiInitiatives: PmiInitiativeDTO[] = [
+    { id: 'pmi-1', targetId: defaultTargetId, workstream: 'executive_steering', title: 'Day-1 Joint Operating Committee Charter Ratification', owner: 'VP Corp Dev', dayTarget: 1, isDay1Critical: true, isCompleted: true, associatedSynergyUsd: 0 },
+    { id: 'pmi-2', targetId: defaultTargetId, workstream: 'technology_infrastructure', title: 'Okta SAML 2.0 Identity Federation & Email Bridging', owner: 'Chief Information Security Officer', dayTarget: 1, isDay1Critical: true, isCompleted: true, associatedSynergyUsd: 1200000 },
+    { id: 'pmi-3', targetId: defaultTargetId, workstream: 'people_talent', title: 'Payroll Continuity Validation & Benefits Mirroring', owner: 'Chief People Officer', dayTarget: 1, isDay1Critical: true, isCompleted: true, associatedSynergyUsd: 0 },
+    { id: 'pmi-4', targetId: defaultTargetId, workstream: 'finance_accounting', title: 'Dual-Signatory Bank Account Mandate & Treasury Sweep', owner: 'VP Treasury', dayTarget: 1, isDay1Critical: true, isCompleted: true, associatedSynergyUsd: 500000 },
+    { id: 'pmi-5', targetId: defaultTargetId, workstream: 'sales_gtm', title: 'Harm-Free Sales Commission Protection Window Staging', owner: 'Chief Commercial Officer', dayTarget: 30, isDay1Critical: false, isCompleted: false, associatedSynergyUsd: 4500000 },
+    { id: 'pmi-6', targetId: defaultTargetId, workstream: 'technology_infrastructure', title: 'Consolidated AWS Enterprise Discount Program (EDP) Agreement', owner: 'VP Infrastructure', dayTarget: 60, isDay1Critical: false, isCompleted: false, associatedSynergyUsd: 3800000 }
+  ];
+
+  const talentRetentions: TalentRetentionDTO[] = [
+    {
+      id: 'ret-1',
+      targetId: defaultTargetId,
+      employeeName: 'Dr. Elena Rostova',
+      jobTitle: 'Chief Technology Officer & Co-Founder',
+      department: 'Engineering',
+      annualCompensationUsd: 420000,
+      unvestedEquityUsd: 1850000,
+      flightRiskScore: 28.5,
+      retentionBonusPoolUsd: 1200000,
+      cliffPeriodMonths: 24,
+      isLocked: true
+    },
+    {
+      id: 'ret-2',
+      targetId: defaultTargetId,
+      employeeName: 'Julian Mercer',
+      jobTitle: 'VP Cloud Engineering',
+      department: 'Infrastructure',
+      annualCompensationUsd: 340000,
+      unvestedEquityUsd: 850000,
+      flightRiskScore: 34.0,
+      retentionBonusPoolUsd: 400000,
+      cliffPeriodMonths: 24,
+      isLocked: false
+    }
+  ];
+
+  const disclosures = generateForm8KDisclosures({
+    targetName: target.targetName,
+    codeName: target.codeName,
+    totalConsiderationUsd: target.targetEnterpriseValueUsd,
+    cashPercent: dealStructure.cashPercent,
+    stockPercent: dealStructure.stockPercent,
+    buyerTerminationFeeUsd: dealStructure.buyerTerminationFeeUsd,
+    targetBreakFeeUsd: dealStructure.targetBreakFeeUsd,
+    regulatoryCovenant: antitrust.regulatoryCovenant,
+    filingDate: '2026-10-25'
+  });
+
+  const warRoom: BoardWarRoomDTO = {
+    id: 'war-1',
+    targetId: defaultTargetId,
+    dspiScore: 84.5,
+    confidenceBand: 'HIGH_TRANSACTION_CERTAINTY',
+    vpCorpDevSignoff: {
+      signed: true,
+      signerName: 'Marcus Holloway (VP Corporate Development)',
+      timestamp: '2026-10-25T08:00:00Z'
+    },
+    cfoSignoff: {
+      signed: false,
+      signerName: null,
+      timestamp: null
+    },
+    ceoSignoff: {
+      signed: false,
+      signerName: null,
+      timestamp: null
+    },
+    form8kItem101Markdown: disclosures.item101,
+    form8kItem201Markdown: disclosures.item201
+  };
+
+  return {
+    overview,
+    details: {
+      [defaultTargetId]: {
+        target,
+        vdrStreams,
+        findings,
+        dcfModel,
+        lboModel,
+        synergies,
+        ppa,
+        dealStructure,
+        antitrust,
+        pmiInitiatives,
+        talentRetentions,
+        warRoom
+      }
+    }
+  };
+}
+
+function loadDemoCorpDevStore(): DemoCorpDevStore {
+  const raw = localStorage.getItem(DEMO_CORP_DEV_PMI_NEXUS_KEY);
+  if (!raw) {
+    const store = createDefaultDemoCorpDevStore();
+    saveDemoCorpDevStore(store);
+    return store;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const store = createDefaultDemoCorpDevStore();
+    saveDemoCorpDevStore(store);
+    return store;
+  }
+}
+
+function saveDemoCorpDevStore(store: DemoCorpDevStore): void {
+  localStorage.setItem(DEMO_CORP_DEV_PMI_NEXUS_KEY, JSON.stringify(store));
+}
+
+export const corpDevPmiNexusRepository = {
+  async getOverview(): Promise<CorpDevOverviewDTO> {
+    if (demoMode) {
+      const store = loadDemoCorpDevStore();
+      return store.overview;
+    }
+    try {
+      return await request<CorpDevOverviewDTO>('/corp-dev-pmi-nexus/overview');
+    } catch {
+      const store = loadDemoCorpDevStore();
+      return store.overview;
+    }
+  },
+
+  async getTargetDetails(targetId: string): Promise<DemoCorpDevTargetStore | null> {
+    if (demoMode) {
+      const store = loadDemoCorpDevStore();
+      return store.details[targetId] || null;
+    }
+    try {
+      return await request<DemoCorpDevTargetStore>(`/corp-dev-pmi-nexus/targets/${targetId}`);
+    } catch {
+      const store = loadDemoCorpDevStore();
+      return store.details[targetId] || null;
+    }
+  },
+
+  async createTarget(input: CreateCorpDevTargetRequestDTO): Promise<CorpDevTargetDTO> {
+    if (demoMode) {
+      const store = loadDemoCorpDevStore();
+      const newId = `target-${Date.now().toString(16)}`;
+      const target: CorpDevTargetDTO = {
+        id: newId,
+        targetName: input.targetName,
+        codeName: input.codeName,
+        industrySector: input.industrySector,
+        stage: input.stage || 'sourcing',
+        strategicTheme: input.strategicTheme,
+        headquarters: input.headquarters,
+        employeeCount: input.employeeCount,
+        annualRevenueUsd: input.annualRevenueUsd,
+        ebitdaUsd: input.ebitdaUsd,
+        targetEnterpriseValueUsd: input.targetEnterpriseValueUsd,
+        strategicFitScore: 78.0,
+        ndaSignedDate: input.ndaSignedDate || null,
+        exclusivityExpiryDate: input.exclusivityExpiryDate || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      store.overview.targets.push(target);
+      store.overview.activeTargetsCount = store.overview.targets.length;
+      store.overview.aggregatePipelineEvUsd += target.targetEnterpriseValueUsd;
+      saveDemoCorpDevStore(store);
+      return target;
+    }
+    return await request<CorpDevTargetDTO>('/corp-dev-pmi-nexus/targets', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async createFinding(input: CreateVdrFindingRequestDTO): Promise<VdrDiligenceFindingDTO> {
+    if (demoMode) {
+      const store = loadDemoCorpDevStore();
+      const targetStore = store.details[input.targetId];
+      const newFinding: VdrDiligenceFindingDTO = {
+        id: `find-${Date.now().toString(16)}`,
+        targetId: input.targetId,
+        streamType: input.streamType,
+        title: input.title,
+        description: input.description,
+        severity: input.severity,
+        financialImpactUsd: input.financialImpactUsd,
+        proposedRemediation: input.proposedRemediation,
+        isResolved: false,
+        createdAt: new Date().toISOString()
+      };
+      if (targetStore) {
+        targetStore.findings.unshift(newFinding);
+      }
+      saveDemoCorpDevStore(store);
+      return newFinding;
+    }
+    return await request<VdrDiligenceFindingDTO>('/corp-dev-pmi-nexus/findings', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async simulateDcf(input: SimulateDcfRequestDTO): Promise<any> {
+    if (demoMode) {
+      return calculateDcfValuation({
+        projectedUfcf: input.projectedUfcf,
+        waccPercent: input.waccPercent,
+        terminalGrowthRatePercent: input.terminalGrowthRatePercent,
+        terminalEbitdaMultiple: input.terminalEbitdaMultiple,
+        terminalYearEbitdaUsd: input.terminalYearEbitdaUsd,
+        netDebtUsd: input.netDebtUsd,
+        sharesOutstanding: input.sharesOutstanding
+      });
+    }
+    try {
+      return await request<any>('/corp-dev-pmi-nexus/dcf/simulate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return calculateDcfValuation({
+        projectedUfcf: input.projectedUfcf,
+        waccPercent: input.waccPercent,
+        terminalGrowthRatePercent: input.terminalGrowthRatePercent,
+        terminalEbitdaMultiple: input.terminalEbitdaMultiple,
+        terminalYearEbitdaUsd: input.terminalYearEbitdaUsd,
+        netDebtUsd: input.netDebtUsd,
+        sharesOutstanding: input.sharesOutstanding
+      });
+    }
+  },
+
+  async simulateLbo(input: SimulateLboRequestDTO): Promise<any> {
+    if (demoMode) {
+      return calculateLboReturns({
+        entryEbitdaUsd: input.entryEbitdaUsd,
+        entryEbitdaMultiple: input.entryEbitdaMultiple,
+        seniorDebtMultiple: input.seniorDebtMultiple,
+        subordinatedDebtMultiple: input.subordinatedDebtMultiple,
+        exitYear: input.exitYear,
+        exitEbitdaMultiple: input.exitEbitdaMultiple,
+        projectedExitEbitdaUsd: input.projectedExitEbitdaUsd,
+        debtPaydownDuringHoldUsd: input.debtPaydownDuringHoldUsd
+      });
+    }
+    try {
+      return await request<any>('/corp-dev-pmi-nexus/lbo/simulate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return calculateLboReturns({
+        entryEbitdaUsd: input.entryEbitdaUsd,
+        entryEbitdaMultiple: input.entryEbitdaMultiple,
+        seniorDebtMultiple: input.seniorDebtMultiple,
+        subordinatedDebtMultiple: input.subordinatedDebtMultiple,
+        exitYear: input.exitYear,
+        exitEbitdaMultiple: input.exitEbitdaMultiple,
+        projectedExitEbitdaUsd: input.projectedExitEbitdaUsd,
+        debtPaydownDuringHoldUsd: input.debtPaydownDuringHoldUsd
+      });
+    }
+  },
+
+  async simulateSynergies(input: SimulateSynergiesRequestDTO): Promise<any> {
+    if (demoMode) {
+      return calculateSynergyNpv({
+        annualRunRateCostSynergyUsd: input.annualRunRateCostSynergyUsd,
+        annualRunRateRevenueSynergyUsd: input.annualRunRateRevenueSynergyUsd,
+        contributionMarginPercent: input.contributionMarginPercent,
+        oneTimeCostToAchieveUsd: input.oneTimeCostToAchieveUsd,
+        waccPercent: input.waccPercent,
+        terminalGrowthRatePercent: input.terminalGrowthRatePercent
+      });
+    }
+    try {
+      return await request<any>('/corp-dev-pmi-nexus/synergies/simulate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return calculateSynergyNpv({
+        annualRunRateCostSynergyUsd: input.annualRunRateCostSynergyUsd,
+        annualRunRateRevenueSynergyUsd: input.annualRunRateRevenueSynergyUsd,
+        contributionMarginPercent: input.contributionMarginPercent,
+        oneTimeCostToAchieveUsd: input.oneTimeCostToAchieveUsd,
+        waccPercent: input.waccPercent,
+        terminalGrowthRatePercent: input.terminalGrowthRatePercent
+      });
+    }
+  },
+
+  async simulateCollar(input: SimulateCollarRequestDTO): Promise<any> {
+    if (demoMode) {
+      return calculateFloatingCollarExchangeRatio({
+        fixedTargetValueUsd: input.fixedTargetValueUsd,
+        collarLowerLimitUsd: input.collarLowerLimitUsd,
+        collarUpperLimitUsd: input.collarUpperLimitUsd,
+        currentBuyerStockPriceUsd: input.currentBuyerStockPriceUsd
+      });
+    }
+    try {
+      return await request<any>('/corp-dev-pmi-nexus/collar/simulate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return calculateFloatingCollarExchangeRatio({
+        fixedTargetValueUsd: input.fixedTargetValueUsd,
+        collarLowerLimitUsd: input.collarLowerLimitUsd,
+        collarUpperLimitUsd: input.collarUpperLimitUsd,
+        currentBuyerStockPriceUsd: input.currentBuyerStockPriceUsd
+      });
+    }
+  },
+
+  async assessAntitrust(input: AssessAntitrustRequestDTO): Promise<any> {
+    if (demoMode) {
+      return calculateAntitrustSecondRequestRisk({
+        buyerMarketSharePercent: input.buyerMarketSharePercent,
+        targetMarketSharePercent: input.targetMarketSharePercent,
+        industryTotalHhiPreMerger: input.industryTotalHhiPreMerger,
+        competitorProtestsPresent: input.competitorProtestsPresent
+      });
+    }
+    try {
+      return await request<any>('/corp-dev-pmi-nexus/antitrust/assess', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return calculateAntitrustSecondRequestRisk({
+        buyerMarketSharePercent: input.buyerMarketSharePercent,
+        targetMarketSharePercent: input.targetMarketSharePercent,
+        industryTotalHhiPreMerger: input.industryTotalHhiPreMerger,
+        competitorProtestsPresent: input.competitorProtestsPresent
+      });
+    }
+  },
+
+  async lockTalentRetention(input: LockTalentRetentionRequestDTO): Promise<TalentRetentionDTO> {
+    if (demoMode) {
+      const store = loadDemoCorpDevStore();
+      const targetStore = store.details[input.targetId];
+      const newRet: TalentRetentionDTO = {
+        id: `ret-${Date.now().toString(16)}`,
+        targetId: input.targetId,
+        employeeName: input.employeeName,
+        jobTitle: input.jobTitle,
+        department: input.department,
+        annualCompensationUsd: input.annualCompensationUsd,
+        unvestedEquityUsd: input.unvestedEquityUsd,
+        flightRiskScore: input.flightRiskScore,
+        retentionBonusPoolUsd: input.retentionBonusPoolUsd,
+        cliffPeriodMonths: input.cliffPeriodMonths || 24,
+        isLocked: true
+      };
+      if (targetStore) {
+        targetStore.talentRetentions.unshift(newRet);
+      }
+      saveDemoCorpDevStore(store);
+      return newRet;
+    }
+    return await request<TalentRetentionDTO>('/corp-dev-pmi-nexus/retention/lock', {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async executeSignoff(targetId: string, input: CorpDevSignoffRequestDTO): Promise<BoardWarRoomDTO> {
+    if (demoMode) {
+      const store = loadDemoCorpDevStore();
+      const targetStore = store.details[targetId];
+      if (!targetStore) throw new Error('Target not found');
+      const warRoom = targetStore.warRoom;
+
+      if (input.role === 'vp_corporate_development') {
+        warRoom.vpCorpDevSignoff.signed = true;
+        warRoom.vpCorpDevSignoff.signerName = input.signerName;
+        warRoom.vpCorpDevSignoff.timestamp = new Date().toISOString();
+      } else if (input.role === 'chief_financial_officer') {
+        if (!warRoom.vpCorpDevSignoff.signed) {
+          throw new Error('VP Corporate Development must sign before Chief Financial Officer');
+        }
+        warRoom.cfoSignoff.signed = true;
+        warRoom.cfoSignoff.signerName = input.signerName;
+        warRoom.cfoSignoff.timestamp = new Date().toISOString();
+      } else if (input.role === 'chief_executive_officer') {
+        if (!warRoom.cfoSignoff.signed) {
+          throw new Error('Chief Financial Officer must sign before Chief Executive Officer');
+        }
+        warRoom.ceoSignoff.signed = true;
+        warRoom.ceoSignoff.signerName = input.signerName;
+        warRoom.ceoSignoff.timestamp = new Date().toISOString();
+      }
+      saveDemoCorpDevStore(store);
+      return warRoom;
+    }
+    return await request<BoardWarRoomDTO>(`/corp-dev-pmi-nexus/targets/${targetId}/signoff`, {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  }
+};
+
 
 
 

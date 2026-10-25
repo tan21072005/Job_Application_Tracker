@@ -114,6 +114,7 @@ import { CorporateTreasuryNexusService } from './services/corporate-treasury-nex
 import { InternalAuditErmNexusService } from './services/internal-audit-erm-nexus-service.ts';
 import { LegalOperationsNexusService } from './services/legal-operations-nexus-service.ts';
 import { InvestorRelationsNexusService } from './services/investor-relations-nexus-service.ts';
+import { CorpDevPmiNexusService } from './services/corp-dev-pmi-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -147,7 +148,16 @@ import {
   validateConsensusGuidanceInput as validateIrConsensusGuidanceInput,
   validateNdrMeetingInput as validateIrNdrMeetingInput,
   validateCapitalFinancingInput as validateIrCapitalFinancingInput,
-  validateForm8KSignoffInput as validateIrForm8KSignoffInput
+  validateForm8KSignoffInput as validateIrForm8KSignoffInput,
+  validateCorpDevTargetInput,
+  validateVdrFindingInput,
+  validateDcfSimulationInput,
+  validateLboSimulationInput,
+  validateSynergiesSimulationInput,
+  validateCollarSimulationInput,
+  validateAntitrustAssessmentInput,
+  validateTalentRetentionInput,
+  validateCorpDevSignoffInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -290,6 +300,7 @@ export const corporateTreasuryNexusService = new CorporateTreasuryNexusService(p
 export const internalAuditErmNexusService = new InternalAuditErmNexusService(pool);
 export const legalOperationsNexusService = new LegalOperationsNexusService(pool);
 export const investorRelationsNexusService = new InvestorRelationsNexusService(pool);
+export const corpDevPmiNexusService = new CorpDevPmiNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -5146,6 +5157,161 @@ app.post(['/api/investor-relations-nexus/disclosures/:id/signoff', '/api/ir/disc
   } catch (error) {
     if ((error as Error).message.includes('not found')) {
       return res.status(404).json({ error: (error as Error).message });
+    }
+    next(error);
+  }
+});
+
+app.get(['/api/corp-dev-pmi-nexus/overview', '/api/corpdev/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await corpDevPmiNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get(['/api/corp-dev-pmi-nexus/targets/:id', '/api/corpdev/targets/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const details = await corpDevPmiNexusService.getTargetDetails(userId, req.params.id);
+    if (!details) {
+      return res.status(404).json({ error: 'Target not found' });
+    }
+    res.json(details);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/corp-dev-pmi-nexus/targets', '/api/corpdev/targets'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCorpDevTargetInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const created = await corpDevPmiNexusService.createTarget(userId, req.body);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/corp-dev-pmi-nexus/findings', '/api/corpdev/findings'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateVdrFindingInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const created = await corpDevPmiNexusService.createFinding(userId, req.body);
+    res.status(201).json(created);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/corp-dev-pmi-nexus/dcf/simulate', '/api/corpdev/dcf/simulate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateDcfSimulationInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await corpDevPmiNexusService.simulateDcf(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/corp-dev-pmi-nexus/lbo/simulate', '/api/corpdev/lbo/simulate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateLboSimulationInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await corpDevPmiNexusService.simulateLbo(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/corp-dev-pmi-nexus/synergies/simulate', '/api/corpdev/synergies/simulate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateSynergiesSimulationInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await corpDevPmiNexusService.simulateSynergies(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/corp-dev-pmi-nexus/collar/simulate', '/api/corpdev/collar/simulate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCollarSimulationInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await corpDevPmiNexusService.simulateCollar(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/corp-dev-pmi-nexus/antitrust/assess', '/api/corpdev/antitrust/assess'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateAntitrustAssessmentInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await corpDevPmiNexusService.assessAntitrust(userId, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/corp-dev-pmi-nexus/retention/lock', '/api/corpdev/retention/lock'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateTalentRetentionInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await corpDevPmiNexusService.lockTalentRetention(userId, req.body);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/corp-dev-pmi-nexus/targets/:id/signoff', '/api/corpdev/targets/:id/signoff'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCorpDevSignoffInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const updated = await corpDevPmiNexusService.executeSignoff(userId, req.params.id, req.body);
+    res.json(updated);
+  } catch (error) {
+    if ((error as Error).message.includes('does not exist')) {
+      return res.status(404).json({ error: (error as Error).message });
+    }
+    if ((error as Error).message.includes('must sign before')) {
+      return res.status(400).json({ error: (error as Error).message });
     }
     next(error);
   }
