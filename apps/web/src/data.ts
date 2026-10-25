@@ -608,7 +608,42 @@ import {
   evaluateCfiusTidObligations,
   computeCustomsDutyAndRvc,
   computeCompositeTradeSanctionsRiskIndex,
-  generateVsdDossierMarkdown
+  generateVsdDossierMarkdown,
+  type CrisisSeverityLevel,
+  type CrisisPlaybookType,
+  type GoldenHourTriageMilestone,
+  type MediaChannelType,
+  type SentimentClassification,
+  type StakeholderTier,
+  type StatementToneCalibration,
+  type HoldingStatementStatus,
+  type BridgeTechniqueType,
+  type FactCorroborationStatus,
+  type CrisisTripartiteSignoffRole,
+  type BrriResilienceBand,
+  type CrisisTriageCheckpointDTO,
+  type CrisisIncidentDTO,
+  type CreateCrisisIncidentRequestDTO,
+  type MediaMentionDTO,
+  type NarrativeClusterDTO,
+  type MediaIntelligenceSummaryDTO,
+  type StakeholderImpactProfileDTO,
+  type CrisisHoldingStatementDTO,
+  type CreateHoldingStatementRequestDTO,
+  type SpokespersonBriefingCardDTO,
+  type QaBridgeItemDTO,
+  type VerifiedFactMoatEntryDTO,
+  type FactMoatSummaryDTO,
+  type TripartiteSignatureDTO,
+  type CrisisReleaseSignoffDTO,
+  type BrandReputationResilienceIndexDTO,
+  type StrategicCommsNexusOverviewDTO,
+  calculateNetSentimentScore,
+  calculateNarrativeVelocityIndex,
+  calculateViralPropagationVector,
+  calculateBrandReputationResilienceIndex,
+  compileOmnichannelHoldingStatement,
+  evaluateQaBridgeTransition
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -21835,6 +21870,630 @@ export const tradeSanctionsNexusRepository = {
       return { status: 'signature_recorded', totalSignoffs: 1, isFullySigned: false };
   }
 };
+
+const DEMO_STRATEGIC_COMMS_CRISIS_NEXUS_KEY = 'jobtrack_demo_strategic_comms_crisis_nexus_v1';
+
+interface DemoStrategicCommsNexusStore {
+  overview: StrategicCommsNexusOverviewDTO;
+}
+
+function createDefaultDemoStrategicCommsNexusStore(): DemoStrategicCommsNexusStore {
+  const now = new Date();
+  const goldenHourDeadline = new Date(now.getTime() + 42 * 60 * 1000);
+  const incidentId = 'inc-cyber-2026-092';
+  const statementId = 'stmt-hold-2026-001';
+
+  const initialCheckpoints: CrisisTriageCheckpointDTO[] = [
+    { id: 'cp-1', milestone: 't_00_initial_incident_ingest', targetMinutes: 0, isCompleted: true, completedAt: new Date(now.getTime() - 18 * 60 * 1000).toISOString(), notes: 'SIEM alert auto-escalation confirmed blast radius in staging cluster', assignedLead: 'Elena Vance' },
+    { id: 'cp-2', milestone: 't_15_technical_fact_verification', targetMinutes: 15, isCompleted: true, completedAt: new Date(now.getTime() - 5 * 60 * 1000).toISOString(), notes: 'Mandiant forensics verified customer database volume untouched', assignedLead: 'Dr. Gregory House' },
+    { id: 'cp-3', milestone: 't_30_spokesperson_marshalling', targetMinutes: 30, isCompleted: false, notes: 'Align messaging and bridge matrix with executive spokesperson', assignedLead: 'Marcus Vance' },
+    { id: 'cp-4', milestone: 't_45_legal_counsel_review', targetMinutes: 45, isCompleted: false, notes: 'Audit Form 8-K Item 1.05 materiality and PSLRA safe harbor', assignedLead: 'Rachel Thorne' },
+    { id: 'cp-5', milestone: 't_60_holding_statement_broadcast', targetMinutes: 60, isCompleted: false, notes: 'Deploy omnichannel verified holding statement to global media', assignedLead: 'Marcus Vance' }
+  ];
+
+  const primaryActiveIncident: CrisisIncidentDTO = {
+    id: incidentId,
+    title: 'Project Titan: Production Core Cloud Ransomware & Credential Exfiltration Incident',
+    severityLevel: 'level_4_acute_enterprise_crisis',
+    playbookType: 'cyber_ransomware_data_breach',
+    declaredAt: new Date(now.getTime() - 18 * 60 * 1000).toISOString(),
+    goldenHourDeadline: goldenHourDeadline.toISOString(),
+    incidentCommander: 'Elena Vance, VP Incident Response',
+    communicationsLead: 'Marcus Vance, Head of Comms',
+    legalCounselLead: 'Rachel Thorne, General Counsel',
+    technicalLead: 'Dr. Gregory House, CISO',
+    summary: 'Containment protocol active following unauthorized lateral movement in secondary cluster. Perimeter firewalls hold; blast radius quarantined.',
+    checkpoints: initialCheckpoints,
+    isActive: true
+  };
+
+  const topNarrativeClusters: NarrativeClusterDTO[] = [
+    {
+      id: 'cluster-1',
+      incidentId,
+      clusterTitle: 'Alleged Enterprise Database Leak',
+      dominantTheme: 'Short seller syndicate alleging total customer loss',
+      mentionCount: 48,
+      netSentimentScore: -72.5,
+      narrativeVelocityIndex: 68.2,
+      viralPropagationVector: 1.85,
+      isAdversarialCampaign: true,
+      firstObservedAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
+      lastUpdatedAt: new Date(now.getTime() - 2 * 60 * 1000).toISOString()
+    },
+    {
+      id: 'cluster-2',
+      incidentId,
+      clusterTitle: 'Security Patch Deployment Telemetry',
+      dominantTheme: 'Engineering team confirmed zero customer data accessed',
+      mentionCount: 24,
+      netSentimentScore: 45.0,
+      narrativeVelocityIndex: 32.1,
+      viralPropagationVector: 0.42,
+      isAdversarialCampaign: false,
+      firstObservedAt: new Date(now.getTime() - 10 * 60 * 1000).toISOString(),
+      lastUpdatedAt: new Date(now.getTime() - 1 * 60 * 1000).toISOString()
+    }
+  ];
+
+  const recentMentions: MediaMentionDTO[] = [
+    {
+      id: 'men-1',
+      incidentId,
+      sourceOutlet: 'Bloomberg Terminal',
+      channelType: 'tier_1_financial_press',
+      headline: 'Tech Giant Probes Unauthorized Lateral System Incursion',
+      url: 'https://bloomberg.com/news/articles/2026-titan-probe',
+      sentiment: 'negative',
+      sentimentScore: -0.65,
+      reachEstimate: 450000,
+      publishedAt: new Date(now.getTime() - 12 * 60 * 1000).toISOString(),
+      narrativeClusterId: 'cluster-1',
+      isSyndicated: true
+    },
+    {
+      id: 'men-2',
+      incidentId,
+      sourceOutlet: 'Reuters Financial Wire',
+      channelType: 'broadcast_wire_service',
+      headline: 'Company Discloses Immediate Remediation of Network Anomaly',
+      url: 'https://reuters.com/tech/enterprise-incident-statement',
+      sentiment: 'neutral',
+      sentimentScore: -0.15,
+      reachEstimate: 680000,
+      publishedAt: new Date(now.getTime() - 8 * 60 * 1000).toISOString(),
+      narrativeClusterId: 'cluster-2',
+      isSyndicated: true
+    },
+    {
+      id: 'men-3',
+      incidentId,
+      sourceOutlet: 'X / Twitter InfoSec Community',
+      channelType: 'social_media_platform',
+      headline: 'Rumors circulate of customer database dump by extortion syndicate',
+      url: 'https://x.com/infosec_watch/status/19928374',
+      sentiment: 'hostile_adversarial',
+      sentimentScore: -0.92,
+      reachEstimate: 120000,
+      publishedAt: new Date(now.getTime() - 5 * 60 * 1000).toISOString(),
+      narrativeClusterId: 'cluster-1',
+      isSyndicated: false
+    }
+  ];
+
+  const mediaSummary: MediaIntelligenceSummaryDTO = {
+    incidentId,
+    totalMentions: 72,
+    netSentimentScore: -68.4,
+    narrativeVelocityIndex: 62.5,
+    viralPropagationVector: 1.65,
+    sentimentDistribution: {
+      positive: 6,
+      neutral: 14,
+      negative: 28,
+      hostileAdversarial: 24
+    },
+    topNarrativeClusters,
+    recentMentions
+  };
+
+  const compiledHolding = compileOmnichannelHoldingStatement({
+    incidentTitle: 'Cyber Incident Response',
+    playbookType: 'cyber_ransomware_data_breach',
+    targetTier: 'tier_2_institutional_investors',
+    toneCalibration: 'authoritative_transparent',
+    headline: 'JobTrack Corporate Statement on Network Security and Remediation',
+    bodyText: 'We recently identified unauthorized activity within an isolated staging environment. Our cybersecurity defense protocols immediately quarantined the impacted components. Primary client databases remain intact and encrypted under AES-256 standard.',
+    includePslraSafeHarbor: true,
+    includeRegulationFdNotice: true
+  });
+
+  const holdingStatements: CrisisHoldingStatementDTO[] = [
+    {
+      id: statementId,
+      incidentId,
+      version: 1,
+      title: 'Investor Response Release Draft',
+      targetTier: 'tier_2_institutional_investors',
+      toneCalibration: 'authoritative_transparent',
+      headline: compiledHolding.headline,
+      bodyText: compiledHolding.bodyText,
+      safeHarborDisclaimer: compiledHolding.safeHarborDisclaimer,
+      regulationFdNotice: compiledHolding.regulationFdNotice,
+      status: 'pending_executive_signoff',
+      channelsDispatched: ['tier_1_financial_press', 'broadcast_wire_service'],
+      contentHashSha256: compiledHolding.contentHashSha256,
+      createdAt: new Date(now.getTime() - 10 * 60 * 1000).toISOString(),
+      updatedAt: new Date(now.getTime() - 5 * 60 * 1000).toISOString()
+    }
+  ];
+
+  const verifiedFacts: VerifiedFactMoatEntryDTO[] = [
+    {
+      id: 'fact-1',
+      incidentId,
+      factClaim: 'Customer production databases are hosted on air-gapped clusters and remain completely untouched.',
+      technicalCorroboration: 'CrowdStrike Falcon telemetry audit and AWS CloudTrail immutable logs.',
+      sourceOwner: 'Dr. Gregory House, CISO',
+      corroborationStatus: 'verified_corroborated',
+      refutedRumor: 'Dark web chatter claiming 50M records exfiltrated.',
+      evidenceReferenceId: 'MOAT-EVID-9021',
+      verifiedAt: new Date(now.getTime() - 8 * 60 * 1000).toISOString()
+    },
+    {
+      id: 'fact-2',
+      incidentId,
+      factClaim: 'Perimeter zero-trust authentication was not bypassed; unauthorized access was constrained to internal sandbox.',
+      technicalCorroboration: 'Okta Identity Threat Protection logs verified by external forensics.',
+      sourceOwner: 'Rachel Thorne, General Counsel',
+      corroborationStatus: 'verified_corroborated',
+      refutedRumor: 'Social media claim of active master key compromise.',
+      evidenceReferenceId: 'MOAT-EVID-9022',
+      verifiedAt: new Date(now.getTime() - 4 * 60 * 1000).toISOString()
+    }
+  ];
+
+  const factMoatSummary: FactMoatSummaryDTO = {
+    incidentId,
+    totalVerifiedFacts: 2,
+    activeRumorsRefuted: 2,
+    pendingCorroborations: 0,
+    entries: verifiedFacts
+  };
+
+  const qaBridgeItems: QaBridgeItemDTO[] = [
+    {
+      id: 'qa-1',
+      incidentId,
+      hostileQuestion: 'Is it true that hackers have your entire customer list and are demanding 100 Bitcoin?',
+      anticipatedOutlet: 'CNBC TechCheck',
+      bridgeTechnique: 'bridge_to_facts',
+      transitionPhrase: evaluateQaBridgeTransition('bridge_to_facts'),
+      pivotMessage: 'Our primary customer databases remain completely secure, quarantined, and monitored 24/7 by top-tier forensics partners.',
+      riskRating: 9
+    },
+    {
+      id: 'qa-2',
+      incidentId,
+      hostileQuestion: 'Why did it take 4 hours for you to notify the public?',
+      anticipatedOutlet: 'Wall Street Journal',
+      bridgeTechnique: 'bridge_to_values',
+      transitionPhrase: evaluateQaBridgeTransition('bridge_to_values'),
+      pivotMessage: 'We immediately mobilized forensics to verify ground truth rather than disseminate speculative or misleading rumors.',
+      riskRating: 7
+    }
+  ];
+
+  const spokespersonCards: SpokespersonBriefingCardDTO[] = [
+    {
+      id: 'spk-1',
+      incidentId,
+      spokespersonName: 'Marcus Vance',
+      spokespersonRole: 'VP Global Corporate Communications',
+      coreTalkingPoints: [
+        'Perimeter held; customer databases were not breached.',
+        'External forensic firms Mandiant and CrowdStrike are on-site.',
+        'Operations continue with zero business interruption.'
+      ],
+      mandatoryPhrases: [
+        'Customer trust is paramount',
+        'Decisive forensic containment',
+        'Statutory transparency'
+      ],
+      prohibitedPhrases: [
+        'We got hacked',
+        'Total disaster',
+        'No idea who did this',
+        'Catastrophic breach'
+      ],
+      approvedDate: new Date(now.getTime() - 15 * 60 * 1000).toISOString()
+    }
+  ];
+
+  const stakeholderProfiles: StakeholderImpactProfileDTO[] = [
+    {
+      id: 'st-1',
+      incidentId,
+      tier: 'tier_1_workforce_employees',
+      targetAudience: 'Global Workforce (12,000 Staff)',
+      primaryConcern: 'Workstation security and internal communication integrity',
+      impactScore: 4,
+      requiredDeliverySlaMinutes: 30,
+      preferredChannel: 'Internal Slack & Townhall Stream',
+      channelDelivered: true
+    },
+    {
+      id: 'st-2',
+      incidentId,
+      tier: 'tier_2_institutional_investors',
+      targetAudience: 'Institutional Shareholders & Analysts',
+      primaryConcern: 'Material revenue blast radius and 8-K disclosure liabilities',
+      impactScore: 8,
+      requiredDeliverySlaMinutes: 45,
+      preferredChannel: 'SEC EDGAR 8-K & IR Portal',
+      channelDelivered: false
+    },
+    {
+      id: 'st-3',
+      incidentId,
+      tier: 'tier_3_enterprise_customers',
+      targetAudience: 'Fortune 500 Enterprise Customers',
+      primaryConcern: 'SLA uptime, data confidentiality, and SOC2 compliance status',
+      impactScore: 7,
+      requiredDeliverySlaMinutes: 60,
+      preferredChannel: 'Enterprise Customer Portal Notice',
+      channelDelivered: false
+    },
+    {
+      id: 'st-4',
+      incidentId,
+      tier: 'tier_4_regulators_government',
+      targetAudience: 'SEC, CISA, and FTC Regulators',
+      primaryConcern: 'Compliance with 4-day cyber disclosure mandate (Item 1.05)',
+      impactScore: 8,
+      requiredDeliverySlaMinutes: 60,
+      preferredChannel: 'Formal Regulatory Liaison Transmission',
+      channelDelivered: false
+    },
+    {
+      id: 'st-5',
+      incidentId,
+      tier: 'tier_5_media_general_public',
+      targetAudience: 'Financial and Tech Press',
+      primaryConcern: 'Accurate narrative reporting vs clickbait amplification',
+      impactScore: 6,
+      requiredDeliverySlaMinutes: 60,
+      preferredChannel: 'Wire Release via PR Newswire',
+      channelDelivered: false
+    }
+  ];
+
+  const brriModel = calculateBrandReputationResilienceIndex({
+    netSentimentScore: mediaSummary.netSentimentScore,
+    narrativeVelocityIndex: mediaSummary.narrativeVelocityIndex,
+    viralPropagationVector: mediaSummary.viralPropagationVector,
+    stakeholderTrustScores: [80, 60, 65, 60, 70],
+    verifiedFactCount: 2,
+    activeRumorCount: 2
+  });
+
+  const resilienceIndex: BrandReputationResilienceIndexDTO = {
+    incidentId,
+    compositeScore: brriModel.compositeScore,
+    resilienceBand: brriModel.resilienceBand,
+    sentimentStabilityScore: brriModel.sentimentStabilityScore,
+    velocityMitigationFactor: brriModel.velocityMitigationFactor,
+    viralContainmentRatio: brriModel.viralContainmentRatio,
+    stakeholderTrustRetention: brriModel.stakeholderTrustRetention,
+    factMoatFortificationScore: brriModel.factMoatFortificationScore,
+    calculatedAt: new Date().toISOString()
+  };
+
+  const recentReleaseSignoffs: CrisisReleaseSignoffDTO[] = [
+    {
+      id: 'sig-1',
+      holdingStatementId: statementId,
+      incidentId,
+      contentHashSha256: compiledHolding.contentHashSha256,
+      headOfCommsSignoff: {
+        role: 'head_of_communications',
+        signoffSignerName: 'Marcus Vance',
+        signoffTimestamp: new Date(now.getTime() - 6 * 60 * 1000).toISOString(),
+        cryptographicSignature: 'sig_comms_8a92f',
+        isSigned: true
+      },
+      isFullyAuthorized: false
+    }
+  ];
+
+  return {
+    overview: {
+      activeIncidents: [primaryActiveIncident],
+      primaryActiveIncident,
+      mediaSummary,
+      holdingStatements,
+      factMoatSummary,
+      qaBridgeItems,
+      spokespersonCards,
+      stakeholderProfiles,
+      resilienceIndex,
+      recentReleaseSignoffs
+    }
+  };
+}
+
+function loadDemoStrategicCommsNexusStore(): DemoStrategicCommsNexusStore {
+  const raw = localStorage.getItem(DEMO_STRATEGIC_COMMS_CRISIS_NEXUS_KEY);
+  if (!raw) {
+    const s = createDefaultDemoStrategicCommsNexusStore();
+    saveDemoStrategicCommsNexusStore(s);
+    return s;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const s = createDefaultDemoStrategicCommsNexusStore();
+    saveDemoStrategicCommsNexusStore(s);
+    return s;
+  }
+}
+
+function saveDemoStrategicCommsNexusStore(store: DemoStrategicCommsNexusStore): void {
+  localStorage.setItem(DEMO_STRATEGIC_COMMS_CRISIS_NEXUS_KEY, JSON.stringify(store));
+}
+
+export const strategicCommsNexusRepository = {
+  async getOverview(): Promise<StrategicCommsNexusOverviewDTO> {
+    if (demoMode) {
+      return loadDemoStrategicCommsNexusStore().overview;
+    }
+    try {
+      return await request<StrategicCommsNexusOverviewDTO>('/comms/overview');
+    } catch {
+      return loadDemoStrategicCommsNexusStore().overview;
+    }
+  },
+
+  async createIncident(req: CreateCrisisIncidentRequestDTO): Promise<CrisisIncidentDTO> {
+    if (!demoMode) {
+      try {
+        return await request<CrisisIncidentDTO>('/comms/incidents', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoStrategicCommsNexusStore();
+    const now = new Date();
+    const goldenHourDeadline = new Date(now.getTime() + 60 * 60 * 1000);
+    const incidentId = 'inc-' + Date.now().toString(16);
+
+    const checkpoints: CrisisTriageCheckpointDTO[] = [
+      { id: 'cp-' + Date.now().toString(16) + '-1', milestone: 't_00_initial_incident_ingest', targetMinutes: 0, isCompleted: true, completedAt: now.toISOString(), notes: 'Incident detected and command declared', assignedLead: req.incidentCommander },
+      { id: 'cp-' + Date.now().toString(16) + '-2', milestone: 't_15_technical_fact_verification', targetMinutes: 15, isCompleted: false, notes: 'Corroborate primary technical telemetry and isolate blast radius', assignedLead: req.technicalLead },
+      { id: 'cp-' + Date.now().toString(16) + '-3', milestone: 't_30_spokesperson_marshalling', targetMinutes: 30, isCompleted: false, notes: 'Align messaging and bridge matrix with executive spokesperson', assignedLead: req.communicationsLead },
+      { id: 'cp-' + Date.now().toString(16) + '-4', milestone: 't_45_legal_counsel_review', targetMinutes: 45, isCompleted: false, notes: 'Audit Form 8-K Item 1.05 materiality and PSLRA safe harbor', assignedLead: req.legalCounselLead },
+      { id: 'cp-' + Date.now().toString(16) + '-5', milestone: 't_60_holding_statement_broadcast', targetMinutes: 60, isCompleted: false, notes: 'Deploy omnichannel verified holding statement to global media', assignedLead: req.communicationsLead }
+    ];
+
+    const incident: CrisisIncidentDTO = {
+      id: incidentId,
+      title: req.title,
+      severityLevel: req.initialSeverity,
+      playbookType: req.playbookType,
+      declaredAt: now.toISOString(),
+      goldenHourDeadline: goldenHourDeadline.toISOString(),
+      incidentCommander: req.incidentCommander,
+      communicationsLead: req.communicationsLead,
+      legalCounselLead: req.legalCounselLead,
+      technicalLead: req.technicalLead,
+      summary: req.summary,
+      checkpoints,
+      isActive: true
+    };
+
+    store.overview.activeIncidents.unshift(incident);
+    store.overview.primaryActiveIncident = incident;
+    saveDemoStrategicCommsNexusStore(store);
+    return incident;
+  },
+
+  async createHoldingStatement(req: CreateHoldingStatementRequestDTO): Promise<CrisisHoldingStatementDTO> {
+    if (!demoMode) {
+      try {
+        return await request<CrisisHoldingStatementDTO>('/comms/holding-statements', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoStrategicCommsNexusStore();
+    const compiled = compileOmnichannelHoldingStatement({
+      incidentTitle: 'Incident Response',
+      playbookType: 'cyber_ransomware_data_breach',
+      targetTier: req.targetTier,
+      toneCalibration: req.toneCalibration,
+      headline: req.headline,
+      bodyText: req.bodyText,
+      includePslraSafeHarbor: req.includePslraSafeHarbor,
+      includeRegulationFdNotice: req.includeRegulationFdNotice
+    });
+
+    const statement: CrisisHoldingStatementDTO = {
+      id: 'stmt-' + Date.now().toString(16),
+      incidentId: req.incidentId,
+      version: store.overview.holdingStatements.length + 1,
+      title: req.headline,
+      targetTier: req.targetTier,
+      toneCalibration: req.toneCalibration,
+      headline: compiled.headline,
+      bodyText: compiled.bodyText,
+      safeHarborDisclaimer: compiled.safeHarborDisclaimer,
+      regulationFdNotice: compiled.regulationFdNotice,
+      status: 'pending_legal_review',
+      channelsDispatched: [],
+      contentHashSha256: compiled.contentHashSha256,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    store.overview.holdingStatements.unshift(statement);
+    saveDemoStrategicCommsNexusStore(store);
+    return statement;
+  },
+
+  async registerFactMoatEntry(req: {
+    incidentId: string;
+    factClaim: string;
+    technicalCorroboration: string;
+    sourceOwner: string;
+    corroborationStatus: string;
+    refutedRumor?: string;
+    evidenceReferenceId: string;
+  }): Promise<VerifiedFactMoatEntryDTO> {
+    if (!demoMode) {
+      try {
+        return await request<VerifiedFactMoatEntryDTO>('/comms/facts/verify', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoStrategicCommsNexusStore();
+    const entry: VerifiedFactMoatEntryDTO = {
+      id: 'fact-' + Date.now().toString(16),
+      incidentId: req.incidentId,
+      factClaim: req.factClaim,
+      technicalCorroboration: req.technicalCorroboration,
+      sourceOwner: req.sourceOwner,
+      corroborationStatus: req.corroborationStatus as any,
+      refutedRumor: req.refutedRumor,
+      evidenceReferenceId: req.evidenceReferenceId,
+      verifiedAt: new Date().toISOString()
+    };
+
+    store.overview.factMoatSummary.entries.unshift(entry);
+    store.overview.factMoatSummary.totalVerifiedFacts++;
+    if (req.refutedRumor) store.overview.factMoatSummary.activeRumorsRefuted++;
+    saveDemoStrategicCommsNexusStore(store);
+    return entry;
+  },
+
+  async recordQaBridgeItem(req: {
+    incidentId: string;
+    hostileQuestion: string;
+    anticipatedOutlet: string;
+    bridgeTechnique: any;
+    transitionPhrase?: string;
+    pivotMessage: string;
+    riskRating: number;
+  }): Promise<QaBridgeItemDTO> {
+    if (!demoMode) {
+      try {
+        return await request<QaBridgeItemDTO>('/comms/qa-bridge', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoStrategicCommsNexusStore();
+    const transition = evaluateQaBridgeTransition(req.bridgeTechnique, req.transitionPhrase);
+    const item: QaBridgeItemDTO = {
+      id: 'qa-' + Date.now().toString(16),
+      incidentId: req.incidentId,
+      hostileQuestion: req.hostileQuestion,
+      anticipatedOutlet: req.anticipatedOutlet,
+      bridgeTechnique: req.bridgeTechnique,
+      transitionPhrase: transition,
+      pivotMessage: req.pivotMessage,
+      riskRating: req.riskRating
+    };
+
+    store.overview.qaBridgeItems.unshift(item);
+    saveDemoStrategicCommsNexusStore(store);
+    return item;
+  },
+
+  async submitSignoff(req: {
+    holdingStatementId: string;
+    role: CrisisTripartiteSignoffRole;
+    signerName: string;
+    legalComments?: string;
+  }): Promise<CrisisReleaseSignoffDTO> {
+    if (!demoMode) {
+      try {
+        return await request<CrisisReleaseSignoffDTO>('/comms/releases/signoff', {
+          method: 'POST',
+          body: JSON.stringify(req)
+        });
+      } catch {
+      }
+    }
+
+    const store = loadDemoStrategicCommsNexusStore();
+    let signoff = store.overview.recentReleaseSignoffs.find((s: CrisisReleaseSignoffDTO) => s.holdingStatementId === req.holdingStatementId);
+    const statement = store.overview.holdingStatements.find((s: CrisisHoldingStatementDTO) => s.id === req.holdingStatementId);
+    const now = new Date().toISOString();
+
+    if (!signoff) {
+      signoff = {
+        id: 'sig-' + Date.now().toString(16),
+        holdingStatementId: req.holdingStatementId,
+        incidentId: statement ? statement.incidentId : (store.overview.primaryActiveIncident?.id || ''),
+        contentHashSha256: statement ? statement.contentHashSha256 : 'sha256_' + Date.now().toString(16),
+        isFullyAuthorized: false
+      };
+      store.overview.recentReleaseSignoffs.unshift(signoff);
+    }
+
+    if (req.role === 'head_of_communications') {
+      signoff.headOfCommsSignoff = {
+        role: req.role,
+        signoffSignerName: req.signerName,
+        signoffTimestamp: now,
+        cryptographicSignature: 'sig_comms_' + Date.now().toString(16).substring(0, 6),
+        isSigned: true
+      };
+    } else if (req.role === 'chief_legal_officer') {
+      signoff.chiefLegalOfficerSignoff = {
+        role: req.role,
+        signoffSignerName: req.signerName,
+        signoffTimestamp: now,
+        cryptographicSignature: 'sig_legal_' + Date.now().toString(16).substring(0, 6),
+        isSigned: true,
+        legalComments: req.legalComments
+      };
+    } else if (req.role === 'chief_executive_officer') {
+      signoff.ceoSignoff = {
+        role: req.role,
+        signoffSignerName: req.signerName,
+        signoffTimestamp: now,
+        cryptographicSignature: 'sig_ceo_' + Date.now().toString(16).substring(0, 6),
+        isSigned: true
+      };
+    }
+
+    if (signoff.headOfCommsSignoff?.isSigned && signoff.chiefLegalOfficerSignoff?.isSigned && signoff.ceoSignoff?.isSigned) {
+      signoff.isFullyAuthorized = true;
+      signoff.finalizedAt = now;
+      if (statement) {
+        statement.status = 'approved_for_release';
+      }
+    }
+
+    saveDemoStrategicCommsNexusStore(store);
+    return signoff;
+  }
+};
+
 
 
 

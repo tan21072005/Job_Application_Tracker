@@ -116,6 +116,7 @@ import { LegalOperationsNexusService } from './services/legal-operations-nexus-s
 import { InvestorRelationsNexusService } from './services/investor-relations-nexus-service.ts';
 import { CorpDevPmiNexusService } from './services/corp-dev-pmi-nexus-service.ts';
 import { GlobalTradeSanctionsNexusService } from './services/global-trade-sanctions-nexus-service.ts';
+import { StrategicCommsCrisisNexusService } from './services/strategic-comms-crisis-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -165,7 +166,12 @@ import {
   validateCfiusAssessmentInput,
   validateCustomsDutyInput,
   validateCompileVsdInput,
-  validateExecuteSignoffInput
+  validateExecuteSignoffInput,
+  validateCreateCrisisIncidentInput,
+  validateCreateHoldingStatementInput,
+  validateRecordVerifiedFactInput,
+  validateRecordQaBridgeItemInput,
+  validateSubmitTripartiteSignoffInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -310,6 +316,7 @@ export const legalOperationsNexusService = new LegalOperationsNexusService(pool)
 export const investorRelationsNexusService = new InvestorRelationsNexusService(pool);
 export const corpDevPmiNexusService = new CorpDevPmiNexusService(pool);
 export const globalTradeSanctionsNexusService = new GlobalTradeSanctionsNexusService(pool);
+export const strategicCommsCrisisNexusService = new StrategicCommsCrisisNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -5433,6 +5440,93 @@ app.post(['/api/global-trade-sanctions-nexus/vsd/signoff', '/api/trade/vsd/signo
     next(error);
   }
 });
+
+app.get(['/api/strategic-comms-crisis-nexus/overview', '/api/comms/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await strategicCommsCrisisNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/strategic-comms-crisis-nexus/incidents', '/api/comms/incidents'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCreateCrisisIncidentInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await strategicCommsCrisisNexusService.createIncident(userId, req.body);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/strategic-comms-crisis-nexus/holding-statements', '/api/comms/holding-statements'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCreateHoldingStatementInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await strategicCommsCrisisNexusService.createHoldingStatement(userId, req.body);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/strategic-comms-crisis-nexus/facts/verify', '/api/comms/facts/verify'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateRecordVerifiedFactInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await strategicCommsCrisisNexusService.registerFactMoatEntry(userId, req.body);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/strategic-comms-crisis-nexus/qa-bridge', '/api/comms/qa-bridge'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateRecordQaBridgeItemInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await strategicCommsCrisisNexusService.recordQaBridgeItem(userId, req.body);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/strategic-comms-crisis-nexus/releases/signoff', '/api/comms/releases/signoff'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateSubmitTripartiteSignoffInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const result = await strategicCommsCrisisNexusService.submitSignoff(
+      userId,
+      req.body.holdingStatementId,
+      req.body.role,
+      req.body.signerName,
+      req.body.legalComments
+    );
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 app.get('/api/ai/grants', auth, async (req, res, next) => {
   try {

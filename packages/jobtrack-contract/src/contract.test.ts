@@ -531,7 +531,18 @@ import {
   validateCustomsDutyInput,
   validateCompileVsdInput,
   validateExecuteSignoffInput,
-  type BeneficialOwnerNodeDTO
+  type BeneficialOwnerNodeDTO,
+  calculateNetSentimentScore,
+  calculateNarrativeVelocityIndex,
+  calculateViralPropagationVector,
+  calculateBrandReputationResilienceIndex,
+  compileOmnichannelHoldingStatement,
+  evaluateQaBridgeTransition,
+  validateCreateCrisisIncidentInput,
+  validateCreateHoldingStatementInput,
+  validateRecordVerifiedFactInput,
+  validateRecordQaBridgeItemInput,
+  validateSubmitTripartiteSignoffInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -10171,6 +10182,144 @@ test('contract: global-trade-sanctions-nexus input validators enforce schemas an
   });
   assert.equal(goodSignoff.ok, true);
 });
+
+test('contract: strategic-comms-crisis-nexus pure calculation functions calculate accurate scores and bounds', () => {
+  const neutralScore = calculateNetSentimentScore({ positive: 20, neutral: 60, negative: 20, hostileAdversarial: 0 });
+  assert.equal(neutralScore, 0);
+
+  const hostileScore = calculateNetSentimentScore({ positive: 5, neutral: 10, negative: 40, hostileAdversarial: 45 });
+  assert.ok(hostileScore < -70);
+  assert.ok(hostileScore >= -100);
+
+  const emptyScore = calculateNetSentimentScore({ positive: 0, neutral: 0, negative: 0, hostileAdversarial: 0 });
+  assert.equal(emptyScore, 0);
+
+  const lowVelocity = calculateNarrativeVelocityIndex({
+    hourlyMentionsCurrent: 10,
+    hourlyMentionsPrevious: 10,
+    tier1OutletCount: 0,
+    syndicationMultiplier: 1.0
+  });
+  const highVelocity = calculateNarrativeVelocityIndex({
+    hourlyMentionsCurrent: 500,
+    hourlyMentionsPrevious: 50,
+    tier1OutletCount: 8,
+    syndicationMultiplier: 2.5
+  });
+  assert.ok(highVelocity > lowVelocity);
+  assert.ok(highVelocity <= 100);
+
+  const subcritical = calculateViralPropagationVector({
+    retweetShareRatio: 0.5,
+    influencerCentralityFactor: 0.8,
+    narrativeHalfLifeHours: 2.0
+  });
+  assert.ok(subcritical < 1.0);
+
+  const superSpreader = calculateViralPropagationVector({
+    retweetShareRatio: 4.5,
+    influencerCentralityFactor: 2.8,
+    narrativeHalfLifeHours: 12.0
+  });
+  assert.ok(superSpreader > 2.0);
+
+  const brriResult = calculateBrandReputationResilienceIndex({
+    netSentimentScore: -25,
+    narrativeVelocityIndex: 45,
+    viralPropagationVector: 1.2,
+    stakeholderTrustScores: [75, 80, 70, 85],
+    verifiedFactCount: 14,
+    activeRumorCount: 3
+  });
+  assert.ok(brriResult.compositeScore >= 0);
+  assert.ok(brriResult.compositeScore <= 100);
+  assert.ok(brriResult.resilienceBand.length > 0);
+
+  const compiled = compileOmnichannelHoldingStatement({
+    incidentTitle: 'Infrastructure Incident',
+    playbookType: 'cyber_ransomware_data_breach',
+    targetTier: 'tier_2_institutional_investors',
+    toneCalibration: 'authoritative_transparent',
+    headline: 'Company Responds to Cyber Event',
+    bodyText: 'Our forensic incident response teams are actively mitigating the unauthorized access.',
+    includePslraSafeHarbor: true,
+    includeRegulationFdNotice: true
+  });
+  assert.ok(compiled.safeHarborDisclaimer.includes('Private Securities Litigation Reform Act of 1995'));
+  assert.ok(compiled.regulationFdNotice.includes('Regulation FD'));
+  assert.ok(compiled.contentHashSha256.startsWith('sha256_'));
+
+  const phrase = evaluateQaBridgeTransition('bridge_to_facts');
+  assert.ok(phrase.includes('verified engineering'));
+  const custom = evaluateQaBridgeTransition('bridge_to_values', 'Custom transition phrase');
+  assert.equal(custom, 'Custom transition phrase');
+});
+
+test('contract: strategic-comms-crisis-nexus input validators enforce schemas and reject invalid payloads', () => {
+  const badIncident = validateCreateCrisisIncidentInput({});
+  assert.equal(badIncident.ok, false);
+  const goodIncident = validateCreateCrisisIncidentInput({
+    title: 'Global Core Cloud Data Exfiltration Incident',
+    playbookType: 'cyber_ransomware_data_breach',
+    initialSeverity: 'level_4_acute_enterprise_crisis',
+    incidentCommander: 'Elena Vance, VP Incident Response',
+    communicationsLead: 'Marcus Vance, Head of Comms',
+    legalCounselLead: 'Rachel Thorne, General Counsel',
+    technicalLead: 'Dr. Gregory House, CISO',
+    summary: 'Containment protocol active following unauthorized lateral movement in secondary cluster.'
+  });
+  assert.equal(goodIncident.ok, true);
+
+  const badStatement = validateCreateHoldingStatementInput({});
+  assert.equal(badStatement.ok, false);
+  const goodStatement = validateCreateHoldingStatementInput({
+    incidentId: '123e4567-e89b-12d3-a456-426614174000',
+    targetTier: 'tier_1_workforce_employees',
+    toneCalibration: 'empathetic_reassuring',
+    headline: 'Update on Systems Operational Integrity and Safety',
+    bodyText: 'All core employee workstations remain secure while forensic reviews continue.',
+    includePslraSafeHarbor: true,
+    includeRegulationFdNotice: false
+  });
+  assert.equal(goodStatement.ok, true);
+
+  const badFact = validateRecordVerifiedFactInput({});
+  assert.equal(badFact.ok, false);
+  const goodFact = validateRecordVerifiedFactInput({
+    incidentId: '123e4567-e89b-12d3-a456-426614174000',
+    factClaim: 'Production customer databases were not breached; perimeter firewalls blocked lateral spread.',
+    technicalCorroboration: 'Forensic audit report signed by Mandiant Security Incident Response team.',
+    sourceOwner: 'CISO / Mandiant Lead',
+    corroborationStatus: 'verified_corroborated',
+    refutedRumor: 'External social rumors alleging 100% database drop.',
+    evidenceReferenceId: 'EVID-SEC-2026-0994'
+  });
+  assert.equal(goodFact.ok, true);
+
+  const badQa = validateRecordQaBridgeItemInput({});
+  assert.equal(badQa.ok, false);
+  const goodQa = validateRecordQaBridgeItemInput({
+    incidentId: '123e4567-e89b-12d3-a456-426614174000',
+    hostileQuestion: 'Did executives delay notifying the public to dump shares?',
+    anticipatedOutlet: 'Wall Street Journal',
+    bridgeTechnique: 'bridge_to_facts',
+    transitionPhrase: 'What the verified corporate trading logs and audit trails prove is...',
+    pivotMessage: 'All insider trading windows were locked 48 hours prior to any system diagnosis.',
+    riskRating: 9
+  });
+  assert.equal(goodQa.ok, true);
+
+  const badSignoff = validateSubmitTripartiteSignoffInput({});
+  assert.equal(badSignoff.ok, false);
+  const goodSignoff = validateSubmitTripartiteSignoffInput({
+    holdingStatementId: '123e4567-e89b-12d3-a456-426614174000',
+    role: 'chief_legal_officer',
+    signerName: 'Sarah Jenkins, Esq.',
+    legalComments: 'Reviewed for PSLRA Safe Harbor compliance and Reg FD non-selectivity.'
+  });
+  assert.equal(goodSignoff.ok, true);
+});
+
 
 
 
