@@ -268,7 +268,27 @@ import {
   validateReorgScenarioInput,
   generateReorgExecutiveMemoMarkdown,
   type TeamTopologyDTO,
-  type ReorgScenarioDTO
+  type ReorgScenarioDTO,
+  calculateValueStreamLeadTimeAndFlowEfficiency,
+  classifyFlowHealthStatus,
+  calculateStrategicAlignmentIndex,
+  classifyDoraTier,
+  computeNormalizedDoraScore,
+  calculateDoraMetricsSnapshot,
+  calculateFlowMetricsSnapshot,
+  calculateCapitalizedProjectLabor,
+  calculateRdInvestmentSizingSummary,
+  classifyDeliveryHealthBand,
+  calculateCompositeDeliveryHealthIndex,
+  validateValueStreamInput,
+  validateStrategicOkrInput,
+  validateDoraCalculationInput,
+  validateFlowSimulationInput,
+  validateCapitalizedProjectInput,
+  validateBoardMemoGenerateInput,
+  generateBoardQbrMemorandumMarkdown,
+  type ValueStreamDTO,
+  type BoardMemorandumDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -6120,6 +6140,302 @@ test('contract: generateReorgExecutiveMemoMarkdown formats executive proposal me
   assert.ok(memo.includes('+$320,000'));
   assert.ok(memo.includes('Board Committee Recommendation'));
 });
+
+test('contract: calculateValueStreamLeadTimeAndFlowEfficiency calculates lead time and classifies flow status', () => {
+  const stages = [
+    { activeTouchHours: 8, idleWaitHours: 72 },
+    { activeTouchHours: 16, idleWaitHours: 40 },
+    { activeTouchHours: 48, idleWaitHours: 12 },
+    { activeTouchHours: 6, idleWaitHours: 54 },
+    { activeTouchHours: 2, idleWaitHours: 4 },
+    { activeTouchHours: 4, idleWaitHours: 6 }
+  ];
+
+  const res = calculateValueStreamLeadTimeAndFlowEfficiency(stages);
+  assert.equal(res.totalActiveTouchHours, 84);
+  assert.equal(res.totalIdleWaitHours, 188);
+  assert.equal(res.valueStreamLeadTimeHours, 272);
+  assert.equal(res.flowEfficiencyPercent, 30.88);
+  assert.equal(res.flowHealthStatus, 'healthy_flow');
+
+  assert.equal(classifyFlowHealthStatus(36.0), 'optimal_elite');
+  assert.equal(classifyFlowHealthStatus(25.0), 'healthy_flow');
+  assert.equal(classifyFlowHealthStatus(15.0), 'moderate_friction');
+  assert.equal(classifyFlowHealthStatus(8.0), 'high_waste_congestion');
+});
+
+test('contract: calculateStrategicAlignmentIndex computes priority weighted OKR capacity coverage', () => {
+  const okrs = [
+    { allocatedCapacityPoints: 180, priorityTier: 'tier_0_board' as const },
+    { allocatedCapacityPoints: 120, priorityTier: 'tier_1_growth' as const },
+    { allocatedCapacityPoints: 60, priorityTier: 'tier_2_enhancement' as const }
+  ];
+
+  const score = calculateStrategicAlignmentIndex(okrs, 400);
+  assert.equal(score, 96.0);
+
+  const emptyScore = calculateStrategicAlignmentIndex([]);
+  assert.equal(emptyScore, 0);
+});
+
+test('contract: DORA metrics calculations and tier benchmarks evaluate correctly', () => {
+  assert.equal(classifyDoraTier('deploymentFrequency', 2.5), 'elite');
+  assert.equal(classifyDoraTier('deploymentFrequency', 0.5), 'high');
+  assert.equal(classifyDoraTier('deploymentFrequency', 0.08), 'medium');
+  assert.equal(classifyDoraTier('deploymentFrequency', 0.01), 'low');
+
+  assert.equal(classifyDoraTier('leadTimeForChanges', 12), 'elite');
+  assert.equal(classifyDoraTier('leadTimeForChanges', 72), 'high');
+  assert.equal(classifyDoraTier('leadTimeForChanges', 300), 'medium');
+  assert.equal(classifyDoraTier('leadTimeForChanges', 800), 'low');
+
+  assert.equal(classifyDoraTier('changeFailureRate', 3.5), 'elite');
+  assert.equal(classifyDoraTier('changeFailureRate', 8.0), 'high');
+  assert.equal(classifyDoraTier('changeFailureRate', 12.0), 'medium');
+  assert.equal(classifyDoraTier('changeFailureRate', 25.0), 'low');
+
+  assert.equal(classifyDoraTier('failedDeploymentRecoveryTime', 0.5), 'elite');
+  assert.equal(classifyDoraTier('failedDeploymentRecoveryTime', 4.0), 'high');
+  assert.equal(classifyDoraTier('failedDeploymentRecoveryTime', 48.0), 'medium');
+  assert.equal(classifyDoraTier('failedDeploymentRecoveryTime', 200.0), 'low');
+
+  const snapshot = calculateDoraMetricsSnapshot({
+    valueStreamId: 'vs-1',
+    periodDays: 30,
+    deploymentsCount: 45,
+    medianLeadTimeHours: 18.0,
+    failedDeploymentsCount: 2,
+    medianRecoveryTimeHours: 0.8
+  });
+
+  assert.equal(snapshot.valueStreamId, 'vs-1');
+  assert.equal(snapshot.deploymentFrequency.value, 1.5);
+  assert.equal(snapshot.deploymentFrequency.tier, 'elite');
+  assert.equal(snapshot.leadTimeForChanges.tier, 'elite');
+  assert.equal(snapshot.changeFailureRate.value, 4.4);
+  assert.equal(snapshot.changeFailureRate.tier, 'elite');
+  assert.equal(snapshot.failedDeploymentRecoveryTime.tier, 'elite');
+  assert.equal(snapshot.compositeTier, 'high');
+  assert.ok(snapshot.compositeDoraScore >= 70);
+});
+
+test('contract: calculateFlowMetricsSnapshot computes Little Law WIP saturation and Kingman multiplier', () => {
+  const flow = calculateFlowMetricsSnapshot({
+    valueStreamId: 'vs-core',
+    featuresWip: 15,
+    defectsWip: 4,
+    debtWip: 5,
+    securityWip: 4,
+    targetVelocityPerSprint: 48,
+    engineerHeadcount: 18
+  });
+
+  assert.equal(flow.flowLoadTotalWip, 28);
+  assert.equal(flow.recommendedMaxWip, 27);
+  assert.equal(flow.wipSaturationRatio, 1.04);
+  assert.ok(flow.contextSwitchingDragPercent > 0);
+  assert.ok(flow.kingmanQueueWaitMultiplier >= 1.0);
+  assert.equal(flow.breakdown.length, 4);
+  assert.equal(flow.breakdown[0].itemType, 'feature');
+  assert.ok(flow.flowHealthScore > 50);
+});
+
+test('contract: calculateCapitalizedProjectLabor and sizing summary satisfy ASC 350-40 US GAAP', () => {
+  const capProject = calculateCapitalizedProjectLabor({
+    projectName: 'Enterprise Multi-Tenant Authorization Engine',
+    valueStreamId: 'vs-core',
+    investmentCategory: 'transform',
+    developmentStage: 'application_development',
+    qualifyingLaborHours: 3200,
+    nonQualifyingLaborHours: 450,
+    baseSalaryWeightedAverage: 172000,
+    burdenMultiplier: 1.32,
+    annualizedAttributableArrUsd: 2400000,
+    estimatedUsefulLifeMonths: 36,
+    auditDocumentationRef: 'JIRA-SEC-8921'
+  });
+
+  assert.equal(capProject.projectName, 'Enterprise Multi-Tenant Authorization Engine');
+  assert.ok(capProject.blendedBurdenedHourlyRate > 115);
+  assert.ok(capProject.capitalizedLaborCostUsd > 300000);
+  assert.ok(capProject.expensedLaborCostUsd > 40000);
+  assert.ok(capProject.capitalizationRatioPercent > 70);
+  assert.ok(capProject.monthlyAmortizationUsd > 8000);
+  assert.ok(capProject.projectedRoiPercent > 300);
+
+  const fullProjectDTO = {
+    ...capProject,
+    id: 'cap-1',
+    projectId: 'p-1',
+    createdAt: '2026-10-01T00:00:00Z',
+    updatedAt: '2026-10-01T00:00:00Z'
+  };
+
+  const summary = calculateRdInvestmentSizingSummary([fullProjectDTO]);
+  assert.equal(summary.totalCapitalizedLaborUsd, capProject.capitalizedLaborCostUsd);
+  assert.equal(summary.totalExpensedLaborUsd, capProject.expensedLaborCostUsd);
+  assert.ok(summary.overallCapitalizationRatioPercent > 70);
+  assert.equal(summary.transformAllocationPercent, 100);
+  assert.equal(summary.ebitdaEnhancementUsd, capProject.capitalizedLaborCostUsd);
+});
+
+test('contract: calculateCompositeDeliveryHealthIndex synthesizes delivery, flow, and financials', () => {
+  const res = calculateCompositeDeliveryHealthIndex(82.0, 80.0, 85.0, 45.0, 24.0);
+  assert.ok(res.deliveryHealthIndex >= 85);
+  assert.equal(res.healthBand, 'world_class_elite');
+
+  assert.equal(classifyDeliveryHealthBand(90), 'world_class_elite');
+  assert.equal(classifyDeliveryHealthBand(75), 'predictable_growth');
+  assert.equal(classifyDeliveryHealthBand(60), 'congested_friction');
+  assert.equal(classifyDeliveryHealthBand(40), 'delivery_distress');
+});
+
+test('contract: Value Stream Studio validators reject invalid inputs and accept valid data', () => {
+  const invalidVs = validateValueStreamInput({ name: '', businessDomain: '', contributingHeadcount: 0 });
+  assert.equal(invalidVs.ok, false);
+  assert.ok(invalidVs.errors.name);
+  assert.ok(invalidVs.errors.businessDomain);
+  assert.ok(invalidVs.errors.contributingHeadcount);
+
+  const validVs = validateValueStreamInput({
+    name: 'Enterprise Core',
+    businessDomain: 'B2B SaaS',
+    executiveSponsor: 'VP Eng',
+    contributingHeadcount: 14
+  });
+  assert.equal(validVs.ok, true);
+
+  const invalidOkr = validateStrategicOkrInput({ strategicTheme: '', corporateObjective: '', teamKeyResult: '', allocatedCapacityPoints: 0 });
+  assert.equal(invalidOkr.ok, false);
+  assert.ok(invalidOkr.errors.strategicTheme);
+
+  const validOkr = validateStrategicOkrInput({
+    strategicTheme: 'Security Compliance',
+    corporateObjective: 'Achieve SOC2 Type II',
+    teamKeyResult: 'Zero unresolved findings',
+    priorityTier: 'tier_0_board',
+    allocatedCapacityPoints: 100,
+    totalCapacityPoints: 100,
+    targetQuarter: 'Q4-2026',
+    status: 'on_track'
+  });
+  assert.equal(validOkr.ok, true);
+
+  const invalidDora = validateDoraCalculationInput({ valueStreamId: '', periodDays: 0, deploymentsCount: -1 });
+  assert.equal(invalidDora.ok, false);
+
+  const validDora = validateDoraCalculationInput({
+    valueStreamId: 'vs-1',
+    periodDays: 30,
+    deploymentsCount: 20,
+    medianLeadTimeHours: 12,
+    failedDeploymentsCount: 1,
+    medianRecoveryTimeHours: 1
+  });
+  assert.equal(validDora.ok, true);
+
+  const invalidFlow = validateFlowSimulationInput({ valueStreamId: '', engineerHeadcount: 0 });
+  assert.equal(invalidFlow.ok, false);
+
+  const validFlow = validateFlowSimulationInput({
+    valueStreamId: 'vs-1',
+    featuresWip: 10,
+    defectsWip: 2,
+    debtWip: 3,
+    securityWip: 1,
+    targetVelocityPerSprint: 30,
+    engineerHeadcount: 12
+  });
+  assert.equal(validFlow.ok, true);
+
+  const invalidCap = validateCapitalizedProjectInput({ projectName: '', baseSalaryWeightedAverage: 0 });
+  assert.equal(invalidCap.ok, false);
+
+  const validCap = validateCapitalizedProjectInput({
+    projectName: 'Billing Modernization',
+    valueStreamId: 'vs-1',
+    investmentCategory: 'grow',
+    developmentStage: 'application_development',
+    qualifyingLaborHours: 1200,
+    nonQualifyingLaborHours: 100,
+    baseSalaryWeightedAverage: 160000,
+    burdenMultiplier: 1.32,
+    annualizedAttributableArrUsd: 1000000,
+    estimatedUsefulLifeMonths: 36,
+    auditDocumentationRef: 'AUD-101'
+  });
+  assert.equal(validCap.ok, true);
+
+  const invalidMemo = validateBoardMemoGenerateInput({ title: '', fiscalQuarter: '' });
+  assert.equal(invalidMemo.ok, false);
+
+  const validMemo = validateBoardMemoGenerateInput({ title: 'Q4 Board Memo', fiscalQuarter: 'Q4-2026' });
+  assert.equal(validMemo.ok, true);
+});
+
+test('contract: generateBoardQbrMemorandumMarkdown generates executive QBR memorandum with all sections', () => {
+  const memo: BoardMemorandumDTO = {
+    id: 'memo-1',
+    userScenarioId: 'sc-1',
+    title: 'Q4-2026 Executive Engineering Governance Memorandum',
+    fiscalQuarter: 'Q4-2026',
+    status: 'under_review',
+    deliveryHealthIndex: 78.4,
+    healthBand: 'predictable_growth',
+    executiveSummary: {
+      sectionKey: 'exec_summary',
+      heading: 'Executive Summary & Strategic Rationale',
+      executiveSummaryText: 'Technology organization maintained steady delivery cadence with 82.5% strategic alignment.',
+      keyMetricsBulletPoints: ['Composite DHI: 78.4', 'Flow Efficiency: 24.2%'],
+      strategicGuidance: 'Invest in test automation to address staging queue bottlenecks.'
+    },
+    doraScorecard: {
+      sectionKey: 'dora',
+      heading: 'DORA Delivery & Stability Scorecard',
+      executiveSummaryText: 'Achieved High DORA tier with 1.42 deploys/day and 4.8% CFR.',
+      keyMetricsBulletPoints: ['DF: 1.42/day (Elite)', 'CFR: 4.8% (Elite)'],
+      strategicGuidance: 'Maintain canary deployment rollbacks.'
+    },
+    flowWipDiagnostics: {
+      sectionKey: 'flow',
+      heading: 'Flow Framework & WIP Bottlenecks',
+      executiveSummaryText: 'Completed 48 flow items with 1.04x WIP saturation ratio.',
+      keyMetricsBulletPoints: ['Velocity: 48 items', 'WIP: 28 items'],
+      strategicGuidance: 'Limit concurrent squad WIP to avoid context switching drag.'
+    },
+    capitalizedRdFinancials: {
+      sectionKey: 'capex',
+      heading: 'ASC 350-40 Capitalized R&D Financial Summary',
+      executiveSummaryText: 'Capitalized $1.845M in software labor for an immediate EBITDA enhancement.',
+      keyMetricsBulletPoints: ['CapEx: $1,845,000', 'OpEx: $2,255,000', 'Capitalization Ratio: 45.0%'],
+      strategicGuidance: 'Preserve audit logs in Jira for annual financial review.'
+    },
+    executiveActionPlan: {
+      sectionKey: 'action',
+      heading: 'Executive Leadership Action Plan',
+      executiveSummaryText: 'Deploy ephemeral staging environments to compress QA wait times.',
+      keyMetricsBulletPoints: ['Milestone 1: Ephemeral environments', 'Milestone 2: Automated rollback'],
+      strategicGuidance: 'Board Audit Committee approval is formally recommended.'
+    },
+    ebitdaEnhancementAnnualizedUsd: 1845000,
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  };
+
+  const md = generateBoardQbrMemorandumMarkdown(memo);
+  assert.ok(md.includes('Executive Technology Delivery Velocity, DORA Governance & Capitalized R&D Memorandum'));
+  assert.ok(md.includes('Q4-2026 Executive Engineering Governance Memorandum'));
+  assert.ok(md.includes('UNDER_REVIEW'));
+  assert.ok(md.includes('78.4 / 100'));
+  assert.ok(md.includes('PREDICTABLE GROWTH'));
+  assert.ok(md.includes('$1,845,000'));
+  assert.ok(md.includes('Executive Summary & Strategic Rationale'));
+  assert.ok(md.includes('DORA Delivery & Stability Scorecard'));
+  assert.ok(md.includes('Flow Framework & WIP Bottlenecks'));
+  assert.ok(md.includes('ASC 350-40 Capitalized R&D Financial Summary'));
+  assert.ok(md.includes('Executive Leadership Action Plan'));
+});
+
 
 
 

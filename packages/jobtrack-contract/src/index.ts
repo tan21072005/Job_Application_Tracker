@@ -40,3 +40,4 @@ export * from './board-advisory-nexus.ts';
 export * from './executive-severance.ts';
 export * from './technical-due-diligence.ts';
 export * from './org-topology-studio.ts';
+export * from './value-stream-studio.ts';

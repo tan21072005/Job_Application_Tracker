@@ -102,6 +102,7 @@ import { BoardAdvisoryNexusService } from './services/board-advisory-nexus-servi
 import { ExecutiveSeveranceService } from './services/executive-severance-service.ts';
 import { TechnicalDueDiligenceService } from './services/technical-due-diligence-service.ts';
 import { OrgTopologyStudioService } from './services/org-topology-studio-service.ts';
+import { ValueStreamStudioService } from './services/value-stream-studio-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -138,7 +139,13 @@ import {
   validateDueDiligenceAuditInput,
   validateDiligenceFindingInput,
   validateTeamTopologyInput,
-  validateReorgScenarioInput
+  validateReorgScenarioInput,
+  validateValueStreamInput,
+  validateStrategicOkrInput,
+  validateDoraCalculationInput,
+  validateFlowSimulationInput,
+  validateCapitalizedProjectInput,
+  validateBoardMemoGenerateInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -206,6 +213,7 @@ export const boardAdvisoryNexusService = new BoardAdvisoryNexusService(pool);
 export const executiveSeveranceService = new ExecutiveSeveranceService(pool);
 export const technicalDueDiligenceService = new TechnicalDueDiligenceService(pool);
 export const orgTopologyStudioService = new OrgTopologyStudioService(pool);
+export const valueStreamStudioService = new ValueStreamStudioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -3265,6 +3273,200 @@ app.post('/api/org-topology-studio/scenarios/:id/generate-memo', auth, async (re
       return res.status(404).json({ code: 'scenario_not_found', error: 'Organization scenario not found' });
     }
     res.json({ markdown: memo });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/value-stream-studio/overview', '/api/vsm/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await valueStreamStudioService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/value-stream-studio/value-streams', '/api/vsm/value-streams'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const list = await valueStreamStudioService.listValueStreams(userId);
+    res.json(list);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/value-stream-studio/value-streams', '/api/vsm/value-streams'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateValueStreamInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: validation.errors });
+    }
+    const created = await valueStreamStudioService.createValueStream(userId, req.body);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put(['/api/value-stream-studio/value-streams/:id', '/api/vsm/value-streams/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateValueStreamInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: validation.errors });
+    }
+    const updated = await valueStreamStudioService.updateValueStream(userId, req.params.id, req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'value_stream_not_found', error: 'Value stream not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete(['/api/value-stream-studio/value-streams/:id', '/api/vsm/value-streams/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await valueStreamStudioService.deleteValueStream(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'value_stream_not_found', error: 'Value stream not found' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/value-stream-studio/okrs', '/api/vsm/okrs'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const list = await valueStreamStudioService.listOkrs(userId);
+    res.json(list);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/value-stream-studio/okrs', '/api/vsm/okrs'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateStrategicOkrInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: validation.errors });
+    }
+    const created = await valueStreamStudioService.createOkr(userId, req.body);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete(['/api/value-stream-studio/okrs/:id', '/api/vsm/okrs/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await valueStreamStudioService.deleteOkr(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'okr_not_found', error: 'Strategic OKR linkage not found' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/value-stream-studio/dora/calculate', '/api/vsm/dora/calculate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateDoraCalculationInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: validation.errors });
+    }
+    const snapshot = await valueStreamStudioService.calculateDora(userId, req.body);
+    res.json(snapshot);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/value-stream-studio/flow/simulate', '/api/vsm/flow/simulate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateFlowSimulationInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: validation.errors });
+    }
+    const snapshot = await valueStreamStudioService.simulateFlow(userId, req.body);
+    res.json(snapshot);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/value-stream-studio/capitalized-projects', '/api/vsm/capitalized-projects'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const list = await valueStreamStudioService.listCapitalizedProjects(userId);
+    res.json(list);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/value-stream-studio/capitalized-projects', '/api/vsm/capitalized-projects', '/api/vsm/capitalization/project'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCapitalizedProjectInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: validation.errors });
+    }
+    const created = await valueStreamStudioService.createCapitalizedProject(userId, req.body);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete(['/api/value-stream-studio/capitalized-projects/:id', '/api/vsm/capitalized-projects/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const deleted = await valueStreamStudioService.deleteCapitalizedProject(userId, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ code: 'project_not_found', error: 'Capitalized project not found' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/value-stream-studio/board-memos/generate', '/api/vsm/board-memo/generate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateBoardMemoGenerateInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: validation.errors });
+    }
+    const memo = await valueStreamStudioService.generateBoardMemo(userId, req.body);
+    res.status(201).json(memo);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/value-stream-studio/board-memos/:id/approve', '/api/vsm/board-memo/:id/approve'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const role = req.body?.role === 'cfo' ? 'cfo' : 'cto';
+    const updated = await valueStreamStudioService.approveBoardMemo(userId, req.params.id, role);
+    if (!updated) {
+      return res.status(404).json({ code: 'memo_not_found', error: 'Board memorandum not found' });
+    }
+    res.json(updated);
   } catch (err) {
     next(err);
   }

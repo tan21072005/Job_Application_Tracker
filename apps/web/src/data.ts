@@ -106,7 +106,29 @@ import {
   type OrgNodeDTO,
   calculateTeamCognitiveLoadIndex,
   calculateReorgDisruptionRisk,
-  generateReorgExecutiveMemoMarkdown
+  generateReorgExecutiveMemoMarkdown,
+  type ValueStreamDTO,
+  type ValueStreamMutationDTO,
+  type StrategicOkrLinkageDTO,
+  type StrategicOkrMutationDTO,
+  type DoraMetricsSnapshotDTO,
+  type DoraCalculateRequestDTO,
+  type FlowMetricsSnapshotDTO,
+  type FlowSimulationRequestDTO,
+  type CapitalizedProjectLaborDTO,
+  type CapitalizedProjectMutationDTO,
+  type RdInvestmentSizingSummaryDTO,
+  type BoardMemorandumDTO,
+  type BoardMemorandumGenerateRequestDTO,
+  type ValueStreamStudioOverviewDTO,
+  calculateValueStreamLeadTimeAndFlowEfficiency,
+  calculateStrategicAlignmentIndex,
+  calculateDoraMetricsSnapshot,
+  calculateFlowMetricsSnapshot,
+  calculateCapitalizedProjectLabor,
+  calculateRdInvestmentSizingSummary,
+  calculateCompositeDeliveryHealthIndex,
+  generateBoardQbrMemorandumMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -9784,6 +9806,784 @@ export const orgTopologyStudioRepository = {
       return res.markdown;
     } catch {
       return generateDemoOrgMemo(scenarioId);
+    }
+  }
+};
+
+const DEMO_VSM_OVERVIEW_KEY = 'jobtrack_vsm_overview_v1';
+
+const DEFAULT_DEMO_VSM_VALUE_STREAMS: ValueStreamDTO[] = [
+  {
+    id: 'vs-core-app',
+    name: 'Enterprise Core Platform',
+    businessDomain: 'B2B SaaS Workspace & Collaboration',
+    executiveSponsor: 'EVP of Product Architecture',
+    contributingHeadcount: 18,
+    stages: [
+      { stage: 'backlog', stageName: 'Backlog Refinement', activeTouchHours: 8, idleWaitHours: 72, stageLeadTimeHours: 80, stageFlowEfficiencyPercent: 10.0, bottleneckDetected: false },
+      { stage: 'design', stageName: 'Technical Architecture & UX', activeTouchHours: 16, idleWaitHours: 40, stageLeadTimeHours: 56, stageFlowEfficiencyPercent: 28.57, bottleneckDetected: false },
+      { stage: 'build', stageName: 'Implementation & Verification', activeTouchHours: 48, idleWaitHours: 12, stageLeadTimeHours: 60, stageFlowEfficiencyPercent: 80.0, bottleneckDetected: false },
+      { stage: 'qa_review', stageName: 'Code Review & Staging E2E', activeTouchHours: 6, idleWaitHours: 54, stageLeadTimeHours: 60, stageFlowEfficiencyPercent: 10.0, bottleneckDetected: true },
+      { stage: 'deploy', stageName: 'Canary Deployment Pipeline', activeTouchHours: 2, idleWaitHours: 4, stageLeadTimeHours: 6, stageFlowEfficiencyPercent: 33.33, bottleneckDetected: false },
+      { stage: 'verify', stageName: 'Telemetry & Health Verification', activeTouchHours: 4, idleWaitHours: 6, stageLeadTimeHours: 10, stageFlowEfficiencyPercent: 40.0, bottleneckDetected: false }
+    ],
+    totalActiveTouchHours: 84,
+    totalIdleWaitHours: 188,
+    valueStreamLeadTimeHours: 272,
+    flowEfficiencyPercent: 30.88,
+    flowHealthStatus: 'healthy_flow',
+    strategicAlignmentScore: 88.0,
+    createdAt: '2026-10-01T00:00:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  },
+  {
+    id: 'vs-monetization',
+    name: 'Monetization & Billing Engine',
+    businessDomain: 'Stripe Billing & Enterprise Licensing',
+    executiveSponsor: 'VP of Engineering',
+    contributingHeadcount: 12,
+    stages: [
+      { stage: 'backlog', stageName: 'Backlog Refinement', activeTouchHours: 10, idleWaitHours: 90, stageLeadTimeHours: 100, stageFlowEfficiencyPercent: 10.0, bottleneckDetected: true },
+      { stage: 'design', stageName: 'Financial Compliance Design', activeTouchHours: 14, idleWaitHours: 36, stageLeadTimeHours: 50, stageFlowEfficiencyPercent: 28.0, bottleneckDetected: false },
+      { stage: 'build', stageName: 'Implementation', activeTouchHours: 36, idleWaitHours: 14, stageLeadTimeHours: 50, stageFlowEfficiencyPercent: 72.0, bottleneckDetected: false },
+      { stage: 'qa_review', stageName: 'SOC2 Security & Integration Tests', activeTouchHours: 8, idleWaitHours: 64, stageLeadTimeHours: 72, stageFlowEfficiencyPercent: 11.11, bottleneckDetected: true },
+      { stage: 'deploy', stageName: 'Blue-Green Deploy', activeTouchHours: 3, idleWaitHours: 5, stageLeadTimeHours: 8, stageFlowEfficiencyPercent: 37.5, bottleneckDetected: false },
+      { stage: 'verify', stageName: 'Reconciliation Verification', activeTouchHours: 4, idleWaitHours: 8, stageLeadTimeHours: 12, stageFlowEfficiencyPercent: 33.33, bottleneckDetected: false }
+    ],
+    totalActiveTouchHours: 75,
+    totalIdleWaitHours: 217,
+    valueStreamLeadTimeHours: 292,
+    flowEfficiencyPercent: 25.68,
+    flowHealthStatus: 'healthy_flow',
+    strategicAlignmentScore: 84.0,
+    createdAt: '2026-10-01T00:00:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  },
+  {
+    id: 'vs-data-pipeline',
+    name: 'Analytics & Event Ingestion',
+    businessDomain: 'Real-Time Telemetry & Data Platform',
+    executiveSponsor: 'Chief Systems Architect',
+    contributingHeadcount: 12,
+    stages: [
+      { stage: 'backlog', stageName: 'Backlog Refinement', activeTouchHours: 6, idleWaitHours: 120, stageLeadTimeHours: 126, stageFlowEfficiencyPercent: 4.76, bottleneckDetected: true },
+      { stage: 'design', stageName: 'Schema Design', activeTouchHours: 12, idleWaitHours: 48, stageLeadTimeHours: 60, stageFlowEfficiencyPercent: 20.0, bottleneckDetected: false },
+      { stage: 'build', stageName: 'Kafka & Flink Pipeline Build', activeTouchHours: 40, idleWaitHours: 20, stageLeadTimeHours: 60, stageFlowEfficiencyPercent: 66.67, bottleneckDetected: false },
+      { stage: 'qa_review', stageName: 'Performance Benchmarking', activeTouchHours: 8, idleWaitHours: 80, stageLeadTimeHours: 88, stageFlowEfficiencyPercent: 9.09, bottleneckDetected: true },
+      { stage: 'deploy', stageName: 'Rolling Deployment', activeTouchHours: 2, idleWaitHours: 6, stageLeadTimeHours: 8, stageFlowEfficiencyPercent: 25.0, bottleneckDetected: false },
+      { stage: 'verify', stageName: 'Consumer Lag Verification', activeTouchHours: 3, idleWaitHours: 7, stageLeadTimeHours: 10, stageFlowEfficiencyPercent: 30.0, bottleneckDetected: false }
+    ],
+    totalActiveTouchHours: 71,
+    totalIdleWaitHours: 281,
+    valueStreamLeadTimeHours: 352,
+    flowEfficiencyPercent: 20.17,
+    flowHealthStatus: 'healthy_flow',
+    strategicAlignmentScore: 75.5,
+    createdAt: '2026-10-01T00:00:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  }
+];
+
+const DEFAULT_DEMO_VSM_OKRS: StrategicOkrLinkageDTO[] = [
+  {
+    id: 'okr-1',
+    valueStreamId: 'vs-core-app',
+    valueStreamName: 'Enterprise Core Platform',
+    strategicTheme: 'Enterprise Expansion & Compliance',
+    corporateObjective: 'Unlock $12M ARR in Fortune 500 Segment by Q1-2027',
+    teamKeyResult: 'Deliver Role-Based Access Control and Multi-Region Data Isolation',
+    priorityTier: 'tier_0_board',
+    allocatedCapacityPoints: 180,
+    totalCapacityPoints: 200,
+    capacitySharePercent: 90.0,
+    alignmentWeightedScore: 100.0,
+    targetQuarter: 'Q4-2026',
+    status: 'on_track'
+  },
+  {
+    id: 'okr-2',
+    valueStreamId: 'vs-monetization',
+    valueStreamName: 'Monetization & Billing Engine',
+    strategicTheme: 'Net Dollar Retention & Expansion',
+    corporateObjective: 'Increase Gross Margin from 71% to 78%',
+    teamKeyResult: 'Automate ASC 606 revenue recognition and self-serve add-ons',
+    priorityTier: 'tier_1_growth',
+    allocatedCapacityPoints: 120,
+    totalCapacityPoints: 140,
+    capacitySharePercent: 85.71,
+    alignmentWeightedScore: 85.71,
+    targetQuarter: 'Q4-2026',
+    status: 'on_track'
+  },
+  {
+    id: 'okr-3',
+    valueStreamId: 'vs-data-pipeline',
+    valueStreamName: 'Analytics & Event Ingestion',
+    strategicTheme: 'Platform Reliability & Moat',
+    corporateObjective: 'Maintain 99.99% Availability across All Enterprise Tiers',
+    teamKeyResult: 'Eliminate single points of failure in event ingress and drop P99 latency to <50ms',
+    priorityTier: 'tier_1_growth',
+    allocatedCapacityPoints: 95,
+    totalCapacityPoints: 130,
+    capacitySharePercent: 73.08,
+    alignmentWeightedScore: 73.08,
+    targetQuarter: 'Q4-2026',
+    status: 'at_risk'
+  }
+];
+
+const DEFAULT_DEMO_VSM_DORA: DoraMetricsSnapshotDTO = {
+  id: 'dora-snap-latest',
+  valueStreamId: 'vs-core-app',
+  periodStart: '2026-09-24',
+  periodEnd: '2026-10-24',
+  deploymentFrequency: { value: 1.42, unit: 'deploys/day', tier: 'elite', benchmarkTarget: '>= 1.0 deploy/day', normalizedScore: 88.5, historicalDeltaPercent: 18.2 },
+  leadTimeForChanges: { value: 28.5, unit: 'hours', tier: 'high', benchmarkTarget: '< 24 hours', normalizedScore: 76.2, historicalDeltaPercent: -14.5 },
+  changeFailureRate: { value: 4.8, unit: 'percent', tier: 'elite', benchmarkTarget: '< 5.0%', normalizedScore: 84.0, historicalDeltaPercent: -2.1 },
+  failedDeploymentRecoveryTime: { value: 1.6, unit: 'hours', tier: 'high', benchmarkTarget: '< 1.0 hour', normalizedScore: 78.0, historicalDeltaPercent: -25.0 },
+  deliveryVelocityIndex: 82.35,
+  doraStabilityIndex: 81.3,
+  compositeDoraScore: 81.8,
+  compositeTier: 'high',
+  createdAt: '2026-10-24T18:00:00Z'
+};
+
+const DEFAULT_DEMO_VSM_FLOW: FlowMetricsSnapshotDTO = {
+  id: 'flow-snap-latest',
+  valueStreamId: 'vs-core-app',
+  measurementCycle: 'Sprint 26.10',
+  flowVelocityTotal: 48,
+  flowLoadTotalWip: 28,
+  recommendedMaxWip: 27,
+  wipSaturationRatio: 1.04,
+  contextSwitchingDragPercent: 7.2,
+  utilizationRatePercent: 78.5,
+  kingmanQueueWaitMultiplier: 1.35,
+  breakdown: [
+    { itemType: 'feature', completedCount: 26, distributionPercent: 54.17, targetBenchmarkPercent: 55.0, wipCount: 15, averageFlowTimeDays: 8.4 },
+    { itemType: 'defect', completedCount: 6, distributionPercent: 12.5, targetBenchmarkPercent: 12.0, wipCount: 4, averageFlowTimeDays: 3.2 },
+    { itemType: 'technical_debt', completedCount: 9, distributionPercent: 18.75, targetBenchmarkPercent: 18.0, wipCount: 5, averageFlowTimeDays: 9.8 },
+    { itemType: 'security', completedCount: 7, distributionPercent: 14.58, targetBenchmarkPercent: 15.0, wipCount: 4, averageFlowTimeDays: 5.1 }
+  ],
+  flowHealthScore: 82.5,
+  flowHealthStatus: 'healthy_flow',
+  createdAt: '2026-10-24T18:00:00Z'
+};
+
+const DEFAULT_DEMO_VSM_CAP_PROJECTS: CapitalizedProjectLaborDTO[] = [
+  {
+    id: 'cap-1',
+    projectId: 'proj-rbac-core',
+    projectName: 'Enterprise Multi-Tenant Authorization Engine',
+    valueStreamId: 'vs-core-app',
+    investmentCategory: 'transform',
+    developmentStage: 'application_development',
+    qualifyingLaborHours: 3200,
+    nonQualifyingLaborHours: 450,
+    blendedBurdenedHourlyRate: 118.5,
+    capitalizedLaborCostUsd: 379200,
+    expensedLaborCostUsd: 53325,
+    capitalizationRatioPercent: 87.67,
+    annualizedAttributableArrUsd: 2400000,
+    estimatedUsefulLifeMonths: 36,
+    monthlyAmortizationUsd: 10533.33,
+    projectedRoiPercent: 454.4,
+    auditDocumentationRef: 'JIRA-SEC-8921 / ARCH-DEC-104',
+    createdAt: '2026-07-01T00:00:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  },
+  {
+    id: 'cap-2',
+    projectId: 'proj-stripe-auto',
+    projectName: 'Usage-Based Invoicing & Revenue Recognition Engine',
+    valueStreamId: 'vs-monetization',
+    investmentCategory: 'grow',
+    developmentStage: 'application_development',
+    qualifyingLaborHours: 2400,
+    nonQualifyingLaborHours: 350,
+    blendedBurdenedHourlyRate: 112.0,
+    capitalizedLaborCostUsd: 268800,
+    expensedLaborCostUsd: 39200,
+    capitalizationRatioPercent: 87.27,
+    annualizedAttributableArrUsd: 1600000,
+    estimatedUsefulLifeMonths: 36,
+    monthlyAmortizationUsd: 7466.67,
+    projectedRoiPercent: 419.5,
+    auditDocumentationRef: 'FIN-ENG-441 / GAAP-350-SOP',
+    createdAt: '2026-08-15T00:00:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  },
+  {
+    id: 'cap-3',
+    projectId: 'proj-event-streaming',
+    projectName: 'High-Throughput Kafka Ingestion Infrastructure',
+    valueStreamId: 'vs-data-pipeline',
+    investmentCategory: 'transform',
+    developmentStage: 'application_development',
+    qualifyingLaborHours: 2900,
+    nonQualifyingLaborHours: 400,
+    blendedBurdenedHourlyRate: 122.0,
+    capitalizedLaborCostUsd: 353800,
+    expensedLaborCostUsd: 48800,
+    capitalizationRatioPercent: 87.88,
+    annualizedAttributableArrUsd: 1800000,
+    estimatedUsefulLifeMonths: 36,
+    monthlyAmortizationUsd: 9827.78,
+    projectedRoiPercent: 347.2,
+    auditDocumentationRef: 'DATA-INFRA-781 / SOC2-TYPE2',
+    createdAt: '2026-06-01T00:00:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  }
+];
+
+const DEFAULT_DEMO_VSM_MEMO: BoardMemorandumDTO = {
+  id: 'memo-q4-2026',
+  userScenarioId: 'scenario-executive-2026',
+  title: 'Q4-2026 Technology Delivery Velocity, DORA Governance & Capitalized R&D Memorandum',
+  fiscalQuarter: 'Q4-2026',
+  status: 'under_review',
+  deliveryHealthIndex: 78.4,
+  healthBand: 'predictable_growth',
+  executiveSummary: {
+    sectionKey: 'exec_summary',
+    heading: '1. Executive Summary & Strategic Rationale',
+    executiveSummaryText: 'During Q4-2026, the technology organization maintained predictable delivery momentum across all 3 primary value streams. Total contributing engineering headcount stands at 42 full-time engineers. Strategic alignment reached 82.5%.',
+    keyMetricsBulletPoints: [
+      'Composite Delivery Health Index: 78.4 / 100 (Predictable Growth Band)',
+      'Strategic OKR Capacity Alignment: 82.5% of total sprint points mapped to approved corporate OKRs',
+      'Average Value Stream Flow Efficiency: 24.2% (healthy SaaS benchmark)'
+    ],
+    strategicGuidance: 'Recommend maintaining focused investment on code review automation to relieve staging queue congestion in the Enterprise Core Platform.'
+  },
+  doraScorecard: {
+    sectionKey: 'dora_scorecard',
+    heading: '2. Quantitative DORA Benchmark Performance & Reliability Scorecard',
+    executiveSummaryText: 'The engineering organization achieved a High DORA composite tier (Score: 81.8/100). Deployment Frequency reached 1.42 deploys per day (Elite tier). Change Failure Rate improved to 4.8% (Elite tier).',
+    keyMetricsBulletPoints: [
+      'Deployment Frequency: 1.42 deploys/day (Elite)',
+      'Lead Time for Changes: 28.5 hours (High)',
+      'Change Failure Rate: 4.8% (Elite)',
+      'Failed Deployment Recovery Time: 1.6 hours (High)',
+      'DORA Stability Index: 81.3 / 100'
+    ],
+    strategicGuidance: 'Deploy automated rollback triggers in canary pipelines to compress recovery time below the 1.0-hour Elite benchmark.'
+  },
+  flowWipDiagnostics: {
+    sectionKey: 'flow_wip',
+    heading: '3. Flow Framework Efficiency & WIP Bottleneck Diagnostics',
+    executiveSummaryText: 'Completed Flow Velocity reached 48 units with a balanced distribution: 54.2% Features, 12.5% Defects, 18.8% Technical Debt, and 14.6% Security. Total Flow Load (WIP) was governed at 28 items against a ceiling of 27 items.',
+    keyMetricsBulletPoints: [
+      'Total Completed Flow Velocity: 48 units/sprint',
+      'WIP Saturation Ratio: 1.04 (Safe operating threshold)',
+      'Context Switching Capacity Loss: 7.2% of productive sprint time',
+      'Primary Queue Bottleneck: Code Review & Staging Verification (54 hours average wait time)'
+    ],
+    strategicGuidance: 'Implement mandatory PR pairing thresholds and limit concurrent WIP per squad to prevent context switching loss.'
+  },
+  capitalizedRdFinancials: {
+    sectionKey: 'capitalized_rd',
+    heading: '4. ASC 350-40 Capitalized R&D Financial Sizing & EBITDA Impact',
+    executiveSummaryText: 'Under US GAAP ASC 350-40, $1.845M in qualifying Application Development Stage labor qualified for balance sheet capitalization (45.0% Capitalization Ratio), delivering an EBITDA enhancement of $1.845M.',
+    keyMetricsBulletPoints: [
+      'Total Capitalized Software Labor (CapEx): $1,845,000',
+      'Total Expensed Operational Labor (OpEx): $2,255,000',
+      'Overall Capitalization Ratio: 45.0%',
+      'Annualized EBITDA Enhancement: $1,845,000',
+      'Investment Sizing: 24% Run / 52% Grow / 24% Transform'
+    ],
+    strategicGuidance: 'Maintain meticulous Jira work-item audit tracking across projects to ensure full external audit defensibility during annual financial reviews.'
+  },
+  executiveActionPlan: {
+    sectionKey: 'action_plan',
+    heading: '5. Engineering Leadership Action Plan & Strategic OKR Allocation',
+    executiveSummaryText: 'For Q1-2027, engineering leadership will execute three targeted interventions: 1) Deploy ephemeral staging environments; 2) Increase Transform R&D allocation to 28%; 3) Standardize audit tags for automated ASC 350-40 time allocation.',
+    keyMetricsBulletPoints: [
+      'Milestone 1: Ephemeral preview environments to cut QA wait time by 50%',
+      'Milestone 2: Sub-1 hour MTTR via automated canary rollback scripts',
+      'Milestone 3: Finalize Board and Audit Committee signoff on Q4 software capitalization schedules'
+    ],
+    strategicGuidance: 'Board Audit Committee approval is formally recommended for the Q4 capitalization schedule.'
+  },
+  ebitdaEnhancementAnnualizedUsd: 1845000,
+  approvedByCtoAt: '2026-10-24T19:30:00Z',
+  createdAt: '2026-10-24T18:00:00Z',
+  updatedAt: '2026-10-24T19:30:00Z'
+};
+
+function buildDefaultDemoVsmOverview(): ValueStreamStudioOverviewDTO {
+  const investmentSizing = calculateRdInvestmentSizingSummary(DEFAULT_DEMO_VSM_CAP_PROJECTS);
+  return {
+    compositeDeliveryHealthIndex: 78.4,
+    healthBand: 'predictable_growth',
+    activeValueStreamsCount: DEFAULT_DEMO_VSM_VALUE_STREAMS.length,
+    totalEngineeringHeadcount: 42,
+    strategicAlignmentIndex: 82.5,
+    overallDoraTier: 'high',
+    averageFlowEfficiencyPercent: 24.2,
+    totalCapitalizedLaborUsd: investmentSizing.totalCapitalizedLaborUsd,
+    totalExpensedLaborUsd: investmentSizing.totalExpensedLaborUsd,
+    ebitdaBenefitAnnualizedUsd: investmentSizing.ebitdaEnhancementUsd,
+    valueStreams: DEFAULT_DEMO_VSM_VALUE_STREAMS,
+    okrLinkages: DEFAULT_DEMO_VSM_OKRS,
+    latestDoraSnapshot: DEFAULT_DEMO_VSM_DORA,
+    latestFlowSnapshot: DEFAULT_DEMO_VSM_FLOW,
+    investmentSizing,
+    capitalizedProjects: DEFAULT_DEMO_VSM_CAP_PROJECTS,
+    latestBoardMemo: DEFAULT_DEMO_VSM_MEMO
+  };
+}
+
+function loadDemoVsmOverview(): ValueStreamStudioOverviewDTO {
+  const raw = localStorage.getItem(DEMO_VSM_OVERVIEW_KEY);
+  if (!raw) {
+    const initial = buildDefaultDemoVsmOverview();
+    localStorage.setItem(DEMO_VSM_OVERVIEW_KEY, JSON.stringify(initial));
+    return initial;
+  }
+  try {
+    return JSON.parse(raw) as ValueStreamStudioOverviewDTO;
+  } catch {
+    const initial = buildDefaultDemoVsmOverview();
+    localStorage.setItem(DEMO_VSM_OVERVIEW_KEY, JSON.stringify(initial));
+    return initial;
+  }
+}
+
+function saveDemoVsmOverview(overview: ValueStreamStudioOverviewDTO): void {
+  localStorage.setItem(DEMO_VSM_OVERVIEW_KEY, JSON.stringify(overview));
+}
+
+export const valueStreamStudioRepository = {
+  async getOverview(): Promise<ValueStreamStudioOverviewDTO> {
+    if (demoMode) return loadDemoVsmOverview();
+    try {
+      return await request<ValueStreamStudioOverviewDTO>('/value-stream-studio/overview');
+    } catch {
+      return loadDemoVsmOverview();
+    }
+  },
+
+  async listValueStreams(): Promise<ValueStreamDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      return ov.valueStreams;
+    }
+    try {
+      return await request<ValueStreamDTO[]>('/value-stream-studio/value-streams');
+    } catch {
+      const ov = loadDemoVsmOverview();
+      return ov.valueStreams;
+    }
+  },
+
+  async createValueStream(input: ValueStreamMutationDTO): Promise<ValueStreamDTO> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      const stages = input.stages || [];
+      const leadTime = calculateValueStreamLeadTimeAndFlowEfficiency(stages);
+      const newVs: ValueStreamDTO = {
+        id: `vs-${Date.now()}`,
+        name: input.name,
+        businessDomain: input.businessDomain,
+        executiveSponsor: input.executiveSponsor || '',
+        contributingHeadcount: input.contributingHeadcount,
+        stages,
+        totalActiveTouchHours: leadTime.totalActiveTouchHours,
+        totalIdleWaitHours: leadTime.totalIdleWaitHours,
+        valueStreamLeadTimeHours: leadTime.valueStreamLeadTimeHours,
+        flowEfficiencyPercent: leadTime.flowEfficiencyPercent,
+        flowHealthStatus: leadTime.flowHealthStatus,
+        strategicAlignmentScore: 80.0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.valueStreams.unshift(newVs);
+      ov.activeValueStreamsCount = ov.valueStreams.length;
+      saveDemoVsmOverview(ov);
+      return newVs;
+    }
+    try {
+      return await request<ValueStreamDTO>('/value-stream-studio/value-streams', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoVsmOverview();
+      const stages = input.stages || [];
+      const leadTime = calculateValueStreamLeadTimeAndFlowEfficiency(stages);
+      const newVs: ValueStreamDTO = {
+        id: `vs-${Date.now()}`,
+        name: input.name,
+        businessDomain: input.businessDomain,
+        executiveSponsor: input.executiveSponsor || '',
+        contributingHeadcount: input.contributingHeadcount,
+        stages,
+        totalActiveTouchHours: leadTime.totalActiveTouchHours,
+        totalIdleWaitHours: leadTime.totalIdleWaitHours,
+        valueStreamLeadTimeHours: leadTime.valueStreamLeadTimeHours,
+        flowEfficiencyPercent: leadTime.flowEfficiencyPercent,
+        flowHealthStatus: leadTime.flowHealthStatus,
+        strategicAlignmentScore: 80.0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.valueStreams.unshift(newVs);
+      saveDemoVsmOverview(ov);
+      return newVs;
+    }
+  },
+
+  async updateValueStream(id: string, input: ValueStreamMutationDTO): Promise<ValueStreamDTO | null> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      const idx = ov.valueStreams.findIndex((s) => s.id === id);
+      if (idx === -1) return null;
+      const stages = input.stages || ov.valueStreams[idx].stages;
+      const leadTime = calculateValueStreamLeadTimeAndFlowEfficiency(stages);
+      const updated: ValueStreamDTO = {
+        ...ov.valueStreams[idx],
+        name: input.name,
+        businessDomain: input.businessDomain,
+        executiveSponsor: input.executiveSponsor,
+        contributingHeadcount: input.contributingHeadcount,
+        stages,
+        totalActiveTouchHours: leadTime.totalActiveTouchHours,
+        totalIdleWaitHours: leadTime.totalIdleWaitHours,
+        valueStreamLeadTimeHours: leadTime.valueStreamLeadTimeHours,
+        flowEfficiencyPercent: leadTime.flowEfficiencyPercent,
+        flowHealthStatus: leadTime.flowHealthStatus,
+        updatedAt: new Date().toISOString()
+      };
+      ov.valueStreams[idx] = updated;
+      saveDemoVsmOverview(ov);
+      return updated;
+    }
+    try {
+      return await request<ValueStreamDTO>(`/value-stream-studio/value-streams/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoVsmOverview();
+      const idx = ov.valueStreams.findIndex((s) => s.id === id);
+      if (idx === -1) return null;
+      return ov.valueStreams[idx];
+    }
+  },
+
+  async deleteValueStream(id: string): Promise<boolean> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      const initialLen = ov.valueStreams.length;
+      ov.valueStreams = ov.valueStreams.filter((s) => s.id !== id);
+      ov.activeValueStreamsCount = ov.valueStreams.length;
+      saveDemoVsmOverview(ov);
+      return ov.valueStreams.length < initialLen;
+    }
+    try {
+      await request<void>(`/value-stream-studio/value-streams/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      const ov = loadDemoVsmOverview();
+      const initialLen = ov.valueStreams.length;
+      ov.valueStreams = ov.valueStreams.filter((s) => s.id !== id);
+      ov.activeValueStreamsCount = ov.valueStreams.length;
+      saveDemoVsmOverview(ov);
+      return ov.valueStreams.length < initialLen;
+    }
+  },
+
+  async listOkrs(): Promise<StrategicOkrLinkageDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      return ov.okrLinkages;
+    }
+    try {
+      return await request<StrategicOkrLinkageDTO[]>('/value-stream-studio/okrs');
+    } catch {
+      const ov = loadDemoVsmOverview();
+      return ov.okrLinkages;
+    }
+  },
+
+  async createOkr(input: StrategicOkrMutationDTO): Promise<StrategicOkrLinkageDTO> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      const stream = ov.valueStreams.find((s) => s.id === input.valueStreamId);
+      const share =
+        input.totalCapacityPoints > 0
+          ? Number(((input.allocatedCapacityPoints / input.totalCapacityPoints) * 100).toFixed(2))
+          : 100;
+      const newOkr: StrategicOkrLinkageDTO = {
+        id: `okr-${Date.now()}`,
+        valueStreamId: input.valueStreamId,
+        valueStreamName: stream?.name || 'Core Value Stream',
+        strategicTheme: input.strategicTheme,
+        corporateObjective: input.corporateObjective,
+        teamKeyResult: input.teamKeyResult,
+        priorityTier: input.priorityTier,
+        allocatedCapacityPoints: input.allocatedCapacityPoints,
+        totalCapacityPoints: input.totalCapacityPoints,
+        capacitySharePercent: share,
+        alignmentWeightedScore: share,
+        targetQuarter: input.targetQuarter,
+        status: input.status
+      };
+      ov.okrLinkages.push(newOkr);
+      saveDemoVsmOverview(ov);
+      return newOkr;
+    }
+    try {
+      return await request<StrategicOkrLinkageDTO>('/value-stream-studio/okrs', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoVsmOverview();
+      const stream = ov.valueStreams.find((s) => s.id === input.valueStreamId);
+      const newOkr: StrategicOkrLinkageDTO = {
+        id: `okr-${Date.now()}`,
+        valueStreamId: input.valueStreamId,
+        valueStreamName: stream?.name || 'Core Value Stream',
+        strategicTheme: input.strategicTheme,
+        corporateObjective: input.corporateObjective,
+        teamKeyResult: input.teamKeyResult,
+        priorityTier: input.priorityTier,
+        allocatedCapacityPoints: input.allocatedCapacityPoints,
+        totalCapacityPoints: input.totalCapacityPoints,
+        capacitySharePercent: 100,
+        alignmentWeightedScore: 100,
+        targetQuarter: input.targetQuarter,
+        status: input.status
+      };
+      ov.okrLinkages.push(newOkr);
+      saveDemoVsmOverview(ov);
+      return newOkr;
+    }
+  },
+
+  async deleteOkr(id: string): Promise<boolean> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      const initial = ov.okrLinkages.length;
+      ov.okrLinkages = ov.okrLinkages.filter((o) => o.id !== id);
+      saveDemoVsmOverview(ov);
+      return ov.okrLinkages.length < initial;
+    }
+    try {
+      await request<void>(`/value-stream-studio/okrs/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      const ov = loadDemoVsmOverview();
+      const initial = ov.okrLinkages.length;
+      ov.okrLinkages = ov.okrLinkages.filter((o) => o.id !== id);
+      saveDemoVsmOverview(ov);
+      return ov.okrLinkages.length < initial;
+    }
+  },
+
+  async calculateDora(req: DoraCalculateRequestDTO): Promise<DoraMetricsSnapshotDTO> {
+    if (demoMode) {
+      const calc = calculateDoraMetricsSnapshot(req);
+      const snapshot: DoraMetricsSnapshotDTO = {
+        ...calc,
+        id: `dora-${Date.now()}`,
+        createdAt: new Date().toISOString()
+      };
+      const ov = loadDemoVsmOverview();
+      ov.latestDoraSnapshot = snapshot;
+      ov.overallDoraTier = snapshot.compositeTier;
+      saveDemoVsmOverview(ov);
+      return snapshot;
+    }
+    try {
+      return await request<DoraMetricsSnapshotDTO>('/value-stream-studio/dora/calculate', {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      const calc = calculateDoraMetricsSnapshot(req);
+      return {
+        ...calc,
+        id: `dora-${Date.now()}`,
+        createdAt: new Date().toISOString()
+      };
+    }
+  },
+
+  async simulateFlow(req: FlowSimulationRequestDTO): Promise<FlowMetricsSnapshotDTO> {
+    if (demoMode) {
+      const calc = calculateFlowMetricsSnapshot(req);
+      const snapshot: FlowMetricsSnapshotDTO = {
+        ...calc,
+        id: `flow-${Date.now()}`,
+        createdAt: new Date().toISOString()
+      };
+      const ov = loadDemoVsmOverview();
+      ov.latestFlowSnapshot = snapshot;
+      saveDemoVsmOverview(ov);
+      return snapshot;
+    }
+    try {
+      return await request<FlowMetricsSnapshotDTO>('/value-stream-studio/flow/simulate', {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      const calc = calculateFlowMetricsSnapshot(req);
+      return {
+        ...calc,
+        id: `flow-${Date.now()}`,
+        createdAt: new Date().toISOString()
+      };
+    }
+  },
+
+  async listCapitalizedProjects(): Promise<CapitalizedProjectLaborDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      return ov.capitalizedProjects;
+    }
+    try {
+      return await request<CapitalizedProjectLaborDTO[]>('/value-stream-studio/capitalized-projects');
+    } catch {
+      const ov = loadDemoVsmOverview();
+      return ov.capitalizedProjects;
+    }
+  },
+
+  async createCapitalizedProject(input: CapitalizedProjectMutationDTO): Promise<CapitalizedProjectLaborDTO> {
+    if (demoMode) {
+      const calc = calculateCapitalizedProjectLabor(input);
+      const newProj: CapitalizedProjectLaborDTO = {
+        ...calc,
+        id: `cap-${Date.now()}`,
+        projectId: `proj-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      const ov = loadDemoVsmOverview();
+      ov.capitalizedProjects.unshift(newProj);
+      ov.investmentSizing = calculateRdInvestmentSizingSummary(ov.capitalizedProjects);
+      ov.totalCapitalizedLaborUsd = ov.investmentSizing.totalCapitalizedLaborUsd;
+      ov.totalExpensedLaborUsd = ov.investmentSizing.totalExpensedLaborUsd;
+      ov.ebitdaBenefitAnnualizedUsd = ov.investmentSizing.ebitdaEnhancementUsd;
+      saveDemoVsmOverview(ov);
+      return newProj;
+    }
+    try {
+      return await request<CapitalizedProjectLaborDTO>('/value-stream-studio/capitalized-projects', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const calc = calculateCapitalizedProjectLabor(input);
+      return {
+        ...calc,
+        id: `cap-${Date.now()}`,
+        projectId: `proj-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+  },
+
+  async deleteCapitalizedProject(id: string): Promise<boolean> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      const initial = ov.capitalizedProjects.length;
+      ov.capitalizedProjects = ov.capitalizedProjects.filter((p) => p.id !== id);
+      ov.investmentSizing = calculateRdInvestmentSizingSummary(ov.capitalizedProjects);
+      saveDemoVsmOverview(ov);
+      return ov.capitalizedProjects.length < initial;
+    }
+    try {
+      await request<void>(`/value-stream-studio/capitalized-projects/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      const ov = loadDemoVsmOverview();
+      const initial = ov.capitalizedProjects.length;
+      ov.capitalizedProjects = ov.capitalizedProjects.filter((p) => p.id !== id);
+      saveDemoVsmOverview(ov);
+      return ov.capitalizedProjects.length < initial;
+    }
+  },
+
+  async generateBoardMemo(req: BoardMemorandumGenerateRequestDTO): Promise<BoardMemorandumDTO> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      const newMemo: BoardMemorandumDTO = {
+        ...DEFAULT_DEMO_VSM_MEMO,
+        id: `memo-${Date.now()}`,
+        title: req.title,
+        fiscalQuarter: req.fiscalQuarter,
+        status: 'draft',
+        deliveryHealthIndex: ov.compositeDeliveryHealthIndex,
+        healthBand: ov.healthBand,
+        ebitdaEnhancementAnnualizedUsd: ov.ebitdaBenefitAnnualizedUsd,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.latestBoardMemo = newMemo;
+      saveDemoVsmOverview(ov);
+      return newMemo;
+    }
+    try {
+      return await request<BoardMemorandumDTO>('/value-stream-studio/board-memos/generate', {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      const ov = loadDemoVsmOverview();
+      return {
+        ...DEFAULT_DEMO_VSM_MEMO,
+        id: `memo-${Date.now()}`,
+        title: req.title,
+        fiscalQuarter: req.fiscalQuarter,
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+  },
+
+  async approveBoardMemo(id: string, role: 'cto' | 'cfo'): Promise<BoardMemorandumDTO | null> {
+    if (demoMode) {
+      const ov = loadDemoVsmOverview();
+      if (!ov.latestBoardMemo || ov.latestBoardMemo.id !== id) {
+        if (ov.latestBoardMemo) {
+          ov.latestBoardMemo.status = role === 'cfo' ? 'board_approved' : 'under_review';
+          if (role === 'cfo') ov.latestBoardMemo.approvedByCfoAt = new Date().toISOString();
+          else ov.latestBoardMemo.approvedByCtoAt = new Date().toISOString();
+          saveDemoVsmOverview(ov);
+          return ov.latestBoardMemo;
+        }
+        return null;
+      }
+      ov.latestBoardMemo.status = role === 'cfo' ? 'board_approved' : 'under_review';
+      if (role === 'cfo') ov.latestBoardMemo.approvedByCfoAt = new Date().toISOString();
+      else ov.latestBoardMemo.approvedByCtoAt = new Date().toISOString();
+      saveDemoVsmOverview(ov);
+      return ov.latestBoardMemo;
+    }
+    try {
+      return await request<BoardMemorandumDTO>(`/value-stream-studio/board-memos/${encodeURIComponent(id)}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ role })
+      });
+    } catch {
+      const ov = loadDemoVsmOverview();
+      if (ov.latestBoardMemo) {
+        ov.latestBoardMemo.status = role === 'cfo' ? 'board_approved' : 'under_review';
+        return ov.latestBoardMemo;
+      }
+      return null;
     }
   }
 };
