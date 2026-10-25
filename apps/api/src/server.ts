@@ -118,6 +118,7 @@ import { CorpDevPmiNexusService } from './services/corp-dev-pmi-nexus-service.ts
 import { GlobalTradeSanctionsNexusService } from './services/global-trade-sanctions-nexus-service.ts';
 import { StrategicCommsCrisisNexusService } from './services/strategic-comms-crisis-nexus-service.ts';
 import { ShareholderActivismDefenseNexusService } from './services/shareholder-activism-defense-nexus-service.ts';
+import { AntitrustCompetitionNexusService } from './services/antitrust-competition-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -177,7 +178,11 @@ import {
   validateRegisterWolfpackAccumulationInput,
   validateDeployRightsPlanInput,
   validateRecordNomineeComparisonInput,
-  validateSubmitActivismSignoffInput
+  validateSubmitActivismSignoffInput,
+  validateCreateMergerTransactionInput,
+  validateDefineMarketInput,
+  validateProposeDivestiturePackageInput,
+  validateSubmitAntitrustSignoffInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -324,6 +329,7 @@ export const corpDevPmiNexusService = new CorpDevPmiNexusService(pool);
 export const globalTradeSanctionsNexusService = new GlobalTradeSanctionsNexusService(pool);
 export const strategicCommsCrisisNexusService = new StrategicCommsCrisisNexusService(pool);
 export const shareholderActivismDefenseNexusService = new ShareholderActivismDefenseNexusService(pool);
+export const antitrustCompetitionNexusService = new AntitrustCompetitionNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -5619,6 +5625,83 @@ app.post(['/api/shareholder-activism-defense-nexus/reset-demo', '/api/activism/r
     const userId = (req as SessionRequest).userId;
     const resetResult = await shareholderActivismDefenseNexusService.resetDemoData(userId);
     res.json(resetResult);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get(['/api/antitrust-competition-nexus/overview', '/api/antitrust/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await antitrustCompetitionNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/antitrust-competition-nexus/transactions', '/api/antitrust/transactions'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCreateMergerTransactionInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const transaction = await antitrustCompetitionNexusService.createTransaction(userId, validation.data);
+    res.status(201).json(transaction);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/antitrust-competition-nexus/markets', '/api/antitrust/markets'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateDefineMarketInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const market = await antitrustCompetitionNexusService.defineMarket(userId, validation.data);
+    res.status(201).json(market);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/antitrust-competition-nexus/remedies', '/api/antitrust/remedies'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateProposeDivestiturePackageInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const remedy = await antitrustCompetitionNexusService.proposeDivestiturePackage(userId, validation.data);
+    res.status(201).json(remedy);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/antitrust-competition-nexus/signoff', '/api/antitrust/signoff'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateSubmitAntitrustSignoffInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.error });
+    }
+    const signoff = await antitrustCompetitionNexusService.submitTripartiteSignoff(userId, validation.data);
+    res.json(signoff);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/antitrust-competition-nexus/reset-demo', '/api/antitrust/reset-demo'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    await antitrustCompetitionNexusService.resetDemoData(userId);
+    const overview = await antitrustCompetitionNexusService.getOverview(userId);
+    res.json(overview);
   } catch (error) {
     next(error);
   }

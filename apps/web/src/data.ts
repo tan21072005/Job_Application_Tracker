@@ -668,7 +668,44 @@ import {
   calculateActivistVulnerabilityScore,
   calculatePoisonPillDilution,
   simulateUniversalProxyContest,
-  calculateSettleVsFightValue
+  calculateSettleVsFightValue,
+  type AntitrustDealStructureType,
+  type AntitrustTransactionStatus,
+  type GlobalJurisdictionCode,
+  type ClearanceReviewPhase,
+  type ClearanceDecisionOutcome,
+  type DivestitureRemedyType,
+  type RegulatoryRatificationRole,
+  type MarketConcentrationTier,
+  type UnilateralPricingRiskTier,
+  type ClearanceRiskBand,
+  type AntitrustMergerTransaction,
+  type HsrStatutoryAssessment,
+  type HsrSecondRequest,
+  type AntitrustRelevantMarket,
+  type MarketParticipantShare,
+  type GuppiEconomicAnalysis,
+  type GlobalClearanceFiling,
+  type RemedyDivestiturePackage,
+  type CleanTeamFirewallProtocol,
+  type AntitrustLitigationDocket,
+  type AntitrustTripartiteRatification,
+  type AntitrustAuditEventLog,
+  type AntitrustCompetitionOverview,
+  type CreateMergerTransactionInput,
+  type ParticipantShareInput,
+  type DefineMarketInput,
+  type ProposeDivestiturePackageInput,
+  type SubmitAntitrustSignoffInput,
+  calculateHhiConcentration,
+  calculateDeltaHhi,
+  evaluateHhiPresumption,
+  calculateGuppi,
+  calculateRegulatoryClearanceRiskScore,
+  calculateRemedyDefensibilityIndex,
+  calculateHsrStatutoryFee,
+  evaluateHsrStatutoryThresholds,
+  computeRatificationHash
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -23265,6 +23302,667 @@ export const shareholderActivismNexusRepository = {
     return newStore.overview;
   }
 };
+
+interface DemoAntitrustStore {
+  overview: AntitrustCompetitionOverview;
+}
+
+const DEMO_ANTITRUST_STORAGE_KEY = 'jobtrack_demo_antitrust_competition_nexus';
+
+function createDefaultDemoAntitrustStore(): DemoAntitrustStore {
+  const txId = 'tx-demo-aegis-titan';
+  const evUsd = 14200000000;
+  const cashUsd = 10000000000;
+  const stockUsd = 4200000000;
+  const rtfPct = 4.5;
+  const rtfUsd = (evUsd * rtfPct) / 100;
+
+  const transaction: AntitrustMergerTransaction = {
+    id: txId,
+    dealCodename: 'PROJECT AEGIS TITAN',
+    acquirerName: 'Nexus Tech Global Inc.',
+    targetName: 'Apex Enterprise Software Corp.',
+    enterpriseValueUsd: evUsd,
+    cashConsiderationUsd: cashUsd,
+    stockConsiderationUsd: stockUsd,
+    announcedDate: '2026-09-15',
+    targetedClosingDate: '2027-06-30',
+    reverseTerminationFeePct: rtfPct,
+    reverseTerminationFeeUsd: rtfUsd,
+    dealStructureType: 'horizontal_merger',
+    overallTransactionStatus: 'second_request_subpoena',
+    createdAt: '2026-09-15T09:00:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  };
+
+  const hsrAssessment: HsrStatutoryAssessment = {
+    id: 'hsr-demo-001',
+    transactionId: txId,
+    sizeOfTransactionTestPassed: true,
+    transactionValueUsd: evUsd,
+    sizeOfTransactionThresholdUsd: 119500000,
+    sizeOfPersonTestPassed: true,
+    largerPersonNetSalesUsd: 850000000,
+    smallerPersonNetSalesUsd: 320000000,
+    sizeOfPersonLowerThresholdUsd: 23900000,
+    sizeOfPersonUpperThresholdUsd: 239000000,
+    unconditionalFilingThresholdUsd: 478000000,
+    isHsrFilingRequired: true,
+    statutoryFilingFeeUsd: 2335000,
+    initialWaitingPeriodDays: 30,
+    earliestWaitingPeriodExpiry: '2026-10-20',
+    item4cDocumentsCataloged: 142,
+    item4dDocumentsCataloged: 68,
+    filingPreparedDate: '2026-09-20',
+    createdAt: '2026-09-20T10:00:00Z',
+    updatedAt: '2026-09-20T10:00:00Z'
+  };
+
+  const secondRequest: HsrSecondRequest = {
+    id: 'sr-demo-001',
+    transactionId: txId,
+    issuingAgency: 'US Federal Trade Commission (Bureau of Competition)',
+    receiptDate: '2026-10-18',
+    scopeDescription: 'Broad specification demanding all product roadmap files, pricing algorithms, win/loss telemetry, executive correspondence, and customer switching surveys concerning Cloud HCM and ATS platforms.',
+    custodianCount: 45,
+    custodiansAgreedCount: 38,
+    dataVolumeTerabytes: 24.5,
+    documentsReviewedCount: 840000,
+    documentsProducedCount: 215000,
+    privilegeLogEntriesCount: 3400,
+    certifiedSubstantialCompliance: false,
+    complianceCertificationDate: null,
+    extendedWaitingPeriodExpiry: '2027-04-30',
+    estimatedDefenseCostsUsd: 28500000,
+    createdAt: '2026-10-18T16:45:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  };
+
+  const mkt1Id = 'mkt-demo-001';
+  const mkt2Id = 'mkt-demo-002';
+
+  const relevantMarkets: AntitrustRelevantMarket[] = [
+    {
+      id: mkt1Id,
+      transactionId: txId,
+      marketName: 'Global Cloud Enterprise HCM Platforms',
+      productMarketDefinition: 'Integrated core HR, payroll, benefits administration, and workforce management suites serving enterprises > 5,000 employees',
+      geographicMarketScope: 'Worldwide (North America & EEA primary cluster)',
+      totalMarketSizeUsd: 28000000000,
+      ssnipTestCriticalLossPct: 8.5,
+      hypotheticalMonopolistTestPassed: true,
+      preMergerHhi: 1936,
+      postMergerHhi: 3168,
+      deltaHhi: 1232,
+      concentrationTier: 'dominant_firm_threshold',
+      presumptionRebuttableUnlawful: true,
+      createdAt: '2026-09-22T11:00:00Z',
+      updatedAt: '2026-10-24T18:00:00Z'
+    },
+    {
+      id: mkt2Id,
+      transactionId: txId,
+      marketName: 'Enterprise Recruiting & ATS Automation Solutions',
+      productMarketDefinition: 'AI-powered applicant tracking, candidate sourcing, and automated interview scheduling pipelines',
+      geographicMarketScope: 'North America & Global Multi-National',
+      totalMarketSizeUsd: 8500000000,
+      ssnipTestCriticalLossPct: 9.2,
+      hypotheticalMonopolistTestPassed: true,
+      preMergerHhi: 2450,
+      postMergerHhi: 3430,
+      deltaHhi: 980,
+      concentrationTier: 'dominant_firm_threshold',
+      presumptionRebuttableUnlawful: true,
+      createdAt: '2026-09-22T11:30:00Z',
+      updatedAt: '2026-10-24T18:00:00Z'
+    }
+  ];
+
+  const marketParticipants: MarketParticipantShare[] = [
+    { id: 'part-01', relevantMarketId: mkt1Id, participantName: 'Nexus Tech Global', isMergingParty: true, isAcquirer: true, isTarget: false, annualRevenueUsd: 7840000000, marketSharePct: 28, postMergerSharePct: 50, createdAt: '2026-09-22T11:00:00Z' },
+    { id: 'part-02', relevantMarketId: mkt1Id, participantName: 'Apex Enterprise Software', isMergingParty: true, isAcquirer: false, isTarget: true, annualRevenueUsd: 6160000000, marketSharePct: 22, postMergerSharePct: 50, createdAt: '2026-09-22T11:00:00Z' },
+    { id: 'part-03', relevantMarketId: mkt1Id, participantName: 'SAP SuccessFactors', isMergingParty: false, isAcquirer: false, isTarget: false, annualRevenueUsd: 5040000000, marketSharePct: 18, postMergerSharePct: 18, createdAt: '2026-09-22T11:00:00Z' },
+    { id: 'part-04', relevantMarketId: mkt1Id, participantName: 'Workday Inc.', isMergingParty: false, isAcquirer: false, isTarget: false, annualRevenueUsd: 3360000000, marketSharePct: 12, postMergerSharePct: 12, createdAt: '2026-09-22T11:00:00Z' },
+    { id: 'part-05', relevantMarketId: mkt1Id, participantName: 'Oracle Cloud HCM', isMergingParty: false, isAcquirer: false, isTarget: false, annualRevenueUsd: 2800000000, marketSharePct: 10, postMergerSharePct: 10, createdAt: '2026-09-22T11:00:00Z' },
+    { id: 'part-06', relevantMarketId: mkt1Id, participantName: 'Other Point Solutions', isMergingParty: false, isAcquirer: false, isTarget: false, annualRevenueUsd: 2800000000, marketSharePct: 10, postMergerSharePct: 10, createdAt: '2026-09-22T11:00:00Z' }
+  ];
+
+  const guppiAnalyses: GuppiEconomicAnalysis[] = [
+    {
+      id: 'guppi-01',
+      relevantMarketId: mkt1Id,
+      acquirerProductName: 'Nexus PeoplePulse Enterprise Suite',
+      targetProductName: 'Apex Workforce Hub Ultra',
+      diversionRatio12: 0.35,
+      diversionRatio21: 0.28,
+      priceLevel1: 120,
+      priceLevel2: 110,
+      grossMargin1Pct: 65,
+      grossMargin2Pct: 70,
+      marginalCostEfficiency1Pct: 2.0,
+      marginalCostEfficiency2Pct: 1.5,
+      guppi1Pct: 18.2,
+      guppi2Pct: 15.6,
+      maxGuppiPct: 18.2,
+      unilateralEffectsRiskTier: 'severe_unilateral_effects',
+      createdAt: '2026-09-25T14:00:00Z'
+    },
+    {
+      id: 'guppi-02',
+      relevantMarketId: mkt2Id,
+      acquirerProductName: 'Nexus TalentSphere AI',
+      targetProductName: 'Apex Talent Suite Pro',
+      diversionRatio12: 0.38,
+      diversionRatio21: 0.32,
+      priceLevel1: 95,
+      priceLevel2: 90,
+      grossMargin1Pct: 72,
+      grossMargin2Pct: 75,
+      marginalCostEfficiency1Pct: 2.5,
+      marginalCostEfficiency2Pct: 2.0,
+      guppi1Pct: 21.4,
+      guppi2Pct: 18.8,
+      maxGuppiPct: 21.4,
+      unilateralEffectsRiskTier: 'severe_unilateral_effects',
+      createdAt: '2026-09-25T14:30:00Z'
+    }
+  ];
+
+  const globalFilings: GlobalClearanceFiling[] = [
+    {
+      id: 'filing-us',
+      transactionId: txId,
+      jurisdictionCode: 'US_FTC_DOJ',
+      regulatoryAgencyName: 'US Federal Trade Commission',
+      filingType: 'HSR Form 15 U.S.C. § 18a',
+      filingStatus: 'second_request_issued',
+      formalSubmissionDate: '2026-09-20',
+      statutoryDeadlineDate: '2027-04-30',
+      currentReviewPhase: 'phase_2',
+      remediesSubmitted: false,
+      stopTheClockInvoked: false,
+      clearanceDecision: 'second_request_pending',
+      clearanceOrderDate: null,
+      outsideCounselLead: 'Cravath, Swaine & Moore LLP',
+      createdAt: '2026-09-20T10:00:00Z',
+      updatedAt: '2026-10-24T18:00:00Z'
+    },
+    {
+      id: 'filing-eu',
+      transactionId: txId,
+      jurisdictionCode: 'EU_DG_COMP',
+      regulatoryAgencyName: 'European Commission DG Competition',
+      filingType: 'Form CO Council Reg. 139/2004',
+      filingStatus: 'formal_notification_pending',
+      formalSubmissionDate: '2026-10-05',
+      statutoryDeadlineDate: '2027-05-15',
+      currentReviewPhase: 'phase_1',
+      remediesSubmitted: true,
+      stopTheClockInvoked: false,
+      clearanceDecision: 'pending',
+      clearanceOrderDate: null,
+      outsideCounselLead: 'Freshfields Bruckhaus Deringer LLP',
+      createdAt: '2026-10-05T10:00:00Z',
+      updatedAt: '2026-10-24T18:00:00Z'
+    },
+    {
+      id: 'filing-uk',
+      transactionId: txId,
+      jurisdictionCode: 'UK_CMA',
+      regulatoryAgencyName: 'UK Competition and Markets Authority',
+      filingType: 'Merger Notice Enterprise Act 2002',
+      filingStatus: 'phase_1_review',
+      formalSubmissionDate: '2026-10-10',
+      statutoryDeadlineDate: '2026-12-05',
+      currentReviewPhase: 'phase_1',
+      remediesSubmitted: false,
+      stopTheClockInvoked: false,
+      clearanceDecision: 'phase_2_referral',
+      clearanceOrderDate: null,
+      outsideCounselLead: 'Slaughter and May',
+      createdAt: '2026-10-10T10:00:00Z',
+      updatedAt: '2026-10-24T18:00:00Z'
+    },
+    {
+      id: 'filing-cn',
+      transactionId: txId,
+      jurisdictionCode: 'CN_SAMR',
+      regulatoryAgencyName: 'State Administration for Market Regulation',
+      filingType: 'Anti-Monopoly Notification',
+      filingStatus: 'case_accepted',
+      formalSubmissionDate: '2026-09-28',
+      statutoryDeadlineDate: '2027-03-25',
+      currentReviewPhase: 'phase_2',
+      remediesSubmitted: false,
+      stopTheClockInvoked: false,
+      clearanceDecision: 'pending',
+      clearanceOrderDate: null,
+      outsideCounselLead: 'King & Wood Mallesons',
+      createdAt: '2026-09-28T10:00:00Z',
+      updatedAt: '2026-10-24T18:00:00Z'
+    },
+    {
+      id: 'filing-ca',
+      transactionId: txId,
+      jurisdictionCode: 'CA_COMP_BUR',
+      regulatoryAgencyName: 'Canadian Competition Bureau',
+      filingType: 'Section 114 ARC Notification',
+      filingStatus: 'sir_issued',
+      formalSubmissionDate: '2026-10-02',
+      statutoryDeadlineDate: '2027-02-15',
+      currentReviewPhase: 'phase_2',
+      remediesSubmitted: false,
+      stopTheClockInvoked: false,
+      clearanceDecision: 'pending',
+      clearanceOrderDate: null,
+      outsideCounselLead: 'Blake, Cassels & Graydon LLP',
+      createdAt: '2026-10-02T10:00:00Z',
+      updatedAt: '2026-10-24T18:00:00Z'
+    }
+  ];
+
+  const remedyPackages: RemedyDivestiturePackage[] = [
+    {
+      id: 'rem-01',
+      transactionId: txId,
+      packageName: 'Apex Talent Suite Standalone Carve-Out Package',
+      remedyType: 'fix_it_first_buyer_sale',
+      carveoutBusinessUnit: 'Apex Talent Acquisition & ATS Division',
+      carveoutRevenueUsd: 1850000000,
+      carveoutEbitdaUsd: 410000000,
+      upfrontBuyerName: 'Vista Sovereign Equity Partners',
+      upfrontBuyerViabilityScore: 88.0,
+      assetOverlapMitigatedPct: 92.5,
+      standaloneViabilityScore: 85.0,
+      cleanTeamComplianceScore: 95.0,
+      behavioralCommitmentsScore: 80.0,
+      remedyDefensibilityIndex: 88.4,
+      agencyAcceptanceStatus: 'proposed',
+      createdAt: '2026-10-22T11:30:00Z',
+      updatedAt: '2026-10-24T18:00:00Z'
+    },
+    {
+      id: 'rem-02',
+      transactionId: txId,
+      packageName: 'Enterprise Payroll Orchestration Interoperability Commitments',
+      remedyType: 'behavioral_frand_licensing',
+      carveoutBusinessUnit: 'Nexus Connect API & Data Exchange Hub',
+      carveoutRevenueUsd: 620000000,
+      carveoutEbitdaUsd: 140000000,
+      upfrontBuyerName: null,
+      upfrontBuyerViabilityScore: 60.0,
+      assetOverlapMitigatedPct: 55.0,
+      standaloneViabilityScore: 65.0,
+      cleanTeamComplianceScore: 88.0,
+      behavioralCommitmentsScore: 70.0,
+      remedyDefensibilityIndex: 68.2,
+      agencyAcceptanceStatus: 'under_review',
+      createdAt: '2026-10-22T12:00:00Z',
+      updatedAt: '2026-10-24T18:00:00Z'
+    }
+  ];
+
+  const cleanTeamProtocol: CleanTeamFirewallProtocol = {
+    id: 'clean-team-001',
+    transactionId: txId,
+    protocolTitle: 'Project Aegis Titan Multi-Jurisdictional Clean Team Protocol',
+    cleanDataRoomVendor: 'Intralinks Secure Enterprise VDR',
+    establishedDate: '2026-09-18',
+    firewallStatus: 'active',
+    clearedCounselCount: 18,
+    clearedConsultantsCount: 10,
+    coveredCommerciallySensitiveCategories: [
+      'Customer-specific contract pricing & discount grids',
+      'Unannounced product engineering roadmaps (2027-2029)',
+      'Algorithmic match weights & machine learning source code',
+      'Granular sales rep quota compensation plans'
+    ],
+    gunJumpingAuditFrequency: 'bi_weekly',
+    lastComplianceAuditDate: '2026-10-22',
+    anyReportedBreaches: false,
+    createdAt: '2026-09-18T09:00:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  };
+
+  const litigationDocket: AntitrustLitigationDocket = {
+    id: 'lit-001',
+    transactionId: txId,
+    courtOrAgency: 'US District Court for the District of Columbia',
+    docketNumber: '1:26-cv-03892-CKK',
+    actionType: 'Section 13(b) Preliminary Injunction Action',
+    presidingJudge: 'Hon. Colleen Kollar-Kotelly',
+    preliminaryInjunctionRiskPct: 68.5,
+    evidentiaryHearingDate: '2027-02-18',
+    trialDate: '2027-05-10',
+    cidDepositionsScheduled: 14,
+    cidDepositionsCompleted: 9,
+    litigationPosture: 'active_discovery',
+    settlementDiscussionsOpen: true,
+    createdAt: '2026-10-20T15:00:00Z',
+    updatedAt: '2026-10-24T18:00:00Z'
+  };
+
+  const leadSigner = 'Jonathan Vance, Esq. (Partner, Global Antitrust)';
+  const ratifHash = computeRatificationHash({
+    transactionId: txId,
+    regulatoryClearanceRiskScore: 78.4,
+    leadCounselSigner: leadSigner,
+    generalCounselSigner: '',
+    chiefExecutiveOfficerSigner: ''
+  });
+
+  const ratification: AntitrustTripartiteRatification = {
+    id: 'ratif-001',
+    transactionId: txId,
+    filingStrategyTitle: 'Project Aegis Titan Global Antitrust Defense & Remedy Strategy',
+    regulatoryClearanceRiskScore: 78.4,
+    leadCounselSigned: true,
+    leadCounselSigner: leadSigner,
+    leadCounselDate: '2026-10-23T14:30:00Z',
+    leadCounselStatement: 'Formal legal opinion rendered: Item 4(c)/4(d) e-discovery preservation hold verified; Fix-It-First carve-out package defensibility index validated under 2023 Merger Guidelines.',
+    generalCounselSigned: false,
+    generalCounselSigner: null,
+    generalCounselDate: null,
+    generalCounselStatement: null,
+    chiefExecutiveOfficerSigned: false,
+    chiefExecutiveOfficerSigner: null,
+    chiefExecutiveOfficerDate: null,
+    chiefExecutiveOfficerStatement: null,
+    isFullyRatified: false,
+    cryptographicIntegrityHash: ratifHash,
+    createdAt: '2026-10-23T14:30:00Z',
+    updatedAt: '2026-10-23T14:30:00Z'
+  };
+
+  const auditLogs: AntitrustAuditEventLog[] = [
+    {
+      id: 'log-01', transactionId: txId, eventTimestamp: '2026-09-20T10:00:00Z', eventCategory: 'statutory_filing',
+      actorName: 'Lead Regulatory Counsel', headline: 'HSR Premerger Notification Formal Submission',
+      details: 'Initial HSR filing submitted to FTC Premerger Notification Office and DOJ Antitrust Division with $2,335,000 statutory filing fee.',
+      severity: 'regulatory_filing', createdAt: '2026-09-20T10:00:00Z'
+    },
+    {
+      id: 'log-02', transactionId: txId, eventTimestamp: '2026-10-18T16:45:00Z', eventCategory: 'investigation',
+      actorName: 'FTC Bureau of Competition', headline: 'HSR Second Request Subpoena Received',
+      details: 'Second Request issued covering 45 key custodians across cloud engineering, product monetization, and corporate strategy.',
+      severity: 'critical', createdAt: '2026-10-18T16:45:00Z'
+    },
+    {
+      id: 'log-03', transactionId: txId, eventTimestamp: '2026-10-19T09:15:00Z', eventCategory: 'clean_team',
+      actorName: 'Chief Compliance Officer', headline: 'Intralinks Clean Team Firewall Established',
+      details: 'Firewall protocol signed by 18 outside counsel and 10 economic consultants to avoid gun-jumping under Sherman Act § 1.',
+      severity: 'info', createdAt: '2026-10-19T09:15:00Z'
+    },
+    {
+      id: 'log-04', transactionId: txId, eventTimestamp: '2026-10-22T11:30:00Z', eventCategory: 'remedy_design',
+      actorName: 'M&A Antitrust Practice Group', headline: 'Apex Talent Suite Upfront Divestiture Package Structured',
+      details: 'Fix-It-First binding term sheet entered with Vista Sovereign Equity Partners for $1.85B revenue business unit.',
+      severity: 'warning', createdAt: '2026-10-22T11:30:00Z'
+    },
+    {
+      id: 'log-05', transactionId: txId, eventTimestamp: '2026-10-23T14:30:00Z', eventCategory: 'board_ratification',
+      actorName: 'Jonathan Vance, Esq.', headline: 'Lead Antitrust Counsel Cryptographic Sign-Off Executed',
+      details: 'Lead regulatory counsel signed off on multi-jurisdictional defense strategy with RCRS score of 78.4.',
+      severity: 'info', createdAt: '2026-10-23T14:30:00Z'
+    }
+  ];
+
+  return {
+    overview: {
+      transaction,
+      hsrAssessment,
+      secondRequest,
+      relevantMarkets,
+      marketParticipants,
+      guppiAnalyses,
+      globalFilings,
+      remedyPackages,
+      cleanTeamProtocol,
+      litigationDocket,
+      ratification,
+      auditLogs,
+      metrics: {
+        maxPostMergerHhi: 3168,
+        maxDeltaHhi: 1232,
+        maxGuppiPct: 21.4,
+        overallClearanceRiskScore: 78.4,
+        clearanceRiskBand: 'acute_antitrust_block_risk',
+        maxRemedyDefensibilityIndex: 88.4,
+        reverseTerminationFeeExposureUsd: rtfUsd,
+        expectedRegulatoryLossUsd: Math.round(rtfUsd * (78.4 / 100) + 28500000),
+        presumptionRebuttableCount: 2
+      }
+    }
+  };
+}
+
+function loadDemoAntitrustStore(): DemoAntitrustStore {
+  try {
+    const raw = localStorage.getItem(DEMO_ANTITRUST_STORAGE_KEY);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+    const store = createDefaultDemoAntitrustStore();
+    saveDemoAntitrustStore(store);
+    return store;
+  } catch {
+    const store = createDefaultDemoAntitrustStore();
+    saveDemoAntitrustStore(store);
+    return store;
+  }
+}
+
+function saveDemoAntitrustStore(store: DemoAntitrustStore): void {
+  try {
+    localStorage.setItem(DEMO_ANTITRUST_STORAGE_KEY, JSON.stringify(store));
+  } catch {}
+}
+
+export const antitrustNexusRepository = {
+  async getOverview(): Promise<AntitrustCompetitionOverview> {
+    if (demoMode) {
+      return loadDemoAntitrustStore().overview;
+    }
+    try {
+      return await request<AntitrustCompetitionOverview>('/antitrust/overview');
+    } catch {
+      return loadDemoAntitrustStore().overview;
+    }
+  },
+
+  async createTransaction(input: CreateMergerTransactionInput): Promise<AntitrustMergerTransaction> {
+    if (!demoMode) {
+      try {
+        return await request<AntitrustMergerTransaction>('/antitrust/transactions', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoAntitrustStore();
+    const newTxId = `tx-${Date.now()}`;
+    const rtfPct = input.reverseTerminationFeePct ?? 4.5;
+    const rtfUsd = (input.enterpriseValueUsd * rtfPct) / 100;
+
+    const newTx: AntitrustMergerTransaction = {
+      id: newTxId,
+      dealCodename: input.dealCodename,
+      acquirerName: input.acquirerName,
+      targetName: input.targetName,
+      enterpriseValueUsd: input.enterpriseValueUsd,
+      cashConsiderationUsd: input.cashConsiderationUsd,
+      stockConsiderationUsd: input.stockConsiderationUsd,
+      announcedDate: input.announcedDate,
+      targetedClosingDate: input.targetedClosingDate,
+      reverseTerminationFeePct: rtfPct,
+      reverseTerminationFeeUsd: rtfUsd,
+      dealStructureType: input.dealStructureType,
+      overallTransactionStatus: 'pre_filing_analysis',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    store.overview.transaction = newTx;
+    store.overview.metrics.reverseTerminationFeeExposureUsd = rtfUsd;
+    saveDemoAntitrustStore(store);
+    return newTx;
+  },
+
+  async defineMarket(input: DefineMarketInput): Promise<AntitrustRelevantMarket> {
+    if (!demoMode) {
+      try {
+        return await request<AntitrustRelevantMarket>('/antitrust/markets', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoAntitrustStore();
+    const marketId = `mkt-${Date.now()}`;
+    const shares = input.participantShares.map(p => p.marketSharePct);
+    const preHhi = calculateHhiConcentration(shares).hhi;
+    const acquirer = input.participantShares.find(p => p.isAcquirer) ?? input.participantShares[0];
+    const target = input.participantShares.find(p => p.isTarget) ?? input.participantShares[1];
+    const deltaInfo = calculateDeltaHhi(acquirer ? acquirer.marketSharePct : 0, target ? target.marketSharePct : 0);
+    const postHhi = preHhi + deltaInfo.deltaHhi;
+    const presumption = evaluateHhiPresumption(postHhi, deltaInfo.deltaHhi, deltaInfo.postMergerSharePct);
+
+    const newMarket: AntitrustRelevantMarket = {
+      id: marketId,
+      transactionId: input.transactionId,
+      marketName: input.marketName,
+      productMarketDefinition: input.productMarketDefinition,
+      geographicMarketScope: input.geographicMarketScope,
+      totalMarketSizeUsd: input.totalMarketSizeUsd,
+      ssnipTestCriticalLossPct: input.ssnipTestCriticalLossPct ?? 8.5,
+      hypotheticalMonopolistTestPassed: input.hypotheticalMonopolistTestPassed !== false,
+      preMergerHhi: preHhi,
+      postMergerHhi: postHhi,
+      deltaHhi: deltaInfo.deltaHhi,
+      concentrationTier: presumption.concentrationTier,
+      presumptionRebuttableUnlawful: presumption.presumptionRebuttableUnlawful,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    store.overview.relevantMarkets.push(newMarket);
+    saveDemoAntitrustStore(store);
+    return newMarket;
+  },
+
+  async proposeDivestiturePackage(input: ProposeDivestiturePackageInput): Promise<RemedyDivestiturePackage> {
+    if (!demoMode) {
+      try {
+        return await request<RemedyDivestiturePackage>('/antitrust/remedies', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoAntitrustStore();
+    const pkgId = `rem-${Date.now()}`;
+    const rdiInfo = calculateRemedyDefensibilityIndex({
+      overlapMitigatedPct: input.assetOverlapMitigatedPct,
+      upfrontBuyerViabilityScore: input.upfrontBuyerViabilityScore ?? 85.0,
+      standaloneViabilityScore: input.standaloneViabilityScore ?? 80.0,
+      cleanTeamComplianceScore: input.cleanTeamComplianceScore ?? 90.0,
+      behavioralCommitmentsScore: input.behavioralCommitmentsScore ?? 75.0
+    });
+
+    const newRemedy: RemedyDivestiturePackage = {
+      id: pkgId,
+      transactionId: input.transactionId,
+      packageName: input.packageName,
+      remedyType: input.remedyType,
+      carveoutBusinessUnit: input.carveoutBusinessUnit,
+      carveoutRevenueUsd: input.carveoutRevenueUsd,
+      carveoutEbitdaUsd: input.carveoutEbitdaUsd,
+      upfrontBuyerName: input.upfrontBuyerName ?? null,
+      upfrontBuyerViabilityScore: input.upfrontBuyerViabilityScore ?? 85.0,
+      assetOverlapMitigatedPct: input.assetOverlapMitigatedPct,
+      standaloneViabilityScore: input.standaloneViabilityScore ?? 80.0,
+      cleanTeamComplianceScore: input.cleanTeamComplianceScore ?? 90.0,
+      behavioralCommitmentsScore: input.behavioralCommitmentsScore ?? 75.0,
+      remedyDefensibilityIndex: rdiInfo.rdi,
+      agencyAcceptanceStatus: 'proposed',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    store.overview.remedyPackages.push(newRemedy);
+    store.overview.metrics.maxRemedyDefensibilityIndex = Math.max(
+      store.overview.metrics.maxRemedyDefensibilityIndex,
+      newRemedy.remedyDefensibilityIndex
+    );
+    saveDemoAntitrustStore(store);
+    return newRemedy;
+  },
+
+  async submitTripartiteSignoff(input: SubmitAntitrustSignoffInput): Promise<AntitrustTripartiteRatification> {
+    if (!demoMode) {
+      try {
+        return await request<AntitrustTripartiteRatification>('/antitrust/signoff', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoAntitrustStore();
+    const ratif = store.overview.ratification;
+    const now = new Date().toISOString();
+
+    if (input.role === 'antitrust_lead_counsel') {
+      ratif.leadCounselSigned = true;
+      ratif.leadCounselSigner = input.signerName;
+      ratif.leadCounselDate = now;
+      ratif.leadCounselStatement = input.statementAcknowledged;
+    } else if (input.role === 'chief_legal_officer') {
+      ratif.generalCounselSigned = true;
+      ratif.generalCounselSigner = input.signerName;
+      ratif.generalCounselDate = now;
+      ratif.generalCounselStatement = input.statementAcknowledged;
+    } else if (input.role === 'chief_executive_officer') {
+      ratif.chiefExecutiveOfficerSigned = true;
+      ratif.chiefExecutiveOfficerSigner = input.signerName;
+      ratif.chiefExecutiveOfficerDate = now;
+      ratif.chiefExecutiveOfficerStatement = input.statementAcknowledged;
+    }
+
+    ratif.isFullyRatified = Boolean(
+      ratif.leadCounselSigned && ratif.generalCounselSigned && ratif.chiefExecutiveOfficerSigned
+    );
+
+    ratif.cryptographicIntegrityHash = computeRatificationHash({
+      transactionId: input.transactionId,
+      regulatoryClearanceRiskScore: ratif.regulatoryClearanceRiskScore,
+      leadCounselSigner: ratif.leadCounselSigner || '',
+      generalCounselSigner: ratif.generalCounselSigner || '',
+      chiefExecutiveOfficerSigner: ratif.chiefExecutiveOfficerSigner || ''
+    });
+
+    saveDemoAntitrustStore(store);
+    return ratif;
+  },
+
+  async resetDemo(): Promise<AntitrustCompetitionOverview> {
+    if (!demoMode) {
+      try {
+        return await request<AntitrustCompetitionOverview>('/antitrust/reset-demo', {
+          method: 'POST'
+        });
+      } catch {}
+    }
+
+    const store = createDefaultDemoAntitrustStore();
+    saveDemoAntitrustStore(store);
+    return store.overview;
+  }
+};
+
 
 
 

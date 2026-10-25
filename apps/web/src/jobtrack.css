@@ -3936,6 +3936,55 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .activism-nexus-footer{padding:0.75rem 1.75rem;border-top:1px solid #1e293b;background:rgba(8,13,26,0.8);display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;color:#94a3b8}
 .activism-nexus-footer-btn{background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:0.4rem 0.9rem;border-radius:6px;font-size:0.8rem;cursor:pointer}
 
+.antitrust-sidebar-btn{background:linear-gradient(135deg,rgba(14,165,233,0.18) 0%,rgba(99,102,241,0.18) 100%);border:1px solid rgba(14,165,233,0.3);color:#38bdf8;display:flex;align-items:center;gap:0.5rem;padding:0.55rem 0.85rem;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.15s ease;width:100%;text-align:left}
+.antitrust-sidebar-btn:hover{background:linear-gradient(135deg,rgba(14,165,233,0.28) 0%,rgba(99,102,241,0.28) 100%);border-color:rgba(14,165,233,0.5);color:#7dd3fc}
+.antitrust-nexus-modal-overlay{position:fixed;inset:0;background:rgba(2,6,23,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1.5rem}
+.antitrust-nexus-modal{background:#0b1329;border:1px solid #1e293b;border-radius:12px;width:100%;max-width:1240px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 25px 50px -12px rgba(0,0,0,0.75);overflow:hidden;color:#f8fafc}
+.antitrust-nexus-header{padding:1.25rem 1.75rem;border-bottom:1px solid #1e293b;background:rgba(15,23,42,0.95);display:flex;align-items:center;justify-content:space-between}
+.antitrust-nexus-header-title{font-size:1.25rem;font-weight:800;letter-spacing:-0.02em;color:#f8fafc;display:flex;align-items:center;gap:0.75rem}
+.antitrust-nexus-subtitle{font-size:0.8rem;color:#94a3b8;font-weight:500;margin-top:0.25rem}
+.antitrust-nexus-close-btn{background:transparent;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer;line-height:1;padding:0.25rem 0.5rem;border-radius:4px;transition:color 0.15s}
+.antitrust-nexus-close-btn:hover{color:#f8fafc;background:rgba(255,255,255,0.06)}
+.antitrust-nexus-tabs{display:flex;gap:0.25rem;background:#080e1e;padding:0.5rem 1.75rem;border-bottom:1px solid #1e293b;overflow-x:auto}
+.antitrust-nexus-tab-btn{background:transparent;border:none;color:#94a3b8;font-size:0.82rem;font-weight:600;padding:0.5rem 0.9rem;border-radius:6px;cursor:pointer;transition:all 0.15s ease;white-space:nowrap}
+.antitrust-nexus-tab-btn:hover{color:#f8fafc;background:rgba(255,255,255,0.04)}
+.antitrust-nexus-tab-btn.active{color:#38bdf8;background:rgba(14,165,233,0.15);border:1px solid rgba(14,165,233,0.3)}
+.antitrust-nexus-body{flex:1;overflow-y:auto;padding:1.5rem 1.75rem}
+.antitrust-nexus-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.antitrust-nexus-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.antitrust-nexus-grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
+.antitrust-nexus-card{background:rgba(15,23,42,0.65);border:1px solid #1e293b;border-radius:8px;padding:1.25rem}
+.antitrust-nexus-card-title{font-size:0.95rem;font-weight:700;color:#f8fafc;margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between}
+.antitrust-nexus-form-group{display:flex;flex-direction:column;gap:0.35rem}
+.antitrust-nexus-label{font-size:0.75rem;font-weight:600;color:#94a3b8}
+.antitrust-nexus-input{background:#090e1a;border:1px solid #334155;border-radius:6px;padding:0.5rem 0.75rem;color:#f8fafc;font-size:0.82rem}
+.antitrust-nexus-input:focus{outline:none;border-color:#0ea5e9}
+.antitrust-nexus-select{background:#090e1a;border:1px solid #334155;border-radius:6px;padding:0.5rem 0.75rem;color:#f8fafc;font-size:0.82rem}
+.antitrust-nexus-select:focus{outline:none;border-color:#0ea5e9}
+.antitrust-nexus-textarea{background:#090e1a;border:1px solid #334155;border-radius:6px;padding:0.5rem 0.75rem;color:#f8fafc;font-size:0.82rem;min-height:70px;resize:vertical}
+.antitrust-nexus-textarea:focus{outline:none;border-color:#0ea5e9}
+.antitrust-nexus-btn-primary{background:linear-gradient(135deg,#0284c7 0%,#2563eb 100%);color:#fff;border:none;border-radius:6px;padding:0.55rem 1.1rem;font-size:0.82rem;font-weight:600;cursor:pointer;transition:opacity 0.15s}
+.antitrust-nexus-btn-primary:hover{opacity:0.9}
+.antitrust-nexus-btn-primary:disabled{background:#1e293b;color:#64748b;cursor:not-allowed}
+.antitrust-nexus-btn-secondary{background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:0.5rem 1rem;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.15s ease}
+.antitrust-nexus-btn-secondary:hover:not(:disabled){background:rgba(14,165,233,0.2);color:#7dd3fc;border-color:rgba(14,165,233,0.4)}
+.antitrust-nexus-btn-signed{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:0.65rem 1.2rem;font-size:0.85rem;font-weight:600;cursor:default}
+.antitrust-nexus-badge{font-size:0.75rem;padding:0.2rem 0.6rem;border-radius:4px;font-family:ui-monospace,monospace;font-weight:700}
+.antitrust-badge-blue{background:rgba(14,165,233,0.18);color:#38bdf8;border:1px solid rgba(14,165,233,0.35)}
+.antitrust-badge-cyan{background:rgba(6,182,212,0.18);color:#22d3ee;border:1px solid rgba(6,182,212,0.35)}
+.antitrust-badge-crimson{background:rgba(239,68,68,0.18);color:#f87171;border:1px solid rgba(239,68,68,0.35)}
+.antitrust-badge-amber{background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.35)}
+.antitrust-badge-emerald{background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.35)}
+.antitrust-nexus-outcome-box{background:#080d1a;border:1px solid #1e293b;border-radius:6px;padding:0.8rem 1rem;display:flex;justify-content:space-between;align-items:center;font-size:0.82rem}
+.antitrust-nexus-footer{padding:0.75rem 1.75rem;border-top:1px solid #1e293b;background:rgba(8,13,26,0.8);display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;color:#94a3b8}
+.antitrust-nexus-footer-btn{background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:0.4rem 0.9rem;border-radius:6px;font-size:0.8rem;cursor:pointer}
+.antitrust-nexus-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.antitrust-nexus-th{text-align:left;padding:0.6rem 0.75rem;background:rgba(15,23,42,0.8);color:#94a3b8;font-weight:600;border-bottom:1px solid #1e293b}
+.antitrust-nexus-td{padding:0.6rem 0.75rem;border-bottom:1px solid rgba(30,41,59,0.5);color:#f8fafc}
+.antitrust-metric-value{font-size:1.4rem;font-weight:800;color:#f8fafc;font-family:ui-monospace,monospace}
+.antitrust-metric-label{font-size:0.75rem;color:#94a3b8;font-weight:500}
+
+
 
 
 

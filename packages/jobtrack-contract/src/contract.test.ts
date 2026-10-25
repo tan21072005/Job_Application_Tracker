@@ -552,7 +552,20 @@ import {
   validateRegisterWolfpackAccumulationInput,
   validateDeployRightsPlanInput,
   validateRecordNomineeComparisonInput,
-  validateSubmitActivismSignoffInput
+  validateSubmitActivismSignoffInput,
+  calculateHhiConcentration,
+  calculateDeltaHhi,
+  evaluateHhiPresumption,
+  calculateGuppi,
+  calculateRegulatoryClearanceRiskScore,
+  calculateRemedyDefensibilityIndex,
+  calculateHsrStatutoryFee,
+  evaluateHsrStatutoryThresholds,
+  computeRatificationHash,
+  validateCreateMergerTransactionInput,
+  validateDefineMarketInput,
+  validateProposeDivestiturePackageInput,
+  validateSubmitAntitrustSignoffInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -10441,6 +10454,196 @@ test('contract: shareholder activism defense algorithms and input validators', (
   });
   assert.equal(goodSignoff.ok, true);
 });
+
+test('contract: antitrust competition law HHI, delta HHI and merger guidelines presumption', () => {
+  const conc = calculateHhiConcentration([28, 22, 18, 12, 10, 10]);
+  assert.equal(conc.hhi, 1936);
+  assert.equal(conc.concentrationTier, 'highly_concentrated_presumption');
+
+  const lowConc = calculateHhiConcentration([15, 12, 10, 8]);
+  assert.equal(lowConc.hhi, 533);
+  assert.equal(lowConc.concentrationTier, 'unconcentrated');
+
+  const delta = calculateDeltaHhi(28, 22);
+  assert.equal(delta.deltaHhi, 1232);
+  assert.equal(delta.postMergerSharePct, 50.0);
+
+  const pres1 = evaluateHhiPresumption(1936 + 1232, 1232, 50.0);
+  assert.equal(pres1.presumptionRebuttableUnlawful, true);
+  assert.equal(pres1.concentrationTier, 'dominant_firm_threshold');
+
+  const pres2 = evaluateHhiPresumption(1900, 120, 25.0);
+  assert.equal(pres2.presumptionRebuttableUnlawful, true);
+  assert.equal(pres2.concentrationTier, 'highly_concentrated_presumption');
+
+  const pres3 = evaluateHhiPresumption(1200, 110, 18.0);
+  assert.equal(pres3.presumptionRebuttableUnlawful, false);
+  assert.equal(pres3.concentrationTier, 'moderately_concentrated');
+
+  const pres4 = evaluateHhiPresumption(800, 50, 10.0);
+  assert.equal(pres4.presumptionRebuttableUnlawful, false);
+  assert.equal(pres4.concentrationTier, 'unconcentrated');
+});
+
+test('contract: antitrust GUPPI upward pricing pressure index calculation', () => {
+  const guppiSevere = calculateGuppi(0.35, 0.28, 120, 110, 65, 70, 0, 0);
+  assert.ok(guppiSevere.maxGuppiPct >= 10.0);
+  assert.equal(guppiSevere.unilateralEffectsRiskTier, 'severe_unilateral_effects');
+
+  const guppiMod = calculateGuppi(0.12, 0.10, 100, 100, 50, 50, 0, 0);
+  assert.ok(guppiMod.maxGuppiPct >= 5.0 && guppiMod.maxGuppiPct < 10.0);
+  assert.equal(guppiMod.unilateralEffectsRiskTier, 'moderate_unilateral_risk');
+
+  const guppiLow = calculateGuppi(0.04, 0.03, 100, 100, 40, 40, 0, 0);
+  assert.ok(guppiLow.maxGuppiPct < 5.0);
+  assert.equal(guppiLow.unilateralEffectsRiskTier, 'negligible_pricing_pressure');
+});
+
+test('contract: antitrust regulatory clearance risk score and remedy defensibility index', () => {
+  const rcrs = calculateRegulatoryClearanceRiskScore({
+    postMergerHhi: 2650,
+    deltaHhi: 420,
+    maxGuppiPct: 14.5,
+    phase2FilingsCount: 2,
+    phase1FilingsCount: 1,
+    hasConflictingForeignRemedy: true,
+    customerObjectionsCount: 3,
+    competitorWhitepapersCount: 2,
+    stateAgInquiriesCount: 2,
+    custodianCount: 45,
+    dataVolumeTerabytes: 24,
+    hasCidDeposition: true
+  });
+
+  assert.ok(rcrs.score >= 75.0);
+  assert.equal(rcrs.riskBand, 'acute_antitrust_block_risk');
+  assert.ok(rcrs.breakdown.hhiRisk > 80);
+  assert.ok(rcrs.breakdown.guppiRisk > 80);
+
+  const rdiHigh = calculateRemedyDefensibilityIndex({
+    overlapMitigatedPct: 92,
+    upfrontBuyerViabilityScore: 88,
+    standaloneViabilityScore: 85,
+    cleanTeamComplianceScore: 95,
+    behavioralCommitmentsScore: 80
+  });
+  assert.ok(rdiHigh.rdi >= 75.0);
+  assert.equal(rdiHigh.isRemedyDefensible, true);
+
+  const rdiDeficient = calculateRemedyDefensibilityIndex({
+    overlapMitigatedPct: 30,
+    upfrontBuyerViabilityScore: 40,
+    standaloneViabilityScore: 45,
+    cleanTeamComplianceScore: 50,
+    behavioralCommitmentsScore: 40
+  });
+  assert.ok(rdiDeficient.rdi < 55.0);
+  assert.equal(rdiDeficient.isRemedyDefensible, false);
+});
+
+test('contract: antitrust HSR statutory assessment thresholds and filing fee tiers', () => {
+  const feeSmall = calculateHsrStatutoryFee(150000000);
+  assert.equal(feeSmall.statutoryFeeUsd, 30000);
+
+  const feeMid = calculateHsrStatutoryFee(300000000);
+  assert.equal(feeMid.statutoryFeeUsd, 250000);
+
+  const feeMega = calculateHsrStatutoryFee(6000000000);
+  assert.equal(feeMega.statutoryFeeUsd, 2335000);
+
+  const hsrAssessment = evaluateHsrStatutoryThresholds(14200000000, 850000000, 320000000);
+  assert.equal(hsrAssessment.sizeOfTransactionTestPassed, true);
+  assert.equal(hsrAssessment.sizeOfPersonTestPassed, true);
+  assert.equal(hsrAssessment.isHsrFilingRequired, true);
+  assert.equal(hsrAssessment.statutoryFilingFeeUsd, 2335000);
+  assert.equal(hsrAssessment.initialWaitingPeriodDays, 30);
+
+  const belowHsr = evaluateHsrStatutoryThresholds(80000000, 50000000, 10000000);
+  assert.equal(belowHsr.sizeOfTransactionTestPassed, false);
+  assert.equal(belowHsr.isHsrFilingRequired, false);
+  assert.equal(belowHsr.statutoryFilingFeeUsd, 0);
+});
+
+test('contract: antitrust tripartite ratification cryptographic hash computation', () => {
+  const hash1 = computeRatificationHash({
+    transactionId: 'deal-001',
+    regulatoryClearanceRiskScore: 78.4,
+    leadCounselSigner: 'Jonathan Vance, Esq.',
+    generalCounselSigner: 'Helena Sterling, Esq.',
+    chiefExecutiveOfficerSigner: 'David Vance'
+  });
+  const hash2 = computeRatificationHash({
+    transactionId: 'deal-001',
+    regulatoryClearanceRiskScore: 78.4,
+    leadCounselSigner: 'Jonathan Vance, Esq.',
+    generalCounselSigner: 'Helena Sterling, Esq.',
+    chiefExecutiveOfficerSigner: 'David Vance'
+  });
+  assert.equal(hash1, hash2);
+  assert.ok(hash1.startsWith('sha256-ratif-'));
+});
+
+test('contract: antitrust input validation functions reject invalid payloads and accept valid ones', () => {
+  const badTx = validateCreateMergerTransactionInput({ dealCodename: '' });
+  assert.equal(badTx.ok, false);
+
+  const goodTx = validateCreateMergerTransactionInput({
+    dealCodename: 'PROJECT AEGIS TITAN',
+    acquirerName: 'Nexus Tech Global Inc.',
+    targetName: 'Apex Enterprise Software Corp.',
+    enterpriseValueUsd: 14200000000,
+    cashConsiderationUsd: 10000000000,
+    stockConsiderationUsd: 4200000000,
+    announcedDate: '2026-09-15',
+    targetedClosingDate: '2027-06-30',
+    dealStructureType: 'horizontal_merger'
+  });
+  assert.equal(goodTx.ok, true);
+
+  const badMkt = validateDefineMarketInput({ marketName: '' });
+  assert.equal(badMkt.ok, false);
+
+  const goodMkt = validateDefineMarketInput({
+    transactionId: 'deal-001',
+    marketName: 'Global Cloud Enterprise HCM Platforms',
+    productMarketDefinition: 'Mission-critical human capital management software',
+    geographicMarketScope: 'Worldwide / North America & EEA',
+    totalMarketSizeUsd: 28000000000,
+    participantShares: [
+      { participantName: 'Nexus Tech', isMergingParty: true, isAcquirer: true, isTarget: false, annualRevenueUsd: 7840000000, marketSharePct: 28 },
+      { participantName: 'Apex Software', isMergingParty: true, isAcquirer: false, isTarget: true, annualRevenueUsd: 6160000000, marketSharePct: 22 },
+      { participantName: 'Competitor Alpha', isMergingParty: false, isAcquirer: false, isTarget: false, annualRevenueUsd: 5040000000, marketSharePct: 18 }
+    ]
+  });
+  assert.equal(goodMkt.ok, true);
+
+  const badRemedy = validateProposeDivestiturePackageInput({ packageName: '' });
+  assert.equal(badRemedy.ok, false);
+
+  const goodRemedy = validateProposeDivestiturePackageInput({
+    transactionId: 'deal-001',
+    packageName: 'Apex Talent Suite Standalone Carve-Out',
+    remedyType: 'fix_it_first_buyer_sale',
+    carveoutBusinessUnit: 'Apex Talent Acquisition & ATS Division',
+    carveoutRevenueUsd: 1850000000,
+    carveoutEbitdaUsd: 410000000,
+    upfrontBuyerName: 'Vista Sovereign Equity Partners',
+    assetOverlapMitigatedPct: 92.5
+  });
+  assert.equal(goodRemedy.ok, true);
+
+  const badSignoff = validateSubmitAntitrustSignoffInput({});
+  assert.equal(badSignoff.ok, false);
+
+  const goodSignoff = validateSubmitAntitrustSignoffInput({
+    transactionId: 'deal-001',
+    role: 'antitrust_lead_counsel',
+    signerName: 'Jonathan Vance, Esq.',
+    statementAcknowledged: 'Antitrust defense strategy and HSR Item 4(c)/4(d) filing vetted under 15 U.S.C. Section 18a.'
+  });
+  assert.equal(goodSignoff.ok, true);
+});
+
 
 
 
