@@ -542,7 +542,17 @@ import {
   validateCreateHoldingStatementInput,
   validateRecordVerifiedFactInput,
   validateRecordQaBridgeItemInput,
-  validateSubmitTripartiteSignoffInput
+  validateSubmitTripartiteSignoffInput,
+  calculateWolfpackCoordinationIndex,
+  calculateActivistVulnerabilityScore,
+  calculatePoisonPillDilution,
+  simulateUniversalProxyContest,
+  calculateSettleVsFightValue,
+  validateCreateActivistCampaignInput,
+  validateRegisterWolfpackAccumulationInput,
+  validateDeployRightsPlanInput,
+  validateRecordNomineeComparisonInput,
+  validateSubmitActivismSignoffInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -10316,6 +10326,118 @@ test('contract: strategic-comms-crisis-nexus input validators enforce schemas an
     role: 'chief_legal_officer',
     signerName: 'Sarah Jenkins, Esq.',
     legalComments: 'Reviewed for PSLRA Safe Harbor compliance and Reg FD non-selectivity.'
+  });
+  assert.equal(goodSignoff.ok, true);
+});
+
+test('contract: shareholder activism defense algorithms and input validators', () => {
+  const emptyWci = calculateWolfpackCoordinationIndex([], 30);
+  assert.equal(emptyWci, 0.0);
+
+  const activeWci = calculateWolfpackCoordinationIndex(
+    [
+      { ownershipPercentage: 4.8, derivativeExposurePercentage: 2.2, coordinationCorrelationScore: 85 },
+      { ownershipPercentage: 3.5, derivativeExposurePercentage: 1.5, coordinationCorrelationScore: 78 },
+      { ownershipPercentage: 2.1, derivativeExposurePercentage: 0.9, coordinationCorrelationScore: 65 }
+    ],
+    20
+  );
+  assert.ok(activeWci > 20.0);
+  assert.ok(activeWci <= 100.0);
+
+  const lowVuln = calculateActivistVulnerabilityScore(20, 15, 25, 30, 20);
+  assert.equal(lowVuln.vulnerabilityRiskBand, 'low_vulnerability');
+  assert.ok(lowVuln.compositeVulnerabilityScore < 40.0);
+
+  const acuteVuln = calculateActivistVulnerabilityScore(88, 92, 85, 75, 70);
+  assert.equal(acuteVuln.vulnerabilityRiskBand, 'acute_vulnerability_crisis');
+  assert.ok(acuteVuln.compositeVulnerabilityScore >= 75.0);
+
+  const pillOutcome = calculatePoisonPillDilution(100000000, 15.0, 100, 50, 50);
+  assert.ok(pillOutcome.postDilutionAcquirerPct < 15.0);
+  assert.ok(pillOutcome.dilutionFactor > 1.5);
+  assert.ok(pillOutcome.economicDeterrenceEffect.includes('Dilution'));
+
+  const cohorts = [
+    { votingPowerPercentage: 22.0, historicalManagementSupportRate: 85.0, issAlignmentProbability: 90.0, glassLewisAlignmentProbability: 85.0 },
+    { votingPowerPercentage: 35.0, historicalManagementSupportRate: 55.0, issAlignmentProbability: 60.0, glassLewisAlignmentProbability: 65.0 },
+    { votingPowerPercentage: 9.5, historicalManagementSupportRate: 0.0, issAlignmentProbability: 10.0, glassLewisAlignmentProbability: 10.0 },
+    { votingPowerPercentage: 12.0, historicalManagementSupportRate: 98.0, issAlignmentProbability: 5.0, glassLewisAlignmentProbability: 5.0 }
+  ];
+
+  const contestSimMgmt = simulateUniversalProxyContest(cohorts, 'support_management_slate', 'support_management_slate', 3);
+  assert.ok(contestSimMgmt.managementWinProbability > 50.0);
+  assert.ok(contestSimMgmt.projectedDissidentSeatsWon <= 1);
+
+  const contestSimDiss = simulateUniversalProxyContest(cohorts, 'support_dissident_slate', 'support_dissident_slate', 3);
+  assert.ok(contestSimDiss.dissidentWinProbability > 40.0);
+
+  const settleVsFight = calculateSettleVsFightValue(3.5, -2.0, 28500000000, 20000000);
+  assert.ok(settleVsFight.netAdvantageUsd > 0);
+  assert.equal(settleVsFight.recommendedCourse, 'execute_standstill_settlement');
+
+  const badCampaign = validateCreateActivistCampaignInput({});
+  assert.equal(badCampaign.ok, false);
+  const goodCampaign = validateCreateActivistCampaignInput({
+    activistFundName: 'Vanguard Alpha Capital Management',
+    leadPartnerName: 'Julian Sterling',
+    campaignPhase: 'schedule_13d_disclosure',
+    threatTier: 'tier_1_hostile_wolfpack',
+    primaryDemand: 'board_representation_seats',
+    sharesHeldCount: 7850000,
+    percentageOwnership: 7.85,
+    syntheticSwapPercentage: 2.15,
+    schedule13dFilingDate: '2026-10-15',
+    demandSummary: 'Seeking 3 board seats and strategic review of non-core cloud hosting unit'
+  });
+  assert.equal(goodCampaign.ok, true);
+
+  const badWolfpack = validateRegisterWolfpackAccumulationInput({});
+  assert.equal(badWolfpack.ok, false);
+  const goodWolfpack = validateRegisterWolfpackAccumulationInput({
+    campaignId: 'camp-123',
+    fundName: 'Apex Arbitrage Partners',
+    ownershipPercentage: 3.4,
+    derivativeExposurePercentage: 1.2,
+    accumulationVelocitySharesPerDay: 45000,
+    coordinationCorrelationScore: 82,
+    schedule13dCrossDate: '2026-10-18'
+  });
+  assert.equal(goodWolfpack.ok, true);
+
+  const badPill = validateDeployRightsPlanInput({ flipInThresholdPercentage: 3 });
+  assert.equal(badPill.ok, false);
+  const goodPill = validateDeployRightsPlanInput({
+    planName: '2026 Shareholder Rights Plan',
+    flipInThresholdPercentage: 15.0,
+    exercisePriceUsd: 120.0,
+    discountPercentage: 50.0,
+    expirationDate: '2027-10-24'
+  });
+  assert.equal(goodPill.ok, true);
+
+  const badNominee = validateRecordNomineeComparisonInput({});
+  assert.equal(badNominee.ok, false);
+  const goodNominee = validateRecordNomineeComparisonInput({
+    seatNumber: 1,
+    incumbentName: 'Dr. Arthur Pendelton',
+    incumbentYearsServed: 8,
+    incumbentCommitteeRoles: 'Audit Chair',
+    incumbentSkills: 'Financial Expert',
+    dissidentName: 'Marcus Bennett',
+    dissidentAffiliation: 'Vanguard Alpha',
+    dissidentExpertise: 'Activist Turnaround Specialist',
+    proxyAdvisorRecommendedSlate: 'split'
+  });
+  assert.equal(goodNominee.ok, true);
+
+  const badSignoff = validateSubmitActivismSignoffInput({});
+  assert.equal(badSignoff.ok, false);
+  const goodSignoff = validateSubmitActivismSignoffInput({
+    campaignId: 'camp-123',
+    role: 'lead_independent_director',
+    signerName: 'Margaret Holloway',
+    statementAcknowledged: 'Fiduciary defense review authorized under Delaware DGCL Section 141'
   });
   assert.equal(goodSignoff.ok, true);
 });

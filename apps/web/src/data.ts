@@ -643,7 +643,32 @@ import {
   calculateViralPropagationVector,
   calculateBrandReputationResilienceIndex,
   compileOmnichannelHoldingStatement,
-  evaluateQaBridgeTransition
+  evaluateQaBridgeTransition,
+  type TargetCorporation,
+  type ActivistCampaign,
+  type WolfpackAccumulation,
+  type StrategicVulnerabilityAudit,
+  type BusinessSegmentSotp,
+  type InstitutionalCohort,
+  type ProxyAdvisorEvaluation,
+  type ShareholderRightsPlan,
+  type DirectorSlateNominee,
+  type DefenseSettlementScenario,
+  type UniversalProxyContest,
+  type ActivismTripartiteSignoffRecord,
+  type ActivismEventLog,
+  type ShareholderActivismOverview,
+  type CreateActivistCampaignInput,
+  type RegisterWolfpackAccumulationInput,
+  type DeployRightsPlanInput,
+  type RecordNomineeComparisonInput,
+  type SubmitActivismSignoffInput,
+  type ActivismTripartiteSignoffRole,
+  calculateWolfpackCoordinationIndex,
+  calculateActivistVulnerabilityScore,
+  calculatePoisonPillDilution,
+  simulateUniversalProxyContest,
+  calculateSettleVsFightValue
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -22493,6 +22518,754 @@ export const strategicCommsNexusRepository = {
     return signoff;
   }
 };
+
+interface DemoShareholderActivismStore {
+  overview: ShareholderActivismOverview;
+}
+
+function createDefaultDemoShareholderActivismStore(): DemoShareholderActivismStore {
+  const targetCorporation: TargetCorporation = {
+    id: 'corp-titan-001',
+    ticker: 'TGT',
+    companyName: 'Titan Global Technologies Inc.',
+    marketCapUsd: 28500000000,
+    sharesOutstanding: 100000000,
+    enterpriseValueUsd: 32400000000,
+    stateOfIncorporation: 'Delaware',
+    isDelawareCorp: true,
+    hasClassifiedBoard: false,
+    hasPoisonPillInPlace: false,
+    insiderOwnershipPct: 4.8,
+    floatPercentage: 95.2
+  };
+
+  const primaryCampaign: ActivistCampaign = {
+    id: 'camp-vanguard-alpha-001',
+    corporationId: 'corp-titan-001',
+    activistFundName: 'Vanguard Alpha Capital Management',
+    leadPartnerName: 'Julian Sterling',
+    campaignPhase: 'schedule_13d_disclosure',
+    threatTier: 'tier_1_hostile_wolfpack',
+    primaryDemand: 'board_representation_seats',
+    sharesHeldCount: 7850000,
+    percentageOwnership: 7.85,
+    syntheticSwapPercentage: 2.15,
+    effectiveEconomicExposure: 10.00,
+    schedule13dFilingDate: '2026-10-15',
+    demandSummary: 'Activist demands 3 board seats, immediate spin-off of legacy Enterprise Hosting division, and $2.5B share buyback authorization.',
+    estimatedCampaignBudgetUsd: 18000000,
+    createdAt: '2026-10-15T09:00:00Z',
+    updatedAt: '2026-10-24T14:30:00Z'
+  };
+
+  const wolfpackAccumulations: WolfpackAccumulation[] = [
+    {
+      id: 'wolf-01',
+      campaignId: 'camp-vanguard-alpha-001',
+      fundName: 'Vanguard Alpha Master Fund LP',
+      ownershipPercentage: 4.85,
+      derivativeExposurePercentage: 1.50,
+      accumulationVelocitySharesPerDay: 75000,
+      coordinationCorrelationScore: 92,
+      schedule13dCrossDate: '2026-10-12',
+      filingDeadlineDate: '2026-10-17',
+      isWithin5DayStatutoryWindow: true
+    },
+    {
+      id: 'wolf-02',
+      campaignId: 'camp-vanguard-alpha-001',
+      fundName: 'Apex Arbitrage Offshore Ltd',
+      ownershipPercentage: 3.00,
+      derivativeExposurePercentage: 0.65,
+      accumulationVelocitySharesPerDay: 42000,
+      coordinationCorrelationScore: 84,
+      schedule13dCrossDate: '2026-10-14',
+      filingDeadlineDate: '2026-10-19',
+      isWithin5DayStatutoryWindow: true
+    },
+    {
+      id: 'wolf-03',
+      campaignId: 'camp-vanguard-alpha-001',
+      fundName: 'Cerberus Event-Driven Partners',
+      ownershipPercentage: 1.80,
+      derivativeExposurePercentage: 0.00,
+      accumulationVelocitySharesPerDay: 28000,
+      coordinationCorrelationScore: 76,
+      schedule13dCrossDate: '2026-10-15',
+      filingDeadlineDate: '2026-10-20',
+      isWithin5DayStatutoryWindow: true
+    }
+  ];
+
+  const wolfpackCoordinationIndex = calculateWolfpackCoordinationIndex(wolfpackAccumulations, 30);
+
+  const vulnerabilityAudit: StrategicVulnerabilityAudit = {
+    id: 'audit-001',
+    corporationId: 'corp-titan-001',
+    auditDate: '2026-10-20',
+    tsrUnderperformanceScore: 72.5,
+    roicWaccDeficitScore: 68.0,
+    sotpConglomerateDiscountScore: 81.0,
+    governanceVulnerabilityScore: 55.0,
+    capitalReturnDeficitScore: 62.0,
+    compositeVulnerabilityScore: 69.45,
+    vulnerabilityRiskBand: 'elevated_activist_target',
+    keyVulnerabilities: [
+      '3-Year TSR trailing peer median by -34.2%',
+      'ROIC (7.4%) currently lagging WACC (8.8%) generating negative EVA',
+      'Estimated 28.5% conglomerate discount across SaaS and Hosting divisions',
+      'De-staggered board allows full slate replacement in single proxy cycle',
+      'Substantial uncommitted cash balance ($3.2B) without active buyback program'
+    ]
+  };
+
+  const sotpSegments: BusinessSegmentSotp[] = [
+    {
+      id: 'sotp-01',
+      corporationId: 'corp-titan-001',
+      segmentName: 'Titan Cloud SaaS Platform',
+      revenueUsd: 2400000000,
+      ebitdaUsd: 720000000,
+      peerMultiple: 18.5,
+      impliedSegmentValueUsd: 13320000000,
+      activistTargetValueUsd: 16000000000,
+      valueUnlockingPotentialUsd: 2680000000
+    },
+    {
+      id: 'sotp-02',
+      corporationId: 'corp-titan-001',
+      segmentName: 'Enterprise Cybersecurity Suite',
+      revenueUsd: 1600000000,
+      ebitdaUsd: 480000000,
+      peerMultiple: 14.0,
+      impliedSegmentValueUsd: 6720000000,
+      activistTargetValueUsd: 8500000000,
+      valueUnlockingPotentialUsd: 1780000000
+    },
+    {
+      id: 'sotp-03',
+      corporationId: 'corp-titan-001',
+      segmentName: 'Legacy Managed Infrastructure',
+      revenueUsd: 1800000000,
+      ebitdaUsd: 360000000,
+      peerMultiple: 6.5,
+      impliedSegmentValueUsd: 2340000000,
+      activistTargetValueUsd: 3200000000,
+      valueUnlockingPotentialUsd: 860000000
+    },
+    {
+      id: 'sotp-04',
+      corporationId: 'corp-titan-001',
+      segmentName: 'AI Orchestration & Data Fabric',
+      revenueUsd: 850000000,
+      ebitdaUsd: 210000000,
+      peerMultiple: 22.0,
+      impliedSegmentValueUsd: 4620000000,
+      activistTargetValueUsd: 6500000000,
+      valueUnlockingPotentialUsd: 1880000000
+    }
+  ];
+
+  const institutionalCohorts: InstitutionalCohort[] = [
+    {
+      id: 'inst-01',
+      institutionName: 'BlackRock Institutional Trust',
+      cohortCategory: 'passive_index',
+      sharesHeld: 9200000,
+      votingPowerPercentage: 9.2,
+      historicalManagementSupportRate: 88.0,
+      historicalDissidentSupportRate: 12.0,
+      issAlignmentProbability: 92.0,
+      glassLewisAlignmentProbability: 85.0,
+      engagementStatus: 'supportive',
+      lastEngagementDate: '2026-10-18'
+    },
+    {
+      id: 'inst-02',
+      institutionName: 'The Vanguard Group',
+      cohortCategory: 'passive_index',
+      sharesHeld: 8800000,
+      votingPowerPercentage: 8.8,
+      historicalManagementSupportRate: 91.0,
+      historicalDissidentSupportRate: 9.0,
+      issAlignmentProbability: 95.0,
+      glassLewisAlignmentProbability: 89.0,
+      engagementStatus: 'supportive',
+      lastEngagementDate: '2026-10-17'
+    },
+    {
+      id: 'inst-03',
+      institutionName: 'State Street Global Advisors',
+      cohortCategory: 'passive_index',
+      sharesHeld: 5400000,
+      votingPowerPercentage: 5.4,
+      historicalManagementSupportRate: 85.0,
+      historicalDissidentSupportRate: 15.0,
+      issAlignmentProbability: 89.0,
+      glassLewisAlignmentProbability: 84.0,
+      engagementStatus: 'supportive',
+      lastEngagementDate: '2026-10-19'
+    },
+    {
+      id: 'inst-04',
+      institutionName: 'Fidelity Management & Research',
+      cohortCategory: 'active_fundamental',
+      sharesHeld: 6100000,
+      votingPowerPercentage: 6.1,
+      historicalManagementSupportRate: 62.0,
+      historicalDissidentSupportRate: 38.0,
+      issAlignmentProbability: 72.0,
+      glassLewisAlignmentProbability: 68.0,
+      engagementStatus: 'undecided',
+      lastEngagementDate: '2026-10-20'
+    },
+    {
+      id: 'inst-05',
+      institutionName: 'T. Rowe Price Associates',
+      cohortCategory: 'active_fundamental',
+      sharesHeld: 4500000,
+      votingPowerPercentage: 4.5,
+      historicalManagementSupportRate: 58.0,
+      historicalDissidentSupportRate: 42.0,
+      issAlignmentProbability: 70.0,
+      glassLewisAlignmentProbability: 74.0,
+      engagementStatus: 'undecided',
+      lastEngagementDate: '2026-10-21'
+    },
+    {
+      id: 'inst-06',
+      institutionName: 'Wellington Management Company',
+      cohortCategory: 'active_fundamental',
+      sharesHeld: 3900000,
+      votingPowerPercentage: 3.9,
+      historicalManagementSupportRate: 54.0,
+      historicalDissidentSupportRate: 46.0,
+      issAlignmentProbability: 65.0,
+      glassLewisAlignmentProbability: 62.0,
+      engagementStatus: 'leaning_dissident',
+      lastEngagementDate: '2026-10-22'
+    },
+    {
+      id: 'inst-07',
+      institutionName: 'Vanguard Alpha Activist Syndicate',
+      cohortCategory: 'activist_syndicate',
+      sharesHeld: 9650000,
+      votingPowerPercentage: 9.65,
+      historicalManagementSupportRate: 0.0,
+      historicalDissidentSupportRate: 100.0,
+      issAlignmentProbability: 15.0,
+      glassLewisAlignmentProbability: 12.0,
+      engagementStatus: 'hostile',
+      lastEngagementDate: '2026-10-15'
+    },
+    {
+      id: 'inst-08',
+      institutionName: 'Board of Directors & Officers',
+      cohortCategory: 'insider_executive',
+      sharesHeld: 4800000,
+      votingPowerPercentage: 4.8,
+      historicalManagementSupportRate: 100.0,
+      historicalDissidentSupportRate: 0.0,
+      issAlignmentProbability: 5.0,
+      glassLewisAlignmentProbability: 5.0,
+      engagementStatus: 'supportive',
+      lastEngagementDate: '2026-10-22'
+    },
+    {
+      id: 'inst-09',
+      institutionName: 'Broad Retail Investor Base',
+      cohortCategory: 'retail_public',
+      sharesHeld: 47650000,
+      votingPowerPercentage: 47.65,
+      historicalManagementSupportRate: 76.0,
+      historicalDissidentSupportRate: 24.0,
+      issAlignmentProbability: 30.0,
+      glassLewisAlignmentProbability: 25.0,
+      engagementStatus: 'undecided',
+      lastEngagementDate: '2026-10-22'
+    }
+  ];
+
+  const proxyAdvisorEvaluations: ProxyAdvisorEvaluation[] = [
+    {
+      id: 'pa-01',
+      advisorName: 'ISS',
+      policyStandard: 'Benchmark US Policy Contested Elections',
+      contestedElectionRecommendation: 'split_ticket_compromise',
+      sayOnPayRecommendation: 'for',
+      governanceQualityScore: 4.2,
+      flagsList: [
+        'TSR underperformance relative to GICS peers',
+        'Compensation alignment acceptable',
+        'Recommend 1 dissident seat (operational expertise)'
+      ],
+      rationalesSummary: 'ISS acknowledges persistent multi-year operational margin lag in Legacy Infrastructure, supporting 1 of 3 dissident nominees to catalyze board accountability while retaining incumbent strategy continuity.'
+    },
+    {
+      id: 'pa-02',
+      advisorName: 'Glass_Lewis',
+      policyStandard: 'US Benchmark Policy Contested Solicitations',
+      contestedElectionRecommendation: 'support_management_slate',
+      sayOnPayRecommendation: 'for',
+      governanceQualityScore: 3.8,
+      flagsList: [
+        'Active management refresh in progress',
+        'Dissident demands risk destabilizing cloud migration',
+        'Oppose activist break-up thesis'
+      ],
+      rationalesSummary: 'Glass Lewis finds management turnaround plan credibly underway with cloud SaaS margin expansion and opposes forced divestitures under hostile timelines.'
+    }
+  ];
+
+  const rightsPlan: ShareholderRightsPlan = {
+    id: 'pill-001',
+    corporationId: 'corp-titan-001',
+    planName: 'Titan Global Technologies 2026 Shareholder Rights Plan',
+    status: 'shelf_ready',
+    flipInThresholdPercentage: 15.0,
+    exercisePriceUsd: 120.0,
+    rightsPerShare: 1.0,
+    discountPercentage: 50.0,
+    expirationDate: '2027-10-24',
+    redemptionPricePerRightUsd: 0.001,
+    judicialScrutinyStandard: 'Unocal_two_prong_proportionality'
+  };
+
+  const directorNominees: DirectorSlateNominee[] = [
+    {
+      id: 'nom-01',
+      seatNumber: 1,
+      incumbentName: 'Dr. Arthur Pendelton',
+      incumbentYearsServed: 8,
+      incumbentCommitteeRoles: 'Audit Committee Chair',
+      incumbentSkills: 'Former Fortune 50 CFO, Financial Expert, SEC Audit Authority',
+      dissidentName: 'Marcus Bennett',
+      dissidentAffiliation: 'Vanguard Alpha Operating Partner',
+      dissidentExpertise: 'Activist Turnaround Specialist, Supply Chain Restructuring',
+      proxyAdvisorRecommendedSlate: 'split'
+    },
+    {
+      id: 'nom-02',
+      seatNumber: 2,
+      incumbentName: 'Elena Rostova',
+      incumbentYearsServed: 5,
+      incumbentCommitteeRoles: 'Compensation Committee Member',
+      incumbentSkills: 'Enterprise SaaS Scaling, Product Strategy & AI Integration',
+      dissidentName: 'Claire Henderson',
+      dissidentAffiliation: 'Former CEO of CloudScale',
+      dissidentExpertise: 'Cloud Infrastructure Cost Optimization, Spin-off Architect',
+      proxyAdvisorRecommendedSlate: 'incumbent'
+    },
+    {
+      id: 'nom-03',
+      seatNumber: 3,
+      incumbentName: 'David Montgomery',
+      incumbentYearsServed: 11,
+      incumbentCommitteeRoles: 'Nominating & Governance Chair',
+      incumbentSkills: 'Corporate Governance, M&A Antitrust Legal Expert',
+      dissidentName: 'Victor Vance',
+      dissidentAffiliation: 'Managing Director Apex Arbitrage',
+      dissidentExpertise: 'Hostile Capital Allocation, Leveraged Buyouts & Activism',
+      proxyAdvisorRecommendedSlate: 'incumbent'
+    }
+  ];
+
+  const settlementScenarios: DefenseSettlementScenario[] = [
+    {
+      id: 'sett-01',
+      campaignId: 'camp-vanguard-alpha-001',
+      scenarioTitle: 'Scenario A: Standstill Agreement with 1 Mutually Agreed Seat',
+      proposedBoardSeats: 1,
+      standstillDurationMonths: 18,
+      expenseReimbursementUsd: 2500000,
+      projectedStockImpactPct: 3.8,
+      settleNetEnterpriseValueUsd: 33631200000,
+      fightNetEnterpriseValueUsd: 31920000000,
+      recommendationVerdict: 'execute_standstill_settlement'
+    },
+    {
+      id: 'sett-02',
+      campaignId: 'camp-vanguard-alpha-001',
+      scenarioTitle: 'Scenario B: Full Proxy Contest Defense to Shareholder Vote',
+      proposedBoardSeats: 0,
+      standstillDurationMonths: 0,
+      expenseReimbursementUsd: 0,
+      projectedStockImpactPct: -1.5,
+      settleNetEnterpriseValueUsd: 31905000000,
+      fightNetEnterpriseValueUsd: 31905000000,
+      recommendationVerdict: 'wage_proxy_contest_defense'
+    },
+    {
+      id: 'sett-03',
+      campaignId: 'camp-vanguard-alpha-001',
+      scenarioTitle: 'Scenario C: Strategic Review Committee with 2 Activist Observers',
+      proposedBoardSeats: 2,
+      standstillDurationMonths: 24,
+      expenseReimbursementUsd: 4000000,
+      projectedStockImpactPct: 4.2,
+      settleNetEnterpriseValueUsd: 33760800000,
+      fightNetEnterpriseValueUsd: 31920000000,
+      recommendationVerdict: 'hybrid_governance_compromise'
+    }
+  ];
+
+  const proxyContest: UniversalProxyContest = {
+    id: 'upc-001',
+    campaignId: 'camp-vanguard-alpha-001',
+    annualMeetingDate: '2026-11-20',
+    recordDate: '2026-09-25',
+    universalProxyCertified: true,
+    managementVotesProjected: 56.40,
+    dissidentVotesProjected: 31.25,
+    undecidedVotesProjected: 12.35,
+    managementWinProbability: 64.3,
+    dissidentWinProbability: 35.7,
+    projectedDissidentSeatsWon: 1
+  };
+
+  const tripartiteSignoff: ActivismTripartiteSignoffRecord = {
+    id: 'sign-001',
+    campaignId: 'camp-vanguard-alpha-001',
+    defensePlanTitle: 'Project Aegis: 2026 Shareholder Activism Defense & Governance Charter',
+    leadDirectorSignoff: { isSigned: false },
+    governanceChairSignoff: { isSigned: false },
+    boardChairCeoSignoff: { isSigned: false },
+    isFullyRatified: false,
+    cryptographicIntegrityHash: '0x8f4c2e91a0b3d674e195cf28a7d1e345b98f21cd60e5432ab1947e0983bf128a'
+  };
+
+  const eventLogs: ActivismEventLog[] = [
+    {
+      id: 'log-01',
+      campaignId: 'camp-vanguard-alpha-001',
+      eventTimestamp: '2026-10-15T09:15:00Z',
+      eventCategory: 'filing',
+      headline: 'Schedule 13D Initial Filing Disclosed',
+      details: 'Vanguard Alpha crossed 5.0% threshold, reporting 7.85% beneficial ownership.',
+      severity: 'high'
+    },
+    {
+      id: 'log-02',
+      campaignId: 'camp-vanguard-alpha-001',
+      eventTimestamp: '2026-10-16T11:30:00Z',
+      eventCategory: 'surveillance',
+      headline: 'Synthetic Derivative Exposure Detected',
+      details: 'Prime broker desk reported 2.15% equity swaps linked to Vanguard Alpha accounts.',
+      severity: 'medium'
+    },
+    {
+      id: 'log-03',
+      campaignId: 'camp-vanguard-alpha-001',
+      eventTimestamp: '2026-10-18T14:00:00Z',
+      eventCategory: 'proxy_advisory',
+      headline: 'ISS Benchmark Contested Report Published',
+      details: 'ISS recommended split-ticket vote supporting 1 dissident nominee.',
+      severity: 'high'
+    },
+    {
+      id: 'log-04',
+      campaignId: 'camp-vanguard-alpha-001',
+      eventTimestamp: '2026-10-20T16:45:00Z',
+      eventCategory: 'defense_action',
+      headline: 'Shelf-Ready Shareholder Rights Plan Pre-Approved',
+      details: 'Board governance committee drafted 15% flip-in pill under Unocal standard.',
+      severity: 'medium'
+    }
+  ];
+
+  return {
+    overview: {
+      targetCorporation,
+      primaryCampaign,
+      wolfpackAccumulations,
+      wolfpackCoordinationIndex,
+      vulnerabilityAudit,
+      sotpSegments,
+      institutionalCohorts,
+      proxyAdvisorEvaluations,
+      rightsPlan,
+      directorNominees,
+      settlementScenarios,
+      proxyContest,
+      tripartiteSignoff,
+      eventLogs
+    }
+  };
+}
+
+const DEMO_ACTIVISM_STORAGE_KEY = 'jobtrack_demo_shareholder_activism_store';
+
+function loadDemoShareholderActivismStore(): DemoShareholderActivismStore {
+  try {
+    const raw = localStorage.getItem(DEMO_ACTIVISM_STORAGE_KEY);
+    if (!raw) {
+      const s = createDefaultDemoShareholderActivismStore();
+      saveDemoShareholderActivismStore(s);
+      return s;
+    }
+    return JSON.parse(raw);
+  } catch {
+    const s = createDefaultDemoShareholderActivismStore();
+    saveDemoShareholderActivismStore(s);
+    return s;
+  }
+}
+
+function saveDemoShareholderActivismStore(store: DemoShareholderActivismStore): void {
+  try {
+    localStorage.setItem(DEMO_ACTIVISM_STORAGE_KEY, JSON.stringify(store));
+  } catch {}
+}
+
+export const shareholderActivismNexusRepository = {
+  async getOverview(): Promise<ShareholderActivismOverview> {
+    if (demoMode) {
+      return loadDemoShareholderActivismStore().overview;
+    }
+    try {
+      return await request<ShareholderActivismOverview>('/activism/overview');
+    } catch {
+      return loadDemoShareholderActivismStore().overview;
+    }
+  },
+
+  async createCampaign(input: CreateActivistCampaignInput): Promise<ActivistCampaign> {
+    if (!demoMode) {
+      try {
+        return await request<ActivistCampaign>('/activism/campaigns', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoShareholderActivismStore();
+    const newCamp: ActivistCampaign = {
+      id: 'camp-' + Math.floor(1000 + Math.random() * 9000),
+      corporationId: store.overview.targetCorporation.id,
+      activistFundName: input.activistFundName,
+      leadPartnerName: input.leadPartnerName,
+      campaignPhase: input.campaignPhase,
+      threatTier: input.threatTier,
+      primaryDemand: input.primaryDemand,
+      sharesHeldCount: input.sharesHeldCount,
+      percentageOwnership: input.percentageOwnership,
+      syntheticSwapPercentage: input.syntheticSwapPercentage || 0,
+      effectiveEconomicExposure: input.percentageOwnership + (input.syntheticSwapPercentage || 0),
+      schedule13dFilingDate: input.schedule13dFilingDate,
+      demandSummary: input.demandSummary,
+      estimatedCampaignBudgetUsd: input.estimatedCampaignBudgetUsd || 15000000,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    store.overview.primaryCampaign = newCamp;
+    store.overview.eventLogs.unshift({
+      id: 'log-' + Math.floor(1000 + Math.random() * 9000),
+      campaignId: newCamp.id,
+      eventTimestamp: new Date().toISOString(),
+      eventCategory: 'filing',
+      headline: `Activist Campaign Disclosed: ${input.activistFundName}`,
+      details: `${input.leadPartnerName} initiated campaign targeting ${input.primaryDemand}.`,
+      severity: 'high'
+    });
+
+    saveDemoShareholderActivismStore(store);
+    return newCamp;
+  },
+
+  async registerWolfpackAccumulation(input: RegisterWolfpackAccumulationInput): Promise<WolfpackAccumulation> {
+    if (!demoMode) {
+      try {
+        return await request<WolfpackAccumulation>('/activism/wolfpack', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoShareholderActivismStore();
+    const crossDate = new Date(input.schedule13dCrossDate);
+    const deadlineDate = new Date(crossDate.getTime() + 5 * 24 * 60 * 60 * 1000);
+
+    const newWolf: WolfpackAccumulation = {
+      id: 'wolf-' + Math.floor(1000 + Math.random() * 9000),
+      campaignId: input.campaignId,
+      fundName: input.fundName,
+      ownershipPercentage: input.ownershipPercentage,
+      derivativeExposurePercentage: input.derivativeExposurePercentage,
+      accumulationVelocitySharesPerDay: input.accumulationVelocitySharesPerDay,
+      coordinationCorrelationScore: input.coordinationCorrelationScore,
+      schedule13dCrossDate: input.schedule13dCrossDate,
+      filingDeadlineDate: deadlineDate.toISOString().split('T')[0],
+      isWithin5DayStatutoryWindow: true
+    };
+
+    store.overview.wolfpackAccumulations.unshift(newWolf);
+    store.overview.wolfpackCoordinationIndex = calculateWolfpackCoordinationIndex(store.overview.wolfpackAccumulations, 30);
+
+    store.overview.eventLogs.unshift({
+      id: 'log-' + Math.floor(1000 + Math.random() * 9000),
+      campaignId: input.campaignId,
+      eventTimestamp: new Date().toISOString(),
+      eventCategory: 'surveillance',
+      headline: `Wolfpack Accumulation: ${input.fundName}`,
+      details: `Disclosed ${input.ownershipPercentage}% direct equity and ${input.derivativeExposurePercentage}% derivatives.`,
+      severity: 'medium'
+    });
+
+    saveDemoShareholderActivismStore(store);
+    return newWolf;
+  },
+
+  async deployRightsPlan(input: DeployRightsPlanInput): Promise<ShareholderRightsPlan> {
+    if (!demoMode) {
+      try {
+        return await request<ShareholderRightsPlan>('/activism/rights-plan', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoShareholderActivismStore();
+    const updatedPlan: ShareholderRightsPlan = {
+      ...store.overview.rightsPlan,
+      planName: input.planName,
+      status: 'active_in_place',
+      flipInThresholdPercentage: input.flipInThresholdPercentage,
+      exercisePriceUsd: input.exercisePriceUsd,
+      discountPercentage: input.discountPercentage,
+      expirationDate: input.expirationDate
+    };
+
+    store.overview.rightsPlan = updatedPlan;
+    store.overview.targetCorporation.hasPoisonPillInPlace = true;
+
+    store.overview.eventLogs.unshift({
+      id: 'log-' + Math.floor(1000 + Math.random() * 9000),
+      campaignId: store.overview.primaryCampaign.id,
+      eventTimestamp: new Date().toISOString(),
+      eventCategory: 'defense_action',
+      headline: `Shareholder Rights Plan Activated (${input.flipInThresholdPercentage}% Flip-In)`,
+      details: `${input.planName} deployed with 50% exercise discount under Unocal defense framework.`,
+      severity: 'high'
+    });
+
+    saveDemoShareholderActivismStore(store);
+    return updatedPlan;
+  },
+
+  async recordNomineeComparison(input: RecordNomineeComparisonInput): Promise<DirectorSlateNominee> {
+    if (!demoMode) {
+      try {
+        return await request<DirectorSlateNominee>('/activism/nominees', {
+          method: 'POST',
+          body: JSON.stringify(input)
+        });
+      } catch {}
+    }
+
+    const store = loadDemoShareholderActivismStore();
+    const newNominee: DirectorSlateNominee = {
+      id: 'nom-' + Math.floor(1000 + Math.random() * 9000),
+      seatNumber: input.seatNumber,
+      incumbentName: input.incumbentName,
+      incumbentYearsServed: input.incumbentYearsServed,
+      incumbentCommitteeRoles: input.incumbentCommitteeRoles,
+      incumbentSkills: input.incumbentSkills,
+      dissidentName: input.dissidentName,
+      dissidentAffiliation: input.dissidentAffiliation,
+      dissidentExpertise: input.dissidentExpertise,
+      proxyAdvisorRecommendedSlate: input.proxyAdvisorRecommendedSlate
+    };
+
+    store.overview.directorNominees.push(newNominee);
+    store.overview.directorNominees.sort((a, b) => a.seatNumber - b.seatNumber);
+
+    saveDemoShareholderActivismStore(store);
+    return newNominee;
+  },
+
+  async submitTripartiteSignoff(
+    campaignId: string,
+    role: ActivismTripartiteSignoffRole,
+    signerName: string,
+    statementAcknowledged: string
+  ): Promise<ActivismTripartiteSignoffRecord> {
+    if (!demoMode) {
+      try {
+        return await request<ActivismTripartiteSignoffRecord>('/activism/signoff', {
+          method: 'POST',
+          body: JSON.stringify({ campaignId, role, signerName, statementAcknowledged })
+        });
+      } catch {}
+    }
+
+    const store = loadDemoShareholderActivismStore();
+    const signoff = store.overview.tripartiteSignoff;
+    const now = new Date().toISOString();
+
+    if (role === 'lead_independent_director') {
+      signoff.leadDirectorSignoff = {
+        isSigned: true,
+        signoffSignerName: signerName,
+        signoffTimestamp: now,
+        statementAcknowledged
+      };
+    } else if (role === 'nominating_governance_chair') {
+      signoff.governanceChairSignoff = {
+        isSigned: true,
+        signoffSignerName: signerName,
+        signoffTimestamp: now,
+        statementAcknowledged
+      };
+    } else if (role === 'board_chair_ceo') {
+      signoff.boardChairCeoSignoff = {
+        isSigned: true,
+        signoffSignerName: signerName,
+        signoffTimestamp: now,
+        statementAcknowledged
+      };
+    }
+
+    signoff.isFullyRatified = Boolean(
+      signoff.leadDirectorSignoff.isSigned &&
+      signoff.governanceChairSignoff.isSigned &&
+      signoff.boardChairCeoSignoff.isSigned
+    );
+
+    signoff.cryptographicIntegrityHash = '0x' + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+
+    store.overview.eventLogs.unshift({
+      id: 'log-' + Math.floor(1000 + Math.random() * 9000),
+      campaignId,
+      eventTimestamp: now,
+      eventCategory: 'defense_action',
+      headline: `Tripartite Board Signoff: ${role.replace(/_/g, ' ').toUpperCase()}`,
+      details: `${signerName} signed defense resolution. Fully Ratified: ${signoff.isFullyRatified}`,
+      severity: signoff.isFullyRatified ? 'critical' : 'high'
+    });
+
+    saveDemoShareholderActivismStore(store);
+    return signoff;
+  },
+
+  async resetDemo(): Promise<ShareholderActivismOverview> {
+    if (!demoMode) {
+      try {
+        return await request<ShareholderActivismOverview>('/activism/reset-demo', {
+          method: 'POST'
+        });
+      } catch {}
+    }
+
+    const newStore = createDefaultDemoShareholderActivismStore();
+    saveDemoShareholderActivismStore(newStore);
+    return newStore.overview;
+  }
+};
+
 
 
 

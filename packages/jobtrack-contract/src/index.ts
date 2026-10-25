@@ -55,3 +55,4 @@ export * from './investor-relations-nexus.ts';
 export * from './corp-dev-pmi-nexus.ts';
 export * from './global-trade-sanctions-nexus.ts';
 export * from './strategic-comms-crisis-nexus.ts';
+export * from './shareholder-activism-defense-nexus.ts';

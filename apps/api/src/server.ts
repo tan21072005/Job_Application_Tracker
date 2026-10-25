@@ -117,6 +117,7 @@ import { InvestorRelationsNexusService } from './services/investor-relations-nex
 import { CorpDevPmiNexusService } from './services/corp-dev-pmi-nexus-service.ts';
 import { GlobalTradeSanctionsNexusService } from './services/global-trade-sanctions-nexus-service.ts';
 import { StrategicCommsCrisisNexusService } from './services/strategic-comms-crisis-nexus-service.ts';
+import { ShareholderActivismDefenseNexusService } from './services/shareholder-activism-defense-nexus-service.ts';
 import {
   validateSupplierBomNodeInput,
   validateDisruptionSimulationInput,
@@ -171,7 +172,12 @@ import {
   validateCreateHoldingStatementInput,
   validateRecordVerifiedFactInput,
   validateRecordQaBridgeItemInput,
-  validateSubmitTripartiteSignoffInput
+  validateSubmitTripartiteSignoffInput,
+  validateCreateActivistCampaignInput,
+  validateRegisterWolfpackAccumulationInput,
+  validateDeployRightsPlanInput,
+  validateRecordNomineeComparisonInput,
+  validateSubmitActivismSignoffInput
 } from '../../../packages/jobtrack-contract/src/index.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
@@ -317,6 +323,7 @@ export const investorRelationsNexusService = new InvestorRelationsNexusService(p
 export const corpDevPmiNexusService = new CorpDevPmiNexusService(pool);
 export const globalTradeSanctionsNexusService = new GlobalTradeSanctionsNexusService(pool);
 export const strategicCommsCrisisNexusService = new StrategicCommsCrisisNexusService(pool);
+export const shareholderActivismDefenseNexusService = new ShareholderActivismDefenseNexusService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -5527,6 +5534,95 @@ app.post(['/api/strategic-comms-crisis-nexus/releases/signoff', '/api/comms/rele
   }
 });
 
+app.get(['/api/shareholder-activism-defense-nexus/overview', '/api/activism/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await shareholderActivismDefenseNexusService.getOverview(userId);
+    res.json(overview);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/shareholder-activism-defense-nexus/campaigns', '/api/activism/campaigns'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateCreateActivistCampaignInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const campaign = await shareholderActivismDefenseNexusService.createCampaign(userId, req.body);
+    res.status(201).json(campaign);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/shareholder-activism-defense-nexus/wolfpack', '/api/activism/wolfpack'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateRegisterWolfpackAccumulationInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const wolfpack = await shareholderActivismDefenseNexusService.registerWolfpackAccumulation(userId, req.body);
+    res.status(201).json(wolfpack);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/shareholder-activism-defense-nexus/rights-plan', '/api/activism/rights-plan'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateDeployRightsPlanInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const plan = await shareholderActivismDefenseNexusService.deployRightsPlan(userId, req.body);
+    res.status(201).json(plan);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/shareholder-activism-defense-nexus/nominees', '/api/activism/nominees'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateRecordNomineeComparisonInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const nominee = await shareholderActivismDefenseNexusService.recordNomineeComparison(userId, req.body);
+    res.status(201).json(nominee);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/shareholder-activism-defense-nexus/signoff', '/api/activism/signoff'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateSubmitActivismSignoffInput(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Validation failed', details: validation.errors });
+    }
+    const signoff = await shareholderActivismDefenseNexusService.submitTripartiteSignoff(userId, req.body);
+    res.json(signoff);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post(['/api/shareholder-activism-defense-nexus/reset-demo', '/api/activism/reset-demo'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const resetResult = await shareholderActivismDefenseNexusService.resetDemoData(userId);
+    res.json(resetResult);
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/api/ai/grants', auth, async (req, res, next) => {
   try {
