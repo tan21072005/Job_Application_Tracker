@@ -288,7 +288,25 @@ import {
   validateBoardMemoGenerateInput,
   generateBoardQbrMemorandumMarkdown,
   type ValueStreamDTO,
-  type BoardMemorandumDTO
+  type BoardMemorandumDTO,
+  classifyFinOpsEfficiencyBand,
+  classifyFinOpsMaturityStage,
+  calculateCostPerTenantMetrics,
+  calculateCommitmentNpv,
+  detectCostAnomaly,
+  calculateCarbonFootprint,
+  calculateK8sRightsizing,
+  calculateGravitonMigrationRoi,
+  calculateCompositeFinOpsScore,
+  generateCfoBoardMemorandumMarkdown,
+  validateTenantAllocationInput,
+  validateCommitmentInput,
+  validateCommitmentPurchaseSimulationInput,
+  validateAnomalyDetectionInput,
+  validateIdleWasteRemediationInput,
+  validateKubernetesRightsizingInput,
+  validateCfoMemoGenerateInput,
+  type CfoMemorandumDTO
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -6435,6 +6453,244 @@ test('contract: generateBoardQbrMemorandumMarkdown generates executive QBR memor
   assert.ok(md.includes('ASC 350-40 Capitalized R&D Financial Summary'));
   assert.ok(md.includes('Executive Leadership Action Plan'));
 });
+
+test('contract: classifyFinOpsEfficiencyBand and classifyFinOpsMaturityStage evaluate thresholds', () => {
+  assert.equal(classifyFinOpsEfficiencyBand(92.5), 'optimal_elite');
+  assert.equal(classifyFinOpsEfficiencyBand(88.0), 'optimal_elite');
+  assert.equal(classifyFinOpsEfficiencyBand(80.0), 'disciplined_efficient');
+  assert.equal(classifyFinOpsEfficiencyBand(72.0), 'disciplined_efficient');
+  assert.equal(classifyFinOpsEfficiencyBand(65.0), 'moderate_waste');
+  assert.equal(classifyFinOpsEfficiencyBand(50.0), 'moderate_waste');
+  assert.equal(classifyFinOpsEfficiencyBand(45.0), 'critical_overspend');
+
+  assert.equal(classifyFinOpsMaturityStage(85.0), 'run');
+  assert.equal(classifyFinOpsMaturityStage(80.0), 'run');
+  assert.equal(classifyFinOpsMaturityStage(70.0), 'walk');
+  assert.equal(classifyFinOpsMaturityStage(55.0), 'walk');
+  assert.equal(classifyFinOpsMaturityStage(50.0), 'crawl');
+});
+
+test('contract: calculateCostPerTenantMetrics calculates margin and cost per transaction', () => {
+  const result = calculateCostPerTenantMetrics(10000, 1200, 300, 500, 50000);
+  assert.equal(result.totalCostPerTenantUsd, 2000);
+  assert.equal(result.grossMarginPercent, 80);
+  assert.equal(result.costPerTransactionUsd, 0.04);
+
+  const zeroRev = calculateCostPerTenantMetrics(0, 500, 100, 100, 0);
+  assert.equal(zeroRev.totalCostPerTenantUsd, 700);
+  assert.equal(zeroRev.grossMarginPercent, 0);
+  assert.equal(zeroRev.costPerTransactionUsd, 0);
+});
+
+test('contract: calculateCommitmentNpv models upfront, savings and NPV discount flows', () => {
+  const allUpfront = calculateCommitmentNpv(10000, 8.5, 36, 'all_upfront', 35);
+  assert.equal(allUpfront.termMonths, 36);
+  assert.equal(allUpfront.paymentOption, 'all_upfront');
+  assert.ok(allUpfront.upfrontCapitalRequiredUsd > 0);
+  assert.ok(allUpfront.cumulativeSavingsUsd > 0);
+  assert.ok(allUpfront.netPresentValueUsd > 0);
+
+  const noUpfront = calculateCommitmentNpv(10000, 8.5, 12, 'no_upfront', 25);
+  assert.equal(noUpfront.termMonths, 12);
+  assert.equal(noUpfront.paymentOption, 'no_upfront');
+  assert.equal(noUpfront.upfrontCapitalRequiredUsd, 0);
+  assert.ok(noUpfront.monthlyEffectiveSavingsUsd === 2500);
+});
+
+test('contract: detectCostAnomaly identifies statistical standard deviation spikes and excess spend', () => {
+  const baseline = [1000, 1020, 980, 1010, 990, 1005, 995];
+  const normal = detectCostAnomaly(1015, baseline, 2.5);
+  assert.equal(normal.isAnomaly, false);
+  assert.equal(normal.excessSpend, 0);
+
+  const spike = detectCostAnomaly(1800, baseline, 2.5);
+  assert.equal(spike.isAnomaly, true);
+  assert.ok(spike.zScore > 2.5);
+  assert.ok(spike.excessSpend > 700);
+
+  const shortHistory = detectCostAnomaly(2000, [1000, 1100], 2.5);
+  assert.equal(shortHistory.isAnomaly, false);
+});
+
+test('contract: calculateCarbonFootprint and calculateK8sRightsizing compute infrastructure sizing', () => {
+  const carbon = calculateCarbonFootprint(10000, 2000, 1.15, 0.38);
+  assert.ok(carbon.totalMonthlyCloudCarbonKgCo2e > 0);
+  assert.ok(carbon.carbonIntensityPerActiveUserKgCo2e > 0);
+  assert.ok(carbon.potentialWasteAvoidanceKgCo2e > 0);
+  assert.ok(carbon.equivalentTreesPlantedYearly > 0);
+
+  const rightsizing = calculateK8sRightsizing(4.0, 1.5, 8.0, 3.0, 300, 20);
+  assert.equal(rightsizing.recommendedCpu, 1.8);
+  assert.equal(rightsizing.recommendedMemoryGiB, 3.6);
+  assert.ok(rightsizing.rightsizedMonthlyCostUsd < 300);
+  assert.ok(rightsizing.monthlySavingsUsd > 0);
+  assert.ok(rightsizing.sizingSlackPercent > 0);
+});
+
+test('contract: calculateGravitonMigrationRoi and calculateCompositeFinOpsScore compute composite FES', () => {
+  const roi = calculateGravitonMigrationRoi(5000, 40, 120, 20, 18);
+  assert.equal(roi.workloadName, 'Core Stateless Application Fleet');
+  assert.ok(roi.gravitonMonthlyCostUsd < 5000);
+  assert.ok(roi.monthlySavingsUsd > 0);
+  assert.ok(roi.paybackPeriodMonths > 0);
+  assert.ok(roi.annualizedNetBenefitUsd > 0);
+
+  const score = calculateCompositeFinOpsScore({
+    taggingCompliancePercent: 95,
+    commitmentCoveragePercent: 82,
+    commitmentUtilizationPercent: 96,
+    wasteRemediationRatioPercent: 88,
+    k8sSlackRemediationPercent: 75,
+    carbonEfficiencyScore: 80
+  });
+  assert.ok(score.compositeScore >= 80);
+  assert.equal(score.efficiencyBand, 'disciplined_efficient');
+});
+
+test('contract: FinOps schema validators reject invalid payloads and accept valid inputs', () => {
+  const invalidAlloc = validateTenantAllocationInput({});
+  assert.equal(invalidAlloc.ok, false);
+  assert.ok(invalidAlloc.errors.tenantName);
+
+  const validAlloc = validateTenantAllocationInput({
+    tenantName: 'Acme Enterprise Corp',
+    tenantTier: 'enterprise',
+    monthlyAttributableRevenueUsd: 15000,
+    directComputeCostUsd: 1200,
+    directStorageCostUsd: 300,
+    allocatedSharedCostUsd: 400,
+    monthlyTransactionsCount: 25000,
+    taggingCompliancePercent: 100
+  });
+  assert.equal(validAlloc.ok, true);
+
+  const invalidCommit = validateCommitmentInput({ committedHourlySpendUsd: -5 });
+  assert.equal(invalidCommit.ok, false);
+
+  const validCommit = validateCommitmentInput({
+    serviceName: 'Amazon EC2 Compute',
+    committedHourlySpendUsd: 12.5,
+    expirationDate: '2027-10-31'
+  });
+  assert.equal(validCommit.ok, true);
+
+  const invalidSim = validateCommitmentPurchaseSimulationInput({ eligibleMonthlySpendUsd: 0 });
+  assert.equal(invalidSim.ok, false);
+
+  const validSim = validateCommitmentPurchaseSimulationInput({
+    eligibleMonthlySpendUsd: 25000,
+    targetCoveragePercent: 80,
+    waccDiscountRatePercent: 8.5
+  });
+  assert.equal(validSim.ok, true);
+
+  const invalidAnomaly = validateAnomalyDetectionInput({ sensitivityZScore: 0.5 });
+  assert.equal(invalidAnomaly.ok, false);
+
+  const validAnomaly = validateAnomalyDetectionInput({
+    sensitivityZScore: 2.5,
+    lookbackDays: 30
+  });
+  assert.equal(validAnomaly.ok, true);
+
+  const invalidRemediation = validateIdleWasteRemediationInput({ status: 'unknown' });
+  assert.equal(invalidRemediation.ok, false);
+
+  const validRemediation = validateIdleWasteRemediationInput({ status: 'remediated' });
+  assert.equal(validRemediation.ok, true);
+
+  const invalidRightsizing = validateKubernetesRightsizingInput({ headroomBufferPercent: 2 });
+  assert.equal(invalidRightsizing.ok, false);
+
+  const validRightsizing = validateKubernetesRightsizingInput({
+    headroomBufferPercent: 20,
+    spotAggressivenessLevel: 'balanced'
+  });
+  assert.equal(validRightsizing.ok, true);
+
+  const invalidMemo = validateCfoMemoGenerateInput({ title: '' });
+  assert.equal(invalidMemo.ok, false);
+
+  const validMemo = validateCfoMemoGenerateInput({
+    title: 'Q4-2026 Executive Cloud FinOps Memorandum',
+    fiscalQuarter: 'Q4-2026'
+  });
+  assert.equal(validMemo.ok, true);
+});
+
+test('contract: generateCfoBoardMemorandumMarkdown produces structured C-suite memorandum', () => {
+  const memo: CfoMemorandumDTO = {
+    id: 'memo-finops-101',
+    title: 'Q4-2026 Executive Cloud FinOps & Infrastructure Governance Memorandum',
+    fiscalQuarter: 'Q4-2026',
+    status: 'draft',
+    compositeFinOpsScore: 84.5,
+    efficiencyBand: 'disciplined_efficient',
+    monthlyCloudSpendUsd: 53800,
+    annualizedRealizedSavingsUsd: 142000,
+    unlockedAnnualizedPipelineSavingsUsd: 98000,
+    cloudGrossMarginPercent: 84.6,
+    executiveSummary: {
+      sectionKey: 'exec',
+      heading: '1. Executive Summary & Strategic Rationale',
+      executiveSummaryText: 'Maintained 84.6% cloud gross margin while scaling active workloads.',
+      keyMetricsBulletPoints: ['Run-Rate: $53,800/mo', 'FES: 84.5 / 100'],
+      strategicGuidance: 'Execute 3-year Compute Savings Plan to hedge Q1-2027 compute.'
+    },
+    unitEconomicsScorecard: {
+      sectionKey: 'unit',
+      heading: '2. Unit Economics & Cost Allocation Scorecard',
+      executiveSummaryText: 'Average cost per enterprise tenant stands at $480/month.',
+      keyMetricsBulletPoints: ['Average Cost per Tenant: $480', 'Tagging Compliance: 94.2%'],
+      strategicGuidance: 'Enforce mandatory billing tags on all staging Kubernetes namespaces.'
+    },
+    commitmentStrategy: {
+      sectionKey: 'commit',
+      heading: '3. Commitment Portfolio & Hedging Strategy',
+      executiveSummaryText: 'Commitment coverage reached 81.2% with 96.4% utilization.',
+      keyMetricsBulletPoints: ['Coverage: 81.2%', 'Annualized Savings: $142,000'],
+      strategicGuidance: 'Renew expiring RDS Standard RIs prior to December 15.'
+    },
+    wasteAndAnomalyGovernance: {
+      sectionKey: 'waste',
+      heading: '4. Idle Waste Elimination & Anomaly Diagnostics',
+      executiveSummaryText: 'Purged 18 unattached EBS volumes and 4 zombie EKS nodes.',
+      keyMetricsBulletPoints: ['Waste Discovered: $4,320/mo', 'Carbon Avoidance: 1,450 kg CO2e'],
+      strategicGuidance: 'Schedule weekly automated janitor cron for orphaned persistent disks.'
+    },
+    k8sArchitectureArbitrage: {
+      sectionKey: 'k8s',
+      heading: '5. Kubernetes Workload Rightsizing & Graviton Arbitrage',
+      executiveSummaryText: 'Right-sizing CPU/Memory allocations yields $3,200/month immediate savings.',
+      keyMetricsBulletPoints: ['Rightsizing Savings: $3,200/mo', 'Graviton Payback: 3.2 months'],
+      strategicGuidance: 'Migrate stateless API worker node pools to c7g Graviton instances.'
+    },
+    cfoDirectivesActionPlan: {
+      sectionKey: 'directives',
+      heading: '6. Board Audit Committee & CFO Directives',
+      executiveSummaryText: 'Formal approval recommended for 3-year commitment tranche.',
+      keyMetricsBulletPoints: ['Directive 1: Authorize $45k upfront capital', 'Directive 2: Target 88.0 FES score'],
+      strategicGuidance: 'Schedule formal review with Chief Financial Officer.'
+    },
+    createdAt: '2026-10-25T00:00:00Z',
+    updatedAt: '2026-10-25T00:00:00Z'
+  };
+
+  const md = generateCfoBoardMemorandumMarkdown(memo);
+  assert.ok(md.includes('Executive Cloud FinOps, Unit Economics & Infrastructure Governance Memorandum'));
+  assert.ok(md.includes('Q4-2026 Executive Cloud FinOps & Infrastructure Governance Memorandum'));
+  assert.ok(md.includes('84.5 / 100'));
+  assert.ok(md.includes('DISCIPLINED EFFICIENT'));
+  assert.ok(md.includes('$53,800'));
+  assert.ok(md.includes('84.6%'));
+  assert.ok(md.includes('1. Executive Summary & Strategic Rationale'));
+  assert.ok(md.includes('2. Unit Economics & Cost Allocation Scorecard'));
+  assert.ok(md.includes('3. Commitment Portfolio & Hedging Strategy'));
+  assert.ok(md.includes('4. Idle Waste Elimination & Anomaly Diagnostics'));
+  assert.ok(md.includes('5. Kubernetes Workload Rightsizing & Graviton Arbitrage'));
+  assert.ok(md.includes('6. Board Audit Committee & CFO Directives'));
+});
+
 
 
 

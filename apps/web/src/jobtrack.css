@@ -2748,6 +2748,159 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .vsm-studio-sidebar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:10px;border:none;background:transparent;color:#475569;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s ease}
 .vsm-studio-sidebar-btn:hover{background:#f1f5f9;color:#2563eb}
 
+.finops-studio-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background-color:rgba(10,15,29,0.85);backdrop-filter:blur(8px)}
+.finops-studio-container{width:95vw;max-width:1440px;height:92vh;display:flex;flex-direction:column;background:#0b132b;border:1px solid rgba(255,255,255,0.12);border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.8);color:#f8fafc;overflow:hidden}
+.finops-studio-header{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;background:#1c2541;border-bottom:1px solid rgba(255,255,255,0.08)}
+.finops-studio-brand{display:flex;align-items:center;gap:0.75rem}
+.finops-studio-pill{font-size:0.75rem;font-weight:700;text-transform:uppercase;background:#10b981;color:#ffffff;padding:0.25rem 0.6rem;border-radius:9999px}
+.finops-studio-title{margin:0;font-size:1.2rem;font-weight:600;color:#ffffff}
+.finops-studio-header-actions{display:flex;align-items:center;gap:1rem}
+.finops-studio-fes-badge{display:flex;align-items:center;gap:0.5rem;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);padding:0.35rem 0.75rem;border-radius:8px}
+.finops-studio-fes-score{font-weight:700;color:#34d399}
+.finops-studio-fes-band{font-size:0.75rem;color:#a7f3d0;font-weight:600}
+.finops-studio-maturity-pill{font-size:0.7rem;font-weight:700;background:rgba(59,130,246,0.3);color:#93c5fd;padding:0.15rem 0.45rem;border-radius:4px}
+.finops-studio-close-btn{border:none;background:transparent;color:#94a3b8;font-size:1.5rem;line-height:1;cursor:pointer;padding:0.25rem 0.5rem;border-radius:6px;transition:all 0.15s ease}
+.finops-studio-close-btn:hover{background:rgba(255,255,255,0.1);color:#ffffff}
+.finops-studio-tabs{display:flex;background:#1c2541;padding:0 2rem;border-bottom:1px solid rgba(255,255,255,0.08);gap:0.5rem;overflow-x:auto}
+.finops-studio-tab-btn{border:none;background:transparent;color:#94a3b8;font-size:0.875rem;font-weight:600;padding:1rem 1.25rem;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s ease;white-space:nowrap}
+.finops-studio-tab-btn:hover{color:#f8fafc}
+.finops-studio-tab-btn--active{color:#34d399;border-bottom-color:#34d399}
+.finops-studio-body{flex:1;overflow-y:auto;padding:1.75rem 2rem;display:flex;flex-direction:column;gap:1.5rem;background:#0b132b}
+.finops-studio-section{display:flex;flex-direction:column;gap:1.5rem}
+.finops-studio-section-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+.finops-studio-section-title{margin:0;font-size:1.15rem;font-weight:600;color:#f8fafc}
+.finops-studio-section-desc{margin:0.25rem 0 0;font-size:0.875rem;color:#94a3b8}
+.finops-studio-action-btn{border:none;font-weight:600;font-size:0.8125rem;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;transition:all 0.2s ease}
+.finops-studio-action-btn--primary{background:#10b981;color:#ffffff}
+.finops-studio-action-btn--primary:hover{background:#059669}
+.finops-studio-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.finops-studio-kpi-card{background:#1c2541;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:1.25rem;display:flex;flex-direction:column;gap:0.35rem}
+.finops-studio-kpi-label{font-size:0.75rem;font-weight:600;text-transform:uppercase;color:#94a3b8;letter-spacing:0.025em}
+.finops-studio-kpi-val{font-size:1.6rem;font-weight:700;color:#ffffff}
+.finops-studio-kpi-val--accent{color:#34d399}
+.finops-studio-kpi-sub{font-size:0.75rem;color:#64748b}
+.finops-studio-provider-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.finops-studio-provider-card{background:#1c2541;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:1rem;display:flex;align-items:center;justify-content:space-between}
+.finops-studio-provider-badge{font-size:0.75rem;font-weight:700;padding:0.25rem 0.5rem;border-radius:6px;text-transform:uppercase}
+.finops-studio-provider-badge--aws{background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4)}
+.finops-studio-provider-badge--gcp{background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(59,130,246,0.4)}
+.finops-studio-provider-badge--snowflake{background:rgba(56,189,248,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4)}
+.finops-studio-provider-badge--datadog{background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.4)}
+.finops-studio-provider-spend{font-weight:700;font-size:1rem;color:#f8fafc}
+.finops-studio-provider-share{font-size:0.75rem;color:#94a3b8}
+.finops-studio-card{background:#1c2541;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:1.5rem;display:flex;flex-direction:column;gap:1rem}
+.finops-studio-card-title{margin:0;font-size:0.95rem;font-weight:600;color:#f8fafc}
+.finops-studio-card-header-flex{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.finops-studio-table-wrapper{overflow-x:auto}
+.finops-studio-table{width:100%;border-collapse:collapse;font-size:0.8125rem;text-align:left}
+.finops-studio-table th{background:rgba(0,0,0,0.25);padding:0.75rem 1rem;color:#94a3b8;font-weight:600;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap}
+.finops-studio-table td{padding:0.75rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);color:#cbd5e1;white-space:nowrap}
+.finops-studio-table tr:hover td{background:rgba(255,255,255,0.02)}
+.finops-studio-table-strong{font-weight:600;color:#ffffff}
+.finops-studio-code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.75rem;color:#38bdf8}
+.finops-studio-tier-badge{font-size:0.7rem;font-weight:700;text-transform:uppercase;padding:0.2rem 0.5rem;border-radius:4px}
+.finops-studio-tier-badge--enterprise{background:rgba(16,185,129,0.2);color:#34d399}
+.finops-studio-tier-badge--mid_market{background:rgba(59,130,246,0.2);color:#60a5fa}
+.finops-studio-tier-badge--smb{background:rgba(245,158,11,0.2);color:#fbbf24}
+.finops-studio-tier-badge--free_tier{background:rgba(148,163,184,0.2);color:#94a3b8}
+.finops-studio-margin-badge{padding:0.2rem 0.5rem;border-radius:4px;font-weight:700;font-size:0.75rem}
+.finops-studio-margin-badge--high{background:rgba(16,185,129,0.2);color:#34d399}
+.finops-studio-margin-badge--mid{background:rgba(245,158,11,0.2);color:#fbbf24}
+.finops-studio-btn-danger-sm{border:none;background:rgba(239,68,68,0.2);color:#f87171;padding:0.25rem 0.6rem;border-radius:4px;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.15s ease}
+.finops-studio-btn-danger-sm:hover{background:rgba(239,68,68,0.4);color:#ffffff}
+.finops-studio-btn-primary-sm{border:none;background:rgba(16,185,129,0.2);color:#34d399;padding:0.25rem 0.6rem;border-radius:4px;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.15s ease}
+.finops-studio-btn-primary-sm:hover{background:#10b981;color:#ffffff}
+.finops-studio-provider-tag{font-size:0.7rem;font-weight:700;padding:0.15rem 0.4rem;border-radius:4px}
+.finops-studio-provider-tag--aws{background:#b45309;color:#ffffff}
+.finops-studio-provider-tag--gcp{background:#1d4ed8;color:#ffffff}
+.finops-studio-provider-tag--snowflake{background:#0284c7;color:#ffffff}
+.finops-studio-provider-tag--datadog{background:#7e22ce;color:#ffffff}
+.finops-studio-text-accent{color:#34d399}
+.finops-studio-text-warning{color:#f87171}
+.finops-studio-badge-warning{color:#fbbf24;font-weight:700}
+.finops-studio-cliff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.finops-studio-cliff-card{background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem}
+.finops-studio-cliff-card--warning{border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.05)}
+.finops-studio-cliff-header{display:flex;align-items:center;justify-content:space-between}
+.finops-studio-cliff-window{font-weight:700;font-size:0.875rem;color:#f8fafc}
+.finops-studio-cliff-count{font-size:0.75rem;font-weight:600;padding:0.2rem 0.5rem;border-radius:4px;background:rgba(255,255,255,0.1);color:#ffffff}
+.finops-studio-cliff-body{display:flex;flex-direction:column;gap:0.35rem}
+.finops-studio-cliff-val{font-size:1.1rem;font-weight:700;color:#f87171}
+.finops-studio-cliff-spike{font-size:0.75rem;color:#fbbf24}
+.finops-studio-cliff-action{margin:0.25rem 0 0;font-size:0.75rem;color:#94a3b8;line-height:1.4}
+.finops-studio-controls-flex{display:flex;align-items:center;gap:1.5rem;font-size:0.8125rem;color:#cbd5e1}
+.finops-studio-slider{cursor:pointer;accent-color:#10b981}
+.finops-studio-npv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.finops-studio-npv-card{background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem}
+.finops-studio-npv-title{margin:0;font-size:0.875rem;font-weight:600;color:#60a5fa}
+.finops-studio-npv-metrics{display:flex;flex-direction:column;gap:0.4rem;font-size:0.8125rem}
+.finops-studio-npv-row{display:flex;align-items:center;justify-content:space-between}
+.finops-studio-severity-badge{font-size:0.7rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:4px}
+.finops-studio-severity-badge--critical{background:rgba(239,68,68,0.25);color:#f87171}
+.finops-studio-severity-badge--high{background:rgba(245,158,11,0.25);color:#fbbf24}
+.finops-studio-severity-badge--medium{background:rgba(59,130,246,0.25);color:#60a5fa}
+.finops-studio-cell-desc{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.75rem;color:#94a3b8}
+.finops-studio-status-pill{font-size:0.7rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:4px}
+.finops-studio-status-pill--active{background:rgba(239,68,68,0.2);color:#f87171}
+.finops-studio-status-pill--investigating{background:rgba(245,158,11,0.2);color:#fbbf24}
+.finops-studio-status-pill--resolved{background:rgba(16,185,129,0.2);color:#34d399}
+.finops-studio-status-pill--detected{background:rgba(239,68,68,0.2);color:#f87171}
+.finops-studio-status-pill--remediated{background:rgba(16,185,129,0.2);color:#34d399}
+.finops-studio-remediated-label{font-size:0.75rem;color:#34d399;font-weight:600}
+.finops-studio-badge-spot{font-size:0.75rem;color:#34d399;font-weight:600}
+.finops-studio-badge-ondemand{font-size:0.75rem;color:#94a3b8}
+.finops-studio-graviton-card{background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
+.finops-studio-graviton-header{display:flex;align-items:center;gap:0.75rem;font-size:0.95rem;font-weight:600}
+.finops-studio-graviton-source{color:#94a3b8}
+.finops-studio-graviton-arrow{color:#60a5fa}
+.finops-studio-graviton-target{color:#34d399}
+.finops-studio-graviton-boost{font-size:0.75rem;background:rgba(16,185,129,0.2);color:#34d399;padding:0.2rem 0.5rem;border-radius:4px}
+.finops-studio-graviton-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1rem}
+.finops-studio-radar-grid{display:flex;flex-direction:column;gap:1rem}
+.finops-studio-radar-item{display:grid;grid-template-columns:220px 1fr 140px;align-items:center;gap:1.5rem}
+.finops-studio-radar-label{font-size:0.875rem;color:#f8fafc;font-weight:500}
+.finops-studio-progress-bar{height:8px;background:rgba(0,0,0,0.4);border-radius:4px;overflow:hidden}
+.finops-studio-progress-fill{height:100%;background:#34d399;border-radius:4px}
+.finops-studio-radar-score{font-size:0.8125rem;color:#94a3b8;text-align:right}
+.finops-studio-memo-header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:1rem}
+.finops-studio-memo-title{margin:0;font-size:1.15rem;font-weight:600;color:#ffffff}
+.finops-studio-memo-quarter{font-size:0.8125rem;color:#94a3b8}
+.finops-studio-memo-status{font-size:0.75rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:9999px}
+.finops-studio-memo-status--under_review{background:rgba(245,158,11,0.2);color:#fbbf24}
+.finops-studio-memo-status--board_approved{background:rgba(16,185,129,0.25);color:#34d399}
+.finops-studio-memo-status--draft{background:rgba(148,163,184,0.2);color:#94a3b8}
+.finops-studio-memo-content{display:flex;flex-direction:column;gap:1.25rem;line-height:1.6;color:#cbd5e1}
+.finops-studio-memo-section h5{margin:0 0 0.4rem;font-size:0.95rem;font-weight:600;color:#60a5fa}
+.finops-studio-memo-section p{margin:0 0 0.5rem;font-size:0.875rem}
+.finops-studio-memo-section ul{margin:0 0 0.5rem;padding-left:1.25rem;font-size:0.8125rem}
+.finops-studio-memo-guidance{background:rgba(59,130,246,0.1);border-left:3px solid #60a5fa;padding:0.6rem 0.85rem;border-radius:0 6px 6px 0;font-size:0.8125rem}
+.finops-studio-signoff-bar{display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.08);padding-top:1.25rem;flex-wrap:wrap;gap:1rem}
+.finops-studio-signoff-item{display:flex;align-items:center;gap:0.75rem;font-size:0.875rem}
+.finops-studio-signoff-role{font-weight:600;color:#94a3b8}
+.finops-studio-signed-pill{font-size:0.75rem;font-weight:700;padding:0.3rem 0.6rem;border-radius:6px;background:rgba(16,185,129,0.2);color:#34d399}
+.finops-studio-signed-pill--gold{background:rgba(245,158,11,0.25);color:#fbbf24}
+.finops-studio-btn-sign{border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:#ffffff;font-size:0.8125rem;font-weight:600;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;transition:all 0.15s ease}
+.finops-studio-btn-sign:hover{background:rgba(255,255,255,0.15)}
+.finops-studio-btn-sign--gold{border-color:#fbbf24;color:#fbbf24}
+.finops-studio-btn-sign--gold:hover{background:rgba(245,158,11,0.2)}
+.finops-studio-sidebar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:10px;border:none;background:transparent;color:#475569;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s ease}
+.finops-studio-sidebar-btn:hover{background:#f1f5f9;color:#10b981}
+.finops-studio-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:1rem;color:#94a3b8}
+.finops-studio-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.1);border-top-color:#10b981;border-radius:50%;animation:finops-spin 0.8s linear infinite}
+@keyframes finops-spin{to{transform:rotate(360deg)}}
+.finops-studio-submodal-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)}
+.finops-studio-submodal{width:560px;max-width:90vw;background:#1c2541;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5)}
+.finops-studio-submodal-title{margin:0;font-size:1.1rem;font-weight:600;color:#ffffff}
+.finops-studio-form{display:flex;flex-direction:column;gap:1rem}
+.finops-studio-form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.finops-studio-form-group{display:flex;flex-direction:column;gap:0.35rem}
+.finops-studio-form-group label{font-size:0.75rem;font-weight:600;color:#94a3b8}
+.finops-studio-input,.finops-studio-select{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:0.5rem 0.75rem;color:#f8fafc;font-size:0.875rem}
+.finops-studio-submodal-actions{display:flex;align-items:center;justify-content:flex-end;gap:0.75rem;margin-top:0.5rem}
+.finops-studio-btn-secondary{border:none;background:rgba(255,255,255,0.1);color:#cbd5e1;padding:0.5rem 1rem;border-radius:6px;font-size:0.875rem;cursor:pointer}
+.finops-studio-btn-primary{border:none;background:#10b981;color:#ffffff;padding:0.5rem 1rem;border-radius:6px;font-size:0.875rem;font-weight:600;cursor:pointer}
+
+
 
 
 

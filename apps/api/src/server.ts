@@ -103,6 +103,7 @@ import { ExecutiveSeveranceService } from './services/executive-severance-servic
 import { TechnicalDueDiligenceService } from './services/technical-due-diligence-service.ts';
 import { OrgTopologyStudioService } from './services/org-topology-studio-service.ts';
 import { ValueStreamStudioService } from './services/value-stream-studio-service.ts';
+import { CloudFinopsStudioService } from './services/cloud-finops-studio-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -145,7 +146,14 @@ import {
   validateDoraCalculationInput,
   validateFlowSimulationInput,
   validateCapitalizedProjectInput,
-  validateBoardMemoGenerateInput
+  validateBoardMemoGenerateInput,
+  validateTenantAllocationInput,
+  validateCommitmentInput,
+  validateCommitmentPurchaseSimulationInput,
+  validateAnomalyDetectionInput,
+  validateIdleWasteRemediationInput,
+  validateKubernetesRightsizingInput,
+  validateCfoMemoGenerateInput
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -214,6 +222,7 @@ export const executiveSeveranceService = new ExecutiveSeveranceService(pool);
 export const technicalDueDiligenceService = new TechnicalDueDiligenceService(pool);
 export const orgTopologyStudioService = new OrgTopologyStudioService(pool);
 export const valueStreamStudioService = new ValueStreamStudioService(pool);
+export const cloudFinopsStudioService = new CloudFinopsStudioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -3462,9 +3471,237 @@ app.post(['/api/value-stream-studio/board-memos/:id/approve', '/api/vsm/board-me
   try {
     const userId = (req as SessionRequest).userId;
     const role = req.body?.role === 'cfo' ? 'cfo' : 'cto';
-    const updated = await valueStreamStudioService.approveBoardMemo(userId, req.params.id, role);
+    const updated = await valueStreamStudioService.approveBoardMemo(userId, String(req.params.id), role);
     if (!updated) {
       return res.status(404).json({ code: 'memo_not_found', error: 'Board memorandum not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/cloud-finops-studio/overview', '/api/finops/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await cloudFinopsStudioService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/cloud-finops-studio/allocations', '/api/finops/allocations'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const allocs = await cloudFinopsStudioService.listAllocations(userId);
+    res.json(allocs);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cloud-finops-studio/allocations', '/api/finops/allocations'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateTenantAllocationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: val.errors });
+    }
+    const created = await cloudFinopsStudioService.createAllocation(userId, req.body);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put(['/api/cloud-finops-studio/allocations/:id', '/api/finops/allocations/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateTenantAllocationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: val.errors });
+    }
+    const updated = await cloudFinopsStudioService.updateAllocation(userId, String(req.params.id), req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'allocation_not_found', error: 'Tenant cost allocation not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete(['/api/cloud-finops-studio/allocations/:id', '/api/finops/allocations/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const ok = await cloudFinopsStudioService.deleteAllocation(userId, String(req.params.id));
+    if (!ok) {
+      return res.status(404).json({ code: 'allocation_not_found', error: 'Tenant cost allocation not found' });
+    }
+    res.json({ ok: true, deleted: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/cloud-finops-studio/commitments', '/api/finops/commitments'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const commits = await cloudFinopsStudioService.listCommitments(userId);
+    res.json(commits);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cloud-finops-studio/commitments', '/api/finops/commitments'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateCommitmentInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: val.errors });
+    }
+    const created = await cloudFinopsStudioService.createCommitment(userId, req.body);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete(['/api/cloud-finops-studio/commitments/:id', '/api/finops/commitments/:id'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const ok = await cloudFinopsStudioService.deleteCommitment(userId, String(req.params.id));
+    if (!ok) {
+      return res.status(404).json({ code: 'commitment_not_found', error: 'Commitment not found' });
+    }
+    res.json({ ok: true, deleted: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cloud-finops-studio/commitments/simulate-npv', '/api/finops/commitments/simulate-npv'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateCommitmentPurchaseSimulationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: val.errors });
+    }
+    const scenarios = await cloudFinopsStudioService.simulateCommitmentNpv(userId, req.body);
+    res.json(scenarios);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/cloud-finops-studio/anomalies', '/api/finops/anomalies'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const anomalies = await cloudFinopsStudioService.listAnomalies(userId);
+    res.json(anomalies);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cloud-finops-studio/anomalies/detect', '/api/finops/anomalies/detect'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateAnomalyDetectionInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: val.errors });
+    }
+    const detected = await cloudFinopsStudioService.detectAnomalies(userId, req.body);
+    res.json(detected);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/cloud-finops-studio/idle-waste', '/api/finops/idle-waste'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const assets = await cloudFinopsStudioService.listIdleAssets(userId);
+    res.json(assets);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.patch(['/api/cloud-finops-studio/idle-waste/:id/remediate', '/api/finops/idle-waste/:id/remediate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateIdleWasteRemediationInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: val.errors });
+    }
+    const updated = await cloudFinopsStudioService.remediateIdleAsset(userId, String(req.params.id), req.body);
+    if (!updated) {
+      return res.status(404).json({ code: 'asset_not_found', error: 'Idle asset not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/cloud-finops-studio/k8s-rightsizing', '/api/finops/k8s-rightsizing'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const workloads = await cloudFinopsStudioService.listK8sWorkloads(userId);
+    res.json(workloads);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cloud-finops-studio/k8s-rightsizing/simulate', '/api/finops/k8s-rightsizing/simulate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateKubernetesRightsizingInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: val.errors });
+    }
+    const simulated = await cloudFinopsStudioService.simulateK8sRightsizing(userId, req.body);
+    res.json(simulated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/cloud-finops-studio/cfo-memos', '/api/finops/cfo-memos'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const memos = await cloudFinopsStudioService.listCfoMemos(userId);
+    res.json(memos);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cloud-finops-studio/cfo-memos/generate', '/api/finops/cfo-memos/generate'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const val = validateCfoMemoGenerateInput(req.body);
+    if (!val.ok) {
+      return res.status(400).json({ code: 'validation_failed', errors: val.errors });
+    }
+    const memo = await cloudFinopsStudioService.generateCfoMemo(userId, req.body);
+    res.status(201).json(memo);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/cloud-finops-studio/cfo-memos/:id/approve', '/api/finops/cfo-memos/:id/approve'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const role = req.body?.role === 'cfo' ? 'cfo' : req.body?.role === 'cto' ? 'cto' : 'vp_infra';
+    const updated = await cloudFinopsStudioService.approveCfoMemo(userId, String(req.params.id), role);
+    if (!updated) {
+      return res.status(404).json({ code: 'memo_not_found', error: 'CFO memorandum not found' });
     }
     res.json(updated);
   } catch (err) {

@@ -128,7 +128,39 @@ import {
   calculateCapitalizedProjectLabor,
   calculateRdInvestmentSizingSummary,
   calculateCompositeDeliveryHealthIndex,
-  generateBoardQbrMemorandumMarkdown
+  generateBoardQbrMemorandumMarkdown,
+  type TenantCostAllocationDTO,
+  type TenantCostAllocationMutationDTO,
+  type CloudCostAllocationOverviewDTO,
+  type CommitmentPortfolioItemDTO,
+  type CommitmentMutationDTO,
+  type CommitmentNpvScenarioDTO,
+  type CommitmentExpirationCliffDTO,
+  type CommitmentOptimizerOverviewDTO,
+  type CloudCostAnomalyDTO,
+  type IdleWasteItemDTO,
+  type IdleWasteRemediationMutationDTO,
+  type CarbonFootprintSummaryDTO,
+  type WasteEliminationOverviewDTO,
+  type AnomalyDetectionRequestDTO,
+  type KubernetesWorkloadRightsizingDTO,
+  type GravitonArmMigrationRoiDTO,
+  type ArchitectureArbitrageOverviewDTO,
+  type FinOpsFoundationMaturityDTO,
+  type FinOpsEfficiencyScoreBreakdownDTO,
+  type CfoMemorandumDTO,
+  type CfoMemorandumGenerateRequestDTO,
+  type CloudFinopsStudioOverviewDTO,
+  type CommitmentPurchaseSimulationDTO,
+  type KubernetesRightsizingSimulationDTO,
+  calculateCostPerTenantMetrics,
+  calculateCommitmentNpv,
+  detectCostAnomaly,
+  calculateCarbonFootprint,
+  calculateK8sRightsizing,
+  calculateGravitonMigrationRoi,
+  calculateCompositeFinOpsScore,
+  generateCfoBoardMemorandumMarkdown
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -10587,6 +10619,1080 @@ export const valueStreamStudioRepository = {
     }
   }
 };
+
+const DEMO_FINOPS_OVERVIEW_KEY = 'jobtrack_demo_finops_overview_v1';
+
+export const DEFAULT_DEMO_FINOPS_ALLOCATIONS: TenantCostAllocationDTO[] = [
+  {
+    id: 'alloc-1',
+    tenantName: 'Fintech Global Corp',
+    tenantTier: 'enterprise',
+    monthlyAttributableRevenueUsd: 48000,
+    directComputeCostUsd: 6200,
+    directStorageCostUsd: 2100,
+    allocatedSharedCostUsd: 3200,
+    totalCostPerTenantUsd: 11500,
+    grossMarginPercent: 76.04,
+    monthlyTransactionsCount: 4200000,
+    costPerTransactionUsd: 0.0027,
+    taggingCompliancePercent: 94.5,
+    updatedAt: '2026-10-24T18:00:00Z'
+  },
+  {
+    id: 'alloc-2',
+    tenantName: 'HealthCare Secure Cloud',
+    tenantTier: 'enterprise',
+    monthlyAttributableRevenueUsd: 36000,
+    directComputeCostUsd: 4800,
+    directStorageCostUsd: 2900,
+    allocatedSharedCostUsd: 2450,
+    totalCostPerTenantUsd: 10150,
+    grossMarginPercent: 71.81,
+    monthlyTransactionsCount: 2800000,
+    costPerTransactionUsd: 0.0036,
+    taggingCompliancePercent: 91.2,
+    updatedAt: '2026-10-24T18:00:00Z'
+  },
+  {
+    id: 'alloc-3',
+    tenantName: 'RetailScale Commerce',
+    tenantTier: 'mid_market',
+    monthlyAttributableRevenueUsd: 18500,
+    directComputeCostUsd: 2400,
+    directStorageCostUsd: 850,
+    allocatedSharedCostUsd: 1350,
+    totalCostPerTenantUsd: 4600,
+    grossMarginPercent: 75.14,
+    monthlyTransactionsCount: 1500000,
+    costPerTransactionUsd: 0.0031,
+    taggingCompliancePercent: 86.0,
+    updatedAt: '2026-10-24T18:00:00Z'
+  },
+  {
+    id: 'alloc-4',
+    tenantName: 'SaaS Innovators Launch',
+    tenantTier: 'smb',
+    monthlyAttributableRevenueUsd: 7500,
+    directComputeCostUsd: 1100,
+    directStorageCostUsd: 350,
+    allocatedSharedCostUsd: 600,
+    totalCostPerTenantUsd: 2050,
+    grossMarginPercent: 72.67,
+    monthlyTransactionsCount: 600000,
+    costPerTransactionUsd: 0.0034,
+    taggingCompliancePercent: 82.5,
+    updatedAt: '2026-10-24T18:00:00Z'
+  }
+];
+
+export const DEFAULT_DEMO_FINOPS_COMMITMENTS: CommitmentPortfolioItemDTO[] = [
+  {
+    id: 'commit-1',
+    provider: 'aws',
+    serviceName: 'Amazon EC2 & Fargate',
+    commitmentType: 'savings_plan_compute',
+    instanceFamilyOrResource: 'All Compute Types',
+    termMonths: 36,
+    paymentOption: 'no_upfront',
+    committedHourlySpendUsd: 38.5,
+    monthlyCommittedSpendUsd: 28105,
+    onDemandEquivalentMonthlySpendUsd: 42340,
+    monthlySavingsUsd: 14235,
+    utilizationRatePercent: 97.4,
+    coverageRatioPercent: 86.5,
+    expirationDate: '2028-04-15',
+    daysUntilExpiration: 538,
+    isExpiringSoon: false,
+    createdAt: '2025-04-15T00:00:00Z'
+  },
+  {
+    id: 'commit-2',
+    provider: 'aws',
+    serviceName: 'Amazon RDS Aurora PostgreSQL',
+    commitmentType: 'reserved_instance_standard',
+    instanceFamilyOrResource: 'db.r6g.2xlarge',
+    termMonths: 12,
+    paymentOption: 'partial_upfront',
+    committedHourlySpendUsd: 14.2,
+    monthlyCommittedSpendUsd: 10366,
+    onDemandEquivalentMonthlySpendUsd: 15330,
+    monthlySavingsUsd: 4964,
+    utilizationRatePercent: 95.8,
+    coverageRatioPercent: 82.0,
+    expirationDate: '2026-11-28',
+    daysUntilExpiration: 34,
+    isExpiringSoon: true,
+    createdAt: '2025-11-28T00:00:00Z'
+  },
+  {
+    id: 'commit-3',
+    provider: 'gcp',
+    serviceName: 'Compute Engine',
+    commitmentType: 'cud_gcp',
+    instanceFamilyOrResource: 'n2d-standard-8',
+    termMonths: 12,
+    paymentOption: 'no_upfront',
+    committedHourlySpendUsd: 18.0,
+    monthlyCommittedSpendUsd: 13140,
+    onDemandEquivalentMonthlySpendUsd: 19345,
+    monthlySavingsUsd: 6205,
+    utilizationRatePercent: 96.1,
+    coverageRatioPercent: 84.0,
+    expirationDate: '2027-02-10',
+    daysUntilExpiration: 108,
+    isExpiringSoon: false,
+    createdAt: '2026-02-10T00:00:00Z'
+  }
+];
+
+export const DEFAULT_DEMO_FINOPS_ANOMALIES: CloudCostAnomalyDTO[] = [
+  {
+    id: 'anomaly-1',
+    provider: 'aws',
+    serviceAffected: 'Amazon RDS PostgreSQL Production',
+    detectedDate: '2026-10-23',
+    actualDailySpendUsd: 1150,
+    baselineMeanDailySpendUsd: 480,
+    standardDeviationUsd: 174.5,
+    zScore: 3.84,
+    excessSpendDailyUsd: 670,
+    severity: 'critical',
+    probableRootCause: 'Unindexed analytics queries triggered auto-scaling read replica burst and provisioned IOPS saturation.',
+    status: 'active'
+  },
+  {
+    id: 'anomaly-2',
+    provider: 'gcp',
+    serviceAffected: 'Google BigQuery Analytics Engine',
+    detectedDate: '2026-10-22',
+    actualDailySpendUsd: 740,
+    baselineMeanDailySpendUsd: 320,
+    standardDeviationUsd: 134.6,
+    zScore: 3.12,
+    excessSpendDailyUsd: 420,
+    severity: 'high',
+    probableRootCause: 'Ad-hoc data science ETL scan without partition filters processed 85TB uncompressed audit tables.',
+    status: 'investigating'
+  },
+  {
+    id: 'anomaly-3',
+    provider: 'datadog',
+    serviceAffected: 'Datadog Custom Metrics & APM Ingestion',
+    detectedDate: '2026-10-21',
+    actualDailySpendUsd: 380,
+    baselineMeanDailySpendUsd: 190,
+    standardDeviationUsd: 71.7,
+    zScore: 2.65,
+    excessSpendDailyUsd: 190,
+    severity: 'medium',
+    probableRootCause: 'High cardinality container tag leakage (pod UID as tag) escalated custom metric tier counts.',
+    status: 'resolved'
+  }
+];
+
+export const DEFAULT_DEMO_FINOPS_IDLE_ASSETS: IdleWasteItemDTO[] = [
+  {
+    id: 'waste-1',
+    provider: 'aws',
+    assetType: 'unattached_ebs_volume',
+    resourceIdentifier: 'vol-084ab719efc83210 (500GB gp3 unattached)',
+    region: 'us-east-1',
+    monthlyWasteCostUsd: 480,
+    idleDurationDays: 32,
+    carbonFootprintMonthlyKgCo2e: 4.8,
+    status: 'detected',
+    detectedAt: '2026-10-18T10:00:00Z'
+  },
+  {
+    id: 'waste-2',
+    provider: 'aws',
+    assetType: 'idle_load_balancer',
+    resourceIdentifier: 'alb-app-internal-staging-zero-traffic',
+    region: 'us-east-1',
+    monthlyWasteCostUsd: 650,
+    idleDurationDays: 45,
+    carbonFootprintMonthlyKgCo2e: 6.2,
+    status: 'detected',
+    detectedAt: '2026-10-19T14:00:00Z'
+  },
+  {
+    id: 'waste-3',
+    provider: 'gcp',
+    assetType: 'unmounted_persistent_disk',
+    resourceIdentifier: 'disk-analytics-worker-temp-200gb',
+    region: 'us-central1',
+    monthlyWasteCostUsd: 220,
+    idleDurationDays: 28,
+    carbonFootprintMonthlyKgCo2e: 2.1,
+    status: 'remediated',
+    detectedAt: '2026-10-15T08:00:00Z'
+  },
+  {
+    id: 'waste-4',
+    provider: 'aws',
+    assetType: 'idle_elastic_ip',
+    resourceIdentifier: 'eipalloc-0a8f94112 (Disassociated)',
+    region: 'us-east-1',
+    monthlyWasteCostUsd: 36,
+    idleDurationDays: 60,
+    carbonFootprintMonthlyKgCo2e: 0.4,
+    status: 'detected',
+    detectedAt: '2026-10-21T12:00:00Z'
+  },
+  {
+    id: 'waste-5',
+    provider: 'aws',
+    assetType: 'zombie_k8s_node',
+    resourceIdentifier: 'i-09ef88219 (m5.2xlarge 0% Pod Allocation)',
+    region: 'us-east-1',
+    monthlyWasteCostUsd: 2464,
+    idleDurationDays: 14,
+    carbonFootprintMonthlyKgCo2e: 22.8,
+    status: 'detected',
+    detectedAt: '2026-10-23T09:00:00Z'
+  }
+];
+
+export const DEFAULT_DEMO_FINOPS_K8S_WORKLOADS: KubernetesWorkloadRightsizingDTO[] = [
+  {
+    id: 'k8s-1',
+    clusterName: 'production-us-east-primary',
+    namespaceName: 'jobtrack-core',
+    workloadName: 'payment-processing-service',
+    workloadType: 'deployment',
+    replicasCount: 6,
+    requestedCpuCores: 8.0,
+    actualP95CpuCores: 2.1,
+    recommendedCpuCores: 2.52,
+    requestedMemoryGiB: 16.0,
+    actualP95MemoryGiB: 5.2,
+    recommendedMemoryGiB: 6.24,
+    currentMonthlyCostUsd: 2880,
+    rightsizedMonthlyCostUsd: 1430,
+    monthlySavingsUsd: 1450,
+    sizingSlackPercent: 50.3,
+    isEligibleForSpot: false,
+    spotSavingsPotentialMonthlyUsd: 0
+  },
+  {
+    id: 'k8s-2',
+    clusterName: 'production-us-east-primary',
+    namespaceName: 'jobtrack-search',
+    workloadName: 'vector-indexing-worker',
+    workloadType: 'deployment',
+    replicasCount: 8,
+    requestedCpuCores: 16.0,
+    actualP95CpuCores: 6.4,
+    recommendedCpuCores: 7.68,
+    requestedMemoryGiB: 32.0,
+    actualP95MemoryGiB: 14.8,
+    recommendedMemoryGiB: 17.76,
+    currentMonthlyCostUsd: 4600,
+    rightsizedMonthlyCostUsd: 2400,
+    monthlySavingsUsd: 2200,
+    sizingSlackPercent: 47.8,
+    isEligibleForSpot: true,
+    spotSavingsPotentialMonthlyUsd: 1440
+  },
+  {
+    id: 'k8s-3',
+    clusterName: 'production-us-east-primary',
+    namespaceName: 'jobtrack-ingest',
+    workloadName: 'event-stream-consumer',
+    workloadType: 'deployment',
+    replicasCount: 4,
+    requestedCpuCores: 6.0,
+    actualP95CpuCores: 1.8,
+    recommendedCpuCores: 2.16,
+    requestedMemoryGiB: 12.0,
+    actualP95MemoryGiB: 4.1,
+    recommendedMemoryGiB: 4.92,
+    currentMonthlyCostUsd: 1980,
+    rightsizedMonthlyCostUsd: 1000,
+    monthlySavingsUsd: 980,
+    sizingSlackPercent: 49.5,
+    isEligibleForSpot: true,
+    spotSavingsPotentialMonthlyUsd: 600
+  },
+  {
+    id: 'k8s-4',
+    clusterName: 'production-us-east-primary',
+    namespaceName: 'jobtrack-edge',
+    workloadName: 'api-gateway-envoy',
+    workloadType: 'deployment',
+    replicasCount: 10,
+    requestedCpuCores: 12.0,
+    actualP95CpuCores: 4.8,
+    recommendedCpuCores: 5.76,
+    requestedMemoryGiB: 24.0,
+    actualP95MemoryGiB: 8.9,
+    recommendedMemoryGiB: 10.68,
+    currentMonthlyCostUsd: 3600,
+    rightsizedMonthlyCostUsd: 1830,
+    monthlySavingsUsd: 1770,
+    sizingSlackPercent: 49.2,
+    isEligibleForSpot: false,
+    spotSavingsPotentialMonthlyUsd: 0
+  }
+];
+
+export const DEFAULT_DEMO_FINOPS_MATURITY: FinOpsFoundationMaturityDTO = {
+  overallStage: 'walk',
+  costVisibilityScore: 88.0,
+  unitEconomicsScore: 84.5,
+  commitmentGovernanceScore: 85.0,
+  automationRightsizingScore: 72.0,
+  sustainabilityScore: 68.0
+};
+
+export const DEFAULT_DEMO_FINOPS_SCORE_BREAKDOWN: FinOpsEfficiencyScoreBreakdownDTO = {
+  unitEconomicsWeightScore: 88.5,
+  commitmentWeightScore: 86.4,
+  wasteEliminationWeightScore: 78.0,
+  k8sArbitrageWeightScore: 74.5,
+  carbonWeightScore: 72.0,
+  compositeScore: 82.4,
+  efficiencyBand: 'disciplined_efficient'
+};
+
+export const DEFAULT_DEMO_FINOPS_MEMO: CfoMemorandumDTO = {
+  id: 'memo-finops-q4-2026',
+  title: 'Executive FinOps, Cloud Unit Economics & Infrastructure Governance Memorandum',
+  fiscalQuarter: 'Q4-2026',
+  status: 'under_review',
+  compositeFinOpsScore: 82.4,
+  efficiencyBand: 'disciplined_efficient',
+  monthlyCloudSpendUsd: 148500,
+  annualizedRealizedSavingsUsd: 168000,
+  unlockedAnnualizedPipelineSavingsUsd: 342000,
+  cloudGrossMarginPercent: 76.8,
+  executiveSummary: {
+    sectionKey: 'exec_summary',
+    heading: 'Executive FinOps & Unit Economics Overview',
+    executiveSummaryText: 'Operating cloud gross margin delivered at 76.8% with an overall FinOps Composite Score of 82.4/100 (Disciplined Efficient Band).',
+    keyMetricsBulletPoints: [
+      'Total Monthly Multi-Cloud Spend: $148,500 ($1.78M annualized run rate)',
+      'Commitment Portfolio Coverage: 84.5% with 96.2% utilization rate',
+      'Cost per Transaction: $0.0027 - $0.0036 across primary tier-1 tenants'
+    ],
+    strategicGuidance: 'Maintain commitment hedging ratio >= 80% while transitioning stateless workloads to Graviton ARM64 architecture.'
+  },
+  unitEconomicsScorecard: {
+    sectionKey: 'unit_economics',
+    heading: 'Tenant Cost Allocation & Gross Margin Contribution',
+    executiveSummaryText: 'Four core tier accounts mapped with 100% allocation coverage across compute, storage, and shared telemetry services.',
+    keyMetricsBulletPoints: [
+      'Fintech Global: $11,500/mo spend, 4.2M tx, 76.0% gross margin',
+      'HealthCare Secure: $10,150/mo spend, 2.8M tx, 71.8% gross margin',
+      'Average Tagging Compliance: 88.5% across all cloud accounts'
+    ],
+    strategicGuidance: 'Enforce pre-commit CI/CD tagging validation to prevent untagged resource leakage in production.'
+  },
+  commitmentStrategy: {
+    sectionKey: 'commitments',
+    heading: 'Commitment Hedging & Expiration Management',
+    executiveSummaryText: 'Portfolio generates $25,404 in monthly effective savings ($304,848 annualized) against standard on-demand pricing.',
+    keyMetricsBulletPoints: [
+      'AWS 3-Year No-Upfront Savings Plan expiring in April 2028',
+      'AWS RDS Aurora 1-Year Reserved Instance expiring in 34 days (Cliff Alert)',
+      'GCP Committed Use Discount yielding $6,205/mo net savings'
+    ],
+    strategicGuidance: 'Execute 1-year partial-upfront renewal for RDS Aurora before November 28, 2026 cliff.'
+  },
+  wasteAndAnomalyGovernance: {
+    sectionKey: 'waste_anomaly',
+    heading: 'Anomaly Detection & Zombie Asset Remediation',
+    executiveSummaryText: 'Continuous Z-score detection identified 1 critical RDS anomaly and 5 idle infrastructure assets totaling $3,850/mo in waste.',
+    keyMetricsBulletPoints: [
+      'Zombie EKS Node (m5.2xlarge 0% allocated): $2,464/mo savings opportunity',
+      'Unattached gp3 Volume: $480/mo idle waste detected',
+      'Monthly Cloud Carbon Footprint: 2,420 kg CO2e with 28% avoidance potential'
+    ],
+    strategicGuidance: 'Automate weekly custodial reaping of unattached storage volumes and unassociated elastic IPs.'
+  },
+  k8sArchitectureArbitrage: {
+    sectionKey: 'k8s_arbitrage',
+    heading: 'Kubernetes Rightsizing & Graviton Architecture Arbitrage',
+    executiveSummaryText: 'Analysis of 4 production deployments indicates 49.2% average sizing slack across CPU requests vs P95 actual consumption.',
+    keyMetricsBulletPoints: [
+      'Immediate Rightsizing Monthly Savings: $6,400 ($76,800/yr)',
+      'Spot Candidate Savings: $2,040/mo across vector indexing and stream ingestion',
+      'Graviton ARM64 Migration Payback: 2.4 months with $42,000/yr net recurring benefit'
+    ],
+    strategicGuidance: 'Schedule Graviton migration for core stateless microservices during Q1 maintenance window.'
+  },
+  cfoDirectivesActionPlan: {
+    sectionKey: 'action_plan',
+    heading: 'CFO Action Directives & Capital Allocation',
+    executiveSummaryText: 'Prioritized technical actions to unlock $342,000 in annualized infrastructure savings while sustaining 99.99% availability.',
+    keyMetricsBulletPoints: [
+      'Action 1: Terminate zombie EKS worker nodes ($29,568/yr immediate savings)',
+      'Action 2: Renew expiring RDS Aurora commitments with partial-upfront terms',
+      'Action 3: Shift vector-indexing worker pods to AWS Karpenter Spot pools'
+    ],
+    strategicGuidance: 'Formal CFO sign-off recommended upon completion of VP Infrastructure and CTO technical reviews.'
+  },
+  approvedByVpInfraAt: '2026-10-24T18:00:00Z',
+  createdAt: '2026-10-24T16:00:00Z',
+  updatedAt: '2026-10-24T18:00:00Z'
+};
+
+function buildDefaultDemoFinopsOverview(): CloudFinopsStudioOverviewDTO {
+  const carbonFootprint = calculateCarbonFootprint(180000, 45000);
+  const npvScenario1 = calculateCommitmentNpv(42340, 8.5, 36, 'no_upfront', 33.6);
+  const npvScenario2 = calculateCommitmentNpv(15330, 8.5, 12, 'partial_upfront', 32.4);
+  const npvScenario3 = calculateCommitmentNpv(19345, 8.5, 12, 'no_upfront', 32.1);
+  const npvScenarios = [npvScenario1, npvScenario2, npvScenario3];
+
+  const expirationCliffs: CommitmentExpirationCliffDTO[] = [
+    {
+      cliffWindowDays: 30,
+      expiringCommitmentsCount: 1,
+      atRiskMonthlySavingsUsd: 4964,
+      unhedgedRunRateSpikeMonthlyUsd: 15330,
+      recommendedAction: 'Execute 12-month renewal for AWS Aurora PostgreSQL'
+    },
+    {
+      cliffWindowDays: 60,
+      expiringCommitmentsCount: 1,
+      atRiskMonthlySavingsUsd: 4964,
+      unhedgedRunRateSpikeMonthlyUsd: 15330,
+      recommendedAction: 'Prepare renewal requisition'
+    },
+    {
+      cliffWindowDays: 90,
+      expiringCommitmentsCount: 2,
+      atRiskMonthlySavingsUsd: 11169,
+      unhedgedRunRateSpikeMonthlyUsd: 34675,
+      recommendedAction: 'Review GCP CUD capacity needs'
+    }
+  ];
+
+  const gravitonRoadmap: GravitonArmMigrationRoiDTO[] = [
+    calculateGravitonMigrationRoi(12500, 160, 120, 20, 18)
+  ];
+
+  const allocationOverview: CloudCostAllocationOverviewDTO = {
+    totalMonthlySpendUsd: 148500,
+    blendedGrossMarginPercent: 76.8,
+    averageCostPerTenantUsd: 7075,
+    averageCostPerTransactionUsd: 0.0031,
+    overallTaggingCompliancePercent: 88.5,
+    spendByProvider: {
+      aws: 98000,
+      gcp: 28500,
+      snowflake: 14000,
+      datadog: 8000,
+      azure: 0
+    },
+    allocations: DEFAULT_DEMO_FINOPS_ALLOCATIONS
+  };
+
+  const commitmentOverview: CommitmentOptimizerOverviewDTO = {
+    overallCoverageRatioPercent: 84.5,
+    overallUtilizationRatePercent: 96.2,
+    annualizedRealizedSavingsUsd: 168000,
+    potentialAdditionalSavingsUsd: 136848,
+    portfolio: DEFAULT_DEMO_FINOPS_COMMITMENTS,
+    npvScenarios,
+    expirationCliffs
+  };
+
+  const wasteOverview: WasteEliminationOverviewDTO = {
+    activeAnomaliesCount: 2,
+    monthlyAnomalyExcessSpendUsd: 3840,
+    idleAssetsCount: DEFAULT_DEMO_FINOPS_IDLE_ASSETS.length,
+    monthlyIdleWasteTotalUsd: 3850,
+    remediatedSavingsMonthlyUsd: 220,
+    carbonSummary: carbonFootprint,
+    anomalies: DEFAULT_DEMO_FINOPS_ANOMALIES,
+    idleAssets: DEFAULT_DEMO_FINOPS_IDLE_ASSETS
+  };
+
+  const arbitrageOverview: ArchitectureArbitrageOverviewDTO = {
+    totalAnalyzedWorkloadsCount: DEFAULT_DEMO_FINOPS_K8S_WORKLOADS.length,
+    currentK8sMonthlySpendUsd: 13060,
+    rightsizedK8sMonthlySpendUsd: 6660,
+    monthlyRightsizingSavingsUsd: 6400,
+    monthlySpotSavingsPotentialUsd: 2040,
+    monthlyGravitonSavingsPotentialUsd: 3500,
+    workloads: DEFAULT_DEMO_FINOPS_K8S_WORKLOADS,
+    gravitonRoadmap
+  };
+
+  return {
+    compositeScore: 82.4,
+    efficiencyBand: 'disciplined_efficient',
+    maturityStage: 'walk',
+    totalMonthlySpendUsd: 148500,
+    blendedGrossMarginPercent: 76.8,
+    commitmentCoveragePercent: 84.5,
+    commitmentUtilizationPercent: 96.2,
+    identifiedMonthlyWasteUsd: 3850,
+    annualizedRealizedSavingsUsd: 168000,
+    annualizedPipelineSavingsUsd: 342000,
+    totalMonthlyCarbonKgCo2e: carbonFootprint.totalMonthlyCloudCarbonKgCo2e,
+    allocationOverview,
+    commitmentOverview,
+    wasteOverview,
+    arbitrageOverview,
+    maturityAssessment: DEFAULT_DEMO_FINOPS_MATURITY,
+    latestCfoMemo: DEFAULT_DEMO_FINOPS_MEMO
+  };
+}
+
+function loadDemoFinopsOverview(): CloudFinopsStudioOverviewDTO {
+  const raw = localStorage.getItem(DEMO_FINOPS_OVERVIEW_KEY);
+  if (!raw) {
+    const initial = buildDefaultDemoFinopsOverview();
+    localStorage.setItem(DEMO_FINOPS_OVERVIEW_KEY, JSON.stringify(initial));
+    return initial;
+  }
+  try {
+    return JSON.parse(raw) as CloudFinopsStudioOverviewDTO;
+  } catch {
+    const initial = buildDefaultDemoFinopsOverview();
+    localStorage.setItem(DEMO_FINOPS_OVERVIEW_KEY, JSON.stringify(initial));
+    return initial;
+  }
+}
+
+function saveDemoFinopsOverview(overview: CloudFinopsStudioOverviewDTO): void {
+  localStorage.setItem(DEMO_FINOPS_OVERVIEW_KEY, JSON.stringify(overview));
+}
+
+export const cloudFinopsStudioRepository = {
+  async getOverview(): Promise<CloudFinopsStudioOverviewDTO> {
+    if (demoMode) return loadDemoFinopsOverview();
+    try {
+      return await request<CloudFinopsStudioOverviewDTO>('/cloud-finops-studio/overview');
+    } catch {
+      return loadDemoFinopsOverview();
+    }
+  },
+
+  async listAllocations(): Promise<TenantCostAllocationDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      return ov.allocationOverview.allocations;
+    }
+    try {
+      return await request<TenantCostAllocationDTO[]>('/cloud-finops-studio/allocations');
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      return ov.allocationOverview.allocations;
+    }
+  },
+
+  async createAllocation(input: TenantCostAllocationMutationDTO): Promise<TenantCostAllocationDTO> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      const metrics = calculateCostPerTenantMetrics(
+        input.monthlyAttributableRevenueUsd,
+        input.directComputeCostUsd,
+        input.directStorageCostUsd,
+        input.allocatedSharedCostUsd,
+        input.monthlyTransactionsCount
+      );
+      const newAllocation: TenantCostAllocationDTO = {
+        id: `alloc-${Date.now()}`,
+        tenantName: input.tenantName,
+        tenantTier: input.tenantTier,
+        monthlyAttributableRevenueUsd: input.monthlyAttributableRevenueUsd,
+        directComputeCostUsd: input.directComputeCostUsd,
+        directStorageCostUsd: input.directStorageCostUsd,
+        allocatedSharedCostUsd: input.allocatedSharedCostUsd,
+        totalCostPerTenantUsd: metrics.totalCostPerTenantUsd,
+        grossMarginPercent: metrics.grossMarginPercent,
+        monthlyTransactionsCount: input.monthlyTransactionsCount,
+        costPerTransactionUsd: metrics.costPerTransactionUsd,
+        taggingCompliancePercent: input.taggingCompliancePercent,
+        updatedAt: new Date().toISOString()
+      };
+      ov.allocationOverview.allocations.unshift(newAllocation);
+      saveDemoFinopsOverview(ov);
+      return newAllocation;
+    }
+    try {
+      return await request<TenantCostAllocationDTO>('/cloud-finops-studio/allocations', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      const metrics = calculateCostPerTenantMetrics(
+        input.monthlyAttributableRevenueUsd,
+        input.directComputeCostUsd,
+        input.directStorageCostUsd,
+        input.allocatedSharedCostUsd,
+        input.monthlyTransactionsCount
+      );
+      const newAllocation: TenantCostAllocationDTO = {
+        id: `alloc-${Date.now()}`,
+        tenantName: input.tenantName,
+        tenantTier: input.tenantTier,
+        monthlyAttributableRevenueUsd: input.monthlyAttributableRevenueUsd,
+        directComputeCostUsd: input.directComputeCostUsd,
+        directStorageCostUsd: input.directStorageCostUsd,
+        allocatedSharedCostUsd: input.allocatedSharedCostUsd,
+        totalCostPerTenantUsd: metrics.totalCostPerTenantUsd,
+        grossMarginPercent: metrics.grossMarginPercent,
+        monthlyTransactionsCount: input.monthlyTransactionsCount,
+        costPerTransactionUsd: metrics.costPerTransactionUsd,
+        taggingCompliancePercent: input.taggingCompliancePercent,
+        updatedAt: new Date().toISOString()
+      };
+      ov.allocationOverview.allocations.unshift(newAllocation);
+      saveDemoFinopsOverview(ov);
+      return newAllocation;
+    }
+  },
+
+  async updateAllocation(id: string, input: TenantCostAllocationMutationDTO): Promise<TenantCostAllocationDTO | null> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      const idx = ov.allocationOverview.allocations.findIndex((a) => a.id === id);
+      if (idx === -1) return null;
+      const metrics = calculateCostPerTenantMetrics(
+        input.monthlyAttributableRevenueUsd,
+        input.directComputeCostUsd,
+        input.directStorageCostUsd,
+        input.allocatedSharedCostUsd,
+        input.monthlyTransactionsCount
+      );
+      const updated: TenantCostAllocationDTO = {
+        ...ov.allocationOverview.allocations[idx],
+        tenantName: input.tenantName,
+        tenantTier: input.tenantTier,
+        monthlyAttributableRevenueUsd: input.monthlyAttributableRevenueUsd,
+        directComputeCostUsd: input.directComputeCostUsd,
+        directStorageCostUsd: input.directStorageCostUsd,
+        allocatedSharedCostUsd: input.allocatedSharedCostUsd,
+        totalCostPerTenantUsd: metrics.totalCostPerTenantUsd,
+        grossMarginPercent: metrics.grossMarginPercent,
+        monthlyTransactionsCount: input.monthlyTransactionsCount,
+        costPerTransactionUsd: metrics.costPerTransactionUsd,
+        taggingCompliancePercent: input.taggingCompliancePercent,
+        updatedAt: new Date().toISOString()
+      };
+      ov.allocationOverview.allocations[idx] = updated;
+      saveDemoFinopsOverview(ov);
+      return updated;
+    }
+    try {
+      return await request<TenantCostAllocationDTO>(`/cloud-finops-studio/allocations/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      const idx = ov.allocationOverview.allocations.findIndex((a) => a.id === id);
+      if (idx === -1) return null;
+      const metrics = calculateCostPerTenantMetrics(
+        input.monthlyAttributableRevenueUsd,
+        input.directComputeCostUsd,
+        input.directStorageCostUsd,
+        input.allocatedSharedCostUsd,
+        input.monthlyTransactionsCount
+      );
+      const updated: TenantCostAllocationDTO = {
+        ...ov.allocationOverview.allocations[idx],
+        tenantName: input.tenantName,
+        tenantTier: input.tenantTier,
+        monthlyAttributableRevenueUsd: input.monthlyAttributableRevenueUsd,
+        directComputeCostUsd: input.directComputeCostUsd,
+        directStorageCostUsd: input.directStorageCostUsd,
+        allocatedSharedCostUsd: input.allocatedSharedCostUsd,
+        totalCostPerTenantUsd: metrics.totalCostPerTenantUsd,
+        grossMarginPercent: metrics.grossMarginPercent,
+        monthlyTransactionsCount: input.monthlyTransactionsCount,
+        costPerTransactionUsd: metrics.costPerTransactionUsd,
+        taggingCompliancePercent: input.taggingCompliancePercent,
+        updatedAt: new Date().toISOString()
+      };
+      ov.allocationOverview.allocations[idx] = updated;
+      saveDemoFinopsOverview(ov);
+      return updated;
+    }
+  },
+
+  async deleteAllocation(id: string): Promise<boolean> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      const initLen = ov.allocationOverview.allocations.length;
+      ov.allocationOverview.allocations = ov.allocationOverview.allocations.filter((a) => a.id !== id);
+      saveDemoFinopsOverview(ov);
+      return ov.allocationOverview.allocations.length < initLen;
+    }
+    try {
+      await request(`/cloud-finops-studio/allocations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      ov.allocationOverview.allocations = ov.allocationOverview.allocations.filter((a) => a.id !== id);
+      saveDemoFinopsOverview(ov);
+      return true;
+    }
+  },
+
+  async listCommitments(): Promise<CommitmentPortfolioItemDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      return ov.commitmentOverview.portfolio;
+    }
+    try {
+      return await request<CommitmentPortfolioItemDTO[]>('/cloud-finops-studio/commitments');
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      return ov.commitmentOverview.portfolio;
+    }
+  },
+
+  async createCommitment(input: CommitmentMutationDTO): Promise<CommitmentPortfolioItemDTO> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      const monthlyCommitted = Number((input.committedHourlySpendUsd * 730).toFixed(2));
+      const monthlySavings = Number(Math.max(0, input.onDemandEquivalentMonthlySpendUsd - monthlyCommitted).toFixed(2));
+      const expDate = new Date(input.expirationDate);
+      const daysUntil = Math.max(0, Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24)));
+      const newCommit: CommitmentPortfolioItemDTO = {
+        id: `commit-${Date.now()}`,
+        provider: input.provider,
+        serviceName: input.serviceName,
+        commitmentType: input.commitmentType,
+        instanceFamilyOrResource: input.instanceFamilyOrResource,
+        termMonths: input.termMonths,
+        paymentOption: input.paymentOption,
+        committedHourlySpendUsd: input.committedHourlySpendUsd,
+        monthlyCommittedSpendUsd: monthlyCommitted,
+        onDemandEquivalentMonthlySpendUsd: input.onDemandEquivalentMonthlySpendUsd,
+        monthlySavingsUsd: monthlySavings,
+        utilizationRatePercent: input.utilizationRatePercent,
+        coverageRatioPercent: input.coverageRatioPercent,
+        expirationDate: input.expirationDate,
+        daysUntilExpiration: daysUntil,
+        isExpiringSoon: daysUntil <= 60,
+        createdAt: new Date().toISOString()
+      };
+      ov.commitmentOverview.portfolio.unshift(newCommit);
+      saveDemoFinopsOverview(ov);
+      return newCommit;
+    }
+    try {
+      return await request<CommitmentPortfolioItemDTO>('/cloud-finops-studio/commitments', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      const monthlyCommitted = Number((input.committedHourlySpendUsd * 730).toFixed(2));
+      const monthlySavings = Number(Math.max(0, input.onDemandEquivalentMonthlySpendUsd - monthlyCommitted).toFixed(2));
+      const expDate = new Date(input.expirationDate);
+      const daysUntil = Math.max(0, Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24)));
+      const newCommit: CommitmentPortfolioItemDTO = {
+        id: `commit-${Date.now()}`,
+        provider: input.provider,
+        serviceName: input.serviceName,
+        commitmentType: input.commitmentType,
+        instanceFamilyOrResource: input.instanceFamilyOrResource,
+        termMonths: input.termMonths,
+        paymentOption: input.paymentOption,
+        committedHourlySpendUsd: input.committedHourlySpendUsd,
+        monthlyCommittedSpendUsd: monthlyCommitted,
+        onDemandEquivalentMonthlySpendUsd: input.onDemandEquivalentMonthlySpendUsd,
+        monthlySavingsUsd: monthlySavings,
+        utilizationRatePercent: input.utilizationRatePercent,
+        coverageRatioPercent: input.coverageRatioPercent,
+        expirationDate: input.expirationDate,
+        daysUntilExpiration: daysUntil,
+        isExpiringSoon: daysUntil <= 60,
+        createdAt: new Date().toISOString()
+      };
+      ov.commitmentOverview.portfolio.unshift(newCommit);
+      saveDemoFinopsOverview(ov);
+      return newCommit;
+    }
+  },
+
+  async deleteCommitment(id: string): Promise<boolean> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      const initLen = ov.commitmentOverview.portfolio.length;
+      ov.commitmentOverview.portfolio = ov.commitmentOverview.portfolio.filter((c) => c.id !== id);
+      saveDemoFinopsOverview(ov);
+      return ov.commitmentOverview.portfolio.length < initLen;
+    }
+    try {
+      await request(`/cloud-finops-studio/commitments/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      ov.commitmentOverview.portfolio = ov.commitmentOverview.portfolio.filter((c) => c.id !== id);
+      saveDemoFinopsOverview(ov);
+      return true;
+    }
+  },
+
+  async simulateCommitmentNpv(input: CommitmentPurchaseSimulationDTO): Promise<CommitmentNpvScenarioDTO[]> {
+    if (demoMode) {
+      const s1 = calculateCommitmentNpv(input.eligibleMonthlySpendUsd * (input.targetCoveragePercent / 100), input.waccDiscountRatePercent, 36, 'all_upfront', 38);
+      const s2 = calculateCommitmentNpv(input.eligibleMonthlySpendUsd * (input.targetCoveragePercent / 100), input.waccDiscountRatePercent, 36, 'no_upfront', 32);
+      const s3 = calculateCommitmentNpv(input.eligibleMonthlySpendUsd * (input.targetCoveragePercent / 100), input.waccDiscountRatePercent, 12, 'partial_upfront', 25);
+      return [s1, s2, s3];
+    }
+    try {
+      return await request<CommitmentNpvScenarioDTO[]>('/cloud-finops-studio/commitments/simulate-npv', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const s1 = calculateCommitmentNpv(input.eligibleMonthlySpendUsd * (input.targetCoveragePercent / 100), input.waccDiscountRatePercent, 36, 'all_upfront', 38);
+      const s2 = calculateCommitmentNpv(input.eligibleMonthlySpendUsd * (input.targetCoveragePercent / 100), input.waccDiscountRatePercent, 36, 'no_upfront', 32);
+      const s3 = calculateCommitmentNpv(input.eligibleMonthlySpendUsd * (input.targetCoveragePercent / 100), input.waccDiscountRatePercent, 12, 'partial_upfront', 25);
+      return [s1, s2, s3];
+    }
+  },
+
+  async listAnomalies(): Promise<CloudCostAnomalyDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      return ov.wasteOverview.anomalies;
+    }
+    try {
+      return await request<CloudCostAnomalyDTO[]>('/cloud-finops-studio/anomalies');
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      return ov.wasteOverview.anomalies;
+    }
+  },
+
+  async detectAnomalies(input?: AnomalyDetectionRequestDTO): Promise<CloudCostAnomalyDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      return ov.wasteOverview.anomalies;
+    }
+    try {
+      return await request<CloudCostAnomalyDTO[]>('/cloud-finops-studio/anomalies/detect', {
+        method: 'POST',
+        body: input ? JSON.stringify(input) : undefined
+      });
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      return ov.wasteOverview.anomalies;
+    }
+  },
+
+  async listIdleAssets(): Promise<IdleWasteItemDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      return ov.wasteOverview.idleAssets;
+    }
+    try {
+      return await request<IdleWasteItemDTO[]>('/cloud-finops-studio/idle-waste');
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      return ov.wasteOverview.idleAssets;
+    }
+  },
+
+  async remediateIdleAsset(id: string, input: IdleWasteRemediationMutationDTO): Promise<IdleWasteItemDTO | null> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      const idx = ov.wasteOverview.idleAssets.findIndex((a) => a.id === id);
+      if (idx === -1) return null;
+      const updated: IdleWasteItemDTO = {
+        ...ov.wasteOverview.idleAssets[idx],
+        status: input.status
+      };
+      ov.wasteOverview.idleAssets[idx] = updated;
+      saveDemoFinopsOverview(ov);
+      return updated;
+    }
+    try {
+      return await request<IdleWasteItemDTO>(`/cloud-finops-studio/idle-waste/${encodeURIComponent(id)}/remediate`, {
+        method: 'PATCH',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      const idx = ov.wasteOverview.idleAssets.findIndex((a) => a.id === id);
+      if (idx === -1) return null;
+      const updated: IdleWasteItemDTO = {
+        ...ov.wasteOverview.idleAssets[idx],
+        status: input.status
+      };
+      ov.wasteOverview.idleAssets[idx] = updated;
+      saveDemoFinopsOverview(ov);
+      return updated;
+    }
+  },
+
+  async listK8sWorkloads(): Promise<KubernetesWorkloadRightsizingDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      return ov.arbitrageOverview.workloads;
+    }
+    try {
+      return await request<KubernetesWorkloadRightsizingDTO[]>('/cloud-finops-studio/k8s-rightsizing');
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      return ov.arbitrageOverview.workloads;
+    }
+  },
+
+  async simulateK8sRightsizing(input: KubernetesRightsizingSimulationDTO): Promise<KubernetesWorkloadRightsizingDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      const rightsized = ov.arbitrageOverview.workloads.map((w) => {
+        const sizing = calculateK8sRightsizing(
+          w.requestedCpuCores,
+          w.actualP95CpuCores,
+          w.requestedMemoryGiB,
+          w.actualP95MemoryGiB,
+          w.currentMonthlyCostUsd,
+          input.headroomBufferPercent
+        );
+        return {
+          ...w,
+          recommendedCpuCores: sizing.recommendedCpu,
+          recommendedMemoryGiB: sizing.recommendedMemoryGiB,
+          rightsizedMonthlyCostUsd: sizing.rightsizedMonthlyCostUsd,
+          monthlySavingsUsd: sizing.monthlySavingsUsd,
+          sizingSlackPercent: sizing.sizingSlackPercent
+        };
+      });
+      return rightsized;
+    }
+    try {
+      return await request<KubernetesWorkloadRightsizingDTO[]>('/cloud-finops-studio/k8s-rightsizing/simulate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      const rightsized = ov.arbitrageOverview.workloads.map((w) => {
+        const sizing = calculateK8sRightsizing(
+          w.requestedCpuCores,
+          w.actualP95CpuCores,
+          w.requestedMemoryGiB,
+          w.actualP95MemoryGiB,
+          w.currentMonthlyCostUsd,
+          input.headroomBufferPercent
+        );
+        return {
+          ...w,
+          recommendedCpuCores: sizing.recommendedCpu,
+          recommendedMemoryGiB: sizing.recommendedMemoryGiB,
+          rightsizedMonthlyCostUsd: sizing.rightsizedMonthlyCostUsd,
+          monthlySavingsUsd: sizing.monthlySavingsUsd,
+          sizingSlackPercent: sizing.sizingSlackPercent
+        };
+      });
+      return rightsized;
+    }
+  },
+
+  async listCfoMemos(): Promise<CfoMemorandumDTO[]> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      return ov.latestCfoMemo ? [ov.latestCfoMemo] : [];
+    }
+    try {
+      return await request<CfoMemorandumDTO[]>('/cloud-finops-studio/cfo-memos');
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      return ov.latestCfoMemo ? [ov.latestCfoMemo] : [];
+    }
+  },
+
+  async generateCfoMemo(req: CfoMemorandumGenerateRequestDTO): Promise<CfoMemorandumDTO> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      const newMemo: CfoMemorandumDTO = {
+        ...DEFAULT_DEMO_FINOPS_MEMO,
+        id: `memo-${Date.now()}`,
+        title: req.title,
+        fiscalQuarter: req.fiscalQuarter,
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.latestCfoMemo = newMemo;
+      saveDemoFinopsOverview(ov);
+      return newMemo;
+    }
+    try {
+      return await request<CfoMemorandumDTO>('/cloud-finops-studio/cfo-memos/generate', {
+        method: 'POST',
+        body: JSON.stringify(req)
+      });
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      const newMemo: CfoMemorandumDTO = {
+        ...DEFAULT_DEMO_FINOPS_MEMO,
+        id: `memo-${Date.now()}`,
+        title: req.title,
+        fiscalQuarter: req.fiscalQuarter,
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      ov.latestCfoMemo = newMemo;
+      saveDemoFinopsOverview(ov);
+      return newMemo;
+    }
+  },
+
+  async approveCfoMemo(id: string, role: 'vp_infra' | 'cto' | 'cfo'): Promise<CfoMemorandumDTO | null> {
+    if (demoMode) {
+      const ov = loadDemoFinopsOverview();
+      if (!ov.latestCfoMemo || ov.latestCfoMemo.id !== id) {
+        if (ov.latestCfoMemo) {
+          const now = new Date().toISOString();
+          if (role === 'vp_infra') ov.latestCfoMemo.approvedByVpInfraAt = now;
+          if (role === 'cto') ov.latestCfoMemo.approvedByCtoAt = now;
+          if (role === 'cfo') {
+            ov.latestCfoMemo.approvedByCfoAt = now;
+            ov.latestCfoMemo.status = 'board_approved';
+          }
+          saveDemoFinopsOverview(ov);
+          return ov.latestCfoMemo;
+        }
+        return null;
+      }
+      const now = new Date().toISOString();
+      if (role === 'vp_infra') ov.latestCfoMemo.approvedByVpInfraAt = now;
+      if (role === 'cto') ov.latestCfoMemo.approvedByCtoAt = now;
+      if (role === 'cfo') {
+        ov.latestCfoMemo.approvedByCfoAt = now;
+        ov.latestCfoMemo.status = 'board_approved';
+      }
+      saveDemoFinopsOverview(ov);
+      return ov.latestCfoMemo;
+    }
+    try {
+      return await request<CfoMemorandumDTO>(`/cloud-finops-studio/cfo-memos/${encodeURIComponent(id)}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ role })
+      });
+    } catch {
+      const ov = loadDemoFinopsOverview();
+      if (ov.latestCfoMemo) {
+        const now = new Date().toISOString();
+        if (role === 'vp_infra') ov.latestCfoMemo.approvedByVpInfraAt = now;
+        if (role === 'cto') ov.latestCfoMemo.approvedByCtoAt = now;
+        if (role === 'cfo') {
+          ov.latestCfoMemo.approvedByCfoAt = now;
+          ov.latestCfoMemo.status = 'board_approved';
+        }
+        return ov.latestCfoMemo;
+      }
+      return null;
+    }
+  }
+};
+
+
 
 
 
