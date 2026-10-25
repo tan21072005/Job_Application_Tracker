@@ -107,6 +107,7 @@ import { CloudFinopsStudioService } from './services/cloud-finops-studio-service
 import { AiGovernanceStudioService } from './services/ai-governance-studio-service.ts';
 import { SuccessionPipelineStudioService } from './services/succession-pipeline-studio-service.ts';
 import { CyberRiskGovernanceStudioService } from './services/cyber-risk-governance-studio-service.ts';
+import { EsgSustainabilityStudioService } from './services/esg-sustainability-studio-service.ts';
 import { signPaymentPayload } from './security/payment-signature.ts';
 import {
   parseVietnameseCurrency,
@@ -241,6 +242,7 @@ export const cloudFinopsStudioService = new CloudFinopsStudioService(pool);
 export const aiGovernanceStudioService = new AiGovernanceStudioService(pool);
 export const successionPipelineStudioService = new SuccessionPipelineStudioService(pool);
 export const cyberRiskGovernanceStudioService = new CyberRiskGovernanceStudioService(pool);
+export const esgSustainabilityStudioService = new EsgSustainabilityStudioService(pool);
 
 const app = express();
 app.disable('x-powered-by');
@@ -4216,6 +4218,137 @@ app.post(['/api/cyber-risk-governance-studio/memorandum/:id/sign-off', '/api/cyb
       return res.status(404).json({ code: 'memorandum_not_found', error: 'Memorandum not found' });
     }
     res.status(400).json({ code: 'invalid_sign_off_payload', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/esg-sustainability-studio/overview', '/api/esg-studio/overview'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const overview = await esgSustainabilityStudioService.getOverview(userId);
+    res.json(overview);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get(['/api/esg-sustainability-studio/carbon-inventory', '/api/esg-studio/carbon-inventory'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const year = req.query.year ? parseInt(String(req.query.year), 10) : 2026;
+    const inv = await esgSustainabilityStudioService.getCarbonInventory(userId, year);
+    res.json(inv);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/esg-sustainability-studio/carbon-inventory', '/api/esg-studio/carbon-inventory'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const inv = await esgSustainabilityStudioService.recordCarbonEmissions(userId, req.body);
+    res.status(201).json(inv);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_carbon_payload', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/esg-sustainability-studio/tcfd-scenarios', '/api/esg-studio/tcfd-scenarios'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const scenarios = await esgSustainabilityStudioService.getTcfdScenarios(userId);
+    res.json(scenarios);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/esg-sustainability-studio/scenarios/simulate', '/api/esg-studio/scenarios/simulate'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const result = await esgSustainabilityStudioService.simulateTcfdScenario(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_tcfd_simulation_payload', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/esg-sustainability-studio/materiality', '/api/esg-studio/materiality'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const matrix = await esgSustainabilityStudioService.getDoubleMaterialityMatrix(userId);
+    res.json(matrix);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put(['/api/esg-sustainability-studio/materiality/:code', '/api/esg-studio/materiality/:code'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const topic = await esgSustainabilityStudioService.updateMaterialityAssessment(userId, req.params.code, req.body);
+    res.json(topic);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'topic_not_found', error: 'Topic not found' });
+    }
+    res.status(400).json({ code: 'invalid_materiality_payload', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/esg-sustainability-studio/suppliers', '/api/esg-studio/suppliers'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const supplyChain = await esgSustainabilityStudioService.getSupplierDecarbonization(userId);
+    res.json(supplyChain);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/esg-sustainability-studio/suppliers/simulate', '/api/esg-studio/suppliers/simulate'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const result = await esgSustainabilityStudioService.simulateSupplierDecarbonization(userId, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_supplier_simulation_payload', error: (err as Error).message });
+  }
+});
+
+app.get(['/api/esg-sustainability-studio/sec-audit', '/api/esg-studio/sec-audit'], auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const audit = await esgSustainabilityStudioService.getSecDisclosureAudit(userId);
+    res.json(audit);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post(['/api/esg-sustainability-studio/board-memos/generate', '/api/esg-studio/board-memos/generate'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const memo = await esgSustainabilityStudioService.generateBoardMemorandum(userId, req.body);
+    res.status(201).json(memo);
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_board_memo_payload', error: (err as Error).message });
+  }
+});
+
+app.post(['/api/esg-sustainability-studio/board-memos/:id/approve', '/api/esg-studio/board-memos/:id/approve'], auth, async (req, res) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const role = req.body.role;
+    if (!role || !['cso', 'cfo', 'board_esg_chair'].includes(role)) {
+      return res.status(400).json({ code: 'invalid_role', error: 'Invalid sign-off role' });
+    }
+    const updated = await esgSustainabilityStudioService.signOffBoardMemorandum(userId, req.params.id, role);
+    res.json(updated);
+  } catch (err) {
+    if ((err as Error).message.includes('not found')) {
+      return res.status(404).json({ code: 'memo_not_found', error: 'Board memorandum not found' });
+    }
+    res.status(400).json({ code: 'sign_off_failed', error: (err as Error).message });
   }
 });
 

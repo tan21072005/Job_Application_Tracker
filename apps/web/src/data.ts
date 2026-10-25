@@ -300,7 +300,67 @@ import {
   validateComplianceControlInput,
   validateTabletopSimulationInput,
   validateGovernanceSignOffInput,
-  validateMaterialityDeterminationInput
+  validateMaterialityDeterminationInput,
+  type GhgReportingScope,
+  type Scope2AccountingMethod,
+  type Scope3Category,
+  type TcfdClimateScenario,
+  type ClimateTimeHorizon,
+  type PhysicalRiskHazardType,
+  type TransitionRiskDriver,
+  type EsrsStandard,
+  type DoubleMaterialityTier,
+  type SupplierEsgTier,
+  type SbtiAlignmentStatus,
+  type GreenwashingRiskLevel,
+  type EsgGovernanceStatusBand,
+  type BoardEsgSignoffRole,
+  type BoardEsgMemoStatus,
+  type Scope1EmissionsDTO,
+  type Scope2EmissionsDTO,
+  type Scope3CategoryBreakdownDTO,
+  type CarbonIntensityMetricsDTO,
+  type GhgCarbonInventoryDTO,
+  type RecordCarbonEmissionsRequestDTO,
+  type PhysicalRiskAssessmentDTO,
+  type TransitionRiskAssessmentDTO,
+  type TcfdScenarioModelDTO,
+  type TcfdSimulationRequestDTO,
+  type TcfdSimulationResultDTO,
+  type EsrsTopicAssessmentDTO,
+  type DoubleMaterialityMatrixDTO,
+  type UpdateMaterialityTopicRequestDTO,
+  type SupplierDecarbonizationDTO,
+  type SbtiGlidePathTelemetryDTO,
+  type SupplierDecarbonizationSimulationRequestDTO,
+  type SupplierDecarbonizationSimulationResultDTO,
+  type Scope3SupplyChainOverviewDTO,
+  type SecRegulationItemReadinessDTO,
+  type GreenwashingAuditFlagDTO,
+  type GreenwashingRiskAuditDTO,
+  type SecComplianceOverviewDTO,
+  type EsgBoardMemorandumSectionDTO,
+  type ExecutiveEsgBoardMemorandumDTO,
+  type GenerateBoardMemoRequestDTO,
+  type EsgStudioOverviewDTO,
+  classifyEsgGovernanceBand,
+  classifySbtiAlignment,
+  classifyDoubleMateriality,
+  calculateGhgGrossAndNetEmissions,
+  calculateCarbonIntensities,
+  calculateTcfdFinancialExposure,
+  calculateDoubleMaterialityScores,
+  calculateSbtiTrajectoryVariance,
+  calculateSupplierDecarbonizationImpact,
+  calculateGreenwashingExposureIndex,
+  calculateCompositeEsgGovernanceScore,
+  generateExecutiveEsgBoardMemorandumMarkdown,
+  validateRecordCarbonEmissionsInput,
+  validateTcfdSimulationInput,
+  validateMaterialityTopicUpdate,
+  validateSupplierSimulationInput,
+  validateEsgBoardMemoGenerateInput,
+  validateEsgSignOffInput
 } from './domain';
 import { fixture, demoDatasets, demoDatasetRecords } from './demo';
 import {
@@ -14987,6 +15047,946 @@ export const cyberRiskGovernanceStudioRepository = {
       });
     } catch {
       return executeCyberSignOffDemo(memoId, payload);
+    }
+  }
+};
+
+const DEMO_ESG_STUDIO_STORAGE_KEY = 'jobtrack_demo_esg_sustainability_studio_v1';
+
+function buildDefaultDemoEsgOverview(): EsgStudioOverviewDTO {
+  const carbonInventory: GhgCarbonInventoryDTO = {
+    id: 'demo-carbon-2026',
+    reportingYear: 2026,
+    scope1: {
+      stationaryCombustionTco2e: 1220.0,
+      mobileFleetTco2e: 440.0,
+      fugitiveRefrigerantsTco2e: 180.0,
+      processEmissionsTco2e: 0,
+      totalScope1Tco2e: 1840.0
+    },
+    scope2: {
+      locationBasedGridTco2e: 6420.0,
+      marketBasedContractedTco2e: 1280.0,
+      renewableEnergyAttributeCertificatesMwh: 19600.0,
+      powerPurchaseAgreementsMwh: 12500,
+      residualGridMixEmissionFactorKgPerKwh: 0.425,
+      totalScope2Tco2e: 1280.0
+    },
+    scope3Categories: [
+      { category: 'cat_01_purchased_goods', categoryLabel: 'Purchased Goods & Services', isUpstream: true, emissionsTco2e: 21400, calculationMethod: 'hybrid_activity', percentageOfScope3: 61.8 },
+      { category: 'cat_02_capital_goods', categoryLabel: 'Capital Goods & Equipment', isUpstream: true, emissionsTco2e: 4100, calculationMethod: 'spend_based', percentageOfScope3: 11.8 },
+      { category: 'cat_04_upstream_transport', categoryLabel: 'Upstream Transportation & Logistics', isUpstream: true, emissionsTco2e: 3300, calculationMethod: 'supplier_specific', percentageOfScope3: 9.5 },
+      { category: 'cat_06_business_travel', categoryLabel: 'Business Air & Rail Travel', isUpstream: true, emissionsTco2e: 3250, calculationMethod: 'hybrid_activity', percentageOfScope3: 9.4 },
+      { category: 'cat_07_employee_commuting', categoryLabel: 'Employee Commuting & Remote Telework', isUpstream: true, emissionsTco2e: 2600, calculationMethod: 'spend_based', percentageOfScope3: 7.5 }
+    ],
+    totalScope3Tco2e: 34650.0,
+    grossEmissionsTco2e: 37770.0,
+    verifiedCarbonRemovalsTco2e: 2500.0,
+    netEmissionsTco2e: 35270.0,
+    intensity: {
+      revenueIntensityTco2ePerMillionUsd: 89.93,
+      headcountIntensityTco2ePerFte: 13.25,
+      realEstateIntensityKgCo2ePerM2: 69.33,
+      energyTotalMwh: 24500.0,
+      renewableEnergyPercent: 68.5
+    },
+    baseYearEmissionsTco2e: 48500.0,
+    baseYearPercentChange: -22.1,
+    lastAuditedAt: new Date().toISOString()
+  };
+
+  const tcfdScenarios: TcfdScenarioModelDTO[] = [
+    {
+      id: 'scen-rcp26',
+      scenario: 'rcp_2_6_net_zero',
+      scenarioLabel: 'Net-Zero 1.5°C Orderly Transition',
+      timeHorizon: 'short_term_2030',
+      targetYear: 2030,
+      assumedTemperatureRiseCelsius: 1.5,
+      projectedCarbonTaxUsdPerTon: 145.0,
+      physicalRisks: [
+        {
+          hazardType: 'acute_coastal_flooding',
+          hazardLabel: 'Coastal Storm Surge & Flooding',
+          isAcute: true,
+          exposedAssetValueUsd: 45000000,
+          annualExceedanceProbabilityPercent: 2.0,
+          vulnerabilityFactor: 0.12,
+          expectedAnnualLossUsd: 540000,
+          chronicOpexSurchargeUsd: 0,
+          riskSeverity: 'moderate'
+        }
+      ],
+      transitionRisks: [
+        {
+          driver: 'carbon_taxation_liability',
+          driverLabel: 'Mandatory Cap-and-Trade Carbon Tax',
+          projectedCarbonPriceUsdPerTon: 145.0,
+          annualCarbonTaxLiabilityUsd: 4650000,
+          strandedAssetWriteDownUsd: 3800000,
+          lowCarbonCapexRequiredUsd: 6200000,
+          totalTransitionExposureUsd: 14650000
+        }
+      ],
+      totalPhysicalLossUsd: 850000,
+      totalTransitionLossUsd: 8450000,
+      aggregateFinancialExposureUsd: 9620000,
+      climateVar95Usd: 15300000,
+      climateVarPercentOfEnterpriseValue: 3.64,
+      projectedEbitdaImpactPercent: 4.80
+    },
+    {
+      id: 'scen-rcp85',
+      scenario: 'rcp_8_5_extreme_warming',
+      scenarioLabel: 'Current Policies Extreme Warming',
+      timeHorizon: 'long_term_2050',
+      targetYear: 2050,
+      assumedTemperatureRiseCelsius: 4.2,
+      projectedCarbonTaxUsdPerTon: 45.0,
+      physicalRisks: [
+        {
+          hazardType: 'chronic_extreme_heat_cooling',
+          hazardLabel: 'Chronic Extreme Heatwaves & HVAC CDD',
+          isAcute: false,
+          exposedAssetValueUsd: 120000000,
+          annualExceedanceProbabilityPercent: 15.0,
+          vulnerabilityFactor: 0.35,
+          expectedAnnualLossUsd: 6200000,
+          chronicOpexSurchargeUsd: 2400000,
+          riskSeverity: 'severe'
+        }
+      ],
+      transitionRisks: [
+        {
+          driver: 'raw_material_price_spike',
+          driverLabel: 'Climate Supply Chain Scarcity Shock',
+          projectedCarbonPriceUsdPerTon: 45.0,
+          annualCarbonTaxLiabilityUsd: 950000,
+          strandedAssetWriteDownUsd: 4200000,
+          lowCarbonCapexRequiredUsd: 2800000,
+          totalTransitionExposureUsd: 7950000
+        }
+      ],
+      totalPhysicalLossUsd: 6200000,
+      totalTransitionLossUsd: 5150000,
+      aggregateFinancialExposureUsd: 13750000,
+      climateVar95Usd: 22800000,
+      climateVarPercentOfEnterpriseValue: 5.43,
+      projectedEbitdaImpactPercent: 7.20
+    }
+  ];
+
+  const materialityTopics: EsrsTopicAssessmentDTO[] = [
+    {
+      id: 'mat-e1',
+      topicCode: 'ESRS_E1',
+      topicName: 'Climate Change (Mitigation & Adaptation)',
+      standard: 'esrs_e1_climate_change',
+      standardLabel: 'ESRS E1 Climate',
+      impactMaterialityScore: 4.80,
+      impactScale: 4.8,
+      impactScope: 4.6,
+      impactIrremediability: 4.7,
+      impactLikelihood: 4.5,
+      financialMaterialityScore: 4.50,
+      financialMagnitude: 4.6,
+      financialProbability: 4.4,
+      isMaterial: true,
+      materialityTier: 'tier_1_double_material',
+      griAlignmentReference: 'GRI 305: Emissions',
+      issbReference: 'IFRS S2 Climate Disclosures',
+      auditReadinessPercent: 92.5,
+      keyPositiveOrNegativeImpacts: ['Direct GHG decarbonization', 'Power purchase agreements avoiding grid carbon'],
+      keyFinancialRisksAndOpportunities: ['Carbon pricing taxation liability', 'Clean tech energy efficiency savings']
+    },
+    {
+      id: 'mat-s1',
+      topicCode: 'ESRS_S1',
+      topicName: 'Own Workforce (Health, Safety & Pay Equity)',
+      standard: 'esrs_s1_own_workforce',
+      standardLabel: 'ESRS S1 Workforce',
+      impactMaterialityScore: 4.40,
+      impactScale: 4.5,
+      impactScope: 4.3,
+      impactIrremediability: 4.2,
+      impactLikelihood: 4.0,
+      financialMaterialityScore: 4.00,
+      financialMagnitude: 4.1,
+      financialProbability: 3.9,
+      isMaterial: true,
+      materialityTier: 'tier_1_double_material',
+      griAlignmentReference: 'GRI 401 & 405: Diversity & Employment',
+      issbReference: 'IFRS S1 General Requirements',
+      auditReadinessPercent: 88.0,
+      keyPositiveOrNegativeImpacts: ['Executive gender pay equity', 'Zero workplace safety fatalities'],
+      keyFinancialRisksAndOpportunities: ['Talent turnover cost reduction', 'Compliance defense against labor litigation']
+    },
+    {
+      id: 'mat-g1',
+      topicCode: 'ESRS_G1',
+      topicName: 'Business Conduct & Anti-Corruption',
+      standard: 'esrs_g1_business_conduct',
+      standardLabel: 'ESRS G1 Governance',
+      impactMaterialityScore: 3.80,
+      impactScale: 4.0,
+      impactScope: 3.6,
+      impactIrremediability: 3.8,
+      impactLikelihood: 3.5,
+      financialMaterialityScore: 3.90,
+      financialMagnitude: 4.0,
+      financialProbability: 3.8,
+      isMaterial: true,
+      materialityTier: 'tier_1_double_material',
+      griAlignmentReference: 'GRI 205: Anti-Corruption',
+      issbReference: 'IFRS S1 Governance Pillar',
+      auditReadinessPercent: 90.0,
+      keyPositiveOrNegativeImpacts: ['Whistleblower protection framework', 'Code of business ethics training'],
+      keyFinancialRisksAndOpportunities: ['FCPA and UK Bribery Act immunity', 'Preservation of market valuation multiple']
+    },
+    {
+      id: 'mat-e5',
+      topicCode: 'ESRS_E5',
+      topicName: 'Resource Use & Circular Economy',
+      standard: 'esrs_e5_circular_economy',
+      standardLabel: 'ESRS E5 Circular',
+      impactMaterialityScore: 3.60,
+      impactScale: 3.8,
+      impactScope: 3.5,
+      impactIrremediability: 3.4,
+      impactLikelihood: 3.5,
+      financialMaterialityScore: 3.20,
+      financialMagnitude: 3.3,
+      financialProbability: 3.0,
+      isMaterial: true,
+      materialityTier: 'tier_1_double_material',
+      griAlignmentReference: 'GRI 306: Waste',
+      issbReference: 'SASB Resource Transformation',
+      auditReadinessPercent: 82.0,
+      keyPositiveOrNegativeImpacts: ['Hardware e-waste recycling pipeline', 'Zero landfill corporate facilities'],
+      keyFinancialRisksAndOpportunities: ['Secondary market refurbishing revenues', 'Extended producer responsibility tariffs']
+    },
+    {
+      id: 'mat-s2',
+      topicCode: 'ESRS_S2',
+      topicName: 'Workers in Value Chain',
+      standard: 'esrs_s2_value_chain_workers',
+      standardLabel: 'ESRS S2 Value Chain',
+      impactMaterialityScore: 3.50,
+      impactScale: 3.6,
+      impactScope: 3.4,
+      impactIrremediability: 3.5,
+      impactLikelihood: 3.4,
+      financialMaterialityScore: 3.10,
+      financialMagnitude: 3.2,
+      financialProbability: 3.0,
+      isMaterial: true,
+      materialityTier: 'tier_1_double_material',
+      griAlignmentReference: 'GRI 414: Supplier Social Assessment',
+      issbReference: 'IFRS S1 Supply Chain Risk',
+      auditReadinessPercent: 80.0,
+      keyPositiveOrNegativeImpacts: ['Supplier living wage compliance auditing', 'Human rights due diligence in mining'],
+      keyFinancialRisksAndOpportunities: ['Supply chain embargo avoidance', 'Contractual fulfillment stability']
+    }
+  ];
+
+  const topSuppliers: SupplierDecarbonizationDTO[] = [
+    {
+      id: 'sup-1',
+      vendorName: 'Foxconn Precision Hardware',
+      procurementCategory: 'Electronics & Hardware',
+      annualSpendUsd: 45000000,
+      esgTier: 'tier_a_sbti_net_zero',
+      allocatedScope3Tco2e: 11200,
+      hasSbtiValidatedTarget: true,
+      reportedRenewableElectricityPercent: 85.0,
+      carbonIntensityTco2ePerSpendUsd: 0.00025,
+      annualEmissionsReductionPercent: 5.8,
+      engagementStatus: 'engaged_active',
+      lastEngagedAt: '2026-09-10'
+    },
+    {
+      id: 'sup-2',
+      vendorName: 'CloudCore Data Centers',
+      procurementCategory: 'Cloud Infrastructure',
+      annualSpendUsd: 32000000,
+      esgTier: 'tier_a_sbti_net_zero',
+      allocatedScope3Tco2e: 6800,
+      hasSbtiValidatedTarget: true,
+      reportedRenewableElectricityPercent: 100.0,
+      carbonIntensityTco2ePerSpendUsd: 0.00021,
+      annualEmissionsReductionPercent: 7.2,
+      engagementStatus: 'engaged_active',
+      lastEngagedAt: '2026-09-15'
+    },
+    {
+      id: 'sup-3',
+      vendorName: 'Apex Freight & Logistics',
+      procurementCategory: 'Transportation & Logistics',
+      annualSpendUsd: 24000000,
+      esgTier: 'tier_b_measured_targets',
+      allocatedScope3Tco2e: 5400,
+      hasSbtiValidatedTarget: false,
+      reportedRenewableElectricityPercent: 40.0,
+      carbonIntensityTco2ePerSpendUsd: 0.00045,
+      annualEmissionsReductionPercent: 3.5,
+      engagementStatus: 'engaged_active',
+      lastEngagedAt: '2026-08-25'
+    },
+    {
+      id: 'sup-4',
+      vendorName: 'BioGreen Sustainable Packaging',
+      procurementCategory: 'Packaging Materials',
+      annualSpendUsd: 18000000,
+      esgTier: 'tier_a_sbti_net_zero',
+      allocatedScope3Tco2e: 3100,
+      hasSbtiValidatedTarget: true,
+      reportedRenewableElectricityPercent: 75.0,
+      carbonIntensityTco2ePerSpendUsd: 0.00017,
+      annualEmissionsReductionPercent: 6.0,
+      engagementStatus: 'engaged_active',
+      lastEngagedAt: '2026-08-14'
+    },
+    {
+      id: 'sup-5',
+      vendorName: 'Vertex Global Staffing',
+      procurementCategory: 'Professional Services',
+      annualSpendUsd: 15000000,
+      esgTier: 'tier_c_basic_disclosure',
+      allocatedScope3Tco2e: 1850,
+      hasSbtiValidatedTarget: false,
+      reportedRenewableElectricityPercent: 20.0,
+      carbonIntensityTco2ePerSpendUsd: 0.00012,
+      annualEmissionsReductionPercent: 1.5,
+      engagementStatus: 'contract_clause_pending',
+      lastEngagedAt: '2026-07-20'
+    }
+  ];
+
+  const secCompliance: SecComplianceOverviewDTO = {
+    overallFilingReadinessPercent: 89.2,
+    isScope1And2Audited: true,
+    isOnePercentFinancialStatementImpactMet: false,
+    regSkItems: [
+      {
+        itemCode: 'ITEM_1501_GOVERNANCE',
+        itemTitle: 'Board Oversight of Climate-Related Risks',
+        regulationCitation: '17 CFR § 229.1501',
+        isCompliant: true,
+        readinessScorePercent: 95.0,
+        keyFindings: 'Board ESG Committee charter active; quarterly review of Climate VaR formalized.'
+      },
+      {
+        itemCode: 'ITEM_1502_STRATEGY',
+        itemTitle: 'Impact of Climate Risks on Strategy & Financial Model',
+        regulationCitation: '17 CFR § 229.1502',
+        isCompliant: true,
+        readinessScorePercent: 90.0,
+        keyFindings: 'TCFD scenario modeling integrated into long-range strategic financial plan.'
+      },
+      {
+        itemCode: 'ITEM_1504_METRICS',
+        itemTitle: 'Scope 1 and Scope 2 GHG Emissions Metrics',
+        regulationCitation: '17 CFR § 229.1504',
+        isCompliant: true,
+        readinessScorePercent: 92.0,
+        keyFindings: 'Scope 1 and Market-based Scope 2 verified by accredited third-party audit firm.'
+      },
+      {
+        itemCode: 'REG_SX_ARTICLE_14',
+        itemTitle: 'Financial Statement Severe Weather Footnote Disclosures',
+        regulationCitation: '17 CFR § 210.14-02',
+        isCompliant: true,
+        readinessScorePercent: 80.0,
+        keyFindings: 'Flood recovery capex evaluated against 1% line-item threshold; no disclosure required.'
+      }
+    ],
+    greenwashingAudit: {
+      overallRiskLevel: 'low_defensible',
+      greenwashingExposureIndex: 14.2,
+      totalClaimsAudited: 24,
+      flaggedClaimsCount: 1,
+      offsetAdditionalityIntegrityPercent: 92.5,
+      activeFlags: [
+        {
+          id: 'GW-FLAG-01',
+          claimSnippet: 'Zero net carbon operations across all facilities by 2026.',
+          sourceDocument: 'Annual Corporate Marketing Brochure (Page 4)',
+          riskCategory: 'unsubstantiated_neutrality',
+          riskSeverity: 'medium',
+          regulatoryStandardViolated: 'EU Green Claims Directive & ISO 14021',
+          suggestedDefensibleRewrite: 'On track to achieve 85% renewable electricity powering owned facilities by 2026.'
+        }
+      ]
+    }
+  };
+
+  const activeMemo: ExecutiveEsgBoardMemorandumDTO = {
+    id: 'memo-esg-default',
+    title: 'FY2026 Board ESG, Decarbonization & SEC Climate Disclosure Briefing',
+    reportingYear: 2026,
+    status: 'draft',
+    compositeEsgScore: 87.40,
+    governanceStatusBand: 'managed_defensible',
+    sbtiAlignmentStatus: 'on_track_1_5c',
+    secFilingReadinessPercent: 89.2,
+    greenwashingRiskIndex: 14.2,
+    executiveSummary: {
+      sectionKey: 'EXEC_SUMMARY',
+      heading: 'Executive Climate Leadership & Strategic Fiduciary Mandate',
+      executiveSummaryText: 'During fiscal year 2026, the enterprise maintained a rigorous ESG control plane achieving an overall Composite ESG Governance Score of 87.4/100 (MANAGED DEFENSIBLE). Emissions reductions tracked ahead of the SBTi 1.5°C glide path trajectory.',
+      keyMetricsBulletPoints: [
+        'Gross GHG Emissions: 37,770 tCO2e (Net: 35,270 tCO2e).',
+        'Revenue Carbon Intensity: 89.9 tCO2e / $M revenue.',
+        'TCFD Climate VaR-95: $15.3M under 1.5°C Net-Zero scenario.',
+        'CSRD Double Materiality: 5 topics classified as Priority Tier 1 Double Material.'
+      ],
+      strategicGovernanceGuidance: 'Execute planned $4.2M capital allocation for facility microgrids and ratify Scope 3 vendor engagement covenants.'
+    },
+    ghgInventoryBreakdown: {
+      sectionKey: 'GHG_INVENTORY',
+      heading: 'GHG Protocol Corporate Carbon Ledger & Audit Certification',
+      executiveSummaryText: 'Audited accounting across Scope 1 direct fuel, Scope 2 dual-reporting (location and market), and 15 Scope 3 value chain categories.',
+      keyMetricsBulletPoints: [
+        'Scope 1 Direct Emissions: 1,840 tCO2e.',
+        'Scope 2 Market-Based Emissions: 1,280 tCO2e (80% contracted renewable electricity).',
+        'Scope 3 Value Chain Emissions: 34,650 tCO2e (Purchased Goods & Logistics dominant).'
+      ],
+      strategicGovernanceGuidance: 'Contract additional 15 MWh of Power Purchase Agreements to eliminate remaining Scope 2 market exposure by 2027.'
+    },
+    tcfdScenarioAnalysis: {
+      sectionKey: 'TCFD_SCENARIOS',
+      heading: 'TCFD Climate Financial Value-at-Risk Stress Testing',
+      executiveSummaryText: 'Comparative analysis of balance sheet exposures under Orderly Transition (RCP 2.6) versus Extreme Physical Warming (RCP 8.5).',
+      keyMetricsBulletPoints: [
+        'RCP 2.6 Net-Zero VaR-95: $15.3M (Driven by $145/tCO2e projected carbon pricing).',
+        'RCP 8.5 Extreme Warming VaR-95: $22.8M (Driven by acute convective storms and chronic cooling surcharges).',
+        'EBITDA At-Risk: 4.8% to 7.2% across 10-year planning horizons.'
+      ],
+      strategicGovernanceGuidance: 'Incorporate internal shadow carbon pricing ($85/tCO2e) into capital expenditure hurdle rate calculations.'
+    },
+    csrdMaterialityReview: {
+      sectionKey: 'CSRD_MATERIALITY',
+      heading: 'EU CSRD Double Materiality Matrix & ESRS Audit Defensibility',
+      executiveSummaryText: 'Dual-axis assessment evaluating inside-out environmental impact alongside outside-in financial value erosion.',
+      keyMetricsBulletPoints: [
+        'ESRS E1 Climate Change & ESRS S1 Own Workforce certified as Priority Tier 1 Double Material.',
+        'Limited assurance audit documentation prepared across 42 required datapoints.',
+        'Multi-standard interoperability cross-referenced against GRI 305 and IFRS S2.'
+      ],
+      strategicGovernanceGuidance: 'Engage statutory independent auditor for CSRD limited assurance readiness sign-off in Q3.'
+    },
+    sbtiSupplyChainRoadmap: {
+      sectionKey: 'SBTI_SUPPLY_CHAIN',
+      heading: 'Scope 3 Supply Chain Decarbonization & SBTi Trajectory',
+      executiveSummaryText: 'Tracking corporate value chain decarbonization against the Science Based Targets initiative 1.5°C corporate net-zero standard.',
+      keyMetricsBulletPoints: [
+        'SBTi Trajectory Variance: -1.42% (Outperforming mandatory 4.2% annual linear reduction target).',
+        'Supplier Engagement: 71.4% of procurement spend committed to SBTi validated reduction targets.',
+        'Simulated 22% Scope 3 abatement achievable through supplier renewable electricity transition.'
+      ],
+      strategicGovernanceGuidance: 'Mandate SBTi target commitment clauses in all tier-one procurement master service agreements.'
+    },
+    secComplianceAudit: {
+      sectionKey: 'SEC_COMPLIANCE',
+      heading: 'SEC Climate Disclosure Readiness & Greenwashing Audit',
+      executiveSummaryText: 'Statutory readiness evaluation for Regulation S-K Item 1500 rules and consumer protection green claims audit.',
+      keyMetricsBulletPoints: [
+        'SEC Reg S-K Items 1501-1504 readiness: 89.2% audit-certified.',
+        'Reg S-X severe weather footnote evaluation: No material financial statement impact exceeding 1% threshold.',
+        'Greenwashing Exposure Index: 14.2 / 100 (Single cautionary marketing claim rewritten for audit defensibility).'
+      ],
+      strategicGovernanceGuidance: 'Authorize publication of Form 10-K climate risk disclosures upon tripartite sign-off completion.'
+    },
+    approvedByCsoAt: '2026-10-25',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  return {
+    compositeScore: 87.40,
+    statusBand: 'managed_defensible',
+    reportingYear: 2026,
+    grossEmissionsTco2e: 37770.0,
+    netEmissionsTco2e: 35270.0,
+    carbonIntensityRevenue: 89.93,
+    climateVar95Usd: 22800000,
+    doubleMaterialTopicsCount: 5,
+    sbtiAlignmentStatus: 'on_track_1_5c',
+    secReadinessPercent: 89.2,
+    greenwashingIndex: 14.2,
+    carbonInventory,
+    tcfdOverview: {
+      scenarios: tcfdScenarios,
+      worstCaseVar95Usd: 22800000,
+      recommendedMitigationSpendUsd: 4200000
+    },
+    materialityOverview: {
+      totalTopicsAssessed: materialityTopics.length,
+      doubleMaterialTopicsCount: 5,
+      impactOnlyTopicsCount: 0,
+      financialOnlyTopicsCount: 0,
+      nonMaterialTopicsCount: 0,
+      averageAuditReadinessPercent: 86.5,
+      topics: materialityTopics
+    },
+    supplyChainOverview: {
+      totalVendorsTracked: topSuppliers.length,
+      totalProcurementSpendUsd: 134000000,
+      totalScope3SpendAllocatedTco2e: 28350,
+      sbtiTelemetry: {
+        baseYear: 2021,
+        targetNetZeroYear: 2040,
+        target1Point5CYearlyReductionRatePercent: 4.2,
+        baseYearScope1And2Tco2e: 13850,
+        baseYearScope3Tco2e: 34650,
+        currentYearTargetTco2e: 38315,
+        currentYearActualTco2e: 37770,
+        cumulativeReductionTco2e: 10730,
+        trajectoryVariancePercent: -1.42,
+        alignmentStatus: 'on_track_1_5c',
+        supplierEngagementSpendCoveragePercent: 71.4,
+        targetSupplierEngagementPercent: 67.0
+      },
+      tierDistribution: {
+        tier_a_sbti_net_zero: 3,
+        tier_b_measured_targets: 1,
+        tier_c_basic_disclosure: 1,
+        tier_d_unresponsive_high_carbon: 0
+      },
+      topSuppliers
+    },
+    secCompliance,
+    latestBoardMemo: activeMemo
+  };
+}
+
+function loadDemoEsgOverview(): EsgStudioOverviewDTO {
+  try {
+    const raw = localStorage.getItem(DEMO_ESG_STUDIO_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+    const def = buildDefaultDemoEsgOverview();
+    localStorage.setItem(DEMO_ESG_STUDIO_STORAGE_KEY, JSON.stringify(def));
+    return def;
+  } catch {
+    return buildDefaultDemoEsgOverview();
+  }
+}
+
+function saveDemoEsgOverview(ov: EsgStudioOverviewDTO): void {
+  try {
+    localStorage.setItem(DEMO_ESG_STUDIO_STORAGE_KEY, JSON.stringify(ov));
+  } catch {}
+}
+
+function executeRecordCarbonEmissionsDemo(input: RecordCarbonEmissionsRequestDTO): GhgCarbonInventoryDTO {
+  const ov = loadDemoEsgOverview();
+  const scope3Total = (input.scope3Categories || []).reduce((acc, c) => acc + (Number(c.emissionsTco2e) || 0), 0);
+  const calc = calculateGhgGrossAndNetEmissions({
+    scope1Stationary: Number(input.scope1Stationary) || 0,
+    scope1Mobile: Number(input.scope1Mobile) || 0,
+    scope1Fugitive: Number(input.scope1Fugitive) || 0,
+    scope2MarketBased: Number(input.scope2Market) || 0,
+    scope3Total,
+    verifiedRemovals: Number(input.verifiedRemovals) || 0
+  });
+
+  const intensities = calculateCarbonIntensities({
+    grossEmissionsTco2e: calc.grossTco2e,
+    revenueMillionUsd: Number(input.revenueMillionUsd) || 1,
+    headcountFte: Number(input.headcountFte) || 1,
+    realEstateAreaM2: Number(input.realEstateAreaM2) || 1,
+    scope1Plus2Tco2e: calc.scope1Total + (Number(input.scope2Market) || 0)
+  });
+
+  const updatedInv: GhgCarbonInventoryDTO = {
+    id: `carbon-${Date.now()}`,
+    reportingYear: input.reportingYear,
+    scope1: {
+      stationaryCombustionTco2e: input.scope1Stationary,
+      mobileFleetTco2e: input.scope1Mobile,
+      fugitiveRefrigerantsTco2e: input.scope1Fugitive,
+      processEmissionsTco2e: 0,
+      totalScope1Tco2e: calc.scope1Total
+    },
+    scope2: {
+      locationBasedGridTco2e: input.scope2Location,
+      marketBasedContractedTco2e: input.scope2Market,
+      renewableEnergyAttributeCertificatesMwh: 20000,
+      powerPurchaseAgreementsMwh: 12500,
+      residualGridMixEmissionFactorKgPerKwh: 0.425,
+      totalScope2Tco2e: input.scope2Market
+    },
+    scope3Categories: input.scope3Categories.map(c => ({
+      category: c.category,
+      categoryLabel: c.category.replace(/_/g, ' '),
+      isUpstream: true,
+      emissionsTco2e: c.emissionsTco2e,
+      calculationMethod: c.method,
+      percentageOfScope3: scope3Total > 0 ? (c.emissionsTco2e / scope3Total) * 100 : 0
+    })),
+    totalScope3Tco2e: scope3Total,
+    grossEmissionsTco2e: calc.grossTco2e,
+    verifiedCarbonRemovalsTco2e: input.verifiedRemovals,
+    netEmissionsTco2e: calc.netTco2e,
+    intensity: intensities,
+    baseYearEmissionsTco2e: 48500,
+    baseYearPercentChange: -22.1,
+    lastAuditedAt: new Date().toISOString()
+  };
+
+  ov.carbonInventory = updatedInv;
+  ov.grossEmissionsTco2e = calc.grossTco2e;
+  ov.netEmissionsTco2e = calc.netTco2e;
+  ov.carbonIntensityRevenue = intensities.revenueIntensityTco2ePerMillionUsd;
+  saveDemoEsgOverview(ov);
+  return updatedInv;
+}
+
+function executeTcfdSimulationDemo(input: TcfdSimulationRequestDTO): TcfdSimulationResultDTO {
+  const ov = loadDemoEsgOverview();
+  const carbonPrice = input.customCarbonPriceUsdPerTon || (input.scenario === 'rcp_2_6_net_zero' ? 145.0 : 45.0);
+  const result = calculateTcfdFinancialExposure({
+    scenario: input.scenario,
+    timeHorizonYears: input.timeHorizon === 'short_term_2030' ? 2030 : input.timeHorizon === 'medium_term_2040' ? 2040 : 2050,
+    grossEmissionsTco2e: ov.grossEmissionsTco2e,
+    enterpriseValueUsd: input.enterpriseValueUsd,
+    carbonPriceUsdPerTon: carbonPrice,
+    totalExposedAssetValueUsd: input.enterpriseValueUsd * 0.35,
+    baselineEnergySpendUsd: input.enterpriseValueUsd * 0.04
+  });
+
+  const existingIdx = ov.tcfdOverview.scenarios.findIndex(s => s.scenario === input.scenario);
+  const model: TcfdScenarioModelDTO = {
+    id: `sim-${Date.now()}`,
+    scenario: input.scenario,
+    scenarioLabel: input.scenario === 'rcp_2_6_net_zero' ? 'Net-Zero 1.5°C Orderly Transition' : 'Current Policies Extreme Warming',
+    timeHorizon: input.timeHorizon,
+    targetYear: input.timeHorizon === 'short_term_2030' ? 2030 : 2050,
+    assumedTemperatureRiseCelsius: input.scenario === 'rcp_2_6_net_zero' ? 1.5 : 4.2,
+    projectedCarbonTaxUsdPerTon: carbonPrice,
+    physicalRisks: [],
+    transitionRisks: [],
+    totalPhysicalLossUsd: result.acutePhysicalLossUsd,
+    totalTransitionLossUsd: result.carbonTaxLiabilityUsd + result.strandedAssetImpairmentUsd,
+    aggregateFinancialExposureUsd: result.aggregateFinancialExposureUsd,
+    climateVar95Usd: result.climateVar95Usd,
+    climateVarPercentOfEnterpriseValue: result.climateVarPercent,
+    projectedEbitdaImpactPercent: result.ebitdaErosionPercent
+  };
+
+  if (existingIdx >= 0) {
+    ov.tcfdOverview.scenarios[existingIdx] = model;
+  } else {
+    ov.tcfdOverview.scenarios.push(model);
+  }
+  ov.tcfdOverview.worstCaseVar95Usd = Math.max(...ov.tcfdOverview.scenarios.map(s => s.climateVar95Usd));
+  saveDemoEsgOverview(ov);
+  return result;
+}
+
+function executeUpdateMaterialityDemo(code: string, input: UpdateMaterialityTopicRequestDTO): EsrsTopicAssessmentDTO {
+  const ov = loadDemoEsgOverview();
+  const topic = ov.materialityOverview.topics.find(t => t.topicCode === code);
+  if (!topic) {
+    throw new Error(`Topic not found: ${code}`);
+  }
+
+  const scores = calculateDoubleMaterialityScores({
+    scale: input.impactScale,
+    scope: input.impactScope,
+    irremediability: input.impactIrremediability,
+    likelihood: input.impactLikelihood,
+    magnitude: input.financialMagnitude,
+    probability: input.financialProbability
+  });
+
+  topic.impactScale = input.impactScale;
+  topic.impactScope = input.impactScope;
+  topic.impactIrremediability = input.impactIrremediability;
+  topic.impactLikelihood = input.impactLikelihood;
+  topic.impactMaterialityScore = scores.impactScore;
+  topic.financialMagnitude = input.financialMagnitude;
+  topic.financialProbability = input.financialProbability;
+  topic.financialMaterialityScore = scores.financialScore;
+  topic.materialityTier = scores.tier;
+  topic.isMaterial = scores.tier !== 'tier_3_non_material';
+  topic.keyPositiveOrNegativeImpacts = input.keyImpacts;
+  topic.keyFinancialRisksAndOpportunities = input.keyFinancialRisks;
+
+  ov.doubleMaterialTopicsCount = ov.materialityOverview.topics.filter(t => t.materialityTier === 'tier_1_double_material').length;
+  saveDemoEsgOverview(ov);
+  return topic;
+}
+
+function executeSupplierDecarbonizationSimulationDemo(input: SupplierDecarbonizationSimulationRequestDTO): SupplierDecarbonizationSimulationResultDTO {
+  const ov = loadDemoEsgOverview();
+  const res = calculateSupplierDecarbonizationImpact({
+    suppliers: ov.supplyChainOverview.topSuppliers,
+    targetTierASharePercent: input.targetTierAProcurementSharePercent,
+    targetVendorRenewablePercent: input.targetVendorRenewableAdoptionPercent
+  });
+  ov.supplyChainOverview.latestSimulation = res;
+  saveDemoEsgOverview(ov);
+  return res;
+}
+
+function executeGenerateBoardMemoDemo(input: GenerateBoardMemoRequestDTO): ExecutiveEsgBoardMemorandumDTO {
+  const ov = loadDemoEsgOverview();
+  const memo: ExecutiveEsgBoardMemorandumDTO = {
+    id: `memo-${Date.now()}`,
+    title: input.title,
+    reportingYear: input.reportingYear,
+    status: 'draft',
+    compositeEsgScore: ov.compositeScore,
+    governanceStatusBand: ov.statusBand,
+    sbtiAlignmentStatus: ov.sbtiAlignmentStatus,
+    secFilingReadinessPercent: ov.secReadinessPercent,
+    greenwashingRiskIndex: ov.greenwashingIndex,
+    executiveSummary: {
+      sectionKey: 'EXEC_SUMMARY',
+      heading: 'Executive Climate Leadership & Strategic Fiduciary Mandate',
+      executiveSummaryText: `During fiscal year ${input.reportingYear}, the enterprise maintained a rigorous ESG control plane achieving an overall Composite ESG Governance Score of ${ov.compositeScore}/100 (${ov.statusBand.replace(/_/g, ' ').toUpperCase()}). Emissions reductions tracked ahead of the SBTi 1.5°C glide path trajectory.`,
+      keyMetricsBulletPoints: [
+        `Gross GHG Emissions: ${ov.grossEmissionsTco2e.toLocaleString()} tCO2e (Net: ${ov.netEmissionsTco2e.toLocaleString()} tCO2e).`,
+        `Revenue Carbon Intensity: ${ov.carbonIntensityRevenue.toFixed(1)} tCO2e / $M revenue.`,
+        `TCFD Climate VaR-95: $${(ov.climateVar95Usd / 1_000_000).toFixed(1)}M under 1.5°C Net-Zero scenario.`,
+        `CSRD Double Materiality: ${ov.doubleMaterialTopicsCount} topics classified as Priority Tier 1 Double Material.`
+      ],
+      strategicGovernanceGuidance: 'Execute planned $4.2M capital allocation for facility microgrids and ratify Scope 3 vendor engagement covenants.'
+    },
+    ghgInventoryBreakdown: {
+      sectionKey: 'GHG_INVENTORY',
+      heading: 'GHG Protocol Corporate Carbon Ledger & Audit Certification',
+      executiveSummaryText: 'Audited accounting across Scope 1 direct fuel, Scope 2 dual-reporting (location and market), and 15 Scope 3 value chain categories.',
+      keyMetricsBulletPoints: [
+        `Scope 1 Direct Emissions: ${ov.carbonInventory.scope1.totalScope1Tco2e.toLocaleString()} tCO2e.`,
+        `Scope 2 Market-Based Emissions: ${ov.carbonInventory.scope2.marketBasedContractedTco2e.toLocaleString()} tCO2e (80% contracted renewable electricity).`,
+        `Scope 3 Value Chain Emissions: ${ov.carbonInventory.totalScope3Tco2e.toLocaleString()} tCO2e (Purchased Goods & Logistics dominant).`
+      ],
+      strategicGovernanceGuidance: 'Contract additional 15 MWh of Power Purchase Agreements to eliminate remaining Scope 2 market exposure by 2027.'
+    },
+    tcfdScenarioAnalysis: {
+      sectionKey: 'TCFD_SCENARIOS',
+      heading: 'TCFD Climate Financial Value-at-Risk Stress Testing',
+      executiveSummaryText: 'Comparative analysis of balance sheet exposures under Orderly Transition (RCP 2.6) versus Extreme Physical Warming (RCP 8.5).',
+      keyMetricsBulletPoints: [
+        `RCP 2.6 Net-Zero VaR-95: $15.3M (Driven by $145/tCO2e projected carbon pricing).`,
+        `RCP 8.5 Extreme Warming VaR-95: $22.8M (Driven by acute convective storms and chronic cooling surcharges).`,
+        `EBITDA At-Risk: 4.8% to 7.2% across 10-year planning horizons.`
+      ],
+      strategicGovernanceGuidance: 'Incorporate internal shadow carbon pricing ($85/tCO2e) into capital expenditure hurdle rate calculations.'
+    },
+    csrdMaterialityReview: {
+      sectionKey: 'CSRD_MATERIALITY',
+      heading: 'EU CSRD Double Materiality Matrix & ESRS Audit Defensibility',
+      executiveSummaryText: 'Dual-axis assessment evaluating inside-out environmental impact alongside outside-in financial value erosion.',
+      keyMetricsBulletPoints: [
+        'ESRS E1 Climate Change & ESRS S1 Own Workforce certified as Priority Tier 1 Double Material.',
+        'Limited assurance audit documentation prepared across 42 required datapoints.',
+        'Multi-standard interoperability cross-referenced against GRI 305 and IFRS S2.'
+      ],
+      strategicGovernanceGuidance: 'Engage statutory independent auditor for CSRD limited assurance readiness sign-off in Q3.'
+    },
+    sbtiSupplyChainRoadmap: {
+      sectionKey: 'SBTI_SUPPLY_CHAIN',
+      heading: 'Scope 3 Supply Chain Decarbonization & SBTi Trajectory',
+      executiveSummaryText: 'Tracking corporate value chain decarbonization against the Science Based Targets initiative 1.5°C corporate net-zero standard.',
+      keyMetricsBulletPoints: [
+        'SBTi Trajectory Variance: -1.42% (Outperforming mandatory 4.2% annual linear reduction target).',
+        'Supplier Engagement: 71.4% of procurement spend committed to SBTi validated reduction targets.',
+        'Simulated 22% Scope 3 abatement achievable through supplier renewable electricity transition.'
+      ],
+      strategicGovernanceGuidance: 'Mandate SBTi target commitment clauses in all tier-one procurement master service agreements.'
+    },
+    secComplianceAudit: {
+      sectionKey: 'SEC_COMPLIANCE',
+      heading: 'SEC Climate Disclosure Readiness & Greenwashing Audit',
+      executiveSummaryText: 'Statutory readiness evaluation for Regulation S-K Item 1500 rules and consumer protection green claims audit.',
+      keyMetricsBulletPoints: [
+        'SEC Reg S-K Items 1501-1504 readiness: 89.2% audit-certified.',
+        'Reg S-X severe weather footnote evaluation: No material financial statement impact exceeding 1% threshold.',
+        'Greenwashing Exposure Index: 14.2 / 100 (Single cautionary marketing claim rewritten for audit defensibility).'
+      ],
+      strategicGovernanceGuidance: 'Authorize publication of Form 10-K climate risk disclosures upon tripartite sign-off completion.'
+    },
+    approvedByCsoAt: '2026-10-25',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  ov.latestBoardMemo = memo;
+  saveDemoEsgOverview(ov);
+  return memo;
+}
+
+function executeEsgSignOffDemo(memoId: string, role: BoardEsgSignoffRole): ExecutiveEsgBoardMemorandumDTO {
+  const ov = loadDemoEsgOverview();
+  if (!ov.latestBoardMemo) {
+    ov.latestBoardMemo = executeGenerateBoardMemoDemo({ title: 'FY2026 Executive ESG Board Memorandum', reportingYear: 2026 });
+  }
+
+  const now = new Date().toISOString();
+  if (role === 'cso') ov.latestBoardMemo.approvedByCsoAt = now;
+  else if (role === 'cfo') ov.latestBoardMemo.approvedByCfoAt = now;
+  else if (role === 'board_esg_chair') ov.latestBoardMemo.approvedByBoardChairAt = now;
+
+  if (ov.latestBoardMemo.approvedByCsoAt && ov.latestBoardMemo.approvedByCfoAt && ov.latestBoardMemo.approvedByBoardChairAt) {
+    ov.latestBoardMemo.status = 'board_approved';
+  } else {
+    ov.latestBoardMemo.status = 'under_csuite_review';
+  }
+  saveDemoEsgOverview(ov);
+  return ov.latestBoardMemo;
+}
+
+export const esgSustainabilityStudioRepository = {
+  async getOverview(): Promise<EsgStudioOverviewDTO> {
+    if (demoMode) {
+      return loadDemoEsgOverview();
+    }
+    try {
+      return await request<EsgStudioOverviewDTO>('/esg-sustainability-studio/overview');
+    } catch {
+      return loadDemoEsgOverview();
+    }
+  },
+
+  async getCarbonInventory(year = 2026): Promise<GhgCarbonInventoryDTO> {
+    if (demoMode) {
+      return loadDemoEsgOverview().carbonInventory;
+    }
+    try {
+      return await request<GhgCarbonInventoryDTO>(`/esg-sustainability-studio/carbon-inventory?year=${year}`);
+    } catch {
+      return loadDemoEsgOverview().carbonInventory;
+    }
+  },
+
+  async recordCarbonEmissions(input: RecordCarbonEmissionsRequestDTO): Promise<GhgCarbonInventoryDTO> {
+    if (demoMode) {
+      return executeRecordCarbonEmissionsDemo(input);
+    }
+    try {
+      return await request<GhgCarbonInventoryDTO>('/esg-sustainability-studio/carbon-inventory', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeRecordCarbonEmissionsDemo(input);
+    }
+  },
+
+  async getTcfdScenarios(): Promise<TcfdScenarioModelDTO[]> {
+    if (demoMode) {
+      return loadDemoEsgOverview().tcfdOverview.scenarios;
+    }
+    try {
+      return await request<TcfdScenarioModelDTO[]>('/esg-sustainability-studio/tcfd-scenarios');
+    } catch {
+      return loadDemoEsgOverview().tcfdOverview.scenarios;
+    }
+  },
+
+  async simulateTcfdScenario(input: TcfdSimulationRequestDTO): Promise<TcfdSimulationResultDTO> {
+    if (demoMode) {
+      return executeTcfdSimulationDemo(input);
+    }
+    try {
+      return await request<TcfdSimulationResultDTO>('/esg-sustainability-studio/scenarios/simulate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeTcfdSimulationDemo(input);
+    }
+  },
+
+  async getDoubleMaterialityMatrix(): Promise<DoubleMaterialityMatrixDTO> {
+    if (demoMode) {
+      return loadDemoEsgOverview().materialityOverview;
+    }
+    try {
+      return await request<DoubleMaterialityMatrixDTO>('/esg-sustainability-studio/materiality');
+    } catch {
+      return loadDemoEsgOverview().materialityOverview;
+    }
+  },
+
+  async updateMaterialityAssessment(code: string, input: UpdateMaterialityTopicRequestDTO): Promise<EsrsTopicAssessmentDTO> {
+    if (demoMode) {
+      return executeUpdateMaterialityDemo(code, input);
+    }
+    try {
+      return await request<EsrsTopicAssessmentDTO>(`/esg-sustainability-studio/materiality/${encodeURIComponent(code)}`, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeUpdateMaterialityDemo(code, input);
+    }
+  },
+
+  async getSupplierDecarbonization(): Promise<Scope3SupplyChainOverviewDTO> {
+    if (demoMode) {
+      return loadDemoEsgOverview().supplyChainOverview;
+    }
+    try {
+      return await request<Scope3SupplyChainOverviewDTO>('/esg-sustainability-studio/suppliers');
+    } catch {
+      return loadDemoEsgOverview().supplyChainOverview;
+    }
+  },
+
+  async simulateSupplierDecarbonization(input: SupplierDecarbonizationSimulationRequestDTO): Promise<SupplierDecarbonizationSimulationResultDTO> {
+    if (demoMode) {
+      return executeSupplierDecarbonizationSimulationDemo(input);
+    }
+    try {
+      return await request<SupplierDecarbonizationSimulationResultDTO>('/esg-sustainability-studio/suppliers/simulate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeSupplierDecarbonizationSimulationDemo(input);
+    }
+  },
+
+  async getSecDisclosureAudit(): Promise<SecComplianceOverviewDTO> {
+    if (demoMode) {
+      return loadDemoEsgOverview().secCompliance;
+    }
+    try {
+      return await request<SecComplianceOverviewDTO>('/esg-sustainability-studio/sec-audit');
+    } catch {
+      return loadDemoEsgOverview().secCompliance;
+    }
+  },
+
+  async generateBoardMemorandum(input: GenerateBoardMemoRequestDTO): Promise<ExecutiveEsgBoardMemorandumDTO> {
+    if (demoMode) {
+      return executeGenerateBoardMemoDemo(input);
+    }
+    try {
+      return await request<ExecutiveEsgBoardMemorandumDTO>('/esg-sustainability-studio/board-memos/generate', {
+        method: 'POST',
+        body: JSON.stringify(input)
+      });
+    } catch {
+      return executeGenerateBoardMemoDemo(input);
+    }
+  },
+
+  async signOffBoardMemorandum(memoId: string, role: BoardEsgSignoffRole): Promise<ExecutiveEsgBoardMemorandumDTO> {
+    if (demoMode) {
+      return executeEsgSignOffDemo(memoId, role);
+    }
+    try {
+      return await request<ExecutiveEsgBoardMemorandumDTO>(`/esg-sustainability-studio/board-memos/${encodeURIComponent(memoId)}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ role })
+      });
+    } catch {
+      return executeEsgSignOffDemo(memoId, role);
     }
   }
 };

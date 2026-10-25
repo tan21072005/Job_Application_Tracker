@@ -364,7 +364,32 @@ import {
   validateComplianceControlInput,
   validateTabletopSimulationInput,
   validateGovernanceSignOffInput,
-  validateMaterialityDeterminationInput
+  validateMaterialityDeterminationInput,
+  type GhgCarbonInventoryDTO,
+  type TcfdScenarioModelDTO,
+  type DoubleMaterialityMatrixDTO,
+  type Scope3SupplyChainOverviewDTO,
+  type SecComplianceOverviewDTO,
+  type ExecutiveEsgBoardMemorandumDTO,
+  type EsgStudioOverviewDTO,
+  classifyEsgGovernanceBand,
+  classifySbtiAlignment,
+  classifyDoubleMateriality,
+  calculateGhgGrossAndNetEmissions,
+  calculateCarbonIntensities,
+  calculateTcfdFinancialExposure,
+  calculateDoubleMaterialityScores,
+  calculateSbtiTrajectoryVariance,
+  calculateSupplierDecarbonizationImpact,
+  calculateGreenwashingExposureIndex,
+  calculateCompositeEsgGovernanceScore,
+  generateExecutiveEsgBoardMemorandumMarkdown,
+  validateRecordCarbonEmissionsInput,
+  validateTcfdSimulationInput,
+  validateMaterialityTopicUpdate,
+  validateSupplierSimulationInput,
+  validateEsgBoardMemoGenerateInput,
+  validateEsgSignOffInput
 } from './index.ts';
 
 test('contract: calendar date checks correctly validate days and leap years', () => {
@@ -7691,4 +7716,361 @@ test('cyber-risk: schema validators reject invalid inputs and accept valid paylo
     estimatedFinancialLossUsd: 1200000
   });
   assert.equal(goodMat.valid, true);
+});
+
+test('esg: calculateGhgGrossAndNetEmissions and carbon intensities evaluate accurately', () => {
+  const ghg = calculateGhgGrossAndNetEmissions({
+    scope1Stationary: 2450.5,
+    scope1Mobile: 850.2,
+    scope1Fugitive: 120.3,
+    scope2MarketBased: 4200.0,
+    scope3Total: 30150.0,
+    verifiedRemovals: 1500.0
+  });
+
+  assert.equal(ghg.scope1Total, 3421.0);
+  assert.equal(ghg.grossTco2e, 37771.0);
+  assert.equal(ghg.netTco2e, 36271.0);
+
+  const intensity = calculateCarbonIntensities({
+    grossEmissionsTco2e: ghg.grossTco2e,
+    revenueMillionUsd: 500,
+    headcountFte: 2500,
+    realEstateAreaM2: 75000,
+    scope1Plus2Tco2e: 7621.0
+  });
+
+  assert.equal(intensity.revenueIntensityTco2ePerMillionUsd, 75.54);
+  assert.equal(intensity.headcountIntensityTco2ePerFte, 15.11);
+  assert.equal(intensity.realEstateIntensityKgCo2ePerM2, 101.61);
+  assert.ok(intensity.renewableEnergyPercent > 50);
+});
+
+test('esg: calculateTcfdFinancialExposure simulates physical and transition climate risks', () => {
+  const rcp26 = calculateTcfdFinancialExposure({
+    scenario: 'rcp_2_6_net_zero',
+    timeHorizonYears: 2030,
+    grossEmissionsTco2e: 37770,
+    enterpriseValueUsd: 1200000000,
+    carbonPriceUsdPerTon: 150,
+    totalExposedAssetValueUsd: 150000000,
+    baselineEnergySpendUsd: 12000000
+  });
+
+  assert.equal(rcp26.scenario, 'rcp_2_6_net_zero');
+  assert.equal(rcp26.timeHorizon, 'short_term_2030');
+  assert.ok(rcp26.climateVar95Usd > 10000000);
+  assert.ok(rcp26.carbonTaxLiabilityUsd > 4000000);
+  assert.ok(rcp26.strandedAssetImpairmentUsd > 10000000);
+
+  const rcp85 = calculateTcfdFinancialExposure({
+    scenario: 'rcp_8_5_extreme_warming',
+    timeHorizonYears: 2050,
+    grossEmissionsTco2e: 37770,
+    enterpriseValueUsd: 1200000000,
+    carbonPriceUsdPerTon: 50,
+    totalExposedAssetValueUsd: 150000000,
+    baselineEnergySpendUsd: 12000000
+  });
+
+  assert.equal(rcp85.scenario, 'rcp_8_5_extreme_warming');
+  assert.equal(rcp85.timeHorizon, 'long_term_2050');
+  assert.ok(rcp85.acutePhysicalLossUsd > rcp26.acutePhysicalLossUsd);
+  assert.ok(rcp85.chronicOpexIncreaseUsd > rcp26.chronicOpexIncreaseUsd);
+});
+
+test('esg: calculateDoubleMaterialityScores classifies ESRS topics across 2D matrix', () => {
+  const doubleMaterial = calculateDoubleMaterialityScores({
+    scale: 4.8,
+    scope: 4.5,
+    irremediability: 4.6,
+    likelihood: 4.2,
+    magnitude: 4.4,
+    probability: 4.0
+  });
+  assert.equal(doubleMaterial.tier, 'tier_1_double_material');
+  assert.ok(doubleMaterial.impactScore >= 3.0);
+  assert.ok(doubleMaterial.financialScore >= 3.0);
+
+  const impactOnly = calculateDoubleMaterialityScores({
+    scale: 4.0,
+    scope: 3.8,
+    irremediability: 3.5,
+    likelihood: 3.2,
+    magnitude: 2.0,
+    probability: 2.0
+  });
+  assert.equal(impactOnly.tier, 'tier_2_impact_material_only');
+
+  const financialOnly = calculateDoubleMaterialityScores({
+    scale: 2.0,
+    scope: 2.0,
+    irremediability: 2.0,
+    likelihood: 2.0,
+    magnitude: 4.0,
+    probability: 3.5
+  });
+  assert.equal(financialOnly.tier, 'tier_2_financial_material_only');
+
+  const nonMaterial = calculateDoubleMaterialityScores({
+    scale: 1.5,
+    scope: 1.5,
+    irremediability: 1.2,
+    likelihood: 1.5,
+    magnitude: 1.5,
+    probability: 1.5
+  });
+  assert.equal(nonMaterial.tier, 'tier_3_non_material');
+});
+
+test('esg: calculateSbtiTrajectoryVariance and supplier decarbonization simulate glide path', () => {
+  const onTrack = calculateSbtiTrajectoryVariance({
+    baseYear: 2021,
+    targetNetZeroYear: 2040,
+    currentYear: 2026,
+    baseYearEmissionsTco2e: 45000,
+    currentActualEmissionsTco2e: 35000,
+    annualLinearReductionRate: 0.042
+  });
+  assert.equal(onTrack.status, 'on_track_1_5c');
+  assert.ok(onTrack.variancePercent <= 0);
+
+  const offTrack = calculateSbtiTrajectoryVariance({
+    baseYear: 2021,
+    targetNetZeroYear: 2040,
+    currentYear: 2026,
+    baseYearEmissionsTco2e: 45000,
+    currentActualEmissionsTco2e: 44000,
+    annualLinearReductionRate: 0.042
+  });
+  assert.equal(offTrack.status, 'off_track_non_compliant');
+  assert.ok(offTrack.variancePercent > 10.0);
+
+  const suppliers = [
+    {
+      id: 'sup-1',
+      vendorName: 'Cloud Server Host Inc',
+      procurementCategory: 'IT Infrastructure',
+      annualSpendUsd: 15000000,
+      esgTier: 'tier_a_sbti_net_zero' as const,
+      allocatedScope3Tco2e: 12000,
+      hasSbtiValidatedTarget: true,
+      reportedRenewableElectricityPercent: 90,
+      carbonIntensityTco2ePerSpendUsd: 0.0008,
+      annualEmissionsReductionPercent: 6.2,
+      engagementStatus: 'engaged_active' as const,
+      lastEngagedAt: '2026-09-15'
+    },
+    {
+      id: 'sup-2',
+      vendorName: 'Global Logistics Partners',
+      procurementCategory: 'Freight & Shipping',
+      annualSpendUsd: 8500000,
+      esgTier: 'tier_b_measured_targets' as const,
+      allocatedScope3Tco2e: 9500,
+      hasSbtiValidatedTarget: false,
+      reportedRenewableElectricityPercent: 45,
+      carbonIntensityTco2ePerSpendUsd: 0.0011,
+      annualEmissionsReductionPercent: 3.5,
+      engagementStatus: 'engaged_active' as const,
+      lastEngagedAt: '2026-08-20'
+    }
+  ];
+
+  const sim = calculateSupplierDecarbonizationImpact({
+    suppliers,
+    targetTierASharePercent: 80,
+    targetVendorRenewablePercent: 85
+  });
+
+  assert.equal(sim.baselineScope3Tco2e, 21500);
+  assert.ok(sim.abatedScope3Tco2e > 10000);
+  assert.ok(sim.abatementPercentage > 45);
+  assert.equal(sim.newAlignmentStatus, 'on_track_1_5c');
+});
+
+test('esg: calculateGreenwashingExposureIndex and composite ESG governance score compute defensibility', () => {
+  const cleanAudit = calculateGreenwashingExposureIndex([]);
+  assert.equal(cleanAudit.score, 10.0);
+  assert.equal(cleanAudit.riskLevel, 'low_defensible');
+
+  const flaggedAudit = calculateGreenwashingExposureIndex([
+    {
+      id: 'f-1',
+      claimSnippet: 'Completely carbon neutral by buying non-certified tree planting tokens.',
+      sourceDocument: 'Annual Sustainability Glossy',
+      riskCategory: 'dubious_carbon_offset',
+      riskSeverity: 'high',
+      regulatoryStandardViolated: 'EU Green Claims Directive Article 3',
+      suggestedDefensibleRewrite: 'Reduced operational emissions by 35% with residual emissions unhedged.'
+    },
+    {
+      id: 'f-2',
+      claimSnippet: 'Zero carbon products delivered worldwide.',
+      sourceDocument: 'Marketing Homepage',
+      riskCategory: 'unsubstantiated_neutrality',
+      riskSeverity: 'high',
+      regulatoryStandardViolated: 'SEC Rule 10b-5 / FTC Green Guides',
+      suggestedDefensibleRewrite: 'Carbon reduced delivery fleet.'
+    }
+  ]);
+  assert.equal(flaggedAudit.score, 50.0);
+  assert.equal(flaggedAudit.riskLevel, 'high_regulatory_exposure');
+
+  const composite = calculateCompositeEsgGovernanceScore({
+    ghgDecarbonizationRatePercent: 4.8,
+    renewableEnergyPercent: 85.0,
+    tcfdResilienceScore: 82.5,
+    csrdAuditReadinessPercent: 89.0,
+    sbtiAlignmentScore: 92.0,
+    supplierEngagementPercent: 78.0,
+    secReadinessPercent: 88.5,
+    greenwashingRiskIndex: 12.0
+  });
+
+  assert.ok(composite.compositeScore >= 75.0 && composite.compositeScore <= 100.0);
+  assert.ok(['leader_net_zero_aligned', 'managed_defensible'].includes(composite.statusBand));
+});
+
+test('esg: generateExecutiveEsgBoardMemorandumMarkdown renders complete C-suite governance report', () => {
+  const memo: ExecutiveEsgBoardMemorandumDTO = {
+    id: 'memo-esg-1',
+    title: 'Enterprise ESG, Climate Risk & Decarbonization Governance Briefing',
+    reportingYear: 2026,
+    status: 'board_approved',
+    compositeEsgScore: 87.4,
+    governanceStatusBand: 'managed_defensible',
+    sbtiAlignmentStatus: 'on_track_1_5c',
+    secFilingReadinessPercent: 89.2,
+    greenwashingRiskIndex: 11.5,
+    executiveSummary: {
+      sectionKey: 'exec',
+      heading: 'Executive Governance Summary',
+      executiveSummaryText: 'Enterprise ESG performance meets statutory disclosure readiness.',
+      keyMetricsBulletPoints: ['Gross Emissions: 37,770 tCO2e', 'Net Emissions: 36,270 tCO2e', 'SBTi 1.5C Glide Path: On Track'],
+      strategicGovernanceGuidance: 'Accelerate supplier Tier A onboarding.'
+    },
+    ghgInventoryBreakdown: {
+      sectionKey: 'ghg',
+      heading: 'GHG Protocol Emissions Ledger',
+      executiveSummaryText: 'Comprehensive accounting across Scope 1, Scope 2, and Scope 3.',
+      keyMetricsBulletPoints: ['Scope 1: 3,421 tCO2e', 'Scope 2 Market: 4,200 tCO2e', 'Scope 3: 30,150 tCO2e'],
+      strategicGovernanceGuidance: 'Maintain 80% renewable electricity coverage.'
+    },
+    tcfdScenarioAnalysis: {
+      sectionKey: 'tcfd',
+      heading: 'TCFD Climate Financial Risk Scenario Analysis',
+      executiveSummaryText: 'Stress testing under RCP 2.6 (Net Zero) and RCP 8.5 (Extreme Warming).',
+      keyMetricsBulletPoints: ['RCP 2.6 VaR-95: $15.3M', 'RCP 8.5 VaR-95: $22.8M'],
+      strategicGovernanceGuidance: 'Cap carbon tax liability through power purchase agreements.'
+    },
+    csrdMaterialityReview: {
+      sectionKey: 'csrd',
+      heading: 'EU CSRD Double Materiality & ESRS Governance',
+      executiveSummaryText: 'Audited across 10 ESRS environmental, social, and governance standards.',
+      keyMetricsBulletPoints: ['Double Material Topics: 5', 'Average Audit Readiness: 91.2%'],
+      strategicGovernanceGuidance: 'Finalize limited assurance audit by Q4.'
+    },
+    sbtiSupplyChainRoadmap: {
+      sectionKey: 'sbti',
+      heading: 'Scope 3 Value Chain & SBTi Decarbonization',
+      executiveSummaryText: 'Decarbonizing supply chain via supplier contract mandates.',
+      keyMetricsBulletPoints: ['Tracked Vendors: 120', 'Spend with SBTi Vendors: 71.4%'],
+      strategicGovernanceGuidance: 'Target 80% Tier A vendor coverage.'
+    },
+    secComplianceAudit: {
+      sectionKey: 'sec',
+      heading: 'SEC Climate Disclosure & Greenwashing Risk Audit',
+      executiveSummaryText: 'Regulation S-K Items 1500-1507 and Regulation S-X readiness.',
+      keyMetricsBulletPoints: ['SEC Filing Readiness: 89.2%', 'Greenwashing Exposure: Low (11.5/100)'],
+      strategicGovernanceGuidance: 'Audit climate claims prior to 10-K filing.'
+    },
+    approvedByCsoAt: '2026-10-25',
+    approvedByCfoAt: '2026-10-25',
+    approvedByBoardChairAt: '2026-10-25',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  const md = generateExecutiveEsgBoardMemorandumMarkdown(memo);
+  assert.ok(md.includes('# Executive ESG, Sustainability & Climate Risk Board Memorandum'));
+  assert.ok(md.includes('Enterprise ESG, Climate Risk & Decarbonization Governance Briefing'));
+  assert.ok(md.includes('**Chief Sustainability Officer (CSO):** Certified & Signed (2026-10-25)'));
+  assert.ok(md.includes('**Chief Financial Officer (CFO):** Financial Review & Signed (2026-10-25)'));
+  assert.ok(md.includes('**Board ESG & Sustainability Committee Chair:** Board Ratified & Signed (2026-10-25)'));
+});
+
+test('esg: schema validators enforce boundaries and reject malformed inputs', () => {
+  const badGhg = validateRecordCarbonEmissionsInput({});
+  assert.equal(badGhg.ok, false);
+  assert.ok(Object.keys(badGhg.errors).length >= 4);
+
+  const goodGhg = validateRecordCarbonEmissionsInput({
+    reportingYear: 2026,
+    scope1Stationary: 1500,
+    scope1Mobile: 500,
+    scope1Fugitive: 50,
+    scope2Location: 3000,
+    scope2Market: 1000,
+    scope3Categories: [],
+    verifiedRemovals: 200,
+    revenueMillionUsd: 350,
+    headcountFte: 1800,
+    realEstateAreaM2: 50000,
+    energyTotalMwh: 12000,
+    renewableEnergyMwh: 10000
+  });
+  assert.equal(goodGhg.ok, true);
+
+  const badTcfd = validateTcfdSimulationInput({});
+  assert.equal(badTcfd.ok, false);
+
+  const goodTcfd = validateTcfdSimulationInput({
+    scenario: 'rcp_2_6_net_zero',
+    timeHorizon: 'short_term_2030',
+    enterpriseValueUsd: 850000000,
+    physicalAssetLocationsCount: 12
+  });
+  assert.equal(goodTcfd.ok, true);
+
+  const badTopic = validateMaterialityTopicUpdate({});
+  assert.equal(badTopic.ok, false);
+
+  const goodTopic = validateMaterialityTopicUpdate({
+    topicCode: 'E1',
+    impactScale: 4.5,
+    impactScope: 4.0,
+    impactIrremediability: 4.2,
+    impactLikelihood: 4.0,
+    financialMagnitude: 4.5,
+    financialProbability: 4.0,
+    keyImpacts: ['Carbon emissions reduction'],
+    keyFinancialRisks: ['Carbon tax liability']
+  });
+  assert.equal(goodTopic.ok, true);
+
+  const badSupplier = validateSupplierSimulationInput({ targetTierAProcurementSharePercent: 150 });
+  assert.equal(badSupplier.ok, false);
+
+  const goodSupplier = validateSupplierSimulationInput({
+    targetTierAProcurementSharePercent: 75,
+    targetVendorRenewableAdoptionPercent: 80,
+    supplierEngagementMandateEnacted: true
+  });
+  assert.equal(goodSupplier.ok, true);
+
+  const badMemo = validateEsgBoardMemoGenerateInput({});
+  assert.equal(badMemo.ok, false);
+
+  const goodMemo = validateEsgBoardMemoGenerateInput({
+    title: 'FY2026 Board ESG Governance Briefing',
+    reportingYear: 2026
+  });
+  assert.equal(goodMemo.ok, true);
+
+  const badSign = validateEsgSignOffInput({});
+  assert.equal(badSign.ok, false);
+
+  const goodSign = validateEsgSignOffInput({ role: 'cso' });
+  assert.equal(goodSign.ok, true);
 });
