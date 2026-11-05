@@ -12,12 +12,12 @@ const origin = process.env.APP_ORIGIN || 'http://127.0.0.1:64364';
 const testUsers: string[] = [];
 
 test.beforeEach(async () => {
-  await pool.query("DELETE FROM rate_limits WHERE key IN ('127.0.0.1', '::1')");
+  await pool.query("DELETE FROM rate_limits WHERE key LIKE 'auth-%'");
 });
 
 test.after(async () => {
   for (const id of testUsers) await pool.query('DELETE FROM users WHERE id=$1', [id]);
-  await pool.query("DELETE FROM rate_limits WHERE key IN ('127.0.0.1', '::1')");
+  await pool.query("DELETE FROM rate_limits WHERE key LIKE 'auth-%'");
   await new Promise<void>((resolve, reject) => server.close(error => (error ? reject(error) : resolve())));
   await pool.end();
 });

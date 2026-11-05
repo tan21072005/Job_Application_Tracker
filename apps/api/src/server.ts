@@ -88,6 +88,8 @@ import { OutreachService } from './services/outreach-service.ts';
 import { SimulationService } from './services/simulation-service.ts';
 import { PortfolioService } from './services/portfolio-service.ts';
 import { PasswordResetService } from './services/password-reset-service.ts';
+import { AccountExportService } from './services/account-export-service.ts';
+import { DeadlineReminderService } from './services/deadline-reminder-service.ts';
 import { sendMail, verifyMailer } from './services/mailer.ts';
 import { CompensationService } from './services/compensation-service.ts';
 import { TrajectoryService } from './services/trajectory-service.ts';
@@ -310,6 +312,8 @@ export const outreachService = new OutreachService(pool);
 export const simulationService = new SimulationService(pool);
 export const portfolioService = new PortfolioService(pool);
 export const passwordResetService = new PasswordResetService(pool);
+export const accountExportService = new AccountExportService(pool);
+export const deadlineReminderService = new DeadlineReminderService(pool);
 export const compensationService = new CompensationService(pool);
 export const trajectoryService = new TrajectoryService(pool);
 export const resumeOptimizerService = new ResumeOptimizerService(pool);
@@ -580,9 +584,10 @@ export async function checkRateLimit(
   clientOrPool: Pool | PoolClient,
   ip: string,
   maxAttempts = 15,
-  windowMinutes = 15
+  windowMinutes = 15,
+  scope = 'auth'
 ): Promise<{ allowed: boolean; retryAfter: number; count: number }> {
-  const key = `auth:${ip}`;
+  const key = `${scope}:${ip}`;
   const res = await clientOrPool.query<{ count: number; retry_after: number }>(
     `INSERT INTO rate_limits (key, count, reset_at)
      VALUES ($1, 1, CURRENT_TIMESTAMP + ($2 || ' minutes')::interval)
@@ -603,18 +608,74 @@ export async function checkRateLimit(
   return { allowed: count <= maxAttempts, retryAfter, count };
 }
 
+const normalizeRateLimitEmail = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null;
+  const email = value.trim().toLowerCase();
+  if (!email || email.length > 254) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  return email;
+};
+
+const IP_ATTEMPT_LIMIT = 60;
+const PAIR_ATTEMPT_LIMIT = 7;
+const ATTEMPT_WINDOW_MINUTES = 15;
+
+type ThrottledRequest = Request & {
+  pairThrottled?: boolean;
+  pairRetryAfter?: number;
+  rateLimitEmail?: string;
+};
+
+const pairKeyOf = (ip: string, email: string) => `${ip}|${email}`;
+
+async function clearPairAttempts(ip: string, email: string): Promise<void> {
+  await pool.query('DELETE FROM rate_limits WHERE key = $1', [`auth-pair:${pairKeyOf(ip, email)}`]);
+}
+
 async function authLimit(req: Request, res: Response, next: NextFunction) {
   try {
     const ip = getClientIp(req);
-    const { allowed, retryAfter } = await checkRateLimit(pool, ip);
-    if (!allowed) {
-      res.set('Retry-After', String(retryAfter));
-      return next(new Problem(429, 'Đã thử quá nhiều lần. Hãy đợi vài phút.', 'rate_limit_exceeded'));
+    const limit = await checkRateLimit(pool, ip, IP_ATTEMPT_LIMIT, ATTEMPT_WINDOW_MINUTES, 'auth-ip');
+    if (!limit.allowed) {
+      res.set('Retry-After', String(limit.retryAfter));
+      return next(new Problem(
+        429,
+        'Đã thử quá nhiều lần từ kết nối này. Hãy đợi vài phút rồi thử lại.',
+        'rate_limit_exceeded'
+      ));
     }
     next();
   } catch (err) {
     next(err);
   }
+}
+
+async function pairLimit(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
+    const email = normalizeRateLimitEmail(body.email);
+    if (!email) return next();
+
+    const ip = getClientIp(req);
+    const limit = await checkRateLimit(
+      pool, pairKeyOf(ip, email), PAIR_ATTEMPT_LIMIT, ATTEMPT_WINDOW_MINUTES, 'auth-pair'
+    );
+
+    const typed = req as ThrottledRequest;
+    typed.rateLimitEmail = email;
+    typed.pairThrottled = !limit.allowed;
+    typed.pairRetryAfter = limit.retryAfter;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+function rejectPairThrottled(req: Request, res: Response): boolean {
+  const typed = req as ThrottledRequest;
+  if (!typed.pairThrottled) return false;
+  res.set('Retry-After', String(typed.pairRetryAfter || ATTEMPT_WINDOW_MINUTES * 60));
+  return true;
 }
 
 app.post('/api/auth/register', authLimit, async (req, res, next) => {
@@ -657,8 +718,15 @@ app.post('/api/auth/register', authLimit, async (req, res, next) => {
   }
 });
 
-app.post('/api/auth/login', authLimit, async (req, res, next) => {
+app.post('/api/auth/login', authLimit, pairLimit, async (req, res, next) => {
   try {
+    if (rejectPairThrottled(req, res)) {
+      return next(new Problem(
+        429,
+        'Đã thử sai quá nhiều lần cho tài khoản này từ kết nối này. Hãy đợi vài phút hoặc đặt lại mật khẩu.',
+        'rate_limit_exceeded'
+      ));
+    }
     const b = bodyObject(req.body);
     const email = str(b.email, 254, 'email', true).toLowerCase();
     const password = b.password;
@@ -670,6 +738,7 @@ app.post('/api/auth/login', authLimit, async (req, res, next) => {
     if (!user || !(await argon2.verify(user.password_hash, password))) {
       fail(401, 'Email hoặc mật khẩu chưa đúng.', 'invalid_credentials');
     }
+    await clearPairAttempts(getClientIp(req), email);
     res.cookie('jobtrack_session', await createSession(user.id), cookieOptions);
     res.json({ id: user.id, email: user.email });
   } catch (error) {
@@ -784,7 +853,6 @@ app.post('/api/auth/reset-password', authLimit, async (req, res, next) => {
     const b = bodyObject(req.body);
     const token = typeof b.token === 'string' ? b.token : '';
     const password = b.password;
-
     const invalidPassMsg = 'Mật khẩu chưa hợp lệ.';
     if (typeof password !== 'string' || password.length > 64) {
       throw new Problem(422, invalidPassMsg, 'invalid_request', { password: invalidPassMsg });
@@ -871,6 +939,101 @@ app.delete('/api/auth/sessions', auth, async (req, res, next) => {
       [userId, currentSid]
     );
     res.json({ revoked: result.rowCount ?? 0 });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/auth/account', authLimit, auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const b = bodyObject(req.body);
+    const password = b.password;
+    const confirmation = typeof b.confirmation === 'string' ? b.confirmation.trim() : '';
+
+    if (typeof password !== 'string' || password.length === 0) {
+      throw new Problem(422, 'Cần nhập mật khẩu để xoá tài khoản.', 'invalid_request', {
+        password: 'Cần nhập mật khẩu để xoá tài khoản.'
+      });
+    }
+    if (confirmation !== 'XOA TAI KHOAN') {
+      throw new Problem(422, 'Gõ chính xác "XOA TAI KHOAN" để xác nhận.', 'invalid_request', {
+        confirmation: 'Gõ chính xác "XOA TAI KHOAN" để xác nhận.'
+      });
+    }
+
+    const found = await pool.query<{ password_hash: string }>(
+      'SELECT password_hash FROM users WHERE id=$1',
+      [userId]
+    );
+    const record = found.rows[0];
+    if (!record) {
+      fail(404, 'Tài khoản không còn tồn tại.', 'not_found');
+    }
+    if (!(await argon2.verify(record.password_hash, password))) {
+      fail(401, 'Mật khẩu chưa đúng. Tài khoản chưa bị xoá.', 'invalid_credentials');
+    }
+
+    await transaction(async client => {
+      await client.query('DELETE FROM users WHERE id=$1', [userId]);
+    });
+
+    res.clearCookie('jobtrack_session', { path: '/api' });
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/auth/reminders', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const limit = Number(req.query.limit || 100);
+    const history = await deadlineReminderService.history(
+      userId, Number.isFinite(limit) ? limit : 100
+    );
+    res.json({ reminders: history });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/auth/export', authLimit, auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const format = String(req.query.format || 'json').toLowerCase();
+
+    if (format === 'csv') {
+      const csv = await accountExportService.collectApplicationsCsv(userId);
+      const body = Buffer.concat([Buffer.from([0xEF, 0xBB, 0xBF]), Buffer.from(csv, 'utf8')]);
+      res.set('Content-Type', 'text/csv; charset=utf-8');
+      res.set('Content-Disposition', `attachment; filename="jobtrack-applications-${new Date().toISOString().slice(0, 10)}.csv"`);
+      return res.send(body);
+    }
+
+    const payload = await accountExportService.collect(userId);
+    const stamp = payload.exportedAt.slice(0, 10);
+    res.set('Content-Type', 'application/json; charset=utf-8');
+    res.set('Content-Disposition', `attachment; filename="jobtrack-export-${stamp}.json"`);
+    res.json(payload);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/internal/reminders/run', async (req, res, next) => {
+  try {
+    const expected = process.env.REMINDER_RUNNER_SECRET;
+    if (!expected) {
+      return res.status(503).json({ code: 'reminders_disabled', message: 'Chưa cấu hình REMINDER_RUNNER_SECRET.' });
+    }
+    const provided = req.get('X-JobTrack-Runner-Secret') || '';
+    if (provided.length !== expected.length || provided !== expected) {
+      return res.status(401).json({ code: 'unauthorized', message: 'Sai mã chạy nhắc việc.' });
+    }
+    const dryRun = String(req.query.dryRun || '') === '1';
+    const run = await deadlineReminderService.run({ dryRun });
+    res.json(run);
   } catch (error) {
     next(error);
   }
