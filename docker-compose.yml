@@ -54,6 +54,9 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-JobTrack <no-reply@jobtrack.local>}
+      REMINDER_TIMEZONE: ${REMINDER_TIMEZONE:-Asia/Ho_Chi_Minh}
+      REMINDER_RUNNER_SECRET: ${REMINDER_RUNNER_SECRET:-}
+      MAIL_ALLOW_CONSOLE: ${MAIL_ALLOW_CONSOLE:-0}
     depends_on:
       migration:
         condition: service_completed_successfully

@@ -14,6 +14,8 @@ if (!testDatabaseUrl) throw new Error('TEST_DATABASE_URL required for test envir
 
 const pool = new Pool({ connectionString: testDatabaseUrl, max: 5 });
 
+const expectedMigrations = await loadMigrationFiles();
+
 async function withCleanSchema<T>(prefix: string, fn: (client: PoolClient, schemaName: string) => Promise<T>): Promise<T> {
   const schemaName = `${prefix}_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
   const client = await pool.connect();
@@ -34,8 +36,9 @@ async function withCleanSchema<T>(prefix: string, fn: (client: PoolClient, schem
 
 test('migration: fresh install creates tables and records checksum', async () => {
   await withCleanSchema('fresh', async (client) => {
+    const expected = expectedMigrations;
     const results = await runMigrations(client);
-    assert.equal(results.length, 7);
+    assert.equal(results.length, expected.length);
     assert.equal(results[0].version, 1);
     assert.equal(results[0].action, 'applied');
     assert.ok(results[0].checksum.length > 20);
@@ -49,8 +52,8 @@ test('migration: fresh install creates tables and records checksum', async () =>
     assert.equal(results[4].action, 'applied');
     assert.equal(results[5].version, 6);
     assert.equal(results[5].action, 'applied');
-    assert.equal(results[6].version, 7);
-    assert.equal(results[6].action, 'applied');
+    assert.equal(results[results.length - 1].version, expected.at(-1).version);
+    assert.equal(results[results.length - 1].action, 'applied');
 
     const tables = (await client.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA AND table_type = 'BASE TABLE'`
@@ -75,7 +78,7 @@ test('migration: fresh install creates tables and records checksum', async () =>
     assert.ok(tables.includes('schema_migrations'));
 
     const rows = (await client.query('SELECT version, name, checksum FROM schema_migrations ORDER BY version ASC')).rows;
-    assert.equal(rows.length, 7);
+    assert.equal(rows.length, expected.length);
     assert.equal(rows[0].version, 1);
     assert.equal(rows[0].checksum, results[0].checksum);
     assert.equal(rows[1].version, 2);
@@ -88,13 +91,14 @@ test('migration: fresh install creates tables and records checksum', async () =>
     assert.equal(rows[4].checksum, results[4].checksum);
     assert.equal(rows[5].version, 6);
     assert.equal(rows[5].checksum, results[5].checksum);
-    assert.equal(rows[6].version, 7);
+    assert.equal(rows[rows.length - 1].version, expected.at(-1).version);
     assert.equal(rows[6].checksum, results[6].checksum);
   });
 });
 
 test('migration: repeated migration is idempotent and verifies checksum', async () => {
   await withCleanSchema('repeat', async (client) => {
+    const expected = expectedMigrations;
     const first = await runMigrations(client);
     assert.equal(first[0].action, 'applied');
     assert.equal(first[1].action, 'applied');
@@ -105,7 +109,7 @@ test('migration: repeated migration is idempotent and verifies checksum', async 
     assert.equal(first[6].action, 'applied');
 
     const second = await runMigrations(client);
-    assert.equal(second.length, 7);
+    assert.equal(second.length, expected.length);
     assert.equal(second[0].version, 1);
     assert.equal(second[0].action, 'already_applied');
     assert.equal(second[0].checksum, first[0].checksum);
@@ -124,7 +128,7 @@ test('migration: repeated migration is idempotent and verifies checksum', async 
     assert.equal(second[5].version, 6);
     assert.equal(second[5].action, 'already_applied');
     assert.equal(second[5].checksum, first[5].checksum);
-    assert.equal(second[6].version, 7);
+    assert.equal(second[second.length - 1].version, expected.at(-1).version);
     assert.equal(second[6].action, 'already_applied');
     assert.equal(second[6].checksum, first[6].checksum);
   });
@@ -159,6 +163,7 @@ test('migration: concurrent migrators serialize with advisory lock without error
 
 test('migration: tampered migration file throws error and aborts without reset', async () => {
   await withCleanSchema('tamper', async (client) => {
+    const expected = expectedMigrations;
     const standardFiles = await loadMigrationFiles();
     assert.ok(standardFiles.length > 0);
 
@@ -192,6 +197,7 @@ test('migration: tampered migration file throws error and aborts without reset',
 
 test('migration: existing v1 schema without migration record is safely baselined', async () => {
   await withCleanSchema('baseline', async (client) => {
+    const expected = expectedMigrations;
     const standardFiles = await loadMigrationFiles();
     // Execute DDL directly without schema_migrations tracking table
     await client.query(standardFiles[0].sql);
@@ -204,7 +210,7 @@ test('migration: existing v1 schema without migration record is safely baselined
 
     // Now run migrator on existing v1 database
     const results = await runMigrations(client, standardFiles);
-    assert.equal(results.length, 7);
+    assert.equal(results.length, expected.length);
     assert.equal(results[0].action, 'baselined');
     assert.equal(results[0].version, 1);
     assert.equal(results[1].action, 'applied');
@@ -217,11 +223,11 @@ test('migration: existing v1 schema without migration record is safely baselined
     assert.equal(results[4].version, 5);
     assert.equal(results[5].action, 'applied');
     assert.equal(results[5].version, 6);
-    assert.equal(results[6].action, 'applied');
-    assert.equal(results[6].version, 7);
+    assert.equal(results[results.length - 1].action, 'applied');
+    assert.equal(results[results.length - 1].version, expected.at(-1).version);
 
     const rows = (await client.query('SELECT version, name, checksum FROM schema_migrations ORDER BY version ASC')).rows;
-    assert.equal(rows.length, 7);
+    assert.equal(rows.length, expected.length);
     assert.equal(rows[0].version, 1);
     assert.equal(rows[0].checksum, standardFiles[0].checksum);
     assert.equal(rows[1].version, 2);
@@ -234,13 +240,14 @@ test('migration: existing v1 schema without migration record is safely baselined
     assert.equal(rows[4].checksum, standardFiles[4].checksum);
     assert.equal(rows[5].version, 6);
     assert.equal(rows[5].checksum, standardFiles[5].checksum);
-    assert.equal(rows[6].version, 7);
+    assert.equal(rows[rows.length - 1].version, expected.at(-1).version);
     assert.equal(rows[6].checksum, standardFiles[6].checksum);
   });
 });
 
 test('migration: incompatible schema is rejected and NOT reset', async () => {
   await withCleanSchema('incompatible', async (client) => {
+    const expected = expectedMigrations;
     // Create an incompatible schema (e.g. users table missing required columns)
     await client.query(`
       CREATE TABLE users (

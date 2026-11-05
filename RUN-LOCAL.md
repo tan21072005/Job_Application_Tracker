@@ -5,7 +5,6 @@ Repo: `F:\Project\Job_Application_Tracker`
 Máy đã có sẵn trong PATH hệ thống: Node.js 24.20.0, npm 11.19, Git 2.5x, Docker CLI 29.9.2 (`F:\long-app\docker\bin`), Docker Compose v5.7.0. Chỉ shell đang mở trước khi cài mới cần nạp lại PATH.
 
 ## Bật/tắt 28 module enterprise
-
 Sidebar có hai chế độ, điều khiển bằng biến `VITE_ENTERPRISE_MODULES`:
 
 | Chế độ | Sidebar | Dùng khi |
@@ -150,6 +149,50 @@ Kiểm tra layout 3 kích thước (390 / 768 / 1440) trên 6 trang:
 ```powershell
 node tools/verify/audit-responsive.mjs
 ```
+
+---
+
+## Bảo mật tài khoản và nhắc việc
+
+### Đổi mật khẩu, xuất dữ liệu, xoá tài khoản
+
+Vào **Tài khoản → Đổi mật khẩu & phiên** trong ứng dụng:
+
+| Chức năng | Cách dùng |
+| --- | --- |
+| Đổi mật khẩu | Nhập mật khẩu hiện tại + mật khẩu mới (15–64 ký tự). Các thiết bị khác tự đăng xuất |
+| Đăng xuất thiết bị khác | Một nút, giữ phiên hiện tại |
+| Xuất dữ liệu | Tải JSON chứa hồ sơ, phỏng vấn, ghi chú, CV, liên hệ (GDPR Article 20) |
+| Xoá tài khoản | Nhập mật khẩu + gõ `XOA TAI KHOAN`. Xoá vĩnh viễn, cascade 206 bảng (GDPR Article 17) |
+
+### Nhắc việc qua email
+
+Cần biến `REMINDER_RUNNER_SECRET` trong `.env`. Chạy tay:
+
+```powershell
+docker compose exec api node src/reminders.ts --dry-run
+docker compose exec api node src/reminders.ts
+```
+
+Log sẽ ghi `[mail:brevo-api]` khi gửi thật. Bốn mốc nhắc: T-7, T-3, T-1, và đúng ngày hạn. Mỗi mốc chỉ gửi một lần cho mỗi deadline (bảng `deadline_reminders` có UNIQUE). Đổi deadline thì được nhắc lại.
+
+Tắt nhắc cho một hồ sơ: `UPDATE applications SET reminders_enabled = false WHERE id = '...'`.
+
+Lịch cron mẫu (chạy 08:00 mỗi ngày, giờ Việt Nam):
+
+```cron
+0 8 * * * docker compose -f /path/docker-compose.yml exec -T api node src/reminders.ts
+```
+
+Múi giờ tính ngày mặc định `Asia/Ho_Chi_Minh`; đổi bằng `REMINDER_TIMEZONE`.
+
+### Rate limiter
+
+Đăng nhập giới hạn theo **cặp IP + email** (7 lần/15 phút) và theo **IP** (60 lần/15 phút):
+
+- Người trong cùng văn phòng sau NAT không bị ảnh hưởng lẫn nhau.
+- Kẻ tấn công từ IP khác không khoá được tài khoản nạn nhân.
+- Đăng nhập thành công xoá bộ đếm của cặp đó.
 
 ---
 

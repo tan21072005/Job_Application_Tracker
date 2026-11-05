@@ -1,15 +1,17 @@
 import { useState, type FormEvent } from 'react';
-import { Eye, EyeOff, KeyRound, LoaderCircle, LogOut, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Download, Eye, EyeOff, KeyRound, LoaderCircle, LogOut, ShieldCheck, Trash2 } from 'lucide-react';
 import { demoMode, repository } from '../data';
 import { ApiError } from '../transport';
 import { Button, Dialog, Field } from './ui';
 
 export default function PasswordSecurityModal({
   onClose,
-  notify
+  notify,
+  onAccountDeleted
 }: {
   onClose: () => void;
   notify?: (message: string, isError?: boolean) => void;
+  onAccountDeleted?: () => void;
 }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -19,6 +21,15 @@ export default function PasswordSecurityModal({
   const [revoking, setRevoking] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
 
   async function changePassword(event: FormEvent) {
     event.preventDefault();
@@ -60,6 +71,52 @@ export default function PasswordSecurityModal({
       setError((err as Error).message);
     } finally {
       setRevoking(false);
+    }
+  }
+
+  async function exportData() {
+    if (exporting) return;
+    setExportError('');
+    setExporting(true);
+    try {
+      const blob = await repository.exportAllData();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `jobtrack-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      notify?.('Đã tải bản xuất dữ liệu.');
+    } catch (err) {
+      setExportError((err as Error).message);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function deleteAccount(event: FormEvent) {
+    event.preventDefault();
+    if (deleting) return;
+    setDeleteError('');
+
+    const invalid: Record<string, string> = {};
+    if (!deletePassword) invalid.password = 'Nhập mật khẩu để xác nhận.';
+    if (deleteConfirm.trim() !== 'XOA TAI KHOAN') invalid.confirmation = 'Gõ chính xác "XOA TAI KHOAN".';
+    setDeleteErrors(invalid);
+    if (Object.keys(invalid).length) return;
+
+    setDeleting(true);
+    try {
+      await repository.deleteAccount(deletePassword, deleteConfirm.trim());
+      onAccountDeleted?.();
+      notify?.('Tài khoản và toàn bộ dữ liệu đã được xoá vĩnh viễn.');
+    } catch (err) {
+      if (err instanceof ApiError && err.fields && Object.keys(err.fields).length > 0) setDeleteErrors(err.fields);
+      setDeleteError((err as Error).message);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -137,6 +194,77 @@ export default function PasswordSecurityModal({
             {revoking ? <LoaderCircle size={17} className="spin" /> : <LogOut size={17} />}
             {revoking ? 'Đang xử lý…' : 'Đăng xuất thiết bị khác'}
           </Button>
+        </div>
+
+        <hr style={{ margin: '26px 0 22px', border: 0, borderTop: '1px solid var(--line)' }} />
+
+        <div>
+          <h3 style={{ fontSize: 14, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Download size={17} />Xuất dữ liệu của bạn
+          </h3>
+          <p className="field-help" style={{ marginBottom: 14 }}>
+            Tải toàn bộ hồ sơ, lịch phỏng vấn, ghi chú, CV, liên hệ và các bản ghi khác dưới dạng JSON.
+            Dùng để sao lưu hoặc chuyển sang dịch vụ khác.
+          </p>
+          {exportError && <div className="notice notice-error" role="alert">{exportError}</div>}
+          <Button kind="secondary" disabled={exporting} onClick={() => void exportData()}>
+            {exporting ? <LoaderCircle size={17} className="spin" /> : <Download size={17} />}
+            {exporting ? 'Đang chuẩn bị…' : 'Tải bản xuất JSON'}
+          </Button>
+        </div>
+
+        <hr style={{ margin: '26px 0 22px', border: 0, borderTop: '1px solid var(--line)' }} />
+
+        <div>
+          <h3 style={{ fontSize: 14, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--danger)' }}>
+            <AlertTriangle size={17} />Xoá tài khoản
+          </h3>
+          <p className="field-help" style={{ marginBottom: 14 }}>
+            Xoá vĩnh viễn tài khoản cùng toàn bộ hồ sơ ứng tuyển, lịch phỏng vấn, ghi chú, CV và liên hệ.
+            Không thể khôi phục. Hãy xuất dữ liệu trước nếu cần giữ lại.
+          </p>
+          {!deleteOpen ? (
+            <Button kind="danger" disabled={demoMode} onClick={() => setDeleteOpen(true)}>
+              <Trash2 size={17} />Xoá tài khoản vĩnh viễn
+            </Button>
+          ) : (
+            <form onSubmit={deleteAccount} noValidate>
+              {deleteError && <div className="notice notice-error" role="alert">{deleteError}</div>}
+              <Field label="Mật khẩu" error={deleteErrors.password}>
+                <input
+                  disabled={deleting}
+                  required
+                  type="password"
+                  autoComplete="current-password"
+                  value={deletePassword}
+                  onChange={event => setDeletePassword(event.target.value)}
+                />
+              </Field>
+              <Field
+                label='Gõ "XOA TAI KHOAN" để xác nhận'
+                error={deleteErrors.confirmation}
+                help="Không phân biệt hoa thường ở khoảng trắng, nhưng phải đúng chữ."
+              >
+                <input
+                  disabled={deleting}
+                  required
+                  type="text"
+                  autoComplete="off"
+                  value={deleteConfirm}
+                  onChange={event => setDeleteConfirm(event.target.value)}
+                />
+              </Field>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <Button kind="secondary" type="button" disabled={deleting} onClick={() => { setDeleteOpen(false); setDeletePassword(''); setDeleteConfirm(''); setDeleteError(''); setDeleteErrors({}); }}>
+                  Hủy
+                </Button>
+                <Button kind="danger" type="submit" disabled={deleting}>
+                  {deleting ? <LoaderCircle size={17} className="spin" /> : <Trash2 size={17} />}
+                  {deleting ? 'Đang xoá…' : 'Xoá vĩnh viễn'}
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
       <footer className="dialog-actions">

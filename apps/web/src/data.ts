@@ -1538,6 +1538,30 @@ export const repository = {
     return request<{ revoked: number }>('/auth/sessions', { method: 'DELETE' });
   },
 
+  async deleteAccount(password: string, confirmation: string) {
+    if (demoMode) throw Error('Bản dùng thử không xoá được tài khoản.');
+    return request<void>('/auth/account', {
+      method: 'DELETE',
+      body: JSON.stringify({ password, confirmation })
+    });
+  },
+
+  async exportAllData(): Promise<Blob> {
+    if (demoMode) {
+      return new Blob([JSON.stringify({ note: 'Bản dùng thử không có dữ liệu thật.' }, null, 2)], { type: 'application/json' });
+    }
+    const response = await fetch('/api/auth/export?format=json', {
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      throw new ApiError(
+        response.status === 401 ? 'Phiên đăng nhập đã hết hạn. Đăng nhập lại để xuất dữ liệu.' : 'Không xuất được dữ liệu. Thử lại.',
+        response.status
+      );
+    }
+    return response.blob();
+  },
+
   async importUrl(url: string): Promise<UrlImportExtractResult> {
     if (demoMode) {
       return {
