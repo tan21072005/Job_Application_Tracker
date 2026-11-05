@@ -13,7 +13,8 @@ import {
   Tag,
   Clock,
   ChevronRight,
-  Scale
+  Scale,
+  MoreHorizontal
 } from 'lucide-react';
 import {
   filtered,
@@ -221,40 +222,69 @@ export default function Applications({
           <h1>Hồ sơ ứng tuyển</h1>
           <p>{apps.length} cơ hội · mỗi hồ sơ một bước tiếp theo.</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Button
-            kind="secondary"
-            aria-label="Nhập từ file CSV"
-            onClick={() => setShowCsvModal(true)}
-          >
-            <UploadCloud size={18} />
-            <span>Nhập CSV</span>
-          </Button>
-          <Button
-            kind="secondary"
-            aria-label="Xuất file CSV"
-            onClick={handleExportAll}
-          >
-            <FileSpreadsheet size={18} />
-            <span>Xuất CSV</span>
-          </Button>
-          {onDecisionMatrix && (
+        <div className="page-heading-actions">
+          <details className="page-heading-more">
+            <summary aria-label="Thao tác khác">
+              <MoreHorizontal size={18} />
+            </summary>
+            <div className="page-heading-more-menu">
+              <Button kind="secondary" aria-label="Nhập từ file CSV" onClick={() => setShowCsvModal(true)}>
+                <UploadCloud size={18} />
+                <span>Nhập CSV</span>
+              </Button>
+              <Button kind="secondary" aria-label="Xuất file CSV" onClick={handleExportAll}>
+                <FileSpreadsheet size={18} />
+                <span>Xuất CSV</span>
+              </Button>
+              {onDecisionMatrix && (
+                <Button kind="secondary" aria-label="So sánh cơ hội" onClick={onDecisionMatrix}>
+                  <Scale size={18} />
+                  <span>So sánh cơ hội</span>
+                </Button>
+              )}
+              {onImport && (
+                <Button kind="secondary" aria-label="Nhập từ link" onClick={onImport}>
+                  <Globe size={18} />
+                  <span>Nhập từ link</span>
+                </Button>
+              )}
+            </div>
+          </details>
+          <div className="page-heading-wide-actions">
             <Button
               kind="secondary"
-              className="decision-matrix-btn"
-              aria-label="So sánh cơ hội"
-              onClick={onDecisionMatrix}
+              aria-label="Nhập từ file CSV"
+              onClick={() => setShowCsvModal(true)}
             >
-              <Scale size={18} />
-              <span>So sánh cơ hội</span>
+              <UploadCloud size={18} />
+              <span>Nhập CSV</span>
             </Button>
-          )}
-          {onImport && (
-            <Button kind="secondary" aria-label="Nhập từ link" onClick={onImport}>
-              <Globe size={18} />
-              <span>Nhập từ link</span>
+            <Button
+              kind="secondary"
+              aria-label="Xuất file CSV"
+              onClick={handleExportAll}
+            >
+              <FileSpreadsheet size={18} />
+              <span>Xuất CSV</span>
             </Button>
-          )}
+            {onDecisionMatrix && (
+              <Button
+                kind="secondary"
+                className="decision-matrix-btn"
+                aria-label="So sánh cơ hội"
+                onClick={onDecisionMatrix}
+              >
+                <Scale size={18} />
+                <span>So sánh cơ hội</span>
+              </Button>
+            )}
+            {onImport && (
+              <Button kind="secondary" aria-label="Nhập từ link" onClick={onImport}>
+                <Globe size={18} />
+                <span>Nhập từ link</span>
+              </Button>
+            )}
+          </div>
           <Button aria-label="Thêm hồ sơ" onClick={onAdd}>
             <Plus size={18} />
             <span>Thêm hồ sơ</span>

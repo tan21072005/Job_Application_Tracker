@@ -251,7 +251,7 @@ export default function DatasetsView({
           </div>
           <p>Thu thập bảng tính, danh mục sản phẩm, đối tác và ghi chú nghiên cứu từ mọi website.</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="page-heading-actions">
           <Button kind="secondary" onClick={() => void loadDatasets()} aria-label="Tải lại">
             <RefreshCw size={17} className={loading ? 'spin' : ''} />
             <span>Làm mới</span>

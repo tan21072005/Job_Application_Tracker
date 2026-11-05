@@ -110,7 +110,7 @@ export default function Dashboard({ apps, onOpen, onAction, onAdd, onList, onImp
         <h1>Hôm nay của bạn</h1>
         <p>{demoMode ? 'Nhật Tân, ' : ''}mỗi cơ hội là một bước tiến.</p>
       </div>
-      <div style={{ display: 'flex', gap: '10px' }}>
+      <div className="page-heading-actions">
         {onImport && (
           <Button kind="secondary" aria-label="Nhập từ link" onClick={onImport}>
             <Globe size={18} />
