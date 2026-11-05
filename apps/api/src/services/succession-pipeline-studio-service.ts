@@ -843,6 +843,22 @@ export class SuccessionPipelineStudioService {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
+    const ownedProfile = await this.pool.query(
+      `SELECT id FROM succession_talent_profiles WHERE id = $1 AND user_id = $2`,
+      [validated.talentProfileId, userId]
+    );
+    if (ownedProfile.rows.length === 0) {
+      throw new Error('talent_profile_not_found');
+    }
+
+    const ownedRole = await this.pool.query(
+      `SELECT id FROM succession_critical_roles WHERE id = $1 AND user_id = $2`,
+      [validated.criticalRoleId, userId]
+    );
+    if (ownedRole.rows.length === 0) {
+      throw new Error('critical_role_not_found');
+    }
+
     const res = await this.pool.query(
       `INSERT INTO succession_candidates (
         id, user_id, critical_role_id, talent_profile_id, readiness_horizon, ranking_order, notes, created_at, updated_at
@@ -862,8 +878,8 @@ export class SuccessionPipelineStudioService {
     );
 
     const profileRes = await this.pool.query(
-      `SELECT full_name, current_role_title as current_role, underrepresented_leader FROM succession_talent_profiles WHERE id = $1`,
-      [validated.talentProfileId]
+      `SELECT full_name, current_role_title as current_role, underrepresented_leader FROM succession_talent_profiles WHERE id = $1 AND user_id = $2`,
+      [validated.talentProfileId, userId]
     );
     const p = profileRes.rows[0];
 
@@ -954,8 +970,8 @@ export class SuccessionPipelineStudioService {
     );
 
     const profileRes = await this.pool.query(
-      `SELECT full_name, current_role_title as current_role FROM succession_talent_profiles WHERE id = $1`,
-      [validated.talentProfileId]
+      `SELECT full_name, current_role_title as current_role FROM succession_talent_profiles WHERE id = $1 AND user_id = $2`,
+      [validated.talentProfileId, userId]
     );
     const p = profileRes.rows[0];
     const r = res.rows[0];
@@ -1002,8 +1018,8 @@ export class SuccessionPipelineStudioService {
 
     const r = res.rows[0];
     const profileRes = await this.pool.query(
-      `SELECT full_name, current_role_title as current_role FROM succession_talent_profiles WHERE id = $1`,
-      [r.talent_profile_id]
+      `SELECT full_name, current_role_title as current_role FROM succession_talent_profiles WHERE id = $1 AND user_id = $2`,
+      [r.talent_profile_id, userId]
     );
     const p = profileRes.rows[0];
 
@@ -1127,12 +1143,12 @@ export class SuccessionPipelineStudioService {
     }
 
     const pRes = await this.pool.query(
-      `SELECT full_name FROM succession_talent_profiles WHERE id = $1`,
-      [validated.talentProfileId]
+      `SELECT full_name FROM succession_talent_profiles WHERE id = $1 AND user_id = $2`,
+      [validated.talentProfileId, userId]
     );
     const rRes = await this.pool.query(
-      `SELECT title FROM succession_critical_roles WHERE id = $1`,
-      [validated.targetRoleId]
+      `SELECT title FROM succession_critical_roles WHERE id = $1 AND user_id = $2`,
+      [validated.targetRoleId, userId]
     );
 
     return {

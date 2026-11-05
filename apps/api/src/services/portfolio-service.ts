@@ -230,12 +230,17 @@ export class PortfolioService {
       totalMilestones: 4
     };
 
-    const simRes = await this.pool.query(
-      `SELECT * FROM interview_simulation_sessions
-       WHERE user_id = $1 AND status = 'completed' AND report IS NOT NULL
-       ORDER BY updated_at DESC LIMIT 1`,
-      [userId]
+    const simExists = await this.pool.query(
+      `SELECT to_regclass('public.interview_simulation_sessions') AS exists`
     );
+    const simRes = simExists.rows[0]?.exists
+      ? await this.pool.query(
+          `SELECT * FROM interview_simulation_sessions
+           WHERE user_id = $1 AND status = 'completed' AND report IS NOT NULL
+           ORDER BY updated_at DESC LIMIT 1`,
+          [userId]
+        )
+      : { rowCount: 0, rows: [] as Record<string, unknown>[] };
 
     let simulation: DossierSimulationReadinessDTO | null = null;
     if (simRes.rowCount && simRes.rows[0]) {
