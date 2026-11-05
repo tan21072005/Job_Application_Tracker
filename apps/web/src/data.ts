@@ -1115,6 +1115,7 @@ export type {
 };
 
 export const demoMode = import.meta.env.VITE_DATA_MODE !== 'api';
+export const enterpriseModulesEnabled = import.meta.env.VITE_ENTERPRISE_MODULES === 'true';
 const KEY = 'jobtrack.design.v1';
 const TRASH_KEY = 'jobtrack.trash.v1';
 export { fixture } from './demo';

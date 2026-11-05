@@ -9,6 +9,8 @@ RUN npm install
 
 COPY apps/web ./
 ENV VITE_DATA_MODE=api
+ARG VITE_ENTERPRISE_MODULES=false
+ENV VITE_ENTERPRISE_MODULES=${VITE_ENTERPRISE_MODULES}
 RUN npm run build
 
 # Stage 2: Nginx reverse proxy edge
