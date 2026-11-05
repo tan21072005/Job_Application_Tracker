@@ -9,14 +9,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY apps/api/package.json /app/apps/api/package.json
+COPY packages/jobtrack-contract/package.json /app/packages/jobtrack-contract/package.json
 WORKDIR /app/apps/api
 RUN npm install --omit=dev
 
 COPY packages/jobtrack-contract /app/packages/jobtrack-contract
+COPY packages/jobtrack-mcp /app/packages/jobtrack-mcp
 COPY apps/api/src /app/apps/api/src
 COPY apps/api/migrations /app/apps/api/migrations
+
+RUN mkdir -p /app/apps/api/node_modules/@jobtrack \
+    && ln -s /app/packages/jobtrack-contract /app/apps/api/node_modules/@jobtrack/contract
 
 ENV NODE_ENV=production
 EXPOSE 64366
 
+WORKDIR /app/apps/api
 CMD ["node", "src/server.ts"]
