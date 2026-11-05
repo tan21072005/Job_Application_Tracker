@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { ArrowRight, CalendarDays, Check, Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { ArrowRight, CalendarDays, Check, Eye, EyeOff, KeyRound, LoaderCircle } from 'lucide-react';
 import { demoMode, repository } from '../data';
 import { ApiError } from '../transport';
 import { Button, Field, Logo } from '../components/ui';
 
-export default function Auth({ onEnter }: { onEnter: (user?: { id: string; email: string }) => void }) {
+export default function Auth({ onEnter, onForgot }: { onEnter: (user?: { id: string; email: string }) => void; onForgot?: () => void }) {
   const [register, setRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -111,6 +111,18 @@ export default function Auth({ onEnter }: { onEnter: (user?: { id: string; email
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
               {show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
             </button>
+
+            {!register && (
+              <button
+                type="button"
+                disabled={busy}
+                className="password-toggle"
+                onClick={() => onForgot?.()}
+              >
+                <KeyRound size={16} />
+                Quên mật khẩu?
+              </button>
+            )}
 
             <Button disabled={busy} type="submit">
               {busy ? <LoaderCircle size={17} className="spin" /> : null}

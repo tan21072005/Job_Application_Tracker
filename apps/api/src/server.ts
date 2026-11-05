@@ -87,6 +87,8 @@ import { EmailIngestService } from './services/email-ingest-service.ts';
 import { OutreachService } from './services/outreach-service.ts';
 import { SimulationService } from './services/simulation-service.ts';
 import { PortfolioService } from './services/portfolio-service.ts';
+import { PasswordResetService } from './services/password-reset-service.ts';
+import { sendMail, verifyMailer } from './services/mailer.ts';
 import { CompensationService } from './services/compensation-service.ts';
 import { TrajectoryService } from './services/trajectory-service.ts';
 import { ResumeOptimizerService } from './services/resume-optimizer-service.ts';
@@ -307,6 +309,7 @@ export const emailIngestService = new EmailIngestService(pool);
 export const outreachService = new OutreachService(pool);
 export const simulationService = new SimulationService(pool);
 export const portfolioService = new PortfolioService(pool);
+export const passwordResetService = new PasswordResetService(pool);
 export const compensationService = new CompensationService(pool);
 export const trajectoryService = new TrajectoryService(pool);
 export const resumeOptimizerService = new ResumeOptimizerService(pool);
@@ -723,6 +726,165 @@ function keyFor(req: Request): string {
   const value = req.get('Idempotency-Key');
   if (!uuid(value)) throw new Problem(428, 'Thiếu khóa yêu cầu. Hãy thử lại.', 'missing_idempotency_key');
   return value;
+}
+
+const publicAppUrl = (): string => (process.env.APP_ORIGIN || 'http://127.0.0.1:64364').replace(/\/+$/, '');
+
+const resetRequestMessage =
+  'Nếu email này có tài khoản, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu. Kiểm tra hộp thư trong 30 phút tới.';
+
+app.post('/api/auth/forgot-password', authLimit, async (req, res, next) => {
+  try {
+    const b = bodyObject(req.body);
+    const email = str(b.email, 254, 'email', true).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      fail(422, 'Email chưa hợp lệ.', 'invalid_request', { email: 'Email chưa hợp lệ.' });
+    }
+
+    const found = await pool.query<{ id: string; email: string }>(
+      'SELECT id,email FROM users WHERE email_normalized=$1',
+      [email]
+    );
+    const user = found.rows[0];
+
+    if (user) {
+      const { token, expiresAt } = await passwordResetService.issue(user.id);
+      const link = `${publicAppUrl()}/#reset-password?token=${encodeURIComponent(token)}`;
+      const minutes = Math.max(1, Math.round((expiresAt.getTime() - Date.now()) / 60000));
+      try {
+        await sendMail({
+          to: user.email,
+          subject: 'Đặt lại mật khẩu JobTrack',
+          text: [
+            'Xin chào,',
+            '',
+            'Có yêu cầu đặt lại mật khẩu cho tài khoản JobTrack của bạn.',
+            `Mở liên kết sau trong ${minutes} phút:`,
+            link,
+            '',
+            'Nếu bạn không yêu cầu, hãy bỏ qua email này. Mật khẩu hiện tại vẫn giữ nguyên.',
+            '',
+            'JobTrack'
+          ].join('\n'),
+          html: `<p>Xin chào,</p><p>Có yêu cầu đặt lại mật khẩu cho tài khoản JobTrack của bạn.</p><p><a href="${link}">Đặt lại mật khẩu</a> (hết hạn sau ${minutes} phút).</p><p>Nếu bạn không yêu cầu, hãy bỏ qua email này.</p><p>JobTrack</p>`
+        });
+      } catch (mailError) {
+        console.error('[auth] password reset mail failed:', (mailError as Error).message);
+      }
+    }
+
+    res.status(202).json({ message: resetRequestMessage });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/auth/reset-password', authLimit, async (req, res, next) => {
+  try {
+    const b = bodyObject(req.body);
+    const token = typeof b.token === 'string' ? b.token : '';
+    const password = b.password;
+
+    const invalidPassMsg = 'Mật khẩu chưa hợp lệ.';
+    if (typeof password !== 'string' || password.length > 64) {
+      throw new Problem(422, invalidPassMsg, 'invalid_request', { password: invalidPassMsg });
+    }
+    if (password.length < 15) {
+      throw new Problem(422, 'Mật khẩu cần từ 15–64 ký tự.', 'invalid_request', {
+        password: 'Mật khẩu cần từ 15–64 ký tự.'
+      });
+    }
+
+    const consumed = await passwordResetService.consume(token);
+    if (!consumed) {
+      fail(400, 'Liên kết đặt lại không hợp lệ hoặc đã hết hạn.', 'invalid_reset_token');
+    }
+
+    const hash = await argon2.hash(password, { type: argon2.argon2id });
+    await transaction(async client => {
+      await client.query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, consumed.userId]);
+      await client.query(
+        'UPDATE sessions SET revoked_at=CURRENT_TIMESTAMP WHERE user_id=$1 AND revoked_at IS NULL',
+        [consumed.userId]
+      );
+    });
+
+    res.clearCookie('jobtrack_session', { path: '/api' });
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/auth/change-password', authLimit, auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const b = bodyObject(req.body);
+    const currentPassword = b.currentPassword;
+    const newPassword = b.newPassword;
+
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+      fail(422, 'Cần nhập mật khẩu hiện tại và mật khẩu mới.', 'invalid_request');
+    }
+    if (newPassword.length < 15 || newPassword.length > 64) {
+      throw new Problem(422, 'Mật khẩu cần từ 15–64 ký tự.', 'invalid_request', {
+        newPassword: 'Mật khẩu cần từ 15–64 ký tự.'
+      });
+    }
+    if (currentPassword === newPassword) {
+      fail(422, 'Mật khẩu mới phải khác mật khẩu hiện tại.', 'invalid_request');
+    }
+
+    const found = await pool.query<{ password_hash: string }>(
+      'SELECT password_hash FROM users WHERE id=$1',
+      [userId]
+    );
+    const record = found.rows[0];
+    if (!record || !(await argon2.verify(record.password_hash, currentPassword))) {
+      fail(401, 'Mật khẩu hiện tại chưa đúng.', 'invalid_credentials');
+    }
+
+    const hash = await argon2.hash(newPassword, { type: argon2.argon2id });
+    const currentSid = await currentSessionId(req);
+    await transaction(async client => {
+      await client.query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, userId]);
+      await client.query(
+        `UPDATE sessions SET revoked_at=CURRENT_TIMESTAMP
+         WHERE user_id=$1 AND revoked_at IS NULL AND ($2::uuid IS NULL OR id <> $2::uuid)`,
+        [userId, currentSid]
+      );
+    });
+
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/auth/sessions', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const currentSid = await currentSessionId(req);
+    const result = await pool.query(
+      `UPDATE sessions SET revoked_at=CURRENT_TIMESTAMP
+       WHERE user_id=$1 AND revoked_at IS NULL AND ($2::uuid IS NULL OR id <> $2::uuid)`,
+      [userId, currentSid]
+    );
+    res.json({ revoked: result.rowCount ?? 0 });
+  } catch (error) {
+    next(error);
+  }
+});
+
+async function currentSessionId(req: Request): Promise<string | null> {
+  const token = cookies(req.headers.cookie).jobtrack_session;
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] });
+    return uuid(payload.sid) ? (payload.sid as string) : null;
+  } catch {
+    return null;
+  }
 }
 
 app.get('/api/applications', auth, async (req, res, next) => {

@@ -1508,6 +1508,35 @@ export const repository = {
     if (!demoMode) await request<void>('/auth/logout', { method: 'POST' });
   },
 
+  async forgotPassword(email: string) {
+    if (demoMode) throw Error('Bản dùng thử không gửi email. Hãy chạy bản API thật.');
+    return request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  },
+
+  async resetPassword(token: string, password: string) {
+    if (demoMode) throw Error('Bản dùng thử không đặt lại được mật khẩu.');
+    return request<void>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password })
+    });
+  },
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    if (demoMode) throw Error('Bản dùng thử không đổi được mật khẩu.');
+    return request<void>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+  },
+
+  async revokeOtherSessions() {
+    if (demoMode) return { revoked: 0 };
+    return request<{ revoked: number }>('/auth/sessions', { method: 'DELETE' });
+  },
+
   async importUrl(url: string): Promise<UrlImportExtractResult> {
     if (demoMode) {
       return {
