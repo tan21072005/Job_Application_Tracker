@@ -4,6 +4,32 @@ Repo: `F:\Project\Job_Application_Tracker`
 
 Máy đã có sẵn trong PATH hệ thống: Node.js 24.20.0, npm 11.19, Git 2.5x, Docker CLI 29.9.2 (`F:\long-app\docker\bin`), Docker Compose v5.7.0. Chỉ shell đang mở trước khi cài mới cần nạp lại PATH.
 
+## Bật/tắt 28 module enterprise
+
+Sidebar có hai chế độ, điều khiển bằng biến `VITE_ENTERPRISE_MODULES`:
+
+| Chế độ | Sidebar | Dùng khi |
+| --- | --- | --- |
+| Tắt (mặc định) | 6 trang + 16 modal | Sản phẩm cho người tìm việc (`PRODUCT.md`) |
+| Bật | 6 trang + 44 modal | Cần xem các console doanh nghiệp |
+
+Chạy Docker với flag bật:
+
+```powershell
+docker compose build --build-arg VITE_ENTERPRISE_MODULES=true web
+docker compose up -d web
+```
+
+Chạy dev với flag bật, thêm dòng này vào `apps/web/.env.development`:
+
+```
+VITE_ENTERPRISE_MODULES=true
+```
+
+Ba tính năng luôn hiển thị ở cả hai chế độ vì phục vụ người tìm việc: Chiến dịch Outreach, Dự báo thu nhập & ESOP, Lộ trình thăng tiến.
+
+Lưu ý: ẩn giao diện **không** chặn API. 28 module vẫn gọi được nếu biết đường dẫn. Muốn chặn thật cần RBAC ở tầng API — chưa làm.
+
 ---
 
 ## Cách 1 — Chạy bằng Docker Compose (khuyến nghị, một lệnh)
