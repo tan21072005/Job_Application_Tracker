@@ -50,18 +50,40 @@ function sourceSnapshot() {
 function changedFiles(before, after) {
   return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(path => before[path] !== after[path]).sort();
 }
+function resolveSpawn(command, args) {
+  if (command === 'rtk') return { command, args };
+  if (hasRtk()) return { command: 'rtk', args: ['proxy', command, ...args] };
+  return { command, args };
+}
+
+let rtkAvailable;
+function hasRtk() {
+  if (rtkAvailable !== undefined) return rtkAvailable;
+  const probe = spawnSync('rtk', ['--version'], {
+    windowsHide: true, encoding: 'utf8', timeout: 5_000, stdio: 'ignore',
+  });
+  rtkAvailable = !probe.error && probe.status === 0;
+  return rtkAvailable;
+}
+
 function terminateProcessTree(child) {
   if (!child.pid) return 'Timed-out command has no process ID to terminate.';
   if (process.platform === 'win32') {
     const killScript = join(project, 'tools/agent-loop/kill-tree.py');
-    const pythonExe = 'C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
-    if (existsSync(killScript) && existsSync(pythonExe)) {
+    for (const pythonExe of ['python', 'python3', 'C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python312\\python.exe', 'C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe']) {
+      if (!existsSync(killScript)) break;
       const result = spawnSync(pythonExe, [killScript, String(child.pid)], {
         windowsHide: true, encoding: 'utf8', timeout: 5_000, stdio: 'ignore'
       });
       if (!result.error && result.status === 0) return '';
     }
-    const result = spawnSync('rtk', ['proxy', 'taskkill', '/PID', String(child.pid), '/T', '/F'], {
+    if (hasRtk()) {
+      const result = spawnSync('rtk', ['proxy', 'taskkill', '/PID', String(child.pid), '/T', '/F'], {
+        windowsHide: true, encoding: 'utf8', timeout: 10_000, stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      if (!result.error && result.status === 0) return '';
+    }
+    const result = spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
       windowsHide: true, encoding: 'utf8', timeout: 10_000, stdio: ['ignore', 'pipe', 'pipe'],
     });
     if (result.error || result.status !== 0) {
@@ -69,14 +91,18 @@ function terminateProcessTree(child) {
     }
   } else {
     try { process.kill(-child.pid, 'SIGKILL'); }
-    catch (error) { child.kill('SIGKILL'); return `Process-tree termination failed: ${error.message}`; }
+    catch (error) {
+      try { child.kill('SIGKILL'); }
+      catch (inner) { return `Process-tree termination failed: ${inner.message}`; }
+    }
   }
   return '';
 }
 function execute(command, args, { input = '', timeoutMs = 600_000, logPath }) {
   return new Promise(resolveRun => {
     const output = createWriteStream(logPath, { flags: 'w' });
-    const child = spawn('rtk', ['proxy', command, ...args], { cwd: project, shell: false, windowsHide: true, detached: process.platform !== 'win32', stdio: ['pipe', 'pipe', 'pipe'] });
+    const target = resolveSpawn(command, args);
+    const child = spawn(target.command, target.args, { cwd: project, shell: false, windowsHide: true, detached: process.platform !== 'win32', stdio: ['pipe', 'pipe', 'pipe'] });
     let tail = '', timedOut = false, settled = false, terminationError = '';
     const collect = data => {
       const value = data.toString();
