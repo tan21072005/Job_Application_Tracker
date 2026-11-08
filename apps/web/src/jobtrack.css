@@ -4067,17 +4067,24 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .app-shell.sidebar-collapsed .sidebar nav a>span{display:none}
 .app-shell.sidebar-collapsed .sidebar nav a>small{display:none}
 .sidebar-trash-btn{position:relative}
-@media(max-width:1000px){
-  .app-shell.sidebar-collapsed{grid-template-columns:185px minmax(0,1fr)}
-  .app-shell.sidebar-collapsed .brand>span:last-child{display:inline}
-  .app-shell.sidebar-collapsed .sidebar-group-label{display:block}
-  .app-shell.sidebar-collapsed .sidebar-trash-btn{justify-content:flex-start;padding:12px;gap:10px}
-  .app-shell.sidebar-collapsed .sidebar-trash-btn>span:not(.pro-pill-badge){display:inline}
-  .app-shell.sidebar-collapsed .sidebar nav a{justify-content:flex-start;padding:12px;gap:10px}
-  .app-shell.sidebar-collapsed .sidebar nav a>span{display:inline}
-  .app-shell.sidebar-collapsed .sidebar-account{justify-content:flex-start}
-  .app-shell.sidebar-collapsed .sidebar-account>span:nth-child(2){display:block}
-  .app-shell.sidebar-collapsed .sidebar-account>svg{display:block}
+@media(hover:hover) and (min-width:1001px){
+  .app-shell.sidebar-collapsed .sidebar{width:64px;padding-left:10px;padding-right:10px;transition:width .16s ease;z-index:45}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)){width:232px;box-shadow:0 18px 48px #17243b26;padding-left:20px;padding-right:20px}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-head{flex-direction:row;justify-content:flex-start}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .brand>span:last-child{display:inline}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-toggle{margin-left:auto}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-group-label{display:block}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) nav a{justify-content:flex-start;padding:13px 14px;gap:12px}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) nav a>span{display:inline}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) nav a>small{display:inline}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) nav{margin-top:26px}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-group{margin-bottom:14px}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-trash-btn{justify-content:flex-start;padding:8px 12px;gap:8px}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-trash-btn>span:not(.pro-pill-badge){display:inline}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-message{display:block}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-account{justify-content:flex-start;gap:10px;padding:20px 0 0}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-account>span:nth-child(2){display:block}
+  .app-shell.sidebar-collapsed .sidebar:is(:hover,:has(:focus-visible)) .sidebar-account>svg{display:block}
 }
 .detail-heading{flex-wrap:wrap}
 .detail-heading>div{flex:1 1 260px}

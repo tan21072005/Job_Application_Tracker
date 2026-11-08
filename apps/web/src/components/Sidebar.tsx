@@ -19,16 +19,18 @@ type Props = {
 export default function Sidebar({
   collapsed, onToggle, navigation, enterpriseEnabled, accountEmail, isPro, onAccount, onUpgrade, onTrash, onFeature
 }: Props) {
+  const hint = (label: string) => (collapsed ? label : undefined);
+
   return (
-    <aside className="sidebar" aria-label="Thanh điều hướng tính năng">
+    <aside className="sidebar" aria-label="Thanh điều hướng tính năng" data-rail={collapsed ? 'true' : 'false'}>
       <div className="sidebar-head">
         <Logo />
         <button
           className="sidebar-toggle"
           onClick={onToggle}
-          aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
-          aria-expanded={!collapsed}
-          title={collapsed ? 'Mở rộng' : 'Thu gọn'}
+          aria-label={collapsed ? 'Ghim thanh điều hướng mở rộng' : 'Thu thanh điều hướng thành biểu tượng'}
+          aria-pressed={!collapsed}
+          title={collapsed ? 'Ghim mở rộng' : 'Thu gọn'}
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
@@ -44,7 +46,7 @@ export default function Sidebar({
                 <button
                   key={item.key}
                   className={`sidebar-trash-btn ${item.className ?? ''}`.trim()}
-                  title={item.label}
+                  title={hint(item.label)}
                   data-label={item.label}
                   data-feature={item.key}
                   onClick={() => onFeature(item.key)}
@@ -58,11 +60,11 @@ export default function Sidebar({
         })}
         <div className="sidebar-group">
           <span className="sidebar-group-label">Hệ thống</span>
-          <button className="sidebar-trash-btn" title="Thùng rác" data-label="Thùng rác" onClick={onTrash}>
+          <button className="sidebar-trash-btn" title={hint('Thùng rác')} data-label="Thùng rác" onClick={onTrash}>
             <Trash2 size={16} />
             <span>Thùng rác</span>
           </button>
-          <button className="sidebar-trash-btn pro-btn" title="Gói Pro" data-label="Gói Pro" onClick={onUpgrade}>
+          <button className="sidebar-trash-btn pro-btn" title={hint('Gói Pro')} data-label="Gói Pro" onClick={onUpgrade}>
             <Crown size={16} className="text-amber-500" />
             <span>Gói Pro</span>
             {isPro && <span className="pro-pill-badge" style={{ marginLeft: 'auto' }}>PRO</span>}
@@ -74,7 +76,7 @@ export default function Sidebar({
         <strong>Từng bước một.</strong>
         <p>Một nơi cho những cơ hội<br />và bước tiếp theo của bạn.</p>
       </div>
-      <button className="sidebar-account" onClick={onAccount} title={accountEmail || 'Không gian cá nhân'} data-label="Tài khoản">
+      <button className="sidebar-account" onClick={onAccount} title={hint('Tài khoản')} data-label="Tài khoản">
         <span className="avatar">{accountEmail ? accountEmail.slice(0, 2).toUpperCase() : 'TK'}</span>
         <span>
           <strong>{accountEmail ? accountEmail.split('@')[0] : 'Tài khoản'}</strong>

@@ -90,19 +90,19 @@ export default function JobTrack() {
   const [route, setRoute] = useState(readRoute);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
-      if (typeof localStorage === 'undefined') return false;
-      const stored = localStorage.getItem('jobtrack.sidebar.collapsed');
-      if (stored !== null) return stored === '1';
-      return typeof window !== 'undefined' ? window.innerWidth < 1100 : false;
+      if (typeof localStorage === 'undefined') return true;
+      const stored = localStorage.getItem('jobtrack.sidebar.pinned');
+      if (stored !== null) return stored !== '1';
+      return true;
     } catch {
-      return false;
+      return true;
     }
   });
   const toggleSidebar = () => {
     setSidebarCollapsed(current => {
       const next = !current;
       try {
-        if (typeof localStorage !== 'undefined') localStorage.setItem('jobtrack.sidebar.collapsed', next ? '1' : '0');
+        if (typeof localStorage !== 'undefined') localStorage.setItem('jobtrack.sidebar.pinned', next ? '0' : '1');
       } catch {
       }
       return next;
