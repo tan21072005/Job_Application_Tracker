@@ -56,10 +56,34 @@ const register = async () => {
   return { id, email, cookie: result.cookie };
 };
 
+const reminderTimeZone = process.env.REMINDER_TIMEZONE || 'Asia/Ho_Chi_Minh';
+
+const localDateParts = (instant: Date) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: reminderTimeZone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(instant);
+  const pick = (type: string) => Number(parts.find(part => part.type === type)?.value);
+  return { year: pick('year'), month: pick('month'), day: pick('day'), hour: pick('hour'), minute: pick('minute') };
+};
+
+const instantAtLocalHour = (year: number, month: number, day: number, hour: number): Date => {
+  let guess = Date.UTC(year, month - 1, day, hour);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const parts = localDateParts(new Date(guess));
+    const observed = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute);
+    const desired = Date.UTC(year, month - 1, day, hour);
+    guess += desired - observed;
+  }
+  return new Date(guess);
+};
+
 const createDeadline = async (cookie: string, daysFromToday: number, nextAction = 'Gửi email follow-up') => {
-  const deadline = new Date();
-  deadline.setHours(9, 0, 0, 0);
-  deadline.setDate(deadline.getDate() + daysFromToday);
+  const today = localDateParts(new Date());
+  const targetMidday = Date.UTC(today.year, today.month - 1, today.day + daysFromToday, 12);
+  const target = localDateParts(new Date(targetMidday));
+  const deadline = instantAtLocalHour(target.year, target.month, target.day, 9);
 
   const created = await call('/api/applications', {
     method: 'POST',
@@ -158,9 +182,8 @@ test('moving the deadline creates a new delivery for the new snapshot', async ()
   const created = await createDeadline(user.cookie, 5);
   await deadlineReminderService.run({ userId: user.id });
 
-  const newDeadline = new Date();
-  newDeadline.setHours(9, 0, 0, 0);
-  newDeadline.setDate(newDeadline.getDate() + 1);
+  const tomorrow = localDateParts(new Date(Date.UTC(localDateParts(new Date()).year, localDateParts(new Date()).month - 1, localDateParts(new Date()).day + 1, 12)));
+  const newDeadline = instantAtLocalHour(tomorrow.year, tomorrow.month, tomorrow.day, 9);
 
   const patched = await call(`/api/applications/${created.id}`, {
     method: 'PATCH',
