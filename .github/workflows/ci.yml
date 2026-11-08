@@ -63,7 +63,9 @@ jobs:
         run: psql -h localhost -U jobtrack -d jobtrack_test -c 'CREATE DATABASE jobtrack_test_runner;'
 
       - name: Run Database Migrations
-        run: npm run db:migrate
+        run: |
+          npm run db:migrate
+          NODE_ENV=production npm run db:migrate
 
       - name: Run Full-Stack Check All Suite
         run: npm run check:all
