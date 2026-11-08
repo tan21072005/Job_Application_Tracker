@@ -29,7 +29,7 @@ jobs:
       APP_ORIGIN: http://127.0.0.1:64364
       JWT_SECRET: jobtrack_test_jwt_secret_with_minimum_32_characters
       DATABASE_URL: postgres://jobtrack:jobtrack@localhost:5432/jobtrack_test
-      TEST_DATABASE_URL: postgres://jobtrack:jobtrack@localhost:5432/jobtrack_test
+      TEST_DATABASE_URL: postgres://jobtrack:jobtrack@localhost:5432/jobtrack_test_runner
 
     steps:
       - name: Checkout repository
@@ -56,6 +56,11 @@ jobs:
 
       - name: Install Web dependencies
         run: npm --prefix apps/web ci
+
+      - name: Create isolated test runner database
+        env:
+          PGPASSWORD: jobtrack
+        run: psql -h localhost -U jobtrack -d jobtrack_test -c 'CREATE DATABASE jobtrack_test_runner;'
 
       - name: Run Database Migrations
         run: npm run db:migrate

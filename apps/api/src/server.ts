@@ -3451,7 +3451,7 @@ app.post('/api/executive-severance', auth, async (req, res, next) => {
 app.get('/api/executive-severance/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const single = await executiveSeveranceService.getCase(userId, req.params.id);
+    const single = await executiveSeveranceService.getCase(userId, String(req.params.id));
     if (!single) {
       return res.status(404).json({ code: 'case_not_found', error: 'Executive severance case not found' });
     }
@@ -3464,7 +3464,7 @@ app.get('/api/executive-severance/:id', auth, async (req, res, next) => {
 app.put('/api/executive-severance/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const updated = await executiveSeveranceService.updateCase(userId, req.params.id, req.body);
+    const updated = await executiveSeveranceService.updateCase(userId, String(req.params.id), req.body);
     if (!updated) {
       return res.status(404).json({ code: 'case_not_found', error: 'Executive severance case not found' });
     }
@@ -3477,7 +3477,7 @@ app.put('/api/executive-severance/:id', auth, async (req, res, next) => {
 app.delete('/api/executive-severance/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await executiveSeveranceService.deleteCase(userId, req.params.id);
+    const deleted = await executiveSeveranceService.deleteCase(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'case_not_found', error: 'Executive severance case not found' });
     }
@@ -3494,7 +3494,7 @@ app.post('/api/executive-severance/:id/good-reason-events', auth, async (req, re
     if (!validation.ok) {
       return res.status(422).json({ code: 'validation_error', errors: validation.errors });
     }
-    const event = await executiveSeveranceService.addGoodReasonEvent(userId, req.params.id, validation.data);
+    const event = await executiveSeveranceService.addGoodReasonEvent(userId, String(req.params.id), validation.data);
     res.status(201).json(event);
   } catch (err) {
     next(err);
@@ -3504,7 +3504,7 @@ app.post('/api/executive-severance/:id/good-reason-events', auth, async (req, re
 app.delete('/api/executive-severance/good-reason-events/:eventId', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await executiveSeveranceService.deleteGoodReasonEvent(userId, req.params.eventId);
+    const deleted = await executiveSeveranceService.deleteGoodReasonEvent(userId, String(req.params.eventId));
     if (!deleted) {
       return res.status(404).json({ code: 'event_not_found', error: 'Good reason event not found' });
     }
@@ -3517,7 +3517,7 @@ app.delete('/api/executive-severance/good-reason-events/:eventId', auth, async (
 app.post('/api/executive-severance/:id/counter-proposal', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const proposal = await executiveSeveranceService.createCounterProposal(userId, req.params.id);
+    const proposal = await executiveSeveranceService.createCounterProposal(userId, String(req.params.id));
     if (!proposal) {
       return res.status(404).json({ code: 'case_not_found', error: 'Executive severance case not found' });
     }
@@ -3554,7 +3554,7 @@ app.post('/api/technical-due-diligence/audits', auth, async (req, res, next) => 
 app.get('/api/technical-due-diligence/audits/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const audit = await technicalDueDiligenceService.getAudit(userId, req.params.id);
+    const audit = await technicalDueDiligenceService.getAudit(userId, String(req.params.id));
     if (!audit) {
       return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
     }
@@ -3571,7 +3571,7 @@ app.put('/api/technical-due-diligence/audits/:id', auth, async (req, res, next) 
     if (!validation.ok) {
       return res.status(422).json({ code: 'validation_error', errors: validation.errors });
     }
-    const updated = await technicalDueDiligenceService.updateAudit(userId, req.params.id, req.body);
+    const updated = await technicalDueDiligenceService.updateAudit(userId, String(req.params.id), req.body);
     if (!updated) {
       return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
     }
@@ -3584,7 +3584,7 @@ app.put('/api/technical-due-diligence/audits/:id', auth, async (req, res, next) 
 app.delete('/api/technical-due-diligence/audits/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await technicalDueDiligenceService.deleteAudit(userId, req.params.id);
+    const deleted = await technicalDueDiligenceService.deleteAudit(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
     }
@@ -3597,7 +3597,7 @@ app.delete('/api/technical-due-diligence/audits/:id', auth, async (req, res, nex
 app.get('/api/technical-due-diligence/audits/:id/findings', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const findings = await technicalDueDiligenceService.listFindings(userId, req.params.id);
+    const findings = await technicalDueDiligenceService.listFindings(userId, String(req.params.id));
     res.json(findings);
   } catch (err) {
     next(err);
@@ -3611,7 +3611,7 @@ app.post('/api/technical-due-diligence/audits/:id/findings', auth, async (req, r
     if (!validation.ok) {
       return res.status(422).json({ code: 'validation_error', errors: validation.errors });
     }
-    const finding = await technicalDueDiligenceService.addFinding(userId, req.params.id, req.body);
+    const finding = await technicalDueDiligenceService.addFinding(userId, String(req.params.id), req.body);
     if (!finding) {
       return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
     }
@@ -3624,7 +3624,7 @@ app.post('/api/technical-due-diligence/audits/:id/findings', auth, async (req, r
 app.delete('/api/technical-due-diligence/findings/:findingId', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await technicalDueDiligenceService.deleteFinding(userId, req.params.findingId);
+    const deleted = await technicalDueDiligenceService.deleteFinding(userId, String(req.params.findingId));
     if (!deleted) {
       return res.status(404).json({ code: 'finding_not_found', error: 'Finding not found' });
     }
@@ -3637,7 +3637,7 @@ app.delete('/api/technical-due-diligence/findings/:findingId', auth, async (req,
 app.post('/api/technical-due-diligence/audits/:id/generate-memo', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const memo = await technicalDueDiligenceService.generateMemo(userId, req.params.id);
+    const memo = await technicalDueDiligenceService.generateMemo(userId, String(req.params.id));
     if (!memo) {
       return res.status(404).json({ code: 'audit_not_found', error: 'Technical diligence audit not found' });
     }
@@ -3674,7 +3674,7 @@ app.post('/api/org-topology-studio/scenarios', auth, async (req, res, next) => {
 app.get('/api/org-topology-studio/scenarios/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const scenario = await orgTopologyStudioService.getScenario(userId, req.params.id);
+    const scenario = await orgTopologyStudioService.getScenario(userId, String(req.params.id));
     if (!scenario) {
       return res.status(404).json({ code: 'scenario_not_found', error: 'Organization scenario not found' });
     }
@@ -3691,7 +3691,7 @@ app.put('/api/org-topology-studio/scenarios/:id', auth, async (req, res, next) =
     if (!validation.ok) {
       return res.status(422).json({ code: 'validation_error', errors: validation.errors });
     }
-    const updated = await orgTopologyStudioService.updateScenario(userId, req.params.id, req.body);
+    const updated = await orgTopologyStudioService.updateScenario(userId, String(req.params.id), req.body);
     if (!updated) {
       return res.status(404).json({ code: 'scenario_not_found', error: 'Organization scenario not found' });
     }
@@ -3704,7 +3704,7 @@ app.put('/api/org-topology-studio/scenarios/:id', auth, async (req, res, next) =
 app.delete('/api/org-topology-studio/scenarios/:id', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await orgTopologyStudioService.deleteScenario(userId, req.params.id);
+    const deleted = await orgTopologyStudioService.deleteScenario(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'scenario_not_found', error: 'Organization scenario not found' });
     }
@@ -3717,7 +3717,7 @@ app.delete('/api/org-topology-studio/scenarios/:id', auth, async (req, res, next
 app.get('/api/org-topology-studio/scenarios/:id/teams', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const teams = await orgTopologyStudioService.listTeams(userId, req.params.id);
+    const teams = await orgTopologyStudioService.listTeams(userId, String(req.params.id));
     res.json(teams);
   } catch (err) {
     next(err);
@@ -3731,7 +3731,7 @@ app.post('/api/org-topology-studio/scenarios/:id/teams', auth, async (req, res, 
     if (!validation.ok) {
       return res.status(422).json({ code: 'validation_error', errors: validation.errors });
     }
-    const team = await orgTopologyStudioService.addTeam(userId, req.params.id, req.body);
+    const team = await orgTopologyStudioService.addTeam(userId, String(req.params.id), req.body);
     res.status(201).json(team);
   } catch (err) {
     next(err);
@@ -3741,7 +3741,7 @@ app.post('/api/org-topology-studio/scenarios/:id/teams', auth, async (req, res, 
 app.put('/api/org-topology-studio/teams/:teamId', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const updated = await orgTopologyStudioService.updateTeam(userId, req.params.teamId, req.body);
+    const updated = await orgTopologyStudioService.updateTeam(userId, String(req.params.teamId), req.body);
     if (!updated) {
       return res.status(404).json({ code: 'team_not_found', error: 'Team topology not found' });
     }
@@ -3754,7 +3754,7 @@ app.put('/api/org-topology-studio/teams/:teamId', auth, async (req, res, next) =
 app.delete('/api/org-topology-studio/teams/:teamId', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await orgTopologyStudioService.deleteTeam(userId, req.params.teamId);
+    const deleted = await orgTopologyStudioService.deleteTeam(userId, String(req.params.teamId));
     if (!deleted) {
       return res.status(404).json({ code: 'team_not_found', error: 'Team topology not found' });
     }
@@ -3767,7 +3767,7 @@ app.delete('/api/org-topology-studio/teams/:teamId', auth, async (req, res, next
 app.get('/api/org-topology-studio/scenarios/:id/employees', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const employees = await orgTopologyStudioService.listEmployees(userId, req.params.id);
+    const employees = await orgTopologyStudioService.listEmployees(userId, String(req.params.id));
     res.json(employees);
   } catch (err) {
     next(err);
@@ -3777,7 +3777,7 @@ app.get('/api/org-topology-studio/scenarios/:id/employees', auth, async (req, re
 app.post('/api/org-topology-studio/scenarios/:id/generate-memo', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const memo = await orgTopologyStudioService.generateMemo(userId, req.params.id);
+    const memo = await orgTopologyStudioService.generateMemo(userId, String(req.params.id));
     if (!memo) {
       return res.status(404).json({ code: 'scenario_not_found', error: 'Organization scenario not found' });
     }
@@ -3828,7 +3828,7 @@ app.put(['/api/value-stream-studio/value-streams/:id', '/api/vsm/value-streams/:
     if (!validation.ok) {
       return res.status(400).json({ code: 'validation_failed', errors: validation.errors });
     }
-    const updated = await valueStreamStudioService.updateValueStream(userId, req.params.id, req.body);
+    const updated = await valueStreamStudioService.updateValueStream(userId, String(req.params.id), req.body);
     if (!updated) {
       return res.status(404).json({ code: 'value_stream_not_found', error: 'Value stream not found' });
     }
@@ -3841,7 +3841,7 @@ app.put(['/api/value-stream-studio/value-streams/:id', '/api/vsm/value-streams/:
 app.delete(['/api/value-stream-studio/value-streams/:id', '/api/vsm/value-streams/:id'], auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await valueStreamStudioService.deleteValueStream(userId, req.params.id);
+    const deleted = await valueStreamStudioService.deleteValueStream(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'value_stream_not_found', error: 'Value stream not found' });
     }
@@ -3878,7 +3878,7 @@ app.post(['/api/value-stream-studio/okrs', '/api/vsm/okrs'], auth, async (req, r
 app.delete(['/api/value-stream-studio/okrs/:id', '/api/vsm/okrs/:id'], auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await valueStreamStudioService.deleteOkr(userId, req.params.id);
+    const deleted = await valueStreamStudioService.deleteOkr(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'okr_not_found', error: 'Strategic OKR linkage not found' });
     }
@@ -3943,7 +3943,7 @@ app.post(['/api/value-stream-studio/capitalized-projects', '/api/vsm/capitalized
 app.delete(['/api/value-stream-studio/capitalized-projects/:id', '/api/vsm/capitalized-projects/:id'], auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const deleted = await valueStreamStudioService.deleteCapitalizedProject(userId, req.params.id);
+    const deleted = await valueStreamStudioService.deleteCapitalizedProject(userId, String(req.params.id));
     if (!deleted) {
       return res.status(404).json({ code: 'project_not_found', error: 'Capitalized project not found' });
     }
@@ -4765,7 +4765,7 @@ app.get(['/api/esg-sustainability-studio/materiality', '/api/esg-studio/material
 app.put(['/api/esg-sustainability-studio/materiality/:code', '/api/esg-studio/materiality/:code'], auth, async (req, res) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const topic = await esgSustainabilityStudioService.updateMaterialityAssessment(userId, req.params.code, req.body);
+    const topic = await esgSustainabilityStudioService.updateMaterialityAssessment(userId, String(req.params.code), req.body);
     res.json(topic);
   } catch (err) {
     if ((err as Error).message.includes('not found')) {
@@ -4822,7 +4822,7 @@ app.post(['/api/esg-sustainability-studio/board-memos/:id/approve', '/api/esg-st
     if (!role || !['cso', 'cfo', 'board_esg_chair'].includes(role)) {
       return res.status(400).json({ code: 'invalid_role', error: 'Invalid sign-off role' });
     }
-    const updated = await esgSustainabilityStudioService.signOffBoardMemorandum(userId, req.params.id, role);
+    const updated = await esgSustainabilityStudioService.signOffBoardMemorandum(userId, String(req.params.id), role);
     res.json(updated);
   } catch (err) {
     if ((err as Error).message.includes('not found')) {
@@ -4968,7 +4968,7 @@ app.post(['/api/supply-chain-resilience-studio/board-memos/:id/approve', '/api/s
     if (!val.ok) {
       return res.status(400).json({ code: 'validation_error', errors: val.errors });
     }
-    const updated = await supplyChainResilienceStudioService.signOffBoardMemorandum(userId, req.params.id, req.body.role as BoardSignoffRole, req.body.signoffNotes);
+    const updated = await supplyChainResilienceStudioService.signOffBoardMemorandum(userId, String(req.params.id), req.body.role as BoardSignoffRole, req.body.signoffNotes);
     res.json(updated);
   } catch (err) {
     if ((err as Error).message.includes('not found')) {
@@ -5574,7 +5574,7 @@ app.post(['/api/investor-relations-nexus/disclosures/:id/signoff', '/api/ir/disc
     if (!validation.ok) {
       return res.status(400).json({ error: 'Validation failed', details: validation.errors });
     }
-    const updated = await investorRelationsNexusService.signoffSecForm8K(userId, req.params.id, req.body);
+    const updated = await investorRelationsNexusService.signoffSecForm8K(userId, String(req.params.id), req.body);
     res.json(updated);
   } catch (error) {
     if ((error as Error).message.includes('not found')) {
@@ -5597,7 +5597,7 @@ app.get(['/api/corp-dev-pmi-nexus/overview', '/api/corpdev/overview'], auth, asy
 app.get(['/api/corp-dev-pmi-nexus/targets/:id', '/api/corpdev/targets/:id'], auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
-    const details = await corpDevPmiNexusService.getTargetDetails(userId, req.params.id);
+    const details = await corpDevPmiNexusService.getTargetDetails(userId, String(req.params.id));
     if (!details) {
       return res.status(404).json({ error: 'Target not found' });
     }
@@ -5726,7 +5726,7 @@ app.post(['/api/corp-dev-pmi-nexus/targets/:id/signoff', '/api/corpdev/targets/:
     if (!validation.ok) {
       return res.status(400).json({ error: 'Validation failed', details: validation.errors });
     }
-    const updated = await corpDevPmiNexusService.executeSignoff(userId, req.params.id, req.body);
+    const updated = await corpDevPmiNexusService.executeSignoff(userId, String(req.params.id), req.body);
     res.json(updated);
   } catch (error) {
     if ((error as Error).message.includes('does not exist')) {

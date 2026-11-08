@@ -52,7 +52,7 @@ test('migration: fresh install creates tables and records checksum', async () =>
     assert.equal(results[4].action, 'applied');
     assert.equal(results[5].version, 6);
     assert.equal(results[5].action, 'applied');
-    assert.equal(results[results.length - 1].version, expected.at(-1).version);
+    assert.equal(results[results.length - 1].version, expected.at(-1)?.version);
     assert.equal(results[results.length - 1].action, 'applied');
 
     const tables = (await client.query<{ table_name: string }>(
@@ -91,7 +91,7 @@ test('migration: fresh install creates tables and records checksum', async () =>
     assert.equal(rows[4].checksum, results[4].checksum);
     assert.equal(rows[5].version, 6);
     assert.equal(rows[5].checksum, results[5].checksum);
-    assert.equal(rows[rows.length - 1].version, expected.at(-1).version);
+    assert.equal(rows[rows.length - 1].version, expected.at(-1)?.version);
     assert.equal(rows[6].checksum, results[6].checksum);
   });
 });
@@ -128,7 +128,7 @@ test('migration: repeated migration is idempotent and verifies checksum', async 
     assert.equal(second[5].version, 6);
     assert.equal(second[5].action, 'already_applied');
     assert.equal(second[5].checksum, first[5].checksum);
-    assert.equal(second[second.length - 1].version, expected.at(-1).version);
+    assert.equal(second[second.length - 1].version, expected.at(-1)?.version);
     assert.equal(second[6].action, 'already_applied');
     assert.equal(second[6].checksum, first[6].checksum);
   });
@@ -224,7 +224,7 @@ test('migration: existing v1 schema without migration record is safely baselined
     assert.equal(results[5].action, 'applied');
     assert.equal(results[5].version, 6);
     assert.equal(results[results.length - 1].action, 'applied');
-    assert.equal(results[results.length - 1].version, expected.at(-1).version);
+    assert.equal(results[results.length - 1].version, expected.at(-1)?.version);
 
     const rows = (await client.query('SELECT version, name, checksum FROM schema_migrations ORDER BY version ASC')).rows;
     assert.equal(rows.length, expected.length);
@@ -240,7 +240,7 @@ test('migration: existing v1 schema without migration record is safely baselined
     assert.equal(rows[4].checksum, standardFiles[4].checksum);
     assert.equal(rows[5].version, 6);
     assert.equal(rows[5].checksum, standardFiles[5].checksum);
-    assert.equal(rows[rows.length - 1].version, expected.at(-1).version);
+    assert.equal(rows[rows.length - 1].version, expected.at(-1)?.version);
     assert.equal(rows[6].checksum, standardFiles[6].checksum);
   });
 });
