@@ -61,6 +61,8 @@ import {
   parseEtagVersion
 } from './services/jobtrack-service.ts';
 import { createMcpRouter } from './routes/mcp.ts';
+import { createGoogleOAuthRouter, appRedirect } from './routes/google-oauth.ts';
+import { readGoogleConfig } from './services/google-oauth.ts';
 import {
   decideCredential,
   isOriginExemptGrant,
@@ -755,6 +757,53 @@ app.get('/api/auth/me', auth, async (req, res, next) => {
   }
 });
 
+const googleConfigAvailable = () => Boolean(readGoogleConfig());
+
+app.use('/api/auth/google', createGoogleOAuthRouter({
+  pool,
+  appOrigin: () => origin,
+  secureCookie: () => cookieSecure,
+  createSession: userId => createSession(userId),
+  sessionCookieName: 'jobtrack_session',
+  sessionCookieOptions: cookieOptions,
+  limit: async (req, res) => {
+    const ip = getClientIp(req);
+    const limit = await checkRateLimit(pool, ip, IP_ATTEMPT_LIMIT, ATTEMPT_WINDOW_MINUTES, 'auth-ip');
+    if (limit.allowed) return true;
+    res.set('Retry-After', String(limit.retryAfter));
+    res.redirect(302, appRedirect(origin, 'auth?error=rate_limited'));
+    return false;
+  }
+}));
+
+app.get('/api/auth/providers', async (req, res, next) => {
+  try {
+    res.json({ google: googleConfigAvailable() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/auth/account-method', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const user = await pool.query<{ password_hash: string | null }>(
+      'SELECT password_hash FROM users WHERE id=$1',
+      [userId]
+    );
+    const linked = await pool.query<{ provider: string }>(
+      'SELECT provider FROM oauth_identities WHERE user_id=$1',
+      [userId]
+    );
+    res.json({
+      hasPassword: typeof user.rows[0]?.password_hash === 'string',
+      providers: linked.rows.map(row => row.provider)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/auth/logout', async (req, res, next) => {
   try {
     const token = cookies(req.headers.cookie).jobtrack_session;
@@ -891,7 +940,10 @@ app.post('/api/auth/change-password', authLimit, auth, async (req, res, next) =>
     const currentPassword = b.currentPassword;
     const newPassword = b.newPassword;
 
-    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+    if (typeof newPassword !== 'string') {
+      fail(422, 'Cần nhập mật khẩu mới.', 'invalid_request');
+    }
+    if (currentPassword !== undefined && typeof currentPassword !== 'string') {
       fail(422, 'Cần nhập mật khẩu hiện tại và mật khẩu mới.', 'invalid_request');
     }
     if (newPassword.length < 15 || newPassword.length > 64) {
@@ -899,19 +951,25 @@ app.post('/api/auth/change-password', authLimit, auth, async (req, res, next) =>
         newPassword: 'Mật khẩu cần từ 15–64 ký tự.'
       });
     }
-    if (currentPassword === newPassword) {
+    if (typeof currentPassword === 'string' && currentPassword === newPassword) {
       fail(422, 'Mật khẩu mới phải khác mật khẩu hiện tại.', 'invalid_request');
     }
 
-    const found = await pool.query<{ password_hash: string }>(
+    const found = await pool.query<{ password_hash: string | null }>(
       'SELECT password_hash FROM users WHERE id=$1',
       [userId]
     );
     const record = found.rows[0];
-    if (!record || !(await argon2.verify(record.password_hash, currentPassword))) {
-      fail(401, 'Mật khẩu hiện tại chưa đúng.', 'invalid_credentials');
+    if (!record) fail(404, 'Không tìm thấy tài khoản.', 'not_found');
+    const hasPassword = typeof record.password_hash === 'string' && record.password_hash.length > 0;
+    const current = typeof currentPassword === 'string' ? currentPassword : '';
+    if (hasPassword) {
+      if (!(await argon2.verify(record.password_hash as string, current))) {
+        fail(401, 'Mật khẩu hiện tại chưa đúng.', 'invalid_credentials');
+      }
+    } else if (current.length > 0) {
+      fail(422, 'Tài khoản này chưa có mật khẩu. Hãy dùng mục "Đặt mật khẩu" để tạo mật khẩu đầu tiên.', 'no_password_set');
     }
-
     const hash = await argon2.hash(newPassword, { type: argon2.argon2id });
     const currentSid = await currentSessionId(req);
     await transaction(async client => {

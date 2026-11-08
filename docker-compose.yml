@@ -57,6 +57,9 @@ services:
       REMINDER_TIMEZONE: ${REMINDER_TIMEZONE:-Asia/Ho_Chi_Minh}
       REMINDER_RUNNER_SECRET: ${REMINDER_RUNNER_SECRET:-}
       MAIL_ALLOW_CONSOLE: ${MAIL_ALLOW_CONSOLE:-0}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://127.0.0.1:64364/api/auth/google/callback}
     depends_on:
       migration:
         condition: service_completed_successfully

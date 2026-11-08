@@ -154,6 +154,32 @@ node tools/verify/audit-responsive.mjs
 
 ## Bảo mật tài khoản và nhắc việc
 
+### Đăng nhập bằng Google
+
+Nút **Tiếp tục với Google** ở màn đăng nhập dùng OAuth 2.0 authorization code + PKCE.
+
+Cấu hình trong `.env` (đã gitignore, không commit):
+
+```
+GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://127.0.0.1:64364/api/auth/google/callback
+```
+
+Trong Google Cloud Console, client phải có:
+
+| Mục | Giá trị |
+| --- | --- |
+| Authorized JavaScript origins | `http://127.0.0.1:64364` |
+| Authorized redirect URIs | `http://127.0.0.1:64364/api/auth/google/callback` |
+| Audience → Test users | email Google dùng để thử (app ở trạng thái Testing) |
+
+Branding của app trỏ tới trang công khai https://tan21072005.github.io/jobtrack-legal/ (homepage, privacy, terms) vì Google không chấp nhận địa chỉ IP trong các link này.
+
+Thiếu cấu hình thì API trả `{"google": false}` ở `GET /api/auth/providers` và màn đăng nhập ẩn nút Google.
+
+Tài khoản tạo bằng Google không có mật khẩu. Vào **Cài đặt → Bảo mật → Mật khẩu & phiên đăng nhập** để đặt mật khẩu đầu tiên, sau đó có thể đăng nhập bằng email.
+
 ### Đổi mật khẩu, xuất dữ liệu, xoá tài khoản
 
 Vào **Tài khoản → Đổi mật khẩu & phiên** trong ứng dụng:

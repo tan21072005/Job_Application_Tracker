@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AlertTriangle, Download, Eye, EyeOff, KeyRound, LoaderCircle, LogOut, ShieldCheck, Trash2 } from 'lucide-react';
 import { demoMode, repository } from '../data';
 import { ApiError } from '../transport';
@@ -21,6 +21,22 @@ export default function PasswordSecurityModal({
   const [revoking, setRevoking] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+  const [providers, setProviders] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (demoMode) { setHasPassword(true); return; }
+    let active = true;
+    fetch('/api/auth/account-method', { credentials: 'include' })
+      .then(response => (response.ok ? response.json() : null))
+      .then((body: { hasPassword?: boolean; providers?: string[] } | null) => {
+        if (!active || !body) return;
+        setHasPassword(body.hasPassword === true);
+        setProviders(Array.isArray(body.providers) ? body.providers : []);
+      })
+      .catch(() => { if (active) setHasPassword(true); });
+    return () => { active = false; };
+  }, []);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -37,7 +53,7 @@ export default function PasswordSecurityModal({
     setError('');
 
     const invalid: Record<string, string> = {};
-    if (!currentPassword) invalid.currentPassword = 'Nhập mật khẩu hiện tại.';
+    if (hasPassword !== false && !currentPassword) invalid.currentPassword = 'Nhập mật khẩu hiện tại.';
     if (!newPassword) invalid.newPassword = 'Nhập mật khẩu mới.';
     else if (newPassword.length < 15 || newPassword.length > 64) invalid.newPassword = 'Mật khẩu cần từ 15–64 ký tự.';
     if (confirm !== newPassword) invalid.confirm = 'Mật khẩu nhập lại chưa khớp.';
@@ -47,11 +63,16 @@ export default function PasswordSecurityModal({
 
     setBusy(true);
     try {
-      await repository.changePassword(currentPassword, newPassword);
+      await repository.changePassword(hasPassword === false ? '' : currentPassword, newPassword);
       setCurrentPassword('');
       setNewPassword('');
       setConfirm('');
-      notify?.('Đã đổi mật khẩu. Các thiết bị khác đã đăng xuất.');
+      if (hasPassword === false) {
+        setHasPassword(true);
+        notify?.('Đã đặt mật khẩu cho tài khoản. Giờ bạn có thể đăng nhập bằng email và mật khẩu.');
+      } else {
+        notify?.('Đã đổi mật khẩu. Các thiết bị khác đã đăng xuất.');
+      }
     } catch (err) {
       if (err instanceof ApiError && err.fields && Object.keys(err.fields).length > 0) setErrors(err.fields);
       setError((err as Error).message);
@@ -128,17 +149,25 @@ export default function PasswordSecurityModal({
 
         <form onSubmit={changePassword} noValidate>
           <fieldset>
-            <legend>Đổi mật khẩu</legend>
-            <Field label="Mật khẩu hiện tại" error={errors.currentPassword}>
-              <input
-                disabled={busy}
-                required
-                type={show ? 'text' : 'password'}
-                autoComplete="current-password"
-                value={currentPassword}
-                onChange={event => setCurrentPassword(event.target.value)}
-              />
-            </Field>
+            <legend>{hasPassword === false ? 'Đặt mật khẩu cho tài khoản' : 'Đổi mật khẩu'}</legend>
+            {hasPassword === false && (
+              <p className="field-help" style={{ marginBottom: 16 }}>
+                Tài khoản này đăng nhập bằng {providers.includes('google') ? 'Google' : 'nhà cung cấp ngoài'} và chưa có mật khẩu.
+                Đặt mật khẩu để vẫn đăng nhập được bằng email khi không dùng Google.
+              </p>
+            )}
+            {hasPassword !== false && (
+              <Field label="Mật khẩu hiện tại" error={errors.currentPassword}>
+                <input
+                  disabled={busy}
+                  required
+                  type={show ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={event => setCurrentPassword(event.target.value)}
+                />
+              </Field>
+            )}
             <Field label="Mật khẩu mới" error={errors.newPassword} help="15–64 ký tự. Cho phép khoảng trắng.">
               <input
                 disabled={busy}
@@ -177,7 +206,7 @@ export default function PasswordSecurityModal({
 
           <Button disabled={busy || demoMode} type="submit">
             {busy ? <LoaderCircle size={17} className="spin" /> : <KeyRound size={17} />}
-            {busy ? 'Đang lưu…' : 'Đổi mật khẩu'}
+            {busy ? 'Đang lưu…' : hasPassword === false ? 'Đặt mật khẩu' : 'Đổi mật khẩu'}
           </Button>
         </form>
 
