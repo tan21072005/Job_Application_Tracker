@@ -186,12 +186,12 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
       <div className="org-studio-container">
         <div className="org-studio-header">
           <div className="org-studio-title-area">
-            <Workflow size={22} color="#a78bfa" />
+            <Workflow size={22} color="var(--violet-400)" />
             <div>
               <h2 style={{ fontSize: '17px', fontWeight: 800, margin: 0 }}>
                 Executive Engineering Organization Topology Studio
               </h2>
-              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+              <span style={{ fontSize: '12px', color: 'var(--slate-400)' }}>
                 Team Topologies, Cognitive Load Modeler, Span Health & Conway's Law Forecaster
               </span>
             </div>
@@ -218,7 +218,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
             )}
             <button
               onClick={onClose}
-              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--slate-400)', cursor: 'pointer', padding: '4px' }}
               title="Đóng modal"
             >
               <X size={20} />
@@ -266,7 +266,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
 
         <div className="org-studio-body">
           {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--slate-500)' }}>
               Đang tải dữ liệu cấu trúc tổ chức và chỉ số Topologies...
             </div>
           ) : (
@@ -288,7 +288,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                     </div>
                     <div className="org-studio-card">
                       <span className="org-studio-stat-label">Điểm tải nhận thức trung bình (CLI)</span>
-                      <span className="org-studio-stat-number" style={{ color: averageCli > 72 ? '#dc2626' : '#16a34a' }}>
+                      <span className="org-studio-stat-number" style={{ color: averageCli > 72 ? 'var(--red-600)' : 'var(--green-600)' }}>
                         {averageCli}
                       </span>
                     </div>
@@ -299,25 +299,25 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                       <div key={team.id} className="org-studio-card">
                         <div className="org-studio-card-header">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a' }}>{team.name}</span>
+                            <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--slate-900)' }}>{team.name}</span>
                             <span className={`org-studio-badge ${getCliBadgeClass(team.cognitiveLoadStatus)}`}>
                               CLI: {team.cognitiveLoadIndex} ({team.cognitiveLoadStatus.replace('_', ' ')})
                             </span>
                           </div>
                           <button
                             onClick={() => handleDeleteTeam(team.id)}
-                            style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--slate-400)', cursor: 'pointer' }}
                             title="Xóa nhóm"
                           >
                             <Trash2 size={16} />
                           </button>
                         </div>
 
-                        <p style={{ fontSize: '12px', color: '#475569', margin: '4px 0' }}>
+                        <p style={{ fontSize: '12px', color: 'var(--slate-600)', margin: '4px 0' }}>
                           {team.missionStatement}
                         </p>
 
-                        <div style={{ display: 'flex', gap: '14px', fontSize: '12px', color: '#64748b' }}>
+                        <div style={{ display: 'flex', gap: '14px', fontSize: '12px', color: 'var(--slate-500)' }}>
                           <span>Loại: <strong>{team.type.replace('_', ' ')}</strong></span>
                           <span>Quy mô: <strong>{team.headcount} kỹ sư</strong></span>
                           <span>Độ phức tạp: <strong>{team.domainComplexity}/5</strong></span>
@@ -325,13 +325,13 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                         </div>
 
                         {team.ownedServices.length > 0 && (
-                          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>
+                          <div style={{ borderTop: '1px solid var(--slate-100)', paddingTop: '8px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>
                               Dịch vụ sở hữu ({team.ownedServices.length}):
                             </span>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
                               {team.ownedServices.map(s => (
-                                <span key={s.serviceId} style={{ background: '#f1f5f9', color: '#334155', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
+                                <span key={s.serviceId} style={{ background: 'var(--slate-100)', color: 'var(--slate-700)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
                                   {s.serviceName} ({s.linesOfCode.toLocaleString()} LOC)
                                 </span>
                               ))}
@@ -340,15 +340,15 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                         )}
 
                         {team.interactions.length > 0 && (
-                          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>
+                          <div style={{ borderTop: '1px solid var(--slate-100)', paddingTop: '8px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>
                               Tương tác liên nhóm:
                             </span>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
                               {team.interactions.map((inter, idx) => (
-                                <div key={idx} style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                                <div key={idx} style={{ fontSize: '11px', color: 'var(--slate-500)', display: 'flex', justifyContent: 'space-between' }}>
                                   <span>→ <strong>{inter.targetTeamName}</strong>: {inter.purpose}</span>
-                                  <span style={{ color: '#7c3aed', fontWeight: 700 }}>{inter.interactionMode.replace(/_/g, ' ')}</span>
+                                  <span style={{ color: 'var(--violet-600)', fontWeight: 700 }}>{inter.interactionMode.replace(/_/g, ' ')}</span>
                                 </div>
                               ))}
                             </div>
@@ -358,9 +358,9 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                     ))}
                   </div>
 
-                  <div className="org-studio-card" style={{ background: '#f8fafc', border: '1px dashed #cbd5e1' }}>
+                  <div className="org-studio-card" style={{ background: 'var(--slate-50)', border: '1px dashed var(--slate-300)' }}>
                     <div className="org-studio-card-header">
-                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>Thêm nhóm công nghệ mới (Team Topology)</span>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--slate-800)' }}>Thêm nhóm công nghệ mới (Team Topology)</span>
                     </div>
                     <form onSubmit={handleAddTeam} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div className="org-studio-grid-3">
@@ -475,7 +475,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                     </div>
                     <div className="org-studio-card">
                       <span className="org-studio-stat-label">Chỉ số sức khỏe hệ thống phân cấp</span>
-                      <span className="org-studio-stat-number" style={{ color: '#16a34a' }}>
+                      <span className="org-studio-stat-number" style={{ color: 'var(--green-600)' }}>
                         {selectedScenario.currentHierarchyMetrics.compositeHierarchyHealthScore}%
                       </span>
                     </div>
@@ -484,27 +484,27 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                   <div className="org-studio-grid-2">
                     <div className="org-studio-card">
                       <div className="org-studio-card-header">
-                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--slate-800)' }}>
                           Cảnh báo Span of Control
                         </span>
-                        <ShieldAlert size={18} color="#d97706" />
+                        <ShieldAlert size={18} color="var(--amber-600)" />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--slate-100)' }}>
                           <span>Nhóm siêu nhỏ (Micro-teams &lt; 4 báo cáo):</span>
-                          <span style={{ fontWeight: 700, color: selectedScenario.currentHierarchyMetrics.microTeamsCount > 0 ? '#d97706' : '#16a34a' }}>
+                          <span style={{ fontWeight: 700, color: selectedScenario.currentHierarchyMetrics.microTeamsCount > 0 ? 'var(--amber-600)' : 'var(--green-600)' }}>
                             {selectedScenario.currentHierarchyMetrics.microTeamsCount} nhóm
                           </span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--slate-100)' }}>
                           <span>Quản lý quá tải (Bottlenecks &gt; 8 báo cáo):</span>
-                          <span style={{ fontWeight: 700, color: selectedScenario.currentHierarchyMetrics.overloadedManagersCount > 0 ? '#dc2626' : '#16a34a' }}>
+                          <span style={{ fontWeight: 700, color: selectedScenario.currentHierarchyMetrics.overloadedManagersCount > 0 ? 'var(--red-600)' : 'var(--green-600)' }}>
                             {selectedScenario.currentHierarchyMetrics.overloadedManagersCount} quản lý
                           </span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
                           <span>Mức phạt suy giảm thông tin tầng nấc:</span>
-                          <span style={{ fontWeight: 700, color: '#475569' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--slate-600)' }}>
                             -{selectedScenario.currentHierarchyMetrics.depthExcessPenalty}%
                           </span>
                         </div>
@@ -513,12 +513,12 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
 
                     <div className="org-studio-card">
                       <div className="org-studio-card-header">
-                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--slate-800)' }}>
                           Khuyến nghị chuẩn mực thiết kế tổ chức
                         </span>
-                        <GitFork size={18} color="#7c3aed" />
+                        <GitFork size={18} color="var(--violet-600)" />
                       </div>
-                      <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: '#475569', lineHeight: 1.6 }}>
+                      <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: 'var(--slate-600)', lineHeight: 1.6 }}>
                         <li>Span of Control tối ưu cho Engineering Manager nằm trong khoảng <strong>1:6 đến 1:8</strong>.</li>
                         <li>Độ sâu tổ chức tối ưu tuân theo công thức phân nhánh 7:1: <strong>H* = ceil(log7(N))</strong>.</li>
                         <li>Tránh các micro-team 1-3 người nhằm triệt tiêu tầng nấc trung gian và giảm thất thoát thông tin.</li>
@@ -528,7 +528,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
 
                   <div className="org-studio-card">
                     <div className="org-studio-card-header">
-                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--slate-800)' }}>
                         Danh sách nhân sự & Phân tích Span Health ({employees.length})
                       </span>
                     </div>
@@ -548,9 +548,9 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                       <tbody>
                         {employees.map(emp => (
                           <tr key={emp.id}>
-                            <td style={{ fontWeight: 700, color: '#0f172a' }}>{emp.employeeName}</td>
+                            <td style={{ fontWeight: 700, color: 'var(--slate-900)' }}>{emp.employeeName}</td>
                             <td>{emp.jobTitle}</td>
-                            <td><span style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>{emp.level}</span></td>
+                            <td><span style={{ background: 'var(--slate-100)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>{emp.level}</span></td>
                             <td>{emp.track === 'management' ? 'Quản lý (EM)' : 'Chuyên môn (IC)'}</td>
                             <td>{emp.teamName || 'Ban điều hành'}</td>
                             <td style={{ fontWeight: 700 }}>{emp.directReportsCount}</td>
@@ -560,7 +560,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                               </span>
                             </td>
                             <td>
-                              <span style={{ fontWeight: 700, color: emp.flightRiskIndex > 40 ? '#dc2626' : '#16a34a' }}>
+                              <span style={{ fontWeight: 700, color: emp.flightRiskIndex > 40 ? 'var(--red-600)' : 'var(--green-600)' }}>
                                 {emp.flightRiskIndex}%
                               </span>
                             </td>
@@ -576,18 +576,18 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                   <div className="org-studio-card">
                     <div className="org-studio-card-header">
-                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--slate-800)' }}>
                         Khung bậc nghề nghiệp kép (Dual-Track Progression: IC1–IC8 vs EM1–EM5)
                       </span>
                     </div>
-                    <p style={{ fontSize: '12px', color: '#475569', margin: 0 }}>
+                    <p style={{ fontSize: '12px', color: 'var(--slate-600)', margin: 0 }}>
                       Mô hình phân tầng đối xứng đảm bảo các kỹ sư chuyên môn cấp cao (Staff, Principal, Fellow) có lộ trình thăng tiến và đãi ngộ tương đương cấp quản lý cấp cao (EM, Director, VP) mà không bị ép buộc chuyển sang quản trị nhân sự.
                     </p>
                   </div>
 
                   <div className="org-studio-card">
                     <div className="org-studio-card-header">
-                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--slate-800)' }}>
                         Bảng chuẩn mực đãi ngộ Radford / Mercer / Pave Benchmark (USD)
                       </span>
                     </div>
@@ -607,10 +607,10 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                       <tbody>
                         {DEFAULT_RADFORD_BANDS.map(band => (
                           <tr key={band.level}>
-                            <td style={{ fontWeight: 800, color: '#7c3aed' }}>{band.level}</td>
+                            <td style={{ fontWeight: 800, color: 'var(--violet-600)' }}>{band.level}</td>
                             <td>{band.track === 'management' ? 'Management' : 'Individual Contributor'}</td>
                             <td>{fmtCurrency(band.radfordP50Base)}</td>
-                            <td style={{ fontWeight: 700, color: '#0f172a' }}>{fmtCurrency(band.radfordP75Base)}</td>
+                            <td style={{ fontWeight: 700, color: 'var(--slate-900)' }}>{fmtCurrency(band.radfordP75Base)}</td>
                             <td>{fmtCurrency(band.radfordP90Base)}</td>
                             <td>{band.targetBonusPercentage}%</td>
                             <td>{fmtCurrency(band.annualEquityGrantBenchmark)}</td>
@@ -628,19 +628,19 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                   <div className="org-studio-grid-3">
                     <div className="org-studio-card">
                       <span className="org-studio-stat-label">Đường cong Onboarding Sigmoid</span>
-                      <span style={{ fontSize: '13px', color: '#334155', fontWeight: 700, marginTop: '4px' }}>
+                      <span style={{ fontSize: '13px', color: 'var(--slate-700)', fontWeight: 700, marginTop: '4px' }}>
                         Senior: 60d | Mid: 90d | Junior: 180d
                       </span>
                     </div>
                     <div className="org-studio-card">
                       <span className="org-studio-stat-label">Hệ số suy giảm Brooks' Law</span>
-                      <span style={{ fontSize: '13px', color: '#dc2626', fontWeight: 700, marginTop: '4px' }}>
+                      <span style={{ fontSize: '13px', color: 'var(--red-600)', fontWeight: 700, marginTop: '4px' }}>
                         -20% công suất kỹ sư thâm niên trong kỳ kèm cặp
                       </span>
                     </div>
                     <div className="org-studio-card">
                       <span className="org-studio-stat-label">Hệ số gánh nặng chi phí (Burdened Factor)</span>
-                      <span style={{ fontSize: '13px', color: '#7c3aed', fontWeight: 700, marginTop: '4px' }}>
+                      <span style={{ fontSize: '13px', color: 'var(--violet-600)', fontWeight: 700, marginTop: '4px' }}>
                         1.30x (Bảo hiểm, Thiết bị, SaaS, Thuế)
                       </span>
                     </div>
@@ -648,7 +648,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
 
                   <div className="org-studio-card">
                     <div className="org-studio-card-header">
-                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--slate-800)' }}>
                         Dự báo công suất thực tế & Ngân sách R&D theo quý (Q1–Q4)
                       </span>
                     </div>
@@ -671,17 +671,17 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                       <tbody>
                         {DEFAULT_QUARTERLY_FORECASTS.map(q => (
                           <tr key={q.quarter}>
-                            <td style={{ fontWeight: 800, color: '#7c3aed' }}>{q.quarter}</td>
+                            <td style={{ fontWeight: 800, color: 'var(--violet-600)' }}>{q.quarter}</td>
                             <td>{q.startingHeadcount}</td>
-                            <td style={{ color: '#16a34a', fontWeight: 700 }}>+{q.newHiresCount}</td>
-                            <td style={{ color: '#dc2626' }}>-{q.attritionCount}</td>
+                            <td style={{ color: 'var(--green-600)', fontWeight: 700 }}>+{q.newHiresCount}</td>
+                            <td style={{ color: 'var(--red-600)' }}>-{q.attritionCount}</td>
                             <td style={{ fontWeight: 700 }}>{q.endingHeadcount}</td>
                             <td>{q.rawHeadcountCapacityUnits}</td>
-                            <td style={{ fontWeight: 800, color: '#0f172a' }}>{q.effectiveCapacityUnits}</td>
-                            <td style={{ color: '#dc2626' }}>-{q.mentorshipDragLossUnits}</td>
+                            <td style={{ fontWeight: 800, color: 'var(--slate-900)' }}>{q.effectiveCapacityUnits}</td>
+                            <td style={{ color: 'var(--red-600)' }}>-{q.mentorshipDragLossUnits}</td>
                             <td>{fmtCurrency(q.quarterlyFullyBurdenedCost)}</td>
                             <td>{fmtCurrency(q.cloudInfrastructureAllocatedCost)}</td>
-                            <td style={{ fontWeight: 800, color: '#0f172a' }}>{fmtCurrency(q.totalQuarterlyRnDBudget)}</td>
+                            <td style={{ fontWeight: 800, color: 'var(--slate-900)' }}>{fmtCurrency(q.totalQuarterlyRnDBudget)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -695,7 +695,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                   <div className="org-studio-grid-4">
                     <div className="org-studio-card">
                       <span className="org-studio-stat-label">Chỉ số phù hợp Conway's Law</span>
-                      <span className="org-studio-stat-number" style={{ color: '#16a34a' }}>
+                      <span className="org-studio-stat-number" style={{ color: 'var(--green-600)' }}>
                         {selectedScenario.currentConwayScore}% → {selectedScenario.proposedConwayScore}%
                       </span>
                     </div>
@@ -713,7 +713,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                     </div>
                     <div className="org-studio-card">
                       <span className="org-studio-stat-label">Chỉ số rủi ro gián đoạn (Disruption Index)</span>
-                      <span className="org-studio-stat-number" style={{ color: '#d97706' }}>
+                      <span className="org-studio-stat-number" style={{ color: 'var(--amber-600)' }}>
                         {selectedScenario.disruptionRiskIndex} / 100
                       </span>
                     </div>
@@ -721,7 +721,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
 
                   <div className="org-studio-card">
                     <div className="org-studio-card-header">
-                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--slate-800)' }}>
                         Bản ghi nhớ đề xuất tái cấu trúc tổ chức (Board Executive Reorg Memorandum)
                       </span>
                       <button
@@ -731,7 +731,7 @@ export const OrgTopologyStudioModal: React.FC<OrgTopologyStudioModalProps> = ({ 
                       >
                         {copied ? (
                           <>
-                            <Check size={14} style={{ display: 'inline', marginRight: '6px', color: '#16a34a' }} />
+                            <Check size={14} style={{ display: 'inline', marginRight: '6px', color: 'var(--green-600)' }} />
                             Đã sao chép!
                           </>
                         ) : (

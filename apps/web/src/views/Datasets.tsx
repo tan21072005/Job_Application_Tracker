@@ -18,11 +18,11 @@ import { datasetRepository } from '../data';
 import { Button, Dialog, Empty, Field } from '../components/ui';
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
-  product_research: { label: 'So sánh sản phẩm & Giá', color: '#0284c7' },
-  company_list: { label: 'Doanh nghiệp & B2B Leads', color: '#7c3aed' },
-  research_notes: { label: 'Ghi chú & Nghiên cứu', color: '#059669' },
-  jobtrack: { label: 'Tuyển dụng (JobTrack Core)', color: '#315bef' },
-  custom: { label: 'Tùy chỉnh', color: '#64748b' }
+  product_research: { label: 'So sánh sản phẩm & Giá', color: 'var(--sky-600)' },
+  company_list: { label: 'Doanh nghiệp & B2B Leads', color: 'var(--violet-600)' },
+  research_notes: { label: 'Ghi chú & Nghiên cứu', color: 'var(--emerald-600)' },
+  jobtrack: { label: 'Tuyển dụng (JobTrack Core)', color: 'var(--custom-315bef)' },
+  custom: { label: 'Tùy chỉnh', color: 'var(--slate-500)' }
 };
 
 export default function DatasetsView({
@@ -242,8 +242,8 @@ export default function DatasetsView({
                 fontWeight: 600,
                 padding: '2px 8px',
                 borderRadius: '6px',
-                background: '#edf2ff',
-                color: '#315bef'
+                background: 'var(--custom-edf2ff)',
+                color: 'var(--custom-315bef)'
               }}
             >
               PageWeave Pro
@@ -278,8 +278,8 @@ export default function DatasetsView({
           <span>Xuất CSV không lỗi font</span>
         </div>
         <div>
-          <strong style={{ color: '#087354', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#087354' }} />
+          <strong style={{ color: 'var(--custom-087354)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--custom-087354)' }} />
             Sẵn sàng
           </strong>
           <span>Side Panel Extension MV3</span>
@@ -318,8 +318,8 @@ export default function DatasetsView({
                       fontWeight: 600,
                       padding: '3px 8px',
                       borderRadius: '6px',
-                      color: CATEGORY_LABELS[selectedDataset.category]?.color || '#315bef',
-                      background: '#f1f5f9'
+                      color: CATEGORY_LABELS[selectedDataset.category]?.color || 'var(--custom-315bef)',
+                      background: 'var(--slate-100)'
                     }}
                   >
                     {CATEGORY_LABELS[selectedDataset.category]?.label || selectedDataset.category}
@@ -412,7 +412,7 @@ export default function DatasetsView({
             >
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
-                  <tr style={{ background: '#fafbfe', borderBottom: '1px solid var(--line)', color: 'var(--muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <tr style={{ background: 'var(--custom-fafbfe)', borderBottom: '1px solid var(--line)', color: 'var(--muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     <th style={{ padding: '14px 18px', width: '40px' }}>#</th>
                     <th style={{ padding: '14px 18px', minWidth: '220px' }}>Nguồn dữ liệu (Provenance)</th>
                     {/* Dynamic Columns */}
@@ -567,8 +567,8 @@ export default function DatasetsView({
                             padding: '3px 8px',
                             borderRadius: '6px',
                             color: catInfo.color,
-                            background: '#f8fafc',
-                            border: '1px solid #e2e8f0'
+                            background: 'var(--slate-50)',
+                            border: '1px solid var(--slate-200)'
                           }}
                         >
                           {catInfo.label}
@@ -623,7 +623,7 @@ export default function DatasetsView({
                               key={c.key}
                               style={{
                                 fontSize: '10px',
-                                background: '#f1f4f9',
+                                background: 'var(--custom-f1f4f9)',
                                 color: 'var(--muted)',
                                 padding: '2px 6px',
                                 borderRadius: '4px'
@@ -770,7 +770,7 @@ export default function DatasetsView({
 
             <div
               style={{
-                background: '#fafbfe',
+                background: 'var(--custom-fafbfe)',
                 border: '1px solid var(--line)',
                 borderRadius: '8px',
                 padding: '14px',
@@ -783,7 +783,7 @@ export default function DatasetsView({
               <pre
                 style={{
                   marginTop: '8px',
-                  background: '#f1f5f9',
+                  background: 'var(--slate-100)',
                   padding: '8px',
                   borderRadius: '6px',
                   fontSize: '11px',

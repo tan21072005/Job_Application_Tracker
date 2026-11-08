@@ -109,11 +109,11 @@ export default function AiGrantsModal({ onClose }: AiGrantsModalProps) {
         )}
 
         {createdToken && (
-          <div className="notice" style={{ background: '#ecfdf5', borderColor: '#a7f3d0', color: '#065f46' }}>
+          <div className="notice" style={{ background: 'var(--emerald-50)', borderColor: 'var(--emerald-200)', color: 'var(--emerald-800)' }}>
             <div style={{ width: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <ShieldCheck size={20} color="#059669" />
-                <h3 style={{ margin: 0, color: '#065f46' }}>Đã tạo token kết nối thành công!</h3>
+                <ShieldCheck size={20} color="var(--emerald-600)" />
+                <h3 style={{ margin: 0, color: 'var(--emerald-800)' }}>Đã tạo token kết nối thành công!</h3>
               </div>
               <p style={{ fontSize: '12px', margin: '4px 0 10px' }}>
                 Lưu ý: Token này chỉ hiển thị duy nhất một lần. Hãy sao chép và cấu hình vào trợ lý AI của bạn.
@@ -123,7 +123,7 @@ export default function AiGrantsModal({ onClose }: AiGrantsModalProps) {
                   type="text"
                   readOnly
                   value={createdToken.token}
-                  style={{ fontFamily: 'monospace', fontSize: '13px', background: '#ffffff', color: '#111827' }}
+                  style={{ fontFamily: 'monospace', fontSize: '13px', background: 'var(--white)', color: 'var(--gray-900)' }}
                 />
                 <Button kind="secondary" onClick={() => handleCopy(createdToken.token)}>
                   {copied ? <Check size={16} /> : <Copy size={16} />}
@@ -135,8 +135,8 @@ export default function AiGrantsModal({ onClose }: AiGrantsModalProps) {
                 <span style={{ fontSize: '12px', fontWeight: 600 }}>Cấu hình mẫu cho Claude Desktop / Antigravity:</span>
                 <pre
                   style={{
-                    background: '#1e293b',
-                    color: '#f8fafc',
+                    background: 'var(--slate-800)',
+                    color: 'var(--slate-50)',
                     padding: '12px',
                     borderRadius: '8px',
                     fontSize: '11px',

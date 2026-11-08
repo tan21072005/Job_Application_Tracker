@@ -484,7 +484,7 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
                 {selectedContract.clauses.map((clause: ClauseAuditItemDTO) => {
                   const s = clause.subScore;
                   const sClass = s < 30 ? 'low' : s < 60 ? 'moderate' : s < 80 ? 'high' : 'critical';
-                  const barColor = s < 30 ? '#22c55e' : s < 60 ? '#eab308' : s < 80 ? '#f97316' : '#e11d48';
+                  const barColor = s < 30 ? 'var(--green-500)' : s < 60 ? 'var(--yellow-500)' : s < 80 ? 'var(--orange-500)' : 'var(--rose-600)';
 
                   return (
                     <div key={clause.pillarKey} className={`ecg-pillar-card ${clause.isToxic ? 'toxic' : ''}`}>
@@ -522,7 +522,7 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Hiệu chỉnh Tham số Hợp đồng & Pháp lý</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--slate-500)' }}>
                     Cập nhật thời hạn cam kết, cơ chế garden leave, điều kiện sa thải và tỷ lệ tăng tốc cổ phần để tính toán lại điểm số CRI.
                   </p>
                 </div>
@@ -893,7 +893,7 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Redlines & Điều khoản Đối trọng (Counter-Amendments)</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--slate-500)' }}>
                     Các đề xuất sửa đổi pháp lý bảo vệ quyền lợi cá nhân với lập luận chuyên nghiệp và giải pháp thỏa hiệp fallback.
                   </p>
                 </div>
@@ -910,9 +910,9 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
               </div>
 
               {(!selectedContract.redlines || selectedContract.redlines.length === 0) ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
-                  <FileText size={32} style={{ color: '#94a3b8', marginBottom: 8 }} />
-                  <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Chưa có điều khoản redline nào được tạo.</p>
+                <div style={{ textAlign: 'center', padding: '40px 20px', background: 'var(--slate-50)', borderRadius: 12, border: '1px dashed var(--slate-300)' }}>
+                  <FileText size={32} style={{ color: 'var(--slate-400)', marginBottom: 8 }} />
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--slate-500)' }}>Chưa có điều khoản redline nào được tạo.</p>
                   <button className="ecg-btn-primary" style={{ marginTop: 12 }} onClick={handleGenerateRedlines}>
                     Tự động tạo Redlines đề xuất
                   </button>
@@ -940,23 +940,23 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
                       <div className="ecg-redline-meta-row">
                         <div>
                           <strong>Lập luận đàm phán (Justification):</strong>
-                          <div style={{ color: '#334155', marginTop: 4 }}>{redline.candidateJustification}</div>
+                          <div style={{ color: 'var(--slate-700)', marginTop: 4 }}>{redline.candidateJustification}</div>
                         </div>
                         {redline.fallbackCompromise && (
                           <div>
                             <strong>Phương án nhượng bộ (Fallback Compromise):</strong>
-                            <div style={{ color: '#854d0e', marginTop: 4 }}>{redline.fallbackCompromise}</div>
+                            <div style={{ color: 'var(--yellow-800)', marginTop: 4 }}>{redline.fallbackCompromise}</div>
                           </div>
                         )}
                       </div>
 
                       <div className="ecg-redline-actions">
-                        <span style={{ fontSize: 11, color: '#64748b', marginRight: 4 }}>Cập nhật trạng thái:</span>
+                        <span style={{ fontSize: 11, color: 'var(--slate-500)', marginRight: 4 }}>Cập nhật trạng thái:</span>
                         <button
                           className="ecg-btn-secondary ecg-btn-sm"
                           onClick={() => handleUpdateRedlineStatus(redline.id, 'accepted')}
                         >
-                          <CheckCircle2 size={13} style={{ color: '#16a34a' }} />
+                          <CheckCircle2 size={13} style={{ color: 'var(--green-600)' }} />
                           <span>Đã chấp thuận</span>
                         </button>
                         <button
@@ -969,7 +969,7 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
                           className="ecg-btn-secondary ecg-btn-sm"
                           onClick={() => handleUpdateRedlineStatus(redline.id, 'rejected')}
                         >
-                          <XCircle size={13} style={{ color: '#dc2626' }} />
+                          <XCircle size={13} style={{ color: 'var(--red-600)' }} />
                           <span>Bị từ chối</span>
                         </button>
                       </div>
@@ -985,7 +985,7 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Phụ lục A: Danh mục Sáng chế & IP Đã có (Exhibit A)</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--slate-500)' }}>
                     Liệt kê các kho mã nguồn mở, bằng sáng chế hoặc sản phẩm SaaS đã phát triển trước khi gia nhập để loại trừ khỏi cam kết chuyển giao IP.
                   </p>
                 </div>
@@ -1076,9 +1076,9 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
               )}
 
               {selectedContract.priorInventions.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
-                  <Code2 size={32} style={{ color: '#94a3b8', marginBottom: 8 }} />
-                  <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+                <div style={{ textAlign: 'center', padding: '40px 20px', background: 'var(--slate-50)', borderRadius: 12, border: '1px dashed var(--slate-300)' }}>
+                  <Code2 size={32} style={{ color: 'var(--slate-400)', marginBottom: 8 }} />
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--slate-500)' }}>
                     Chưa có sáng chế nào được khai báo. Việc thiếu Exhibit A có thể khiến công ty mới tuyên bố quyền sở hữu đối với các dự án cá nhân!
                   </p>
                   <button className="ecg-btn-primary" style={{ marginTop: 12 }} onClick={() => setShowAddInvention(true)}>
@@ -1106,7 +1106,7 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
                             <span className="ecg-cat-tag">{item.category}</span>
                           </td>
                           <td>
-                            <a href={item.identifierOrUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>
+                            <a href={item.identifierOrUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--blue-600)', textDecoration: 'none' }}>
                               {item.identifierOrUrl}
                             </a>
                           </td>
@@ -1143,7 +1143,7 @@ export const ExecutiveContractGuardModal: React.FC<Props> = ({ isOpen, onClose }
             <div className="ecg-modal" style={{ maxWidth: 840, maxHeight: '85vh' }} onClick={e => e.stopPropagation()}>
               <div className="ecg-header">
                 <div className="ecg-header-left">
-                  <FileText size={20} style={{ color: '#e11d48' }} />
+                  <FileText size={20} style={{ color: 'var(--rose-600)' }} />
                   <h3 className="ecg-title" style={{ fontSize: 16 }}>Văn bản Pháp lý Đính kèm (Legal Markdown)</h3>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>

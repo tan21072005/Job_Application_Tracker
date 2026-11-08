@@ -403,7 +403,7 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
 
         <div className="elm-model-bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>Kịch bản đang xem:</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-600)' }}>Kịch bản đang xem:</span>
             <select
               className="elm-model-select"
               value={selectedModelId}
@@ -425,7 +425,7 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
               <Copy size={15} /> Sao Chép Báo Cáo
             </button>
             {copyFeedback && (
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>{copyFeedback}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--emerald-600)' }}>{copyFeedback}</span>
             )}
           </div>
         </div>
@@ -705,7 +705,7 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                             </td>
                             <td className="elm-td">
                               <button
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--slate-400)' }}
                                 onClick={() => removePreferredTier(idx)}
                               >
                                 <Trash2 size={15} />
@@ -718,8 +718,8 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                   </div>
 
                   <div className="elm-callout-box">
-                    <CheckCircle size={18} color="#059669" />
-                    <div style={{ fontSize: 12.5, color: '#065f46', lineHeight: 1.5 }}>
+                    <CheckCircle size={18} color="var(--emerald-600)" />
+                    <div style={{ fontSize: 12.5, color: 'var(--emerald-800)', lineHeight: 1.5 }}>
                       <strong>Tổng Cổ Phần Pha Loãng Đầy Đủ (FDSO):</strong> {initialCapTable.totalFullyDilutedShares.toLocaleString()} cổ phần.
                       Nhà đầu tư nắm giữ tổng vốn cam kết ưu tiên: <strong>${preferredTiers.reduce((acc, t) => acc + t.originalInvestmentAmount, 0).toLocaleString()}</strong>.
                     </div>
@@ -735,7 +735,7 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                 <div className="elm-metric-card">
                   <span className="elm-metric-lbl">Tỷ Lệ Sở Hữu Sau Pha Loãng</span>
                   <span className="elm-metric-val">{dilutionResult.executiveOwnershipPercent}%</span>
-                  <span style={{ fontSize: 11, color: '#64748b' }}>
+                  <span style={{ fontSize: 11, color: 'var(--slate-500)' }}>
                     Từ {((shareCount / (initialCapTable.totalFullyDilutedShares || 1)) * 100).toFixed(3)}% ban đầu
                   </span>
                 </div>
@@ -831,12 +831,12 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                             <td className="elm-td font-semibold">
                               ${((r.preMoneyValuation + r.capitalRaised) / 1000000).toFixed(1)}M
                             </td>
-                            <td className="elm-td font-bold" style={{ color: '#059669' }}>
+                            <td className="elm-td font-bold" style={{ color: 'var(--emerald-600)' }}>
                               {summary ? `${summary.executiveOwnershipPercentPostRound}%` : '-'}
                             </td>
                             <td className="elm-td">
                               <button
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--slate-400)' }}
                                 onClick={() => removeDilutionRound(idx)}
                               >
                                 <Trash2 size={15} />
@@ -850,8 +850,8 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                 </div>
 
                 <div className="elm-callout-box">
-                  <AlertTriangle size={18} color="#d97706" />
-                  <div style={{ fontSize: 12.5, color: '#92400e', lineHeight: 1.5 }}>
+                  <AlertTriangle size={18} color="var(--amber-600)" />
+                  <div style={{ fontSize: 12.5, color: 'var(--amber-800)', lineHeight: 1.5 }}>
                     <strong>Quy Tắc Vàng Khi Đàm Phán Tỷ Lệ Pha Loãng:</strong> Khi startup mở rộng thêm 5-10% unallocated option pool trước vòng mới, toàn bộ sự pha loãng được gánh bởi cổ đông hiện hữu (Founder & Employee) chứ không phải nhà đầu tư mới.
                   </div>
                 </div>
@@ -889,10 +889,10 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                           <td className="elm-td font-semibold">${s.commonSharePrice.toFixed(2)}</td>
                           <td className="elm-td font-semibold">${s.executiveGrossPayout.toLocaleString()}</td>
                           <td className="elm-td">${s.executiveExerciseCost.toLocaleString()}</td>
-                          <td className="elm-td font-bold" style={{ color: s.executiveNetPreTax > 0 ? '#059669' : '#94a3b8' }}>
+                          <td className="elm-td font-bold" style={{ color: s.executiveNetPreTax > 0 ? 'var(--emerald-600)' : 'var(--slate-400)' }}>
                             ${s.executiveNetPreTax.toLocaleString()}
                           </td>
-                          <td className="elm-td font-black" style={{ color: s.executiveNetPostTax > 0 ? '#047857' : '#94a3b8' }}>
+                          <td className="elm-td font-black" style={{ color: s.executiveNetPostTax > 0 ? 'var(--emerald-700)' : 'var(--slate-400)' }}>
                             ${s.executiveNetPostTax.toLocaleString()}
                           </td>
                           <td className="elm-td">
@@ -907,8 +907,8 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                 </div>
 
                 <div className="elm-callout-box">
-                  <CheckCircle size={18} color="#059669" />
-                  <div style={{ fontSize: 12.5, color: '#065f46', lineHeight: 1.5 }}>
+                  <CheckCircle size={18} color="var(--emerald-600)" />
+                  <div style={{ fontSize: 12.5, color: 'var(--emerald-800)', lineHeight: 1.5 }}>
                     <strong>Cơ Chế Chuyển Đổi Tự Động (Crossover Valuation):</strong> Tại các mốc định giá cao, nhà đầu tư ưu đãi tự nguyện chuyển đổi thành cổ phần phổ thông khi giá trị ăn chia theo tỷ lệ (% ownership) vượt quá cam kết 1x hoàn vốn ban đầu.
                   </div>
                 </div>
@@ -929,7 +929,7 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                 </div>
                 <div className="elm-metric-card">
                   <span className="elm-metric-lbl">Tổng Nghĩa Vụ Thuế Dự Kiến</span>
-                  <span className="elm-metric-val" style={{ color: '#be123c' }}>
+                  <span className="elm-metric-val" style={{ color: 'var(--rose-700)' }}>
                     ${taxAnalysis.totalTaxLiability.toLocaleString()}
                   </span>
                 </div>
@@ -964,7 +964,7 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                         </tr>
                         <tr>
                           <td className="elm-td font-semibold">Thuế Tối Thiểu Thay Thế (US Alternative Minimum Tax - AMT)</td>
-                          <td className="elm-td font-bold" style={{ color: taxAnalysis.alternativeMinimumTaxAtExercise > 0 ? '#e11d48' : '#64748b' }}>
+                          <td className="elm-td font-bold" style={{ color: taxAnalysis.alternativeMinimumTaxAtExercise > 0 ? 'var(--rose-600)' : 'var(--slate-500)' }}>
                             ${taxAnalysis.alternativeMinimumTaxAtExercise.toLocaleString()}
                           </td>
                         </tr>
@@ -972,9 +972,9 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
                           <td className="elm-td font-semibold">Thuế Lãi Vốn Khi Thoái Vốn (Capital Gains Tax)</td>
                           <td className="elm-td font-bold">${taxAnalysis.capitalGainsTaxAtSale.toLocaleString()}</td>
                         </tr>
-                        <tr style={{ background: '#f8fafc' }}>
+                        <tr style={{ background: 'var(--slate-50)' }}>
                           <td className="elm-td font-bold">Thực Nhận Ròng Sau Thuế (Net Cash Retained)</td>
-                          <td className="elm-td font-black" style={{ color: '#059669', fontSize: 15 }}>
+                          <td className="elm-td font-black" style={{ color: 'var(--emerald-600)', fontSize: 15 }}>
                             ${taxAnalysis.netCashRetained.toLocaleString()}
                           </td>
                         </tr>
@@ -1021,7 +1021,7 @@ export const EquityLiquidityModal: React.FC<EquityLiquidityModalProps> = ({
               </button>
             )}
             {saveSuccess && (
-              <span style={{ fontSize: 13, color: '#059669', fontWeight: 700 }}>
+              <span style={{ fontSize: 13, color: 'var(--emerald-600)', fontWeight: 700 }}>
                 Đã lưu kịch bản thành công!
               </span>
             )}

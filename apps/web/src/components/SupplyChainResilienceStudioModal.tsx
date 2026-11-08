@@ -208,13 +208,13 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
         <div className="sc-studio-header">
           <div className="sc-studio-header-title">
             <div className="sc-studio-icon-badge">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--sky-400)" strokeWidth="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#f0f9ff' }}>
+                <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--sky-50)' }}>
                   Enterprise Supply Chain Resilience & Geopolitical Risk Command Studio
                 </h2>
                 {overview && (
@@ -228,7 +228,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                   </>
                 )}
               </div>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                 Multi-Tier BOM Transparency, Sovereign Risk & OFAC Screening, Lead-Time Volatility, and Total Landed Cost (TLC) Arbitrage
               </p>
             </div>
@@ -236,9 +236,9 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             {overview && (
               <div className="sc-studio-header-stat">
-                <span style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>Composite SCRI</span>
-                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#38bdf8' }}>
-                  {overview.compositeScri} <span style={{ fontSize: '0.75rem', color: '#64748b' }}>/ 100</span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--slate-400)', textTransform: 'uppercase' }}>Composite SCRI</span>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--sky-400)' }}>
+                  {overview.compositeScri} <span style={{ fontSize: '0.75rem', color: 'var(--slate-500)' }}>/ 100</span>
                 </span>
               </div>
             )}
@@ -248,7 +248,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
               data-testid="close-supply-chain-resilience-studio"
               title="Close Studio"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -297,15 +297,15 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
         <div className="sc-studio-body">
           {loading && (
             <div className="sc-studio-loading">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--sky-400)" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="12" />
               </svg>
-              <p style={{ marginTop: '12px', color: '#94a3b8', fontSize: '0.85rem' }}>Loading Supply Chain Telemetry...</p>
+              <p style={{ marginTop: '12px', color: 'var(--slate-400)', fontSize: '0.85rem' }}>Loading Supply Chain Telemetry...</p>
             </div>
           )}
 
           {error && (
-            <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', padding: '12px', borderRadius: '8px', marginBottom: '16px', color: '#fca5a5', fontSize: '0.85rem' }}>
+            <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', padding: '12px', borderRadius: '8px', marginBottom: '16px', color: 'var(--red-300)', fontSize: '0.85rem' }}>
               {error}
             </div>
           )}
@@ -322,7 +322,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                     </div>
                     <div className="sc-card">
                       <span className="sc-stat-title">Single Point Failures</span>
-                      <span className="sc-stat-value" style={{ color: overview.singlePointOfFailureCount > 0 ? '#f87171' : '#34d399' }}>
+                      <span className="sc-stat-value" style={{ color: overview.singlePointOfFailureCount > 0 ? 'var(--red-400)' : 'var(--emerald-400)' }}>
                         {overview.singlePointOfFailureCount}
                       </span>
                       <span className="sc-stat-sub">Zero substitute redundancy</span>
@@ -340,7 +340,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#f0f9ff' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: 'var(--sky-50)' }}>
                       N-Tier Bill of Materials Vulnerability Ledger
                     </h3>
                     <button
@@ -372,10 +372,10 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                       <tbody>
                         {overview.bomSummary.nodes.map((node) => (
                           <tr key={node.id}>
-                            <td style={{ fontWeight: 600, color: '#38bdf8' }}>{node.partNumber}</td>
+                            <td style={{ fontWeight: 600, color: 'var(--sky-400)' }}>{node.partNumber}</td>
                             <td>{node.componentName}</td>
                             <td>
-                              <span className="sc-badge" style={{ background: 'rgba(255,255,255,0.08)', color: '#cbd5e1' }}>
+                              <span className="sc-badge" style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--slate-300)' }}>
                                 {node.tier.replace(/_/g, ' ')}
                               </span>
                             </td>
@@ -383,7 +383,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                             <td>
                               <span className="sc-badge" style={{
                                 background: node.criticality === 'existential' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
-                                color: node.criticality === 'existential' ? '#f87171' : '#fbbf24'
+                                color: node.criticality === 'existential' ? 'var(--red-400)' : 'var(--amber-400)'
                               }}>
                                 {node.criticality.replace(/_/g, ' ')}
                               </span>
@@ -418,14 +418,14 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                     </div>
                     <div className="sc-card">
                       <span className="sc-stat-title">High-Risk Jurisdictions</span>
-                      <span className="sc-stat-value" style={{ color: '#fbbf24' }}>
+                      <span className="sc-stat-value" style={{ color: 'var(--amber-400)' }}>
                         {overview.geopoliticalSummary.highRiskJurisdictionCount}
                       </span>
                       <span className="sc-stat-sub">Composite risk &ge; 50</span>
                     </div>
                     <div className="sc-card">
                       <span className="sc-stat-title">Sanction Flags</span>
-                      <span className="sc-stat-value" style={{ color: overview.activeSanctionFlagsCount > 0 ? '#f87171' : '#34d399' }}>
+                      <span className="sc-stat-value" style={{ color: overview.activeSanctionFlagsCount > 0 ? 'var(--red-400)' : 'var(--emerald-400)' }}>
                         {overview.activeSanctionFlagsCount}
                       </span>
                       <span className="sc-stat-sub">OFAC / BIS Entity List</span>
@@ -438,7 +438,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#f0f9ff' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: 'var(--sky-50)' }}>
                       Sovereign Risk, Sanctions Screening & Maritime Chokepoint Tracking
                     </h3>
                     <button
@@ -471,7 +471,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                       <tbody>
                         {overview.geopoliticalSummary.exposures.map((exp) => (
                           <tr key={exp.id}>
-                            <td style={{ fontWeight: 600, color: '#38bdf8' }}>{exp.countryName} ({exp.countryCode})</td>
+                            <td style={{ fontWeight: 600, color: 'var(--sky-400)' }}>{exp.countryName} ({exp.countryCode})</td>
                             <td>{exp.politicalStabilityScore}/100</td>
                             <td>{exp.tradeFreedomScore}/100</td>
                             <td>
@@ -508,7 +508,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                     </div>
                     <div className="sc-card">
                       <span className="sc-stat-title">TTS &lt; TTR Deficit SKUs</span>
-                      <span className="sc-stat-value" style={{ color: overview.criticalBufferDeficitCount > 0 ? '#f87171' : '#34d399' }}>
+                      <span className="sc-stat-value" style={{ color: overview.criticalBufferDeficitCount > 0 ? 'var(--red-400)' : 'var(--emerald-400)' }}>
                         {overview.criticalBufferDeficitCount}
                       </span>
                       <span className="sc-stat-sub">Stockout vulnerability</span>
@@ -527,7 +527,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
 
                   <div className="sc-card sc-card-highlight" style={{ marginTop: '1.25rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#38bdf8', fontWeight: 600 }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--sky-400)', fontWeight: 600 }}>
                         Stochastic Lead-Time Disruption & Monte Carlo Buffer Simulation
                       </h4>
                       <button
@@ -542,7 +542,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                       <div>
-                        <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Target SKU</label>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '4px' }}>Target SKU</label>
                         <select
                           className="sc-input"
                           value={simSku}
@@ -554,7 +554,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                         </select>
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Simulated Chokepoint Delay (Days)</label>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '4px' }}>Simulated Chokepoint Delay (Days)</label>
                         <input
                           type="number"
                           className="sc-input"
@@ -563,7 +563,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                         />
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Demand Surge Spike (%)</label>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '4px' }}>Demand Surge Spike (%)</label>
                         <input
                           type="number"
                           className="sc-input"
@@ -574,17 +574,17 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                     </div>
 
                     {simResult && (
-                      <div style={{ marginTop: '1rem', padding: '12px', background: '#060d1a', borderRadius: '8px', border: '1px solid rgba(56,189,248,0.2)' }}>
+                      <div style={{ marginTop: '1rem', padding: '12px', background: 'var(--custom-060d1a)', borderRadius: '8px', border: '1px solid rgba(56,189,248,0.2)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f0f9ff' }}>Simulation Results for {simResult.sku}:</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--sky-50)' }}>Simulation Results for {simResult.sku}:</span>
                           <span className={`sc-badge ${simResult.recoveryFeasibility === 'feasible_buffered' ? 'sc-badge-elite' : simResult.recoveryFeasibility === 'urgent_mitigation_needed' ? 'sc-badge-vulnerable' : 'sc-badge-crisis'}`}>
                             {simResult.recoveryFeasibility.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginTop: '8px', fontSize: '0.8rem' }}>
-                          <div>Projected Stockout: <strong style={{ color: '#f87171' }}>{simResult.projectedStockoutDays} days</strong></div>
+                          <div>Projected Stockout: <strong style={{ color: 'var(--red-400)' }}>{simResult.projectedStockoutDays} days</strong></div>
                           <div>Lost Revenue: <strong>{formatUsd(simResult.estimatedLostRevenueUsd)}</strong></div>
-                          <div>Recommended Safety Stock: <strong style={{ color: '#34d399' }}>+{simResult.recommendedSafetyStockIncreaseUnits} units</strong></div>
+                          <div>Recommended Safety Stock: <strong style={{ color: 'var(--emerald-400)' }}>+{simResult.recommendedSafetyStockIncreaseUnits} units</strong></div>
                           <div>Working Capital: <strong>{formatUsd(simResult.incrementalWorkingCapitalUsd)}</strong></div>
                         </div>
                       </div>
@@ -612,7 +612,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                       <tbody>
                         {overview.bufferSummary.buffers.map((buf) => (
                           <tr key={buf.id}>
-                            <td style={{ fontWeight: 600, color: '#38bdf8' }}>{buf.sku}</td>
+                            <td style={{ fontWeight: 600, color: 'var(--sky-400)' }}>{buf.sku}</td>
                             <td>{buf.componentName}</td>
                             <td>{buf.currentStockUnits.toLocaleString()}</td>
                             <td>{buf.averageDailyDemandUnits}/d</td>
@@ -624,9 +624,9 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                             <td>{buf.timeToRecoverDays}d</td>
                             <td>
                               {buf.resilienceDeficitDays > 0 ? (
-                                <strong style={{ color: '#f87171' }}>-{buf.resilienceDeficitDays}d</strong>
+                                <strong style={{ color: 'var(--red-400)' }}>-{buf.resilienceDeficitDays}d</strong>
                               ) : (
-                                <span style={{ color: '#34d399' }}>0d (Buffered)</span>
+                                <span style={{ color: 'var(--emerald-400)' }}>0d (Buffered)</span>
                               )}
                             </td>
                             <td>
@@ -657,14 +657,14 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                     </div>
                     <div className="sc-card">
                       <span className="sc-stat-title">Mexico Nearshore TLC</span>
-                      <span className="sc-stat-value" style={{ color: '#34d399' }}>
+                      <span className="sc-stat-value" style={{ color: 'var(--emerald-400)' }}>
                         {formatUsd(overview.networkSummary.primaryNearshoreHub.totalLandedCostUsd)}
                       </span>
                       <span className="sc-stat-sub">4 days cross-border lead time</span>
                     </div>
                     <div className="sc-card">
                       <span className="sc-stat-title">Nearshoring Arbitrage</span>
-                      <span className="sc-stat-value" style={{ color: '#38bdf8' }}>
+                      <span className="sc-stat-value" style={{ color: 'var(--sky-400)' }}>
                         {formatUsd(overview.networkSummary.projectedAnnualNearshoringArbitrageUsd)}
                       </span>
                       <span className="sc-stat-sub">Annual potential savings</span>
@@ -673,7 +673,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
 
                   <div className="sc-card sc-card-highlight" style={{ marginTop: '1.25rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#38bdf8', fontWeight: 600 }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--sky-400)', fontWeight: 600 }}>
                         Total Landed Cost (TLC) & Multi-Hub Optimization Scenario Model
                       </h4>
                       <button
@@ -688,7 +688,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                       <div>
-                        <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Baseline Hub</label>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '4px' }}>Baseline Hub</label>
                         <select
                           className="sc-input"
                           value={compareBaselineId}
@@ -700,7 +700,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                         </select>
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Candidate Nearshore/Onshore Hub</label>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '4px' }}>Candidate Nearshore/Onshore Hub</label>
                         <select
                           className="sc-input"
                           value={compareCandidateId}
@@ -712,7 +712,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                         </select>
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Annual Volume (Units)</label>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '4px' }}>Annual Volume (Units)</label>
                         <input
                           type="number"
                           className="sc-input"
@@ -723,16 +723,16 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                     </div>
 
                     {compareResult && (
-                      <div style={{ marginTop: '1rem', padding: '12px', background: '#060d1a', borderRadius: '8px', border: '1px solid rgba(56,189,248,0.2)' }}>
+                      <div style={{ marginTop: '1rem', padding: '12px', background: 'var(--custom-060d1a)', borderRadius: '8px', border: '1px solid rgba(56,189,248,0.2)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#38bdf8' }}>Comparative Optimization Analysis:</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--sky-400)' }}>Comparative Optimization Analysis:</span>
                           <span className="sc-badge sc-badge-elite">{compareResult.landedCostDeltaPercent}% Net TLC Savings</span>
                         </div>
-                        <p style={{ margin: '6px 0', fontSize: '0.8rem', color: '#e2e8f0' }}>{compareResult.optimalRecommendation}</p>
+                        <p style={{ margin: '6px 0', fontSize: '0.8rem', color: 'var(--slate-200)' }}>{compareResult.optimalRecommendation}</p>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '8px', fontSize: '0.8rem' }}>
-                          <div>Annual Sourcing Savings: <strong style={{ color: '#34d399' }}>{formatUsd(compareResult.annualSavingsUsd)}</strong></div>
-                          <div>Lead Time Reduction: <strong style={{ color: '#38bdf8' }}>-{compareResult.leadTimeReductionDays} days</strong></div>
-                          <div>Freight Carbon Delta: <strong style={{ color: '#34d399' }}>-{compareResult.freightCarbonDeltaPercent}% CO2e</strong></div>
+                          <div>Annual Sourcing Savings: <strong style={{ color: 'var(--emerald-400)' }}>{formatUsd(compareResult.annualSavingsUsd)}</strong></div>
+                          <div>Lead Time Reduction: <strong style={{ color: 'var(--sky-400)' }}>-{compareResult.leadTimeReductionDays} days</strong></div>
+                          <div>Freight Carbon Delta: <strong style={{ color: 'var(--emerald-400)' }}>-{compareResult.freightCarbonDeltaPercent}% CO2e</strong></div>
                         </div>
                       </div>
                     )}
@@ -760,7 +760,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                       <tbody>
                         {overview.networkSummary.allHubs.map((hub) => (
                           <tr key={hub.id}>
-                            <td style={{ fontWeight: 600, color: '#38bdf8' }}>{hub.hubName}</td>
+                            <td style={{ fontWeight: 600, color: 'var(--sky-400)' }}>{hub.hubName}</td>
                             <td>{hub.region.replace(/_/g, ' ')}</td>
                             <td>{hub.country}</td>
                             <td>{hub.transportMode.replace(/_/g, ' ')}</td>
@@ -769,7 +769,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                             <td>${hub.customsTariffPerUnitUsd.toFixed(2)} ({hub.customsTariffPercent}%)</td>
                             <td>${hub.pipelineCarryingCostPerUnitUsd.toFixed(2)}</td>
                             <td>${hub.qualityScrapRiskPerUnitUsd.toFixed(2)}</td>
-                            <td style={{ fontWeight: 700, color: '#38bdf8' }}>${hub.totalLandedCostUsd.toFixed(2)}</td>
+                            <td style={{ fontWeight: 700, color: 'var(--sky-400)' }}>${hub.totalLandedCostUsd.toFixed(2)}</td>
                             <td>{hub.transitLeadTimeDays}d</td>
                             <td>{hub.totalTripCarbonKgCo2ePerUnit} kg</td>
                             <td>{hub.regionalAgilityRating}/100</td>
@@ -787,7 +787,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                     <div className="sc-card">
                       <span className="sc-stat-title">Crisis Escalation Status</span>
                       <span className="sc-stat-value" style={{
-                        color: overview.crisisSeverity === 'tier_3_crisis_war_room' ? '#f87171' : overview.crisisSeverity === 'tier_2_warning' ? '#fbbf24' : '#38bdf8'
+                        color: overview.crisisSeverity === 'tier_3_crisis_war_room' ? 'var(--red-400)' : overview.crisisSeverity === 'tier_2_warning' ? 'var(--amber-400)' : 'var(--sky-400)'
                       }}>
                         {overview.crisisSeverity.replace(/_/g, ' ').toUpperCase()}
                       </span>
@@ -800,46 +800,46 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                     </div>
                     <div className="sc-card">
                       <span className="sc-stat-title">Financial Exposure</span>
-                      <span className="sc-stat-value" style={{ color: '#f87171' }}>{formatUsd(overview.totalAnnualTariffExposureUsd)}</span>
+                      <span className="sc-stat-value" style={{ color: 'var(--red-400)' }}>{formatUsd(overview.totalAnnualTariffExposureUsd)}</span>
                       <span className="sc-stat-sub">Tariff & chokepoint surcharges</span>
                     </div>
                     <div className="sc-card">
                       <span className="sc-stat-title">Nearshore Opportunity</span>
-                      <span className="sc-stat-value" style={{ color: '#34d399' }}>{formatUsd(overview.potentialNearshoringArbitrageUsd)}</span>
+                      <span className="sc-stat-value" style={{ color: 'var(--emerald-400)' }}>{formatUsd(overview.potentialNearshoringArbitrageUsd)}</span>
                       <span className="sc-stat-sub">Annual arbitrage upside</span>
                     </div>
                   </div>
 
                   <div className="sc-card" style={{ marginTop: '1.25rem' }}>
-                    <h4 style={{ margin: 0, marginBottom: '0.75rem', fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase' }}>
+                    <h4 style={{ margin: 0, marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--slate-400)', textTransform: 'uppercase' }}>
                       SCRI 5-Dimension Resilience Index Breakdown
                     </h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', fontSize: '0.8rem' }}>
                       <div className="sc-signoff-card">
-                        <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.7rem' }}>SUPPLIER REDUNDANCY</span>
-                        <strong style={{ fontSize: '1.2rem', color: '#38bdf8' }}>{overview.indexBreakdown.supplierRedundancyScore}</strong> / 100
+                        <span style={{ color: 'var(--slate-400)', display: 'block', fontSize: '0.7rem' }}>SUPPLIER REDUNDANCY</span>
+                        <strong style={{ fontSize: '1.2rem', color: 'var(--sky-400)' }}>{overview.indexBreakdown.supplierRedundancyScore}</strong> / 100
                       </div>
                       <div className="sc-signoff-card">
-                        <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.7rem' }}>GEOPOLITICAL STABILITY</span>
-                        <strong style={{ fontSize: '1.2rem', color: '#38bdf8' }}>{overview.indexBreakdown.geopoliticalStabilityScore}</strong> / 100
+                        <span style={{ color: 'var(--slate-400)', display: 'block', fontSize: '0.7rem' }}>GEOPOLITICAL STABILITY</span>
+                        <strong style={{ fontSize: '1.2rem', color: 'var(--sky-400)' }}>{overview.indexBreakdown.geopoliticalStabilityScore}</strong> / 100
                       </div>
                       <div className="sc-signoff-card">
-                        <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.7rem' }}>BUFFER ADEQUACY</span>
-                        <strong style={{ fontSize: '1.2rem', color: '#38bdf8' }}>{overview.indexBreakdown.bufferAdequacyScore}</strong> / 100
+                        <span style={{ color: 'var(--slate-400)', display: 'block', fontSize: '0.7rem' }}>BUFFER ADEQUACY</span>
+                        <strong style={{ fontSize: '1.2rem', color: 'var(--sky-400)' }}>{overview.indexBreakdown.bufferAdequacyScore}</strong> / 100
                       </div>
                       <div className="sc-signoff-card">
-                        <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.7rem' }}>LANDED COST AGILITY</span>
-                        <strong style={{ fontSize: '1.2rem', color: '#38bdf8' }}>{overview.indexBreakdown.landedCostAgilityScore}</strong> / 100
+                        <span style={{ color: 'var(--slate-400)', display: 'block', fontSize: '0.7rem' }}>LANDED COST AGILITY</span>
+                        <strong style={{ fontSize: '1.2rem', color: 'var(--sky-400)' }}>{overview.indexBreakdown.landedCostAgilityScore}</strong> / 100
                       </div>
                       <div className="sc-signoff-card">
-                        <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.7rem' }}>SANCTIONS IMMUNITY</span>
-                        <strong style={{ fontSize: '1.2rem', color: '#38bdf8' }}>{overview.indexBreakdown.sanctionsImmunityScore}</strong> / 100
+                        <span style={{ color: 'var(--slate-400)', display: 'block', fontSize: '0.7rem' }}>SANCTIONS IMMUNITY</span>
+                        <strong style={{ fontSize: '1.2rem', color: 'var(--sky-400)' }}>{overview.indexBreakdown.sanctionsImmunityScore}</strong> / 100
                       </div>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', marginBottom: '0.75rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#f0f9ff' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: 'var(--sky-50)' }}>
                       Executive Supply Chain Resilience Board Memorandum
                     </h3>
                     <button
@@ -855,18 +855,18 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                   {activeMemo && (
                     <div>
                       <div className="sc-memo-preview">
-                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.8rem', color: '#e2e8f0' }}>
+                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '0.8rem', color: 'var(--slate-200)' }}>
                           {activeMemo.executiveSummaryMarkdown}
                         </pre>
                       </div>
 
                       <div style={{ marginTop: '1.25rem' }}>
-                        <h4 style={{ margin: 0, marginBottom: '0.75rem', fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase' }}>
+                        <h4 style={{ margin: 0, marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--slate-400)', textTransform: 'uppercase' }}>
                           Tripartite Executive Governance Sign-Off Matrix
                         </h4>
                         <div className="sc-grid-3">
                           <div className="sc-signoff-card">
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>VP GLOBAL SUPPLY CHAIN</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block' }}>VP GLOBAL SUPPLY CHAIN</span>
                             <div style={{ margin: '6px 0', fontSize: '0.85rem' }}>
                               {activeMemo.approvedByVpSupplyChainAt ? (
                                 <span className="sc-badge sc-badge-elite">APPROVED</span>
@@ -887,7 +887,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                           </div>
 
                           <div className="sc-signoff-card">
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>CHIEF OPERATING OFFICER (COO)</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block' }}>CHIEF OPERATING OFFICER (COO)</span>
                             <div style={{ margin: '6px 0', fontSize: '0.85rem' }}>
                               {activeMemo.approvedByCooAt ? (
                                 <span className="sc-badge sc-badge-elite">APPROVED</span>
@@ -908,7 +908,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                           </div>
 
                           <div className="sc-signoff-card">
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>BOARD RISK COMMITTEE CHAIR</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block' }}>BOARD RISK COMMITTEE CHAIR</span>
                             <div style={{ margin: '6px 0', fontSize: '0.85rem' }}>
                               {activeMemo.approvedByBoardRiskChairAt ? (
                                 <span className="sc-badge sc-badge-elite">RATIFIED</span>
@@ -941,13 +941,13 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
       {isAddingBom && (
         <div className="sc-submodal-backdrop">
           <div className="sc-submodal-container">
-            <h3 style={{ margin: 0, marginBottom: '1rem', fontSize: '1rem', color: '#38bdf8' }}>
+            <h3 style={{ margin: 0, marginBottom: '1rem', fontSize: '1rem', color: 'var(--sky-400)' }}>
               Add Multi-Tier Bill of Materials Component
             </h3>
             <form onSubmit={handleSaveBomNode} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Part Number</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '2px' }}>Part Number</label>
                   <input
                     type="text"
                     className="sc-input"
@@ -957,7 +957,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Component Name</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '2px' }}>Component Name</label>
                   <input
                     type="text"
                     className="sc-input"
@@ -970,7 +970,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Supply Tier</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '2px' }}>Supply Tier</label>
                   <select
                     className="sc-input"
                     value={newTier}
@@ -983,7 +983,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Criticality</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '2px' }}>Criticality</label>
                   <select
                     className="sc-input"
                     value={newCriticality}
@@ -999,7 +999,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Supplier Name</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '2px' }}>Supplier Name</label>
                   <input
                     type="text"
                     className="sc-input"
@@ -1009,7 +1009,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Country</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '2px' }}>Country</label>
                   <input
                     type="text"
                     className="sc-input"
@@ -1022,7 +1022,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Strategy</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '2px' }}>Strategy</label>
                   <select
                     className="sc-input"
                     value={newSourcingStrategy}
@@ -1034,7 +1034,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Lead Time (Days)</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '2px' }}>Lead Time (Days)</label>
                   <input
                     type="number"
                     className="sc-input"
@@ -1044,7 +1044,7 @@ export const SupplyChainResilienceStudioModal: React.FC<SupplyChainResilienceStu
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Spend Share (%)</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block', marginBottom: '2px' }}>Spend Share (%)</label>
                   <input
                     type="number"
                     className="sc-input"

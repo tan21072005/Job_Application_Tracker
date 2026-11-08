@@ -216,13 +216,13 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                 </div>
               </div>
 
-              <div style={{ background: '#f8fafc', padding: '18px 22px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a', marginBottom: '12px' }}>
+              <div style={{ background: 'var(--slate-50)', padding: '18px 22px', borderRadius: '14px', border: '1px solid var(--slate-200)' }}>
+                <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--slate-900)', marginBottom: '12px' }}>
                   Interactive Severance Scenario Parameters
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', fontSize: '13px' }}>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, color: 'var(--slate-600)', marginBottom: '6px' }}>
                       Cash Continuation Months: {currentCase.severanceParams.cashContinuationMonths}
                     </label>
                     <input
@@ -236,13 +236,13 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, color: 'var(--slate-600)', marginBottom: '6px' }}>
                       Bonus Proration Mode
                     </label>
                     <select
                       value={currentCase.severanceParams.bonusProrationMode}
                       onChange={e => handleUpdateSeverance(currentCase.severanceParams.cashContinuationMonths, e.target.value as any, currentCase.severanceParams.ptewMonths)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                     >
                       <option value="target">100% Target Proration (Executive Safe)</option>
                       <option value="performance">Actual Company Performance</option>
@@ -250,7 +250,7 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, color: 'var(--slate-600)', marginBottom: '6px' }}>
                       PTEW Option Window: {currentCase.severanceParams.ptewMonths} Months ({Math.round(currentCase.severanceParams.ptewMonths / 12 * 10) / 10} Yrs)
                     </label>
                     <input
@@ -267,11 +267,11 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
               </div>
 
               {audit.riskFindings.length > 0 && (
-                <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '12px', padding: '16px 20px' }}>
-                  <div style={{ fontWeight: 800, color: '#9f1239', marginBottom: '8px', fontSize: '14px' }}>
+                <div style={{ background: 'var(--rose-50)', border: '1px solid var(--rose-200)', borderRadius: '12px', padding: '16px 20px' }}>
+                  <div style={{ fontWeight: 800, color: 'var(--rose-800)', marginBottom: '8px', fontSize: '14px' }}>
                     ⚠️ Severance Package Risk Flags ({audit.riskFindings.length})
                   </div>
-                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#be123c', fontSize: '13px', lineHeight: 1.6 }}>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--rose-700)', fontSize: '13px', lineHeight: 1.6 }}>
                     {audit.riskFindings.map((risk, idx) => (
                       <li key={idx}>{risk}</li>
                     ))}
@@ -283,13 +283,13 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
 
           {activeTab === 'cic' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ background: '#f8fafc', padding: '18px 22px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a', marginBottom: '12px' }}>
+              <div style={{ background: 'var(--slate-50)', padding: '18px 22px', borderRadius: '14px', border: '1px solid var(--slate-200)' }}>
+                <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--slate-900)', marginBottom: '12px' }}>
                   Enterprise Acquisition & Trigger Parameters
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', fontSize: '13px' }}>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, color: 'var(--slate-600)', marginBottom: '6px' }}>
                       Enterprise Valuation: ${(currentCase.cicWaterfallParams.enterpriseValuationUsd / 1000000).toLocaleString()}M
                     </label>
                     <input
@@ -303,13 +303,13 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, color: 'var(--slate-600)', marginBottom: '6px' }}>
                       Trigger Structure
                     </label>
                     <select
                       value={currentCase.cicWaterfallParams.triggerMode}
                       onChange={e => handleUpdateCicParams(currentCase.cicWaterfallParams.enterpriseValuationUsd, e.target.value as any, currentCase.cicWaterfallParams.accelerationExtent)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                     >
                       <option value="double_trigger">Double Trigger (Closing + Good Reason/Term)</option>
                       <option value="single_trigger">Single Trigger (Closing Only)</option>
@@ -317,13 +317,13 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, color: 'var(--slate-600)', marginBottom: '6px' }}>
                       Acceleration Extent
                     </label>
                     <select
                       value={currentCase.cicWaterfallParams.accelerationExtent}
                       onChange={e => handleUpdateCicParams(currentCase.cicWaterfallParams.enterpriseValuationUsd, currentCase.cicWaterfallParams.triggerMode, e.target.value as any)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                     >
                       <option value="full_100_percent">100% Full Unvested Acceleration</option>
                       <option value="partial_50_percent">50% Partial Unvested Acceleration</option>
@@ -360,7 +360,7 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                     <td>Series A/B/C Investors</td>
                     <td>${cic.commonEquityPoolUsd.toLocaleString()}</td>
                   </tr>
-                  <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                  <tr style={{ background: 'var(--slate-50)', fontWeight: 700 }}>
                     <td>Common Equity Pool Available</td>
                     <td>${cic.commonEquityPoolUsd.toLocaleString()}</td>
                     <td>Fully Diluted Common</td>
@@ -385,9 +385,9 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                   <div className="esg-card-value">${cic.vestedEquityProceedsUsd.toLocaleString()}</div>
                   <div className="esg-card-sub">Options + RSUs previously vested</div>
                 </div>
-                <div className="esg-card" style={{ borderLeft: '4px solid #16a34a' }}>
+                <div className="esg-card" style={{ borderLeft: '4px solid var(--green-600)' }}>
                   <div className="esg-card-title">Total Net Liquid Proceeds</div>
-                  <div className="esg-card-value" style={{ color: '#15803d' }}>
+                  <div className="esg-card-value" style={{ color: 'var(--green-700)' }}>
                     ${cic.executiveNetLiquidProceedsUsd.toLocaleString()}
                   </div>
                   <div className="esg-card-sub">Liquid cash at transaction closing</div>
@@ -420,44 +420,44 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                 </div>
                 <div className="esg-card">
                   <div className="esg-card-title">20% Section 4999 Excise Tax</div>
-                  <div className="esg-card-value" style={{ color: tax.isParachuteTaxTriggered ? '#b91c1c' : '#15803d' }}>
+                  <div className="esg-card-value" style={{ color: tax.isParachuteTaxTriggered ? 'var(--red-700)' : 'var(--green-700)' }}>
                     ${tax.exciseTax20PercentUsd.toLocaleString()}
                   </div>
                   <div className="esg-card-sub">Assessed against 1.0x Base cliff (${tax.excessParachutePaymentUsd.toLocaleString()})</div>
                 </div>
               </div>
 
-              <div style={{ background: tax.isInValleyOfDeath ? '#fff7ed' : '#f0fdf4', border: `1px solid ${tax.isInValleyOfDeath ? '#fed7aa' : '#bbf7d0'}`, borderRadius: '14px', padding: '20px' }}>
-                <div style={{ fontWeight: 800, fontSize: '15px', color: tax.isInValleyOfDeath ? '#9a3412' : '#166534', marginBottom: '8px' }}>
+              <div style={{ background: tax.isInValleyOfDeath ? 'var(--orange-50)' : 'var(--green-50)', border: `1px solid ${tax.isInValleyOfDeath ? 'var(--orange-200)' : 'var(--green-200)'}`, borderRadius: '14px', padding: '20px' }}>
+                <div style={{ fontWeight: 800, fontSize: '15px', color: tax.isInValleyOfDeath ? 'var(--orange-800)' : 'var(--green-800)', marginBottom: '8px' }}>
                   {tax.isInValleyOfDeath ? '⚠️ Valley of Death Alert (Cutback Strongly Recommended)' : '✅ Optimal Settlement Validated'}
                 </div>
-                <div style={{ fontSize: '13px', color: tax.isInValleyOfDeath ? '#c2410c' : '#15803d', lineHeight: 1.6 }}>
+                <div style={{ fontSize: '13px', color: tax.isInValleyOfDeath ? 'var(--orange-700)' : 'var(--green-700)', lineHeight: 1.6 }}>
                   Total Contingent Payments (${tax.totalContingentParachutePaymentsUsd.toLocaleString()}) fall between the 3.0x threshold (${tax.safeHarborCeilingUsd.toLocaleString()}) and the break-even crossover point (${tax.breakEvenCrossoverPointUsd.toLocaleString()}).
                   Accepting a hard cutback nets <strong>${(tax.netProceedsHardCutbackUsd - tax.netProceedsFullPaymentUsd).toLocaleString()} MORE cash</strong> after taxes than accepting the full unreduced payout!
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>
+                <div style={{ background: 'var(--slate-50)', border: '1px solid var(--slate-200)', borderRadius: '12px', padding: '18px' }}>
+                  <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--slate-500)', marginBottom: '6px' }}>
                     Scenario 1: Full Payment (Subject to Excise Tax)
                   </div>
-                  <div style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--slate-900)' }}>
                     Net Take-Home: ${tax.netProceedsFullPaymentUsd.toLocaleString()}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--slate-500)', marginTop: '4px' }}>
                     Gross: ${tax.totalContingentParachutePaymentsUsd.toLocaleString()} · Total Tax: ${tax.totalExecutiveTaxLiabilityUsd.toLocaleString()}
                   </div>
                 </div>
 
-                <div style={{ background: '#f0fdf4', border: '2px solid #86efac', borderRadius: '12px', padding: '18px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '13px', color: '#166534', marginBottom: '6px' }}>
+                <div style={{ background: 'var(--green-50)', border: '2px solid var(--green-300)', borderRadius: '12px', padding: '18px' }}>
+                  <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--green-800)', marginBottom: '6px' }}>
                     Scenario 2: Best Net Cutback (Recommended)
                   </div>
-                  <div style={{ fontSize: '20px', fontWeight: 800, color: '#15803d' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--green-700)' }}>
                     Net Take-Home: ${tax.netProceedsHardCutbackUsd.toLocaleString()}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#166534', marginTop: '4px' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--green-800)', marginTop: '4px' }}>
                     Gross Capped @ ${tax.safeHarborCeilingUsd.toLocaleString()} · Zero Excise Tax
                   </div>
                 </div>
@@ -467,19 +467,19 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
 
           {activeTab === 'good_reason' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ background: '#f8fafc', padding: '18px 22px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a', marginBottom: '12px' }}>
+              <div style={{ background: 'var(--slate-50)', padding: '18px 22px', borderRadius: '14px', border: '1px solid var(--slate-200)' }}>
+                <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--slate-900)', marginBottom: '12px' }}>
                   Record New Adverse Action (Constructive Discharge Trigger)
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', fontSize: '13px' }}>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, color: 'var(--slate-600)', marginBottom: '6px' }}>
                       Trigger Category
                     </label>
                     <select
                       value={newEventCategory}
                       onChange={e => setNewEventCategory(e.target.value)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                     >
                       <option value="diminution_of_duties">Diminution of Title, Duties or Authority</option>
                       <option value="base_salary_reduction">Base Salary Reduction &gt; 10%</option>
@@ -489,7 +489,7 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, color: 'var(--slate-600)', marginBottom: '6px' }}>
                       Event Title
                     </label>
                     <input
@@ -497,11 +497,11 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                       placeholder="e.g. Reporting Line Demoted to VP Ops"
                       value={newEventTitle}
                       onChange={e => setNewEventTitle(e.target.value)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, color: 'var(--slate-600)', marginBottom: '6px' }}>
                       Factual Description
                     </label>
                     <input
@@ -509,14 +509,14 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                       placeholder="e.g. CEO removed direct reports without executive consent"
                       value={newEventDesc}
                       onChange={e => setNewEventDesc(e.target.value)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                     />
                   </div>
                 </div>
                 <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
                   <button
                     onClick={handleAddGoodReasonEvent}
-                    style={{ background: '#b91c1c', color: '#ffffff', border: 'none', padding: '9px 18px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ background: 'var(--red-700)', color: 'var(--white)', border: 'none', padding: '9px 18px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
                   >
                     + Record Formal Trigger Notice
                   </button>
@@ -524,26 +524,26 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
               </div>
 
               <div className="esg-event-list">
-                <div style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a' }}>
+                <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--slate-900)' }}>
                   Documented Good Reason Incidents ({currentCase.goodReasonEvents.length})
                 </div>
                 {currentCase.goodReasonEvents.map(event => (
                   <div key={event.id} className="esg-event-card">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a' }}>
+                      <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--slate-900)' }}>
                         {event.title}
                       </div>
                       <span className="esg-badge esg-badge-gold">
                         {event.status.toUpperCase().replace('_', ' ')}
                       </span>
                     </div>
-                    <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '13px', color: 'var(--slate-600)', lineHeight: 1.5 }}>
                       {event.factualDescription}
                     </div>
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#64748b' }}>
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--slate-500)' }}>
                       <span>Occurred: <strong>{event.dateConditionOccurred}</strong></span>
                       <span>Notice Served: <strong>{event.dateNoticeServed || 'Pending'}</strong></span>
-                      <span>30-Day Cure Deadline: <strong style={{ color: '#b91c1c' }}>{event.curePeriodDeadline || 'Not Started'}</strong></span>
+                      <span>30-Day Cure Deadline: <strong style={{ color: 'var(--red-700)' }}>{event.curePeriodDeadline || 'Not Started'}</strong></span>
                     </div>
                   </div>
                 ))}
@@ -566,7 +566,7 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
                 </div>
                 <div className="esg-card">
                   <div className="esg-card-title">Proposed Counter-Offer Value</div>
-                  <div className="esg-card-value" style={{ color: '#15803d' }}>
+                  <div className="esg-card-value" style={{ color: 'var(--green-700)' }}>
                     ${(audit.totalSeverancePackageValueUsd + 190000 + 25000).toLocaleString()}
                   </div>
                   <div className="esg-card-sub">+{counter.requestedCashMonths} mo cash + ${counter.requestedLegalFeeAllowanceUsd.toLocaleString()} legal fees</div>
@@ -579,19 +579,19 @@ export const ExecutiveSeveranceGuardModal: React.FC<Props> = ({ isOpen, onClose 
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                <div style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a' }}>
+                <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--slate-900)' }}>
                   Publication-Grade Executive Separation Counter-Proposal Memo
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
                     onClick={copyMemoToClipboard}
-                    style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', color: '#334155' }}
+                    style={{ background: 'var(--slate-100)', border: '1px solid var(--slate-300)', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', color: 'var(--slate-700)' }}
                   >
                     {copiedMemo ? '✓ Copied to Clipboard' : '📋 Copy Markdown Memo'}
                   </button>
                   <button
                     onClick={handleGenerateProposal}
-                    style={{ background: '#b91c1c', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', color: '#ffffff' }}
+                    style={{ background: 'var(--red-700)', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', color: 'var(--white)' }}
                   >
                     Save Counter-Offer Proposal
                   </button>

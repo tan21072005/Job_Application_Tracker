@@ -2591,10 +2591,10 @@ export const priorityLabels: Record<ApplicationPriority, string> = {
 };
 
 export const priorityPillColors: Record<ApplicationPriority, { bg: string; color: string; border: string }> = {
-  urgent: { bg: '#fef2f2', color: '#991b1b', border: '#fecaca' },
-  target: { bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
-  safety: { bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
-  backlog: { bg: '#f9fafb', color: '#4b5563', border: '#e5e7eb' }
+  urgent: { bg: 'var(--red-50)', color: 'var(--red-800)', border: 'var(--red-200)' },
+  target: { bg: 'var(--blue-50)', color: 'var(--blue-800)', border: 'var(--blue-200)' },
+  safety: { bg: 'var(--green-50)', color: 'var(--green-800)', border: 'var(--green-200)' },
+  backlog: { bg: 'var(--gray-50)', color: 'var(--gray-600)', border: 'var(--gray-200)' }
 };
 
 export const statuses = ['Saved', 'Applied', 'Screening', 'Interview', 'Offer', 'Rejected', 'Withdrawn'] as const;

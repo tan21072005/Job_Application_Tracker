@@ -319,11 +319,11 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {selectedPlan && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', padding: '4px 10px', borderRadius: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>Day {selectedPlan.currentDay}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--slate-100)', padding: '4px 10px', borderRadius: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--slate-700)' }}>Day {selectedPlan.currentDay}</span>
                 <button
                   type="button"
-                  style={{ border: 'none', background: '#ffffff', borderRadius: '4px', padding: '2px 6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                  style={{ border: 'none', background: 'var(--white)', borderRadius: '4px', padding: '2px 6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
                   onClick={() => handleAdvanceDay(1)}
                   title="Advance 1 Day"
                 >
@@ -331,7 +331,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                 </button>
                 <button
                   type="button"
-                  style={{ border: 'none', background: '#ffffff', borderRadius: '4px', padding: '2px 6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                  style={{ border: 'none', background: 'var(--white)', borderRadius: '4px', padding: '2px 6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
                   onClick={() => handleAdvanceDay(7)}
                   title="Advance 1 Week"
                 >
@@ -378,7 +378,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
             <button
               className="eoc-tab-btn"
-              style={{ background: '#f1f5f9', color: '#0369a1' }}
+              style={{ background: 'var(--slate-100)', color: 'var(--sky-700)' }}
               onClick={() => setShowAddPlan(true)}
             >
               <Plus size={14} />
@@ -391,7 +391,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
           {showAddPlan && (
             <div className="ecg-form-card" style={{ marginBottom: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Initiate Executive Transition Command Center</h4>
+                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--slate-900)' }}>Initiate Executive Transition Command Center</h4>
                 <button type="button" className="eoc-close-btn" onClick={() => setShowAddPlan(false)}><X size={16} /></button>
               </div>
               <form onSubmit={handleCreatePlan}>
@@ -415,7 +415,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '16px', justifyContent: 'flex-end' }}>
                   <button type="button" className="eoc-tab-btn" onClick={() => setShowAddPlan(false)}>Cancel</button>
-                  <button type="submit" className="eoc-tab-btn active" style={{ background: '#0284c7', color: '#ffffff' }}>Launch Command Center</button>
+                  <button type="submit" className="eoc-tab-btn active" style={{ background: 'var(--sky-600)', color: 'var(--white)' }}>Launch Command Center</button>
                 </div>
               </form>
             </div>
@@ -437,8 +437,8 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
 
                 <div className="eoc-card">
                   <div className="eoc-card-title">Stakeholder Rel. Index (SRI)</div>
-                  <div className="eoc-card-value" style={{ color: '#0369a1' }}>
-                    {selectedPlan.momentum.stakeholderRelationshipIndex} <span style={{ fontSize: '14px', color: '#64748b' }}>/ 100</span>
+                  <div className="eoc-card-value" style={{ color: 'var(--sky-700)' }}>
+                    {selectedPlan.momentum.stakeholderRelationshipIndex} <span style={{ fontSize: '14px', color: 'var(--slate-500)' }}>/ 100</span>
                   </div>
                   <div className="eoc-card-sub">
                     {selectedPlan.momentum.interviewedStakeholders} of {selectedPlan.momentum.totalStakeholders} senior interviews completed
@@ -447,15 +447,15 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
 
                 <div className="eoc-card">
                   <div className="eoc-card-title">Diagnostic Health (DHI)</div>
-                  <div className="eoc-card-value" style={{ color: '#15803d' }}>
-                    {selectedPlan.momentum.diagnosticHealthIndex} <span style={{ fontSize: '14px', color: '#64748b' }}>/ 100</span>
+                  <div className="eoc-card-value" style={{ color: 'var(--green-700)' }}>
+                    {selectedPlan.momentum.diagnosticHealthIndex} <span style={{ fontSize: '14px', color: 'var(--slate-500)' }}>/ 100</span>
                   </div>
                   <div className="eoc-card-sub">4-dimension architecture & team health rating</div>
                 </div>
 
                 <div className="eoc-card">
                   <div className="eoc-card-title">Quick-Win Delivery Rate</div>
-                  <div className="eoc-card-value" style={{ color: '#854d0e' }}>
+                  <div className="eoc-card-value" style={{ color: 'var(--yellow-800)' }}>
                     {selectedPlan.momentum.quickWinDeliveryRate}%
                   </div>
                   <div className="eoc-card-sub">
@@ -465,7 +465,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
 
                 <div className="eoc-card">
                   <div className="eoc-card-title">Milestone Execution Rate</div>
-                  <div className="eoc-card-value" style={{ color: '#6d28d9' }}>
+                  <div className="eoc-card-value" style={{ color: 'var(--violet-700)' }}>
                     {selectedPlan.momentum.milestoneExecutionRate}%
                   </div>
                   <div className="eoc-card-sub">
@@ -475,7 +475,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
               </div>
 
               <div>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: 800, color: 'var(--slate-900)' }}>
                   4-Dimension Organizational & Technical Diagnostics
                 </h4>
                 <div className="eoc-diagnostics-grid">
@@ -570,7 +570,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                 <button
                   type="button"
                   className="eoc-tab-btn active"
-                  style={{ background: '#0284c7', color: '#ffffff' }}
+                  style={{ background: 'var(--sky-600)', color: 'var(--white)' }}
                   onClick={() => setShowAddStakeholder(true)}
                 >
                   <Plus size={14} />
@@ -581,7 +581,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
               {showAddStakeholder && (
                 <div className="ecg-form-card" style={{ marginBottom: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>Register Stakeholder Interview</h4>
+                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--slate-900)' }}>Register Stakeholder Interview</h4>
                     <button type="button" className="eoc-close-btn" onClick={() => setShowAddStakeholder(false)}><X size={16} /></button>
                   </div>
                   <form onSubmit={handleAddStakeholder}>
@@ -647,7 +647,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '16px', justifyContent: 'flex-end' }}>
                       <button type="button" className="eoc-tab-btn" onClick={() => setShowAddStakeholder(false)}>Cancel</button>
-                      <button type="submit" className="eoc-tab-btn active" style={{ background: '#0284c7', color: '#ffffff' }}>Save Stakeholder</button>
+                      <button type="submit" className="eoc-tab-btn active" style={{ background: 'var(--sky-600)', color: 'var(--white)' }}>Save Stakeholder</button>
                     </div>
                   </form>
                 </div>
@@ -663,8 +663,8 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                           onClick={() => handleToggleStakeholderStatus(s)}
                           style={{
                             border: 'none',
-                            background: s.status === 'completed' ? '#dcfce7' : '#f1f5f9',
-                            color: s.status === 'completed' ? '#15803d' : '#64748b',
+                            background: s.status === 'completed' ? 'var(--green-100)' : 'var(--slate-100)',
+                            color: s.status === 'completed' ? 'var(--green-700)' : 'var(--slate-500)',
                             borderRadius: '50%',
                             width: '28px',
                             height: '28px',
@@ -679,7 +679,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                         </button>
                         <div>
                           <span className="eoc-stakeholder-name">{s.name}</span>
-                          <span style={{ margin: '0 8px', color: '#cbd5e1' }}>•</span>
+                          <span style={{ margin: '0 8px', color: 'var(--slate-300)' }}>•</span>
                           <span className="eoc-stakeholder-role">{s.roleTitle}</span>
                         </div>
                       </div>
@@ -697,18 +697,18 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                                 background: 'transparent',
                                 cursor: 'pointer',
                                 padding: '1px',
-                                color: star <= s.sentimentScore ? '#eab308' : '#cbd5e1'
+                                color: star <= s.sentimentScore ? 'var(--yellow-500)' : 'var(--slate-300)'
                               }}
                               title={`Sentiment: ${star}/5`}
                             >
-                              <Star size={14} fill={star <= s.sentimentScore ? '#eab308' : 'none'} />
+                              <Star size={14} fill={star <= s.sentimentScore ? 'var(--yellow-500)' : 'none'} />
                             </button>
                           ))}
                         </div>
                         <button
                           type="button"
                           onClick={() => handleDeleteStakeholder(s.id)}
-                          style={{ border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+                          style={{ border: 'none', background: 'transparent', color: 'var(--slate-400)', cursor: 'pointer', padding: '4px' }}
                           title="Delete stakeholder"
                         >
                           <Trash2 size={15} />
@@ -739,7 +739,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                 <button
                   type="button"
                   className="eoc-tab-btn active"
-                  style={{ background: '#0284c7', color: '#ffffff' }}
+                  style={{ background: 'var(--sky-600)', color: 'var(--white)' }}
                   onClick={() => setShowAddMilestone(true)}
                 >
                   <Plus size={14} />
@@ -750,7 +750,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
               {showAddMilestone && (
                 <div className="ecg-form-card" style={{ marginBottom: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>Add 100-Day Milestone</h4>
+                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--slate-900)' }}>Add 100-Day Milestone</h4>
                     <button type="button" className="eoc-close-btn" onClick={() => setShowAddMilestone(false)}><X size={16} /></button>
                   </div>
                   <form onSubmit={handleAddMilestone}>
@@ -792,7 +792,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '16px', justifyContent: 'flex-end' }}>
                       <button type="button" className="eoc-tab-btn" onClick={() => setShowAddMilestone(false)}>Cancel</button>
-                      <button type="submit" className="eoc-tab-btn active" style={{ background: '#0284c7', color: '#ffffff' }}>Save Milestone</button>
+                      <button type="submit" className="eoc-tab-btn active" style={{ background: 'var(--sky-600)', color: 'var(--white)' }}>Save Milestone</button>
                     </div>
                   </form>
                 </div>
@@ -810,7 +810,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                       {phaseLabel} ({phaseMilestones.length})
                     </div>
                     {phaseMilestones.length === 0 ? (
-                      <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '8px 0' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--slate-400)', fontStyle: 'italic', padding: '8px 0' }}>
                         No milestones registered in this phase.
                       </div>
                     ) : (
@@ -819,9 +819,9 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                           <div className="eoc-milestone-left">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span className="eoc-milestone-title">{m.title}</span>
-                              <span style={{ fontSize: '11px', color: '#64748b' }}>Target: Day {m.targetDay}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>Target: Day {m.targetDay}</span>
                               {m.deliveredDay && (
-                                <span style={{ fontSize: '11px', color: '#15803d', fontWeight: 700 }}>
+                                <span style={{ fontSize: '11px', color: 'var(--green-700)', fontWeight: 700 }}>
                                   (Delivered Day {m.deliveredDay})
                                 </span>
                               )}
@@ -831,7 +831,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                               {m.isQuickWin && (
                                 <span className="eoc-badge-quickwin">★ QUICK-WIN ({m.deliveryEstimateDays}d)</span>
                               )}
-                              <span style={{ fontSize: '11px', color: '#475569' }}>Impact: {m.impactScore}/10</span>
+                              <span style={{ fontSize: '11px', color: 'var(--slate-600)' }}>Impact: {m.impactScore}/10</span>
                               <span className={`eoc-badge-status ${m.status}`}>{m.status.replace('_', ' ')}</span>
                             </div>
                           </div>
@@ -843,8 +843,8 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                               style={{
                                 padding: '4px 10px',
                                 fontSize: '11px',
-                                background: m.status === 'achieved' ? '#dcfce7' : '#f8fafc',
-                                color: m.status === 'achieved' ? '#15803d' : '#334155'
+                                background: m.status === 'achieved' ? 'var(--green-100)' : 'var(--slate-50)',
+                                color: m.status === 'achieved' ? 'var(--green-700)' : 'var(--slate-700)'
                               }}
                               onClick={() => handleToggleMilestoneStatus(m)}
                             >
@@ -853,7 +853,7 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
                             <button
                               type="button"
                               onClick={() => handleDeleteMilestone(m.id)}
-                              style={{ border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+                              style={{ border: 'none', background: 'transparent', color: 'var(--slate-400)', cursor: 'pointer', padding: '4px' }}
                               title="Delete milestone"
                             >
                               <Trash2 size={15} />
@@ -897,10 +897,10 @@ export const ExecutiveOnboardingModal: React.FC<Props> = ({
 
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button type="button" className="eoc-tab-btn" onClick={handleCopyMarkdown}>
-                    {copied ? <Check size={14} color="#15803d" /> : <Copy size={14} />}
+                    {copied ? <Check size={14} color="var(--green-700)" /> : <Copy size={14} />}
                     <span>{copied ? 'Copied!' : 'Copy Markdown'}</span>
                   </button>
-                  <button type="button" className="eoc-tab-btn active" style={{ background: '#0284c7', color: '#ffffff' }} onClick={handleDownloadMarkdown}>
+                  <button type="button" className="eoc-tab-btn active" style={{ background: 'var(--sky-600)', color: 'var(--white)' }} onClick={handleDownloadMarkdown}>
                     <Download size={14} />
                     <span>Download .md</span>
                   </button>

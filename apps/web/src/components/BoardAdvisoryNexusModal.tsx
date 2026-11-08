@@ -293,10 +293,10 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Opportunity Pipeline</h3>
+                <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--slate-900)' }}>Opportunity Pipeline</h3>
                 <button
                   className="ban-tab-btn active"
-                  style={{ background: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }}
+                  style={{ background: 'var(--blue-600)', color: 'var(--white)', borderColor: 'var(--blue-600)' }}
                   onClick={() => setIsAddingMandate(!isAddingMandate)}
                 >
                   <Plus size={15} />
@@ -308,10 +308,10 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                 <form
                   onSubmit={handleCreateMandate}
                   style={{
-                    background: '#f8fafc',
+                    background: 'var(--slate-50)',
                     padding: '20px',
                     borderRadius: '14px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--slate-200)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '12px'
@@ -319,22 +319,22 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                 >
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                     <div>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Target Company Name</label>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Target Company Name</label>
                       <input
                         type="text"
                         required
                         value={newCompanyName}
                         onChange={e => setNewCompanyName(e.target.value)}
                         placeholder="e.g. Acme AI Scaleup"
-                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Mandate Type</label>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Mandate Type</label>
                       <select
                         value={newMandateType}
                         onChange={e => setNewMandateType(e.target.value as BoardMandateType)}
-                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                       >
                         <option value="advisory_board">Advisory Board</option>
                         <option value="board_of_directors">Board of Directors (Fiduciary)</option>
@@ -343,11 +343,11 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Stage</label>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Stage</label>
                       <select
                         value={newStage}
                         onChange={e => setNewStage(e.target.value as MandatePipelineStage)}
-                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                       >
                         <option value="initial_dialogue">Initial Dialogue</option>
                         <option value="nom_gov_interview">Nom & Gov Interview</option>
@@ -357,42 +357,42 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Annual Retainer ($)</label>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Annual Retainer ($)</label>
                       <input
                         type="number"
                         value={newRetainer}
                         onChange={e => setNewRetainer(Number(e.target.value))}
-                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Equity Grant (%)</label>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Equity Grant (%)</label>
                       <input
                         type="number"
                         step="0.05"
                         value={newEquity}
                         onChange={e => setNewEquity(Number(e.target.value))}
-                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Monthly Hours</label>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Monthly Hours</label>
                       <input
                         type="number"
                         value={newHours}
                         onChange={e => setNewHours(Number(e.target.value))}
-                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                       />
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Mandate Scope & Notes</label>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Mandate Scope & Notes</label>
                     <input
                       type="text"
                       value={newNotes}
                       onChange={e => setNewNotes(e.target.value)}
                       placeholder="e.g. Advising founders on engineering hiring and multi-region cloud deployment."
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)' }}
                     />
                   </div>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '6px' }}>
@@ -406,7 +406,7 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                     <button
                       type="submit"
                       className="ban-tab-btn active"
-                      style={{ background: '#2563eb', color: '#ffffff' }}
+                      style={{ background: 'var(--blue-600)', color: 'var(--white)' }}
                     >
                       Save Mandate
                     </button>
@@ -420,7 +420,7 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                     key={m.id}
                     className="ban-mandate-card"
                     style={{
-                      borderLeft: m.id === selectedMandateId ? '4px solid #2563eb' : '1px solid #e2e8f0'
+                      borderLeft: m.id === selectedMandateId ? '4px solid var(--blue-600)' : '1px solid var(--slate-200)'
                     }}
                   >
                     <div className="ban-mandate-top">
@@ -443,8 +443,8 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                           className="ban-tab-btn"
                           style={{
                             padding: '6px 12px',
-                            background: m.id === selectedMandateId ? '#eff6ff' : '#f1f5f9',
-                            color: m.id === selectedMandateId ? '#2563eb' : '#475569'
+                            background: m.id === selectedMandateId ? 'var(--blue-50)' : 'var(--slate-100)',
+                            color: m.id === selectedMandateId ? 'var(--blue-600)' : 'var(--slate-600)'
                           }}
                           onClick={() => {
                             setSelectedMandateId(m.id);
@@ -482,11 +482,11 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
             <div className="ban-modeler-layout">
               <div className="ban-modeler-controls">
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Selected Opportunity</label>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Selected Opportunity</label>
                   <select
                     value={selectedMandateId}
                     onChange={e => setSelectedMandateId(e.target.value)}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px' }}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)', marginTop: '4px' }}
                   >
                     {mandates.map(m => (
                       <option key={m.id} value={m.id}>
@@ -496,11 +496,11 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Company Growth Stage</label>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Company Growth Stage</label>
                   <select
                     value={modelStage}
                     onChange={e => setModelStage(e.target.value as CompanyGrowthStage)}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px' }}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)', marginTop: '4px' }}
                   >
                     <option value="idea_stage">Idea / Pre-Seed</option>
                     <option value="seed_stage">Seed Stage</option>
@@ -509,11 +509,11 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Advisory Impact Level</label>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Advisory Impact Level</label>
                   <select
                     value={modelImpact}
                     onChange={e => setModelImpact(e.target.value as AdvisoryImpactLevel)}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px' }}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)', marginTop: '4px' }}
                   >
                     <option value="standard">Standard (~2.5 hrs/mo)</option>
                     <option value="strategic">Strategic (~5.0 hrs/mo)</option>
@@ -521,7 +521,7 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>
                     Future Dilution Rounds: {modelRounds}
                   </label>
                   <input
@@ -547,7 +547,7 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                       <div className="ban-card-title">Offered vs Benchmark</div>
                       <div
                         className="ban-card-value"
-                        style={{ color: dilutionModel.benchmark.isFairMarketOrAbove ? '#15803d' : '#b91c1c' }}
+                        style={{ color: dilutionModel.benchmark.isFairMarketOrAbove ? 'var(--green-700)' : 'var(--red-700)' }}
                       >
                         {dilutionModel.benchmark.variancePercentage >= 0 ? '+' : ''}
                         {dilutionModel.benchmark.variancePercentage}%
@@ -572,9 +572,9 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                     </div>
                   </div>
 
-                  <div style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                      <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>
+                  <div style={{ background: 'var(--white)', borderRadius: '14px', border: '1px solid var(--slate-200)', overflow: 'hidden' }}>
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--slate-200)', background: 'var(--slate-50)' }}>
+                      <h3 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--slate-900)' }}>
                         Exit Liquidation Scenarios & Effective Hourly Yields
                       </h3>
                     </div>
@@ -596,11 +596,11 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                             <td style={{ fontWeight: 700, textTransform: 'uppercase' }}>{s.scenarioName}</td>
                             <td>${s.exitValuationMillions}M</td>
                             <td>${s.grossProceedsUsd.toLocaleString()}</td>
-                            <td style={{ fontWeight: 700, color: '#15803d' }}>
+                            <td style={{ fontWeight: 700, color: 'var(--green-700)' }}>
                               ${s.netProceedsUsd.toLocaleString()}
                             </td>
                             <td>${s.cumulativeCashRetainersUsd.toLocaleString()}</td>
-                            <td style={{ fontWeight: 800, color: '#1e40af' }}>
+                            <td style={{ fontWeight: 800, color: 'var(--blue-800)' }}>
                               ${s.totalCompensationUsd.toLocaleString()}
                             </td>
                             <td style={{ fontWeight: 800 }}>${s.effectiveHourlyYieldUsd.toLocaleString()} / hr</td>
@@ -618,30 +618,30 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
             <div className="ban-coi-layout">
               <div className="ban-coi-controls">
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Primary Employer Name</label>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Primary Employer Name</label>
                   <input
                     type="text"
                     value={primaryEmployerName}
                     onChange={e => setPrimaryEmployerName(e.target.value)}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px' }}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)', marginTop: '4px' }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Primary Employer Capital ($M)</label>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Primary Employer Capital ($M)</label>
                   <input
                     type="number"
                     value={primaryCapitalMillions}
                     onChange={e => setPrimaryCapitalMillions(Number(e.target.value))}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px' }}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)', marginTop: '4px' }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>Target Company Capital ($M)</label>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate-600)' }}>Target Company Capital ($M)</label>
                   <input
                     type="number"
                     value={targetCapitalMillions}
                     onChange={e => setTargetCapitalMillions(Number(e.target.value))}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px' }}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--slate-300)', marginTop: '4px' }}
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
@@ -667,10 +667,10 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
               {coiCheck && (
                 <div
                   style={{
-                    background: '#ffffff',
+                    background: 'var(--white)',
                     padding: '20px',
                     borderRadius: '14px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--slate-200)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '14px'
@@ -678,10 +678,10 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
-                      <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--slate-900)' }}>
                         Fiduciary & Antitrust Compliance Audit
                       </h3>
-                      <p style={{ fontSize: '12px', color: '#64748b' }}>
+                      <p style={{ fontSize: '12px', color: 'var(--slate-500)' }}>
                         Evaluating appointment against Clayton Act Section 8 (15 U.S.C. § 19) and Delaware Duty of Loyalty
                       </p>
                     </div>
@@ -696,9 +696,9 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                       style={{
                         padding: '12px 16px',
                         borderRadius: '10px',
-                        background: '#fee2e2',
-                        border: '1px solid #fca5a5',
-                        color: '#991b1b',
+                        background: 'var(--red-100)',
+                        border: '1px solid var(--red-300)',
+                        color: 'var(--red-800)',
                         fontSize: '12px',
                         lineHeight: 1.5
                       }}
@@ -710,7 +710,7 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                     <button
                       className="ban-tab-btn active"
-                      style={{ background: '#0284c7', color: '#ffffff' }}
+                      style={{ background: 'var(--sky-600)', color: 'var(--white)' }}
                       onClick={handleGenerateWaiver}
                     >
                       Generate Outside Board Waiver Request Letter
@@ -738,10 +738,10 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
               <div className="ban-card-grid">
                 <div className="ban-card" style={{ gridColumn: 'span 2' }}>
                   <div className="ban-card-title">Governance Quotient (GQ)</div>
-                  <div className="ban-card-value" style={{ color: '#1d4ed8' }}>
+                  <div className="ban-card-value" style={{ color: 'var(--blue-700)' }}>
                     {matrix.governanceQuotient} / 100
                   </div>
-                  <div className="ban-card-sub" style={{ fontWeight: 700, color: '#1e40af' }}>
+                  <div className="ban-card-sub" style={{ fontWeight: 700, color: 'var(--blue-800)' }}>
                     {matrix.tier.replace(/_/g, ' ').toUpperCase()}
                   </div>
                 </div>
@@ -760,8 +760,8 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
               <div className="ban-gq-pillars">
                 <div className="ban-gq-pillar">
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>Fiduciary Acumen (DGCL § 141)</strong>
-                    <span style={{ fontWeight: 800, color: '#1d4ed8' }}>{matrix.fiduciaryAcumenScore} / 100</span>
+                    <strong style={{ fontSize: '13px', color: 'var(--slate-900)' }}>Fiduciary Acumen (DGCL § 141)</strong>
+                    <span style={{ fontWeight: 800, color: 'var(--blue-700)' }}>{matrix.fiduciaryAcumenScore} / 100</span>
                   </div>
                   <input
                     type="range"
@@ -770,15 +770,15 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                     value={matrix.fiduciaryAcumenScore}
                     onChange={e => handleSaveMatrixPillars('fiduciaryAcumenScore', Number(e.target.value))}
                   />
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>
                     Duty of Care, Duty of Loyalty, SOX 404 Financial Statements Literacy
                   </span>
                 </div>
 
                 <div className="ban-gq-pillar">
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>Cyber & Audit Oversight (SEC Item 106)</strong>
-                    <span style={{ fontWeight: 800, color: '#1d4ed8' }}>{matrix.cyberAuditOversightScore} / 100</span>
+                    <strong style={{ fontSize: '13px', color: 'var(--slate-900)' }}>Cyber & Audit Oversight (SEC Item 106)</strong>
+                    <span style={{ fontWeight: 800, color: 'var(--blue-700)' }}>{matrix.cyberAuditOversightScore} / 100</span>
                   </div>
                   <input
                     type="range"
@@ -787,15 +787,15 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                     value={matrix.cyberAuditOversightScore}
                     onChange={e => handleSaveMatrixPillars('cyberAuditOversightScore', Number(e.target.value))}
                   />
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>
                     SEC Form 8-K / 10-K cyber rules, ransomware response, NIST CSF 2.0
                   </span>
                 </div>
 
                 <div className="ban-gq-pillar">
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>AI Governance & Algorithmic Ethics</strong>
-                    <span style={{ fontWeight: 800, color: '#1d4ed8' }}>{matrix.aiGovernanceEthicsScore} / 100</span>
+                    <strong style={{ fontSize: '13px', color: 'var(--slate-900)' }}>AI Governance & Algorithmic Ethics</strong>
+                    <span style={{ fontWeight: 800, color: 'var(--blue-700)' }}>{matrix.aiGovernanceEthicsScore} / 100</span>
                   </div>
                   <input
                     type="range"
@@ -804,15 +804,15 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                     value={matrix.aiGovernanceEthicsScore}
                     onChange={e => handleSaveMatrixPillars('aiGovernanceEthicsScore', Number(e.target.value))}
                   />
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>
                     EU AI Act conformity, algorithmic bias audits, IP training indemnity
                   </span>
                 </div>
 
                 <div className="ban-gq-pillar">
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>Executive Compensation & Talent</strong>
-                    <span style={{ fontWeight: 800, color: '#1d4ed8' }}>{matrix.executiveCompensationScore} / 100</span>
+                    <strong style={{ fontSize: '13px', color: 'var(--slate-900)' }}>Executive Compensation & Talent</strong>
+                    <span style={{ fontWeight: 800, color: 'var(--blue-700)' }}>{matrix.executiveCompensationScore} / 100</span>
                   </div>
                   <input
                     type="range"
@@ -821,15 +821,15 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                     value={matrix.executiveCompensationScore}
                     onChange={e => handleSaveMatrixPillars('executiveCompensationScore', Number(e.target.value))}
                   />
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>
                     Say-on-Pay benchmarks, option pool overhang, Dodd-Frank clawbacks
                   </span>
                 </div>
 
                 <div className="ban-gq-pillar">
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>Boardroom Presence & Strategic Dissent</strong>
-                    <span style={{ fontWeight: 800, color: '#1d4ed8' }}>{matrix.boardroomPresenceDissentScore} / 100</span>
+                    <strong style={{ fontSize: '13px', color: 'var(--slate-900)' }}>Boardroom Presence & Strategic Dissent</strong>
+                    <span style={{ fontWeight: 800, color: 'var(--blue-700)' }}>{matrix.boardroomPresenceDissentScore} / 100</span>
                   </div>
                   <input
                     type="range"
@@ -838,7 +838,7 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
                     value={matrix.boardroomPresenceDissentScore}
                     onChange={e => handleSaveMatrixPillars('boardroomPresenceDissentScore', Number(e.target.value))}
                   />
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>
                     Constructive dissent, CEO succession planning, executive sessions
                   </span>
                 </div>
@@ -850,10 +850,10 @@ export const BoardAdvisoryNexusModal: React.FC<Props> = ({ isOpen, onClose }) =>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div className="ban-dossier-actions">
                 <div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--slate-900)' }}>
                     Executive Board Biography & Governance Dossier
                   </h3>
-                  <p style={{ fontSize: '12px', color: '#64748b' }}>
+                  <p style={{ fontSize: '12px', color: 'var(--slate-500)' }}>
                     Formatted specifically for Nominating & Corporate Governance Committees and Executive Search Partners
                   </p>
                 </div>

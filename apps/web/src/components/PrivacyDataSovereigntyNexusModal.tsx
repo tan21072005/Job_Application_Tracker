@@ -314,7 +314,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
 
         <div className="privacy-sovereignty-body">
           {errorMessage && (
-            <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', borderRadius: '6px', padding: '0.75rem', marginBottom: '1rem', color: '#fca5a5', fontSize: '0.85rem' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid var(--red-500)', borderRadius: '6px', padding: '0.75rem', marginBottom: '1rem', color: 'var(--red-300)', fontSize: '0.85rem' }}>
               {errorMessage}
             </div>
           )}
@@ -324,27 +324,27 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
               <div className="privacy-sovereignty-grid-4">
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">CHỈ SỐ RỦI RO TRUYỀN DỮ LIỆU (TRI)</div>
-                  <div className="privacy-metric-value" style={{ color: '#38bdf8' }}>{summary?.compositeTransferRiskIndex || 0}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Ngưỡng an toàn Safe Harbor &lt; 20.0</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--sky-400)' }}>{summary?.compositeTransferRiskIndex || 0}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Ngưỡng an toàn Safe Harbor &lt; 20.0</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">HÀNH LANG DỮ LIỆU HOẠT ĐỘNG</div>
-                  <div className="privacy-metric-value" style={{ color: '#34d399' }}>{summary?.activeCorridorsCount || 0}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Mã hóa Sovereign HSM EU / TIA</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--emerald-400)' }}>{summary?.activeCorridorsCount || 0}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Mã hóa Sovereign HSM EU / TIA</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">QUỐC GIA ĐÍCH GIÁM SÁT CAO</div>
-                  <div className="privacy-metric-value" style={{ color: '#fbbf24' }}>
+                  <div className="privacy-metric-value" style={{ color: 'var(--amber-400)' }}>
                     {transfers.filter((t) => t.destinationJurisdictionTier === 'authoritarian_unbounded_access' || t.destinationJurisdictionTier === 'elevated_surveillance_fisa702').length}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>FISA 702 / EO 1233 / PIPL Art 38</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>FISA 702 / EO 1233 / PIPL Art 38</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">PHẠM VI CHỦ THỂ DỮ LIỆU / NĂM</div>
-                  <div className="privacy-metric-value" style={{ color: '#c4b5fd' }}>
+                  <div className="privacy-metric-value" style={{ color: 'var(--violet-300)' }}>
                     {(transfers.reduce((acc, t) => acc + t.annualDataSubjectVolume, 0) / 1000).toFixed(0)}k
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Hồ sơ ứng viên & nhân tài toàn cầu</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Hồ sơ ứng viên & nhân tài toàn cầu</div>
                 </div>
               </div>
 
@@ -431,7 +431,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                   <div className="privacy-sovereignty-card-title">
                     <span>Mô hình Pháp lý Schrems II & Phân bổ Tiers</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--slate-300)' }}>
                     <div className="privacy-sovereignty-outcome-box">
                       <span>Tier 1: Safe Harbor (TRI &le; 20.0)</span>
                       <span className="privacy-sovereignty-badge privacy-badge-safe">ĐƯỢC PHÉP CHUYỂN</span>
@@ -448,7 +448,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                       <span>Tier 4: Prohibitive (&gt; 70.0)</span>
                       <span className="privacy-sovereignty-badge privacy-badge-prohibitive">ĐÌNH CHỈ TRUYỀN NGAY</span>
                     </div>
-                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'rgba(2, 6, 23, 0.4)', borderRadius: '6px', borderLeft: '3px solid #8b5cf6' }}>
+                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'rgba(2, 6, 23, 0.4)', borderRadius: '6px', borderLeft: '3px solid var(--violet-500)' }}>
                       <strong>Công thức Định lượng TRI:</strong>
                       <br />
                       <code>TRI = min(100, L_dest × S_mech × M_tech × W_sens × (1 + 0.15 × ln(1 + N / 10000)))</code>
@@ -482,7 +482,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                           <td className="privacy-sovereignty-td">{t.transferMechanism}</td>
                           <td className="privacy-sovereignty-td">{t.supplementaryTechnicalMeasure}</td>
                           <td className="privacy-sovereignty-td">{t.annualDataSubjectVolume.toLocaleString()}</td>
-                          <td className="privacy-sovereignty-td" style={{ fontWeight: 700, color: t.transferRiskIndex <= 20 ? '#34d399' : '#f87171' }}>
+                          <td className="privacy-sovereignty-td" style={{ fontWeight: 700, color: t.transferRiskIndex <= 20 ? 'var(--emerald-400)' : 'var(--red-400)' }}>
                             {t.transferRiskIndex.toFixed(1)}
                           </td>
                           <td className="privacy-sovereignty-td">{getTierBadge(t.riskTier)}</td>
@@ -500,23 +500,23 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
               <div className="privacy-sovereignty-grid-4">
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">YÊU CẦU DSR ĐANG XỬ LÝ</div>
-                  <div className="privacy-metric-value" style={{ color: '#38bdf8' }}>{dsrRequests.length}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Quyền xóa, truy cập, chỉnh sửa</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--sky-400)' }}>{dsrRequests.length}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Quyền xóa, truy cập, chỉnh sửa</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">TỈ LỆ TUÂN THỦ SLA</div>
-                  <div className="privacy-metric-value" style={{ color: '#34d399' }}>{summary?.dsrSlaAdherencePct || 100}%</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Không quá hạn 30 ngày (GDPR)</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--emerald-400)' }}>{summary?.dsrSlaAdherencePct || 100}%</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Không quá hạn 30 ngày (GDPR)</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">XÁC MINH DANH TÍNH IAL2</div>
-                  <div className="privacy-metric-value" style={{ color: '#c4b5fd' }}>100%</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>NIST SP 800-63-3 Assurance</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--violet-300)' }}>100%</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>NIST SP 800-63-3 Assurance</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">TOMBSTONING PHÂN TÁN</div>
-                  <div className="privacy-metric-value" style={{ color: '#fbbf24' }}>Hoạt động</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Đồng bộ S3 / Postgres / Redis</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--amber-400)' }}>Hoạt động</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Đồng bộ S3 / Postgres / Redis</div>
                 </div>
               </div>
 
@@ -575,7 +575,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                   <div className="privacy-sovereignty-card-title">
                     <span>Quy định Thời hạn Pháp định & Gia hạn (GDPR Art. 12(3))</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--slate-300)' }}>
                     <div className="privacy-sovereignty-outcome-box">
                       <span>Thời hạn Chuẩn GDPR</span>
                       <span className="privacy-sovereignty-badge privacy-badge-blue">30 NGÀY TỐI ĐA</span>
@@ -588,7 +588,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                       <span>Thời hạn Chuẩn CCPA/CPRA</span>
                       <span className="privacy-sovereignty-badge privacy-badge-blue">45 NGÀY (+45 GIA HẠN)</span>
                     </div>
-                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'rgba(2, 6, 23, 0.4)', borderRadius: '6px', borderLeft: '3px solid #10b981' }}>
+                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'rgba(2, 6, 23, 0.4)', borderRadius: '6px', borderLeft: '3px solid var(--emerald-500)' }}>
                       <strong>Điều phối Tự động:</strong> Khi quyền xóa (Right to be Forgotten) được phê duyệt, hệ thống phát lệnh Tombstone đồng thời tới PostgreSQL, Redis cluster, S3 deep archives, và các sub-processor đã đăng ký.
                     </div>
                   </div>
@@ -619,21 +619,21 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                           <td className="privacy-sovereignty-td" style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 600 }}>{d.ticketReference}</td>
                           <td className="privacy-sovereignty-td">
                             <div>{d.subjectIdentifier}</div>
-                            <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{d.subjectEmail}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--slate-400)' }}>{d.subjectEmail}</div>
                           </td>
                           <td className="privacy-sovereignty-td">{d.regulatoryFramework.toUpperCase()}</td>
                           <td className="privacy-sovereignty-td">{d.requestType}</td>
                           <td className="privacy-sovereignty-td">
                             {new Date(d.extendedDeadlineAt || d.statutoryDeadlineAt).toLocaleDateString()}
                             {d.isExtensionTriggered && (
-                              <span style={{ display: 'block', fontSize: '0.7rem', color: '#fbbf24' }}>Gia hạn Art 12(3)</span>
+                              <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--amber-400)' }}>Gia hạn Art 12(3)</span>
                             )}
                           </td>
                           <td className="privacy-sovereignty-td">
-                            <div style={{ background: '#1e293b', borderRadius: '4px', height: '6px', width: '80px', overflow: 'hidden' }}>
-                              <div style={{ background: '#38bdf8', height: '100%', width: `${d.orchestrationProgressPct}%` }}></div>
+                            <div style={{ background: 'var(--slate-800)', borderRadius: '4px', height: '6px', width: '80px', overflow: 'hidden' }}>
+                              <div style={{ background: 'var(--sky-400)', height: '100%', width: `${d.orchestrationProgressPct}%` }}></div>
                             </div>
-                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{d.orchestrationProgressPct}%</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--slate-400)' }}>{d.orchestrationProgressPct}%</span>
                           </td>
                           <td className="privacy-sovereignty-td">
                             <span className="privacy-sovereignty-badge privacy-badge-blue">{d.status}</span>
@@ -664,23 +664,23 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
               <div className="privacy-sovereignty-grid-4">
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">HỒ SƠ XỬ LÝ (ROPA ART 30)</div>
-                  <div className="privacy-metric-value" style={{ color: '#38bdf8' }}>{ropaActivities.length}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cơ sở pháp lý Điều 6 & Điều 9</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--sky-400)' }}>{ropaActivities.length}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Cơ sở pháp lý Điều 6 & Điều 9</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">ĐÁNH GIÁ TÁC ĐỘNG (DPIA)</div>
-                  <div className="privacy-metric-value" style={{ color: '#34d399' }}>{dpiaAssessments.length}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Hoạt động rủi ro cao Art 35</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--emerald-400)' }}>{dpiaAssessments.length}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Hoạt động rủi ro cao Art 35</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">DPIA RỦI RO CAO / THAM VẤN</div>
-                  <div className="privacy-metric-value" style={{ color: '#fbbf24' }}>{summary?.highRiskDpiaPendingCount || 0}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Ngưỡng tham vấn DPO Art 36</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--amber-400)' }}>{summary?.highRiskDpiaPendingCount || 0}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Ngưỡng tham vấn DPO Art 36</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">HIỆU LỰC KIỂM SOÁT TOMS</div>
-                  <div className="privacy-metric-value" style={{ color: '#c4b5fd' }}>72.5%</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Mã hóa, RBAC & Giảm thiểu dữ liệu</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--violet-300)' }}>72.5%</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Mã hóa, RBAC & Giảm thiểu dữ liệu</div>
                 </div>
               </div>
 
@@ -703,7 +703,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
 
                     <div className="privacy-sovereignty-form-group">
                       <label className="privacy-sovereignty-label">Các yếu tố Kích hoạt Rủi ro cao (GDPR Art. 35 Triggers)</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--slate-300)' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                           <input type="checkbox" checked={dpiaSystematic} onChange={(e) => setDpiaSystematic(e.target.checked)} />
                           Giám sát hệ thống (Systematic Monitoring)
@@ -740,15 +740,15 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '340px', overflowY: 'auto' }}>
                     {ropaActivities.map((r) => (
-                      <div key={r.id} style={{ background: '#060a17', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.75rem' }}>
+                      <div key={r.id} style={{ background: 'var(--custom-060a17)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.75rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                          <span style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.85rem' }}>{r.name}</span>
+                          <span style={{ fontWeight: 700, color: 'var(--slate-50)', fontSize: '0.85rem' }}>{r.name}</span>
                           <span className="privacy-sovereignty-badge privacy-badge-blue">{r.activityCode}</span>
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.35rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)', marginBottom: '0.35rem' }}>
                           Bộ phận: {r.businessUnit} · Chủ sở hữu: {r.processOwner} · Lưu trữ: {r.retentionPeriodMonths} tháng
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--slate-300)' }}>
                           <strong>Cơ sở pháp lý:</strong> {r.gdprArticle6Basis} · <strong>Dữ liệu:</strong> {r.dataCategories.join(', ')}
                         </div>
                       </div>
@@ -781,7 +781,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                           <td className="privacy-sovereignty-td">{dp.title}</td>
                           <td className="privacy-sovereignty-td">{dp.inherentRiskScore.toFixed(1)} / 100</td>
                           <td className="privacy-sovereignty-td">{(dp.controlEffectivenessFactor * 100).toFixed(1)}%</td>
-                          <td className="privacy-sovereignty-td" style={{ fontWeight: 700, color: dp.residualRiskScore <= 25 ? '#34d399' : '#fbbf24' }}>
+                          <td className="privacy-sovereignty-td" style={{ fontWeight: 700, color: dp.residualRiskScore <= 25 ? 'var(--emerald-400)' : 'var(--amber-400)' }}>
                             {dp.residualRiskScore.toFixed(1)}
                           </td>
                           <td className="privacy-sovereignty-td">
@@ -808,25 +808,25 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
               <div className="privacy-sovereignty-grid-4">
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">TẬP DỮ LIỆU HUẤN LUYỆN AI</div>
-                  <div className="privacy-metric-value" style={{ color: '#38bdf8' }}>{aiCorpora.length}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Tuân thủ Điều 10 EU AI Act</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--sky-400)' }}>{aiCorpora.length}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Tuân thủ Điều 10 EU AI Act</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">TỔNG RECORD / TOKEN</div>
-                  <div className="privacy-metric-value" style={{ color: '#34d399' }}>
+                  <div className="privacy-metric-value" style={{ color: 'var(--emerald-400)' }}>
                     {(aiCorpora.reduce((acc, c) => acc + c.totalTokenOrRecordCount, 0) / 1000000000).toFixed(1)}B
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Kiểm soát bản quyền & Opt-out</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Kiểm soát bản quyền & Opt-out</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">TẬP DỮ LIỆU TỔNG HỢP (SYNTHETIC)</div>
-                  <div className="privacy-metric-value" style={{ color: '#c4b5fd' }}>{syntheticDatasets.length}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Bảo mật Differential Privacy</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--violet-300)' }}>{syntheticDatasets.length}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Bảo mật Differential Privacy</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">ĐIỂM HỮU DỤNG WASSERSTEIN</div>
-                  <div className="privacy-metric-value" style={{ color: '#fbbf24' }}>89.8%</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Pareto Optimal (Utility vs Privacy)</div>
+                  <div className="privacy-metric-value" style={{ color: 'var(--amber-400)' }}>89.8%</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Pareto Optimal (Utility vs Privacy)</div>
                 </div>
               </div>
 
@@ -881,7 +881,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                   <div className="privacy-sovereignty-card-title">
                     <span>Đảm bảo Toán học $(\epsilon, \delta)$-Differential Privacy</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--slate-300)' }}>
                     <div className="privacy-sovereignty-outcome-box">
                       <span>Giới hạn Epsilon An toàn (&epsilon;)</span>
                       <span className="privacy-sovereignty-badge privacy-badge-safe">&le; 1.0 (PROVABLE DP)</span>
@@ -894,7 +894,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                       <span>Chứng nhận Điều 10 EU AI Act</span>
                       <span className="privacy-sovereignty-badge privacy-badge-emerald">ĐẠT CHUẨN ĐẦU VÀO</span>
                     </div>
-                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'rgba(2, 6, 23, 0.4)', borderRadius: '6px', borderLeft: '3px solid #38bdf8' }}>
+                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'rgba(2, 6, 23, 0.4)', borderRadius: '6px', borderLeft: '3px solid var(--sky-400)' }}>
                       <strong>Chống Suy luận Ngược:</strong> Dữ liệu tổng hợp được sinh ra có phân phối thống kê tương đồng với dữ liệu gốc (khoảng cách Wasserstein $W_1$ tối thiểu) nhưng bảo đảm không thể suy ngược ra danh tính của bất kỳ ứng viên cụ thể nào trong tập huấn luyện.
                     </div>
                   </div>
@@ -927,7 +927,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                           <td className="privacy-sovereignty-td">{c.collectionJurisdiction}</td>
                           <td className="privacy-sovereignty-td">{c.legalBasisForTraining}</td>
                           <td className="privacy-sovereignty-td">{c.fairUseFourFactorScore.toFixed(2)} / 4.0</td>
-                          <td className="privacy-sovereignty-td" style={{ color: c.piiExtractionRiskScore < 20 ? '#34d399' : '#f87171' }}>
+                          <td className="privacy-sovereignty-td" style={{ color: c.piiExtractionRiskScore < 20 ? 'var(--emerald-400)' : 'var(--red-400)' }}>
                             {c.piiExtractionRiskScore.toFixed(1)}%
                           </td>
                           <td className="privacy-sovereignty-td">
@@ -954,24 +954,24 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
               <div className="privacy-sovereignty-grid-3">
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">PHẠT TỐI ĐA PHÁP ĐỊNH (GDPR ART 83)</div>
-                  <div className="privacy-metric-value" style={{ color: '#f87171' }}>
+                  <div className="privacy-metric-value" style={{ color: 'var(--red-400)' }}>
                     €{((regulatoryFines.find((f) => f.regulatoryFramework === 'gdpr_eu')?.statutoryMaxFineEur || 48000000) / 1000000).toFixed(1)}M
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>4% Doanh thu toàn cầu (€1.2B)</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>4% Doanh thu toàn cầu (€1.2B)</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">RỦI RO ĐÃ ĐIỀU CHỈNH BIỆN PHÁP HỢP TÁC</div>
-                  <div className="privacy-metric-value" style={{ color: '#fbbf24' }}>
+                  <div className="privacy-metric-value" style={{ color: 'var(--amber-400)' }}>
                     €{((summary?.totalRegulatoryFineExposureEur || 4520076) / 1000000).toFixed(2)}M
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Giảm trừ 45% nhờ RoPA & DPIA</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Giảm trừ 45% nhờ RoPA & DPIA</div>
                 </div>
                 <div className="privacy-sovereignty-card">
                   <div className="privacy-metric-label">TRẠNG THÁI PHÊ CHUẨN HỘI ĐỒNG</div>
-                  <div className="privacy-metric-value" style={{ color: latestRatification?.ratificationStatus === 'fully_ratified' ? '#34d399' : '#38bdf8' }}>
+                  <div className="privacy-metric-value" style={{ color: latestRatification?.ratificationStatus === 'fully_ratified' ? 'var(--emerald-400)' : 'var(--sky-400)' }}>
                     {latestRatification?.ratificationStatus || 'PENDING'}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>DPO → CPO → CEO Tripartite</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>DPO → CPO → CEO Tripartite</div>
                 </div>
               </div>
 
@@ -984,7 +984,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                     <div className="privacy-sovereignty-outcome-box">
                       <div>
                         <strong>1. Cán bộ Bảo vệ Dữ liệu (DPO)</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                           {latestRatification?.dpoFullName} · {latestRatification?.dpoSignedAt ? `Ký ngày ${new Date(latestRatification.dpoSignedAt).toLocaleDateString()}` : 'Chưa ký'}
                         </div>
                       </div>
@@ -1000,7 +1000,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                     <div className="privacy-sovereignty-outcome-box">
                       <div>
                         <strong>2. Giám đốc Pháp chế & Bảo mật (CPO)</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                           {latestRatification?.cpoFullName} · {latestRatification?.cpoSignedAt ? `Ký ngày ${new Date(latestRatification.cpoSignedAt).toLocaleDateString()}` : 'Chưa ký'}
                         </div>
                       </div>
@@ -1016,7 +1016,7 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                     <div className="privacy-sovereignty-outcome-box">
                       <div>
                         <strong>3. Tổng Giám đốc Điều hành (CEO)</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                           {latestRatification?.ceoFullName} · {latestRatification?.ceoSignedAt ? `Ký ngày ${new Date(latestRatification.ceoSignedAt).toLocaleDateString()}` : 'Chưa ký'}
                         </div>
                       </div>
@@ -1030,9 +1030,9 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                     </div>
 
                     {latestRatification?.tripartiteSealSha256 && (
-                      <div style={{ padding: '0.75rem', background: '#060a17', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.25rem' }}>MÃ CHỨNG THỰC BẢO TOÀN SHA-256 (IMMUTABLE SEAL)</div>
-                        <code style={{ fontSize: '0.72rem', color: '#34d399', wordBreak: 'break-all' }}>
+                      <div style={{ padding: '0.75rem', background: 'var(--custom-060a17)', borderRadius: '6px', border: '1px solid var(--slate-800)' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)', marginBottom: '0.25rem' }}>MÃ CHỨNG THỰC BẢO TOÀN SHA-256 (IMMUTABLE SEAL)</div>
+                        <code style={{ fontSize: '0.72rem', color: 'var(--emerald-400)', wordBreak: 'break-all' }}>
                           {latestRatification.tripartiteSealSha256}
                         </code>
                       </div>
@@ -1049,19 +1049,19 @@ export const PrivacyDataSovereigntyNexusModal: React.FC<Props> = ({ isOpen, onCl
                       <div key={f.id} className="privacy-sovereignty-outcome-box">
                         <div>
                           <strong>{f.regulatoryFramework.toUpperCase()} ({f.jurisdictionCode})</strong>
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                             Trần mức phạt: €{(Number(f.statutoryMaxFineEur) / 1000000).toFixed(2)}M · Tỉ lệ vi phạm: {f.unintentionalInfractionsCount} vụ
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontWeight: 700, color: '#f87171' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--red-400)' }}>
                             €{(Number(f.expectedRegulatoryExposureEur) / 1000).toFixed(1)}k
                           </span>
-                          <div style={{ fontSize: '0.7rem', color: '#34d399' }}>Giảm trừ {(f.cooperationMitigationCredit * 100).toFixed(0)}%</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--emerald-400)' }}>Giảm trừ {(f.cooperationMitigationCredit * 100).toFixed(0)}%</div>
                         </div>
                       </div>
                     ))}
-                    <div style={{ padding: '0.75rem', background: 'rgba(2, 6, 23, 0.4)', borderRadius: '6px', borderLeft: '3px solid #f59e0b', fontSize: '0.78rem', color: '#cbd5e1' }}>
+                    <div style={{ padding: '0.75rem', background: 'rgba(2, 6, 23, 0.4)', borderRadius: '6px', borderLeft: '3px solid var(--amber-500)', fontSize: '0.78rem', color: 'var(--slate-300)' }}>
                       <strong>Bảo vệ Trách nhiệm Cá nhân Thành viên HĐQT:</strong> Chữ ký điện tử tam quyền được lưu vết vào chuỗi kiểm toán bất biến (Audit Event Ledger), là chứng cứ pháp lý chứng minh ban giám đốc đã thực thi trách nhiệm cẩn trọng (Duty of Care & Due Diligence).
                     </div>
                   </div>

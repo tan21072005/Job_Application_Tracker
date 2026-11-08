@@ -230,14 +230,14 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
         </div>
 
         {errorMessage && (
-          <div style={{ background: 'rgba(239,68,68,0.2)', borderLeft: '4px solid #ef4444', padding: '0.6rem 1.75rem', fontSize: '0.82rem', color: '#fca5a5' }}>
+          <div style={{ background: 'rgba(239,68,68,0.2)', borderLeft: '4px solid var(--red-500)', padding: '0.6rem 1.75rem', fontSize: '0.82rem', color: 'var(--red-300)' }}>
             {errorMessage}
           </div>
         )}
 
         <div className="antitrust-nexus-body">
           {loading && !overview && (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--slate-400)' }}>
               Loading antitrust regulatory clearance telemetry...
             </div>
           )}
@@ -247,7 +247,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
               <div className="antitrust-nexus-grid-4">
                 <div className="antitrust-nexus-card">
                   <div className="antitrust-nexus-card-title">Size-of-Transaction Test</div>
-                  <div className="antitrust-metric-value" style={{ color: hsr?.sizeOfTransactionTestPassed ? '#38bdf8' : '#34d399' }}>
+                  <div className="antitrust-metric-value" style={{ color: hsr?.sizeOfTransactionTestPassed ? 'var(--sky-400)' : 'var(--emerald-400)' }}>
                     ${tx ? (tx.enterpriseValueUsd / 1e9).toFixed(2) : '0'}B
                   </div>
                   <div className="antitrust-metric-label">
@@ -257,7 +257,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                 <div className="antitrust-nexus-card">
                   <div className="antitrust-nexus-card-title">Size-of-Person Test</div>
-                  <div className="antitrust-metric-value" style={{ color: '#34d399' }}>
+                  <div className="antitrust-metric-value" style={{ color: 'var(--emerald-400)' }}>
                     PASSED
                   </div>
                   <div className="antitrust-metric-label">
@@ -267,7 +267,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                 <div className="antitrust-nexus-card">
                   <div className="antitrust-nexus-card-title">HSR Statutory Filing Fee</div>
-                  <div className="antitrust-metric-value" style={{ color: '#fbbf24' }}>
+                  <div className="antitrust-metric-value" style={{ color: 'var(--amber-400)' }}>
                     ${hsr ? (hsr.statutoryFilingFeeUsd).toLocaleString() : '0'}
                   </div>
                   <div className="antitrust-metric-label">
@@ -277,7 +277,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                 <div className="antitrust-nexus-card">
                   <div className="antitrust-nexus-card-title">Item 4(c) & 4(d) Catalog</div>
-                  <div className="antitrust-metric-value" style={{ color: '#c084fc' }}>
+                  <div className="antitrust-metric-value" style={{ color: 'var(--purple-400)' }}>
                     {hsr?.item4cDocumentsCataloged || 0} / {hsr?.item4dDocumentsCataloged || 0}
                   </div>
                   <div className="antitrust-metric-label">
@@ -287,40 +287,40 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
               </div>
 
               {sr && (
-                <div className="antitrust-nexus-card" style={{ borderLeft: '4px solid #ef4444' }}>
+                <div className="antitrust-nexus-card" style={{ borderLeft: '4px solid var(--red-500)' }}>
                   <div className="antitrust-nexus-card-title">
                     <span>⚠️ HSR Second Request Subpoena Enforcement Radar</span>
                     <span className="antitrust-nexus-badge antitrust-badge-crimson">
                       {sr.issuingAgency}
                     </span>
                   </div>
-                  <p style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.5', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--slate-300)', lineHeight: '1.5', marginBottom: '1rem' }}>
                     {sr.scopeDescription}
                   </p>
 
                   <div className="antitrust-nexus-grid-4">
                     <div className="antitrust-nexus-outcome-box">
                       <div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Agreed Custodians</div>
+                        <div style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Agreed Custodians</div>
                         <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{sr.custodiansAgreedCount} / {sr.custodianCount}</div>
                       </div>
                     </div>
                     <div className="antitrust-nexus-outcome-box">
                       <div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>E-Discovery Volume</div>
+                        <div style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>E-Discovery Volume</div>
                         <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{sr.dataVolumeTerabytes} TB</div>
                       </div>
                     </div>
                     <div className="antitrust-nexus-outcome-box">
                       <div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Docs Produced</div>
+                        <div style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Docs Produced</div>
                         <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{(sr.documentsProducedCount / 1000).toFixed(0)}k / {(sr.documentsReviewedCount / 1000).toFixed(0)}k</div>
                       </div>
                     </div>
                     <div className="antitrust-nexus-outcome-box">
                       <div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Est. Defense Costs</div>
-                        <div style={{ fontWeight: '700', fontSize: '1.1rem', color: '#f87171' }}>${(sr.estimatedDefenseCostsUsd / 1e6).toFixed(1)}M</div>
+                        <div style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Est. Defense Costs</div>
+                        <div style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--red-400)' }}>${(sr.estimatedDefenseCostsUsd / 1e6).toFixed(1)}M</div>
                       </div>
                     </div>
                   </div>
@@ -342,17 +342,17 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {overview.relevantMarkets.map((m) => (
-                      <div key={m.id} style={{ background: '#090e1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.9rem' }}>
+                      <div key={m.id} style={{ background: 'var(--custom-090e1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.9rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                          <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.88rem' }}>{m.marketName}</span>
+                          <span style={{ fontWeight: '700', color: 'var(--slate-50)', fontSize: '0.88rem' }}>{m.marketName}</span>
                           <span className="antitrust-nexus-badge antitrust-badge-crimson">
                             Post-HHI {m.postMergerHhi} (Δ {m.deltaHhi})
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--slate-400)', marginBottom: '0.5rem' }}>
                           Scope: {m.geographicMarketScope} • Size: ${(m.totalMarketSizeUsd / 1e9).toFixed(1)}B • SSNIP Critical Loss: {m.ssnipTestCriticalLossPct}%
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: m.presumptionRebuttableUnlawful ? '#fca5a5' : '#86efac', background: m.presumptionRebuttableUnlawful ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', padding: '0.4rem 0.6rem', borderRadius: '4px' }}>
+                        <div style={{ fontSize: '0.78rem', color: m.presumptionRebuttableUnlawful ? 'var(--red-300)' : 'var(--green-300)', background: m.presumptionRebuttableUnlawful ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', padding: '0.4rem 0.6rem', borderRadius: '4px' }}>
                           {m.presumptionRebuttableUnlawful ? '⚠️ Presumed Substantial Lessening of Competition (Post-HHI ≥ 1800, Δ ≥ 100, combined share > 30%)' : '✓ Unconcentrated or Low Delta Market'}
                         </div>
                       </div>
@@ -368,20 +368,20 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
                     {overview.guppiAnalyses.map((g) => (
-                      <div key={g.id} style={{ background: '#090e1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.9rem' }}>
+                      <div key={g.id} style={{ background: 'var(--custom-090e1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.9rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                           <span style={{ fontWeight: '700', fontSize: '0.85rem' }}>{g.acquirerProductName} ↔ {g.targetProductName}</span>
                           <span className="antitrust-nexus-badge antitrust-badge-crimson">Max GUPPI: {g.maxGuppiPct}%</span>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--slate-400)' }}>
                           Diversion Ratios: D12 = {(g.diversionRatio12 * 100).toFixed(0)}%, D21 = {(g.diversionRatio21 * 100).toFixed(0)}% • Margins: {g.grossMargin1Pct}% / {g.grossMargin2Pct}%
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid #334155', borderRadius: '6px', padding: '0.8rem' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem', color: '#38bdf8' }}>Interactive GUPPI Sensitivity Simulator</div>
+                  <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid var(--slate-700)', borderRadius: '6px', padding: '0.8rem' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--sky-400)' }}>Interactive GUPPI Sensitivity Simulator</div>
                     <div className="antitrust-nexus-grid-2" style={{ gap: '0.5rem', marginBottom: '0.5rem' }}>
                       <div className="antitrust-nexus-form-group">
                         <label className="antitrust-nexus-label">Diversion D12 ({Math.round(simD12 * 100)}%)</label>
@@ -393,7 +393,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
                       </div>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
-                      <span>Calculated GUPPI 1: <strong style={{ color: simGuppi.maxGuppiPct >= 10 ? '#f87171' : '#34d399' }}>{simGuppi.guppi1Pct}%</strong></span>
+                      <span>Calculated GUPPI 1: <strong style={{ color: simGuppi.maxGuppiPct >= 10 ? 'var(--red-400)' : 'var(--emerald-400)' }}>{simGuppi.guppi1Pct}%</strong></span>
                       <span className="antitrust-nexus-badge antitrust-badge-blue">{simGuppi.unilateralEffectsRiskTier.replace(/_/g, ' ')}</span>
                     </div>
                   </div>
@@ -472,7 +472,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
                             </span>
                           </td>
                           <td className="antitrust-nexus-td">{f.statutoryDeadlineDate || 'TBD'}</td>
-                          <td className="antitrust-nexus-td" style={{ color: '#94a3b8' }}>{f.outsideCounselLead}</td>
+                          <td className="antitrust-nexus-td" style={{ color: 'var(--slate-400)' }}>{f.outsideCounselLead}</td>
                           <td className="antitrust-nexus-td">
                             <span className="antitrust-nexus-badge antitrust-badge-blue">
                               {f.clearanceDecision.replace(/_/g, ' ')}
@@ -490,9 +490,9 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
                   </div>
 
                   <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                    <div style={{ fontSize: '2.8rem', fontWeight: '900', color: '#f87171', fontFamily: 'ui-monospace, monospace' }}>
+                    <div style={{ fontSize: '2.8rem', fontWeight: '900', color: 'var(--red-400)', fontFamily: 'ui-monospace, monospace' }}>
                       {metrics?.overallClearanceRiskScore || 0}
-                      <span style={{ fontSize: '1.2rem', color: '#94a3b8' }}>/100</span>
+                      <span style={{ fontSize: '1.2rem', color: 'var(--slate-400)' }}>/100</span>
                     </div>
                     <div className="antitrust-nexus-badge antitrust-badge-crimson" style={{ display: 'inline-block', marginTop: '0.25rem' }}>
                       {metrics?.clearanceRiskBand.replace(/_/g, ' ').toUpperCase()}
@@ -501,24 +501,24 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>HHI Concentration Weight (30%):</span>
-                      <strong style={{ color: '#f87171' }}>High Risk (80+)</strong>
+                      <span style={{ color: 'var(--slate-400)' }}>HHI Concentration Weight (30%):</span>
+                      <strong style={{ color: 'var(--red-400)' }}>High Risk (80+)</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>GUPPI Pricing Pressure (25%):</span>
-                      <strong style={{ color: '#f87171' }}>Severe (&gt;10%)</strong>
+                      <span style={{ color: 'var(--slate-400)' }}>GUPPI Pricing Pressure (25%):</span>
+                      <strong style={{ color: 'var(--red-400)' }}>Severe (&gt;10%)</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>Multi-Agency Phase 2 Friction (20%):</span>
-                      <strong style={{ color: '#fbbf24' }}>3 Agencies In-Depth</strong>
+                      <span style={{ color: 'var(--slate-400)' }}>Multi-Agency Phase 2 Friction (20%):</span>
+                      <strong style={{ color: 'var(--amber-400)' }}>3 Agencies In-Depth</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>Customer Complaints Weight (15%):</span>
-                      <strong style={{ color: '#fbbf24' }}>4 Formal Objections</strong>
+                      <span style={{ color: 'var(--slate-400)' }}>Customer Complaints Weight (15%):</span>
+                      <strong style={{ color: 'var(--amber-400)' }}>4 Formal Objections</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>Second Request Burden (10%):</span>
-                      <strong style={{ color: '#f87171' }}>45 Custodians / 24.5 TB</strong>
+                      <span style={{ color: 'var(--slate-400)' }}>Second Request Burden (10%):</span>
+                      <strong style={{ color: 'var(--red-400)' }}>45 Custodians / 24.5 TB</strong>
                     </div>
                   </div>
                 </div>
@@ -539,17 +539,17 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {overview.remedyPackages.map((r) => (
-                      <div key={r.id} style={{ background: '#090e1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.9rem' }}>
+                      <div key={r.id} style={{ background: 'var(--custom-090e1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.9rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
                           <span style={{ fontWeight: '700', fontSize: '0.88rem' }}>{r.packageName}</span>
                           <span className={`antitrust-nexus-badge ${r.remedyDefensibilityIndex >= 75 ? 'antitrust-badge-emerald' : 'antitrust-badge-crimson'}`}>
                             RDI: {r.remedyDefensibilityIndex} ({r.remedyDefensibilityIndex >= 75 ? 'Defensible' : 'Deficient'})
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.4rem' }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--slate-400)', marginBottom: '0.4rem' }}>
                           Carve-Out Unit: {r.carveoutBusinessUnit} • Revenue: ${(r.carveoutRevenueUsd / 1e6).toFixed(0)}M • EBITDA: ${(r.carveoutEbitdaUsd / 1e6).toFixed(0)}M
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--slate-300)' }}>
                           Buyer: <strong>{r.upfrontBuyerName || 'Unassigned / Behavioral'}</strong> • Overlap Mitigated: {r.assetOverlapMitigatedPct}% • Standalone Viability: {r.standaloneViabilityScore}/100
                         </div>
                       </div>
@@ -565,34 +565,34 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
                     </span>
                   </div>
 
-                  <p style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.5', marginBottom: '0.75rem' }}>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--slate-300)', lineHeight: '1.5', marginBottom: '0.75rem' }}>
                     {cleanTeam?.protocolTitle || 'Clean team firewall preventing pre-closing gun-jumping under Sherman Act § 1.'}
                   </p>
 
                   <div className="antitrust-nexus-grid-3" style={{ marginBottom: '1rem' }}>
                     <div className="antitrust-nexus-outcome-box">
                       <div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Cleared Outside Counsel</div>
+                        <div style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Cleared Outside Counsel</div>
                         <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{cleanTeam?.clearedCounselCount || 0}</div>
                       </div>
                     </div>
                     <div className="antitrust-nexus-outcome-box">
                       <div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Economic Experts</div>
+                        <div style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Economic Experts</div>
                         <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{cleanTeam?.clearedConsultantsCount || 0}</div>
                       </div>
                     </div>
                     <div className="antitrust-nexus-outcome-box">
                       <div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Reported Breaches</div>
-                        <div style={{ fontWeight: '700', fontSize: '1.1rem', color: '#34d399' }}>0 (Clean)</div>
+                        <div style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Reported Breaches</div>
+                        <div style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--emerald-400)' }}>0 (Clean)</div>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ background: '#090e1a', padding: '0.75rem', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8', marginBottom: '0.35rem' }}>Commercially Sensitive Categories Covered</div>
-                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                  <div style={{ background: 'var(--custom-090e1a)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--slate-800)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--slate-400)', marginBottom: '0.35rem' }}>Commercially Sensitive Categories Covered</div>
+                    <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.75rem', color: 'var(--slate-300)' }}>
                       {(cleanTeam?.coveredCommerciallySensitiveCategories || []).map((c, idx) => (
                         <li key={idx}>{c}</li>
                       ))}
@@ -653,7 +653,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
               <div className="antitrust-nexus-grid-3">
                 <div className="antitrust-nexus-card">
                   <div className="antitrust-nexus-card-title">Reverse Termination Fee VaR</div>
-                  <div className="antitrust-metric-value" style={{ color: '#f87171' }}>
+                  <div className="antitrust-metric-value" style={{ color: 'var(--red-400)' }}>
                     ${tx ? (tx.reverseTerminationFeeUsd / 1e6).toFixed(0) : '0'}M
                   </div>
                   <div className="antitrust-metric-label">
@@ -663,7 +663,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                 <div className="antitrust-nexus-card">
                   <div className="antitrust-nexus-card-title">Litigation Docket & Depositions</div>
-                  <div className="antitrust-metric-value" style={{ color: '#fbbf24' }}>
+                  <div className="antitrust-metric-value" style={{ color: 'var(--amber-400)' }}>
                     {litigation ? `${litigation.cidDepositionsCompleted} / ${litigation.cidDepositionsScheduled}` : '0 / 0'}
                   </div>
                   <div className="antitrust-metric-label">
@@ -673,7 +673,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                 <div className="antitrust-nexus-card">
                   <div className="antitrust-nexus-card-title">Ratification Integrity Hash</div>
-                  <div style={{ fontSize: '0.8rem', fontFamily: 'ui-monospace, monospace', color: ratification?.isFullyRatified ? '#34d399' : '#38bdf8', wordBreak: 'break-all', marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontFamily: 'ui-monospace, monospace', color: ratification?.isFullyRatified ? 'var(--emerald-400)' : 'var(--sky-400)', wordBreak: 'break-all', marginTop: '0.5rem' }}>
                     {ratification?.cryptographicIntegrityHash || 'None'}
                   </div>
                   <div className="antitrust-metric-label" style={{ marginTop: '0.25rem' }}>
@@ -682,7 +682,7 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
                 </div>
               </div>
 
-              <div className="antitrust-nexus-card" style={{ borderLeft: ratification?.isFullyRatified ? '4px solid #10b981' : '4px solid #38bdf8' }}>
+              <div className="antitrust-nexus-card" style={{ borderLeft: ratification?.isFullyRatified ? '4px solid var(--emerald-500)' : '4px solid var(--sky-400)' }}>
                 <div className="antitrust-nexus-card-title">
                   <span>Tripartite Regulatory Ratification Gate</span>
                   <span className={`antitrust-nexus-badge ${ratification?.isFullyRatified ? 'antitrust-badge-emerald' : 'antitrust-badge-blue'}`}>
@@ -691,14 +691,14 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
                 </div>
 
                 <div className="antitrust-nexus-grid-3" style={{ gap: '1rem' }}>
-                  <div style={{ background: '#090e1a', border: '1px solid #1e293b', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ background: 'var(--custom-090e1a)', border: '1px solid var(--slate-800)', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontWeight: '700', color: '#f8fafc', marginBottom: '0.35rem' }}>1. Lead Antitrust Counsel</div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
+                      <div style={{ fontWeight: '700', color: 'var(--slate-50)', marginBottom: '0.35rem' }}>1. Lead Antitrust Counsel</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)', marginBottom: '0.75rem' }}>
                         HSR Item 4(c)/4(d) verification & structural remedy defensibility review
                       </div>
                       {ratification?.leadCounselSigned && (
-                        <div style={{ fontSize: '0.75rem', color: '#34d399', background: 'rgba(16,185,129,0.1)', padding: '0.5rem', borderRadius: '4px', marginBottom: '0.75rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--emerald-400)', background: 'rgba(16,185,129,0.1)', padding: '0.5rem', borderRadius: '4px', marginBottom: '0.75rem' }}>
                           ✓ Signed by {ratification.leadCounselSigner}<br />
                           {ratification.leadCounselDate ? new Date(ratification.leadCounselDate).toLocaleString() : ''}
                         </div>
@@ -717,14 +717,14 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
                     )}
                   </div>
 
-                  <div style={{ background: '#090e1a', border: '1px solid #1e293b', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ background: 'var(--custom-090e1a)', border: '1px solid var(--slate-800)', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontWeight: '700', color: '#f8fafc', marginBottom: '0.35rem' }}>2. Chief Legal Officer</div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
+                      <div style={{ fontWeight: '700', color: 'var(--slate-50)', marginBottom: '0.35rem' }}>2. Chief Legal Officer</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)', marginBottom: '0.75rem' }}>
                         Corporate fiduciary alignment, clean team audit, & litigation defense posture
                       </div>
                       {ratification?.generalCounselSigned && (
-                        <div style={{ fontSize: '0.75rem', color: '#34d399', background: 'rgba(16,185,129,0.1)', padding: '0.5rem', borderRadius: '4px', marginBottom: '0.75rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--emerald-400)', background: 'rgba(16,185,129,0.1)', padding: '0.5rem', borderRadius: '4px', marginBottom: '0.75rem' }}>
                           ✓ Signed by {ratification.generalCounselSigner}<br />
                           {ratification.generalCounselDate ? new Date(ratification.generalCounselDate).toLocaleString() : ''}
                         </div>
@@ -743,14 +743,14 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
                     )}
                   </div>
 
-                  <div style={{ background: '#090e1a', border: '1px solid #1e293b', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ background: 'var(--custom-090e1a)', border: '1px solid var(--slate-800)', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontWeight: '700', color: '#f8fafc', marginBottom: '0.35rem' }}>3. Chief Executive Officer</div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
+                      <div style={{ fontWeight: '700', color: 'var(--slate-50)', marginBottom: '0.35rem' }}>3. Chief Executive Officer</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)', marginBottom: '0.75rem' }}>
                         Final executive authorization of divestiture commitments & RTF assumption
                       </div>
                       {ratification?.chiefExecutiveOfficerSigned && (
-                        <div style={{ fontSize: '0.75rem', color: '#34d399', background: 'rgba(16,185,129,0.1)', padding: '0.5rem', borderRadius: '4px', marginBottom: '0.75rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--emerald-400)', background: 'rgba(16,185,129,0.1)', padding: '0.5rem', borderRadius: '4px', marginBottom: '0.75rem' }}>
                           ✓ Signed by {ratification.chiefExecutiveOfficerSigner}<br />
                           {ratification.chiefExecutiveOfficerDate ? new Date(ratification.chiefExecutiveOfficerDate).toLocaleString() : ''}
                         </div>
@@ -781,10 +781,10 @@ export const AntitrustCompetitionNexusModal: React.FC<Props> = ({ isOpen, onClos
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
                   {overview.auditLogs.map((l) => (
-                    <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090e1a', padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.78rem' }}>
+                    <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--custom-090e1a)', padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.78rem' }}>
                       <div>
-                        <span style={{ fontWeight: '700', color: '#f8fafc' }}>{l.headline}</span>
-                        <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>{l.details}</div>
+                        <span style={{ fontWeight: '700', color: 'var(--slate-50)' }}>{l.headline}</span>
+                        <div style={{ color: 'var(--slate-400)', fontSize: '0.72rem' }}>{l.details}</div>
                       </div>
                       <span className="antitrust-nexus-badge antitrust-badge-cyan">{new Date(l.eventTimestamp).toLocaleDateString()}</span>
                     </div>

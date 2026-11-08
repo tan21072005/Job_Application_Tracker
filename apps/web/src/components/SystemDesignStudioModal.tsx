@@ -241,7 +241,7 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
 
         <div className="sds-scenario-bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--slate-800)' }}>
               Kịch bản:
             </span>
             <select
@@ -255,7 +255,7 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
                 </option>
               ))}
             </select>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>
+            <span style={{ fontSize: '12px', color: 'var(--slate-500)' }}>
               Mục tiêu role:
             </span>
             <input
@@ -320,7 +320,7 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
             <Award className="w-4 h-4" />
             5. Đánh Giá Khảo Sát AI
             {evaluation && (
-              <span className="sds-tab-badge" style={{ background: '#dcfce7', color: '#166534' }}>
+              <span className="sds-tab-badge" style={{ background: 'var(--green-100)', color: 'var(--green-800)' }}>
                 {evaluation.overallScore}đ
               </span>
             )}
@@ -330,16 +330,16 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
         <div className="sds-body">
           {activeTab === 'scope' && (
             <>
-              <div className="sds-card" style={{ background: '#f8fafc', borderColor: '#cbd5e1' }}>
+              <div className="sds-card" style={{ background: 'var(--slate-50)', borderColor: 'var(--slate-300)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                   <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', margin: '0 0 4px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--slate-900)', margin: '0 0 4px' }}>
                       {currentScenario.title}
                     </h3>
-                    <p style={{ fontSize: '12.5px', color: '#475569', margin: '0 0 8px' }}>
+                    <p style={{ fontSize: '12.5px', color: 'var(--slate-600)', margin: '0 0 8px' }}>
                       {currentScenario.tagline}
                     </p>
-                    <div style={{ fontSize: '12px', color: '#334155', background: '#ffffff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--slate-700)', background: 'var(--white)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--slate-200)' }}>
                       <strong>Bài toán thực tế:</strong> {currentScenario.problemStatement}
                     </div>
                   </div>
@@ -349,7 +349,7 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
               <div className="sds-grid-2">
                 <div className="sds-card">
                   <h4 className="sds-card-title">
-                    <Zap className="w-4 h-4" style={{ color: '#2563eb' }} />
+                    <Zap className="w-4 h-4" style={{ color: 'var(--blue-600)' }} />
                     Yêu cầu Chức năng (Functional Requirements)
                   </h4>
                   <ul className="sds-list-bullet">
@@ -361,7 +361,7 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
 
                 <div className="sds-card">
                   <h4 className="sds-card-title">
-                    <Activity className="w-4 h-4" style={{ color: '#059669' }} />
+                    <Activity className="w-4 h-4" style={{ color: 'var(--emerald-600)' }} />
                     Yêu cầu Phi chức năng (Non-Functional Requirements)
                   </h4>
                   <ul className="sds-list-bullet">
@@ -375,10 +375,10 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
               <div className="sds-grid-3">
                 <div className="sds-metric-card">
                   <span className="sds-metric-lbl">Mục tiêu Độ sẵn sàng (SLA Uptime)</span>
-                  <span className="sds-metric-val" style={{ color: '#059669' }}>
+                  <span className="sds-metric-val" style={{ color: 'var(--emerald-600)' }}>
                     {blueprint.scope.slaTargetUptime}
                   </span>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>Cho phép downtime tối đa 52 phút/năm</span>
+                  <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>Cho phép downtime tối đa 52 phút/năm</span>
                 </div>
 
                 <div className="sds-metric-card">
@@ -386,12 +386,12 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
                   <span className="sds-metric-val">
                     &lt; {blueprint.scope.latencyTargetP99Ms} ms
                   </span>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>Đo lường tại Edge CDN / Load Balancer</span>
+                  <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>Đo lường tại Edge CDN / Load Balancer</span>
                 </div>
 
                 <div className="sds-metric-card">
                   <span className="sds-metric-lbl">Quy mô kỳ vọng</span>
-                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', marginTop: '4px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--slate-900)', marginTop: '4px' }}>
                     {currentScenario.scaleExpectations}
                   </span>
                 </div>
@@ -403,7 +403,7 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
             <>
               <div className="sds-card">
                 <h4 className="sds-card-title">
-                  <Calculator className="w-4 h-4" style={{ color: '#2563eb' }} />
+                  <Calculator className="w-4 h-4" style={{ color: 'var(--blue-600)' }} />
                   Tham số Đầu vào Hệ thống (Capacity Planning Input)
                 </h4>
                 <div className="sds-grid-4" style={{ marginTop: '10px' }}>
@@ -486,72 +486,72 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
                 <div className="sds-metric-card">
                   <span className="sds-metric-lbl">Lưu lượng Đọc TB / Đỉnh</span>
                   <span className="sds-metric-val">
-                    {capacityEstimates.averageReadQps.toLocaleString()} <span style={{ fontSize: '13px', color: '#64748b' }}>QPS</span>
+                    {capacityEstimates.averageReadQps.toLocaleString()} <span style={{ fontSize: '13px', color: 'var(--slate-500)' }}>QPS</span>
                   </span>
-                  <span style={{ fontSize: '12px', color: '#d97706', fontWeight: '700' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--amber-600)', fontWeight: '700' }}>
                     Đỉnh: {capacityEstimates.peakReadQps.toLocaleString()} QPS
                   </span>
                 </div>
 
                 <div className="sds-metric-card">
                   <span className="sds-metric-lbl">Lưu lượng Ghi TB / Đỉnh</span>
-                  <span className="sds-metric-val" style={{ color: '#059669' }}>
-                    {capacityEstimates.averageWriteQps.toLocaleString()} <span style={{ fontSize: '13px', color: '#64748b' }}>QPS</span>
+                  <span className="sds-metric-val" style={{ color: 'var(--emerald-600)' }}>
+                    {capacityEstimates.averageWriteQps.toLocaleString()} <span style={{ fontSize: '13px', color: 'var(--slate-500)' }}>QPS</span>
                   </span>
-                  <span style={{ fontSize: '12px', color: '#059669', fontWeight: '700' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--emerald-600)', fontWeight: '700' }}>
                     Đỉnh: {capacityEstimates.peakWriteQps.toLocaleString()} QPS
                   </span>
                 </div>
 
                 <div className="sds-metric-card">
                   <span className="sds-metric-lbl">Băng thông Ra / Vào (Egress / Ingress)</span>
-                  <span className="sds-metric-val" style={{ color: '#0284c7' }}>
-                    {capacityEstimates.egressBandwidthMbps} <span style={{ fontSize: '13px', color: '#64748b' }}>Mbps</span>
+                  <span className="sds-metric-val" style={{ color: 'var(--sky-600)' }}>
+                    {capacityEstimates.egressBandwidthMbps} <span style={{ fontSize: '13px', color: 'var(--slate-500)' }}>Mbps</span>
                   </span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--slate-500)' }}>
                     Ingress: {capacityEstimates.ingressBandwidthMbps} Mbps
                   </span>
                 </div>
 
                 <div className="sds-metric-card">
                   <span className="sds-metric-lbl">Tổng Dung Lượng {capacityInput.dataRetentionYears} Năm</span>
-                  <span className="sds-metric-val" style={{ color: '#7c3aed' }}>
-                    {capacityEstimates.retentionTotalStorageTb} <span style={{ fontSize: '13px', color: '#64748b' }}>TB</span>
+                  <span className="sds-metric-val" style={{ color: 'var(--violet-600)' }}>
+                    {capacityEstimates.retentionTotalStorageTb} <span style={{ fontSize: '13px', color: 'var(--slate-500)' }}>TB</span>
                   </span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--slate-500)' }}>
                     Mỗi năm: {capacityEstimates.annualStorageGb.toLocaleString()} GB
                   </span>
                 </div>
               </div>
 
-              <div className="sds-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                <h4 className="sds-card-title" style={{ color: '#166534' }}>
+              <div className="sds-card" style={{ background: 'var(--green-50)', border: '1px solid var(--green-200)' }}>
+                <h4 className="sds-card-title" style={{ color: 'var(--green-800)' }}>
                   <Server className="w-4 h-4" />
                   Khuyến Nghị Phần Cứng & Định Cỡ Cụm (Hardware Sizing)
                 </h4>
                 <div className="sds-grid-3" style={{ marginTop: '6px' }}>
-                  <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #dcfce7' }}>
-                    <div style={{ fontSize: '12px', color: '#166534', fontWeight: '600' }}>App Servers (2,000 QPS/node)</div>
-                    <div style={{ fontSize: '22px', fontWeight: '900', color: '#15803d' }}>
+                  <div style={{ background: 'var(--white)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--green-100)' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--green-800)', fontWeight: '600' }}>App Servers (2,000 QPS/node)</div>
+                    <div style={{ fontSize: '22px', fontWeight: '900', color: 'var(--green-700)' }}>
                       {capacityEstimates.recommendedAppServers} Instances
                     </div>
-                    <div style={{ fontSize: '11px', color: '#4b5563' }}>Phân bổ sau NLB/ALB có Auto-scaling</div>
+                    <div style={{ fontSize: '11px', color: 'var(--gray-600)' }}>Phân bổ sau NLB/ALB có Auto-scaling</div>
                   </div>
 
-                  <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #dcfce7' }}>
-                    <div style={{ fontSize: '12px', color: '#166534', fontWeight: '600' }}>Cache Memory (Working Set RAM)</div>
-                    <div style={{ fontSize: '22px', fontWeight: '900', color: '#15803d' }}>
+                  <div style={{ background: 'var(--white)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--green-100)' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--green-800)', fontWeight: '600' }}>Cache Memory (Working Set RAM)</div>
+                    <div style={{ fontSize: '22px', fontWeight: '900', color: 'var(--green-700)' }}>
                       {capacityEstimates.cacheMemoryRequiredGb} GB ({capacityEstimates.recommendedCacheNodes} cụm 32GB)
                     </div>
-                    <div style={{ fontSize: '11px', color: '#4b5563' }}>Đáp ứng quy tắc Pareto 80/20</div>
+                    <div style={{ fontSize: '11px', color: 'var(--gray-600)' }}>Đáp ứng quy tắc Pareto 80/20</div>
                   </div>
 
-                  <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #dcfce7' }}>
-                    <div style={{ fontSize: '12px', color: '#166534', fontWeight: '600' }}>Database Shards (4TB / shard)</div>
-                    <div style={{ fontSize: '22px', fontWeight: '900', color: '#15803d' }}>
+                  <div style={{ background: 'var(--white)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--green-100)' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--green-800)', fontWeight: '600' }}>Database Shards (4TB / shard)</div>
+                    <div style={{ fontSize: '22px', fontWeight: '900', color: 'var(--green-700)' }}>
                       {capacityEstimates.recommendedDbShards} Shards
                     </div>
-                    <div style={{ fontSize: '11px', color: '#4b5563' }}>Phân vùng theo Consistent Hashing</div>
+                    <div style={{ fontSize: '11px', color: 'var(--gray-600)' }}>Phân vùng theo Consistent Hashing</div>
                   </div>
                 </div>
               </div>
@@ -563,7 +563,7 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
               <div className="sds-grid-2">
                 <div className="sds-card">
                   <h4 className="sds-card-title">
-                    <Workflow className="w-4 h-4" style={{ color: '#2563eb' }} />
+                    <Workflow className="w-4 h-4" style={{ color: 'var(--blue-600)' }} />
                     Sơ Đồ Kiến Trúc Topology (Mermaid Code)
                   </h4>
                   <div className="sds-code-block sds-mermaid-preview">
@@ -573,19 +573,19 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
 
                 <div className="sds-card">
                   <h4 className="sds-card-title">
-                    <Server className="w-4 h-4" style={{ color: '#059669' }} />
+                    <Server className="w-4 h-4" style={{ color: 'var(--emerald-600)' }} />
                     Các Thành Phần Lõi (Core Components)
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {blueprint.highLevelDesign.coreComponents.map((comp, idx) => (
-                      <div key={idx} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div key={idx} style={{ padding: '8px 12px', background: 'var(--slate-50)', borderRadius: '8px', border: '1px solid var(--slate-200)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{comp.name}</span>
-                          <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '6px', background: '#e0e7ff', color: '#3730a3', fontWeight: '600' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--slate-900)' }}>{comp.name}</span>
+                          <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '6px', background: 'var(--indigo-100)', color: 'var(--indigo-800)', fontWeight: '600' }}>
                             {comp.type.toUpperCase()}
                           </span>
                         </div>
-                        <div style={{ fontSize: '12px', color: '#475569', marginTop: '3px' }}>{comp.purpose}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--slate-600)', marginTop: '3px' }}>{comp.purpose}</div>
                       </div>
                     ))}
                   </div>
@@ -594,27 +594,27 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
 
               <div className="sds-card">
                 <h4 className="sds-card-title">
-                  <Zap className="w-4 h-4" style={{ color: '#d97706' }} />
+                  <Zap className="w-4 h-4" style={{ color: 'var(--amber-600)' }} />
                   Hợp Đồng API (API Endpoints Contract)
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
                   {blueprint.highLevelDesign.apiEndpoints.map((api, idx) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '8px' }}>
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--white)', borderRadius: '8px', border: '1px solid var(--slate-200)', flexWrap: 'wrap', gap: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{
                           fontSize: '11px',
                           fontWeight: '800',
                           padding: '3px 8px',
                           borderRadius: '6px',
-                          background: api.method === 'GET' ? '#dbeafe' : api.method === 'POST' ? '#dcfce7' : '#fef3c7',
-                          color: api.method === 'GET' ? '#1e40af' : api.method === 'POST' ? '#166534' : '#b45309'
+                          background: api.method === 'GET' ? 'var(--blue-100)' : api.method === 'POST' ? 'var(--green-100)' : 'var(--amber-100)',
+                          color: api.method === 'GET' ? 'var(--blue-800)' : api.method === 'POST' ? 'var(--green-800)' : 'var(--amber-700)'
                         }}>
                           {api.method}
                         </span>
-                        <code style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{api.path}</code>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>({api.protocol})</span>
+                        <code style={{ fontSize: '13px', fontWeight: '700', color: 'var(--slate-900)' }}>{api.path}</code>
+                        <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>({api.protocol})</span>
                       </div>
-                      <span style={{ fontSize: '12.5px', color: '#334155' }}>{api.description}</span>
+                      <span style={{ fontSize: '12.5px', color: 'var(--slate-700)' }}>{api.description}</span>
                     </div>
                   ))}
                 </div>
@@ -627,31 +627,31 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
               <div className="sds-grid-2">
                 <div className="sds-card">
                   <h4 className="sds-card-title">
-                    <Database className="w-4 h-4" style={{ color: '#2563eb' }} />
+                    <Database className="w-4 h-4" style={{ color: 'var(--blue-600)' }} />
                     Thiết Kế CSDL & Caching (Data Layer)
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                      <span style={{ color: '#64748b', fontWeight: '600' }}>Cơ sở dữ liệu:</span>
-                      <span style={{ fontWeight: '700', color: '#0f172a', textTransform: 'uppercase' }}>
+                      <span style={{ color: 'var(--slate-500)', fontWeight: '600' }}>Cơ sở dữ liệu:</span>
+                      <span style={{ fontWeight: '700', color: 'var(--slate-900)', textTransform: 'uppercase' }}>
                         {blueprint.deepDive.databaseEngine}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                      <span style={{ color: '#64748b', fontWeight: '600' }}>Chiến lược Caching:</span>
-                      <span style={{ fontWeight: '700', color: '#2563eb' }}>
+                      <span style={{ color: 'var(--slate-500)', fontWeight: '600' }}>Chiến lược Caching:</span>
+                      <span style={{ fontWeight: '700', color: 'var(--blue-600)' }}>
                         {blueprint.deepDive.cachingStrategy} (TTL: {blueprint.deepDive.cacheTtlSeconds}s)
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                      <span style={{ color: '#64748b', fontWeight: '600' }}>Chiến lược Phân vùng:</span>
-                      <span style={{ fontWeight: '700', color: '#059669' }}>
+                      <span style={{ color: 'var(--slate-500)', fontWeight: '600' }}>Chiến lược Phân vùng:</span>
+                      <span style={{ fontWeight: '700', color: 'var(--emerald-600)' }}>
                         {blueprint.deepDive.partitionStrategy}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                      <span style={{ color: '#64748b', fontWeight: '600' }}>Mô hình Nhất quán:</span>
-                      <span style={{ fontWeight: '700', color: '#7c3aed' }}>
+                      <span style={{ color: 'var(--slate-500)', fontWeight: '600' }}>Mô hình Nhất quán:</span>
+                      <span style={{ fontWeight: '700', color: 'var(--violet-600)' }}>
                         {blueprint.deepDive.consistencyModel}
                       </span>
                     </div>
@@ -660,10 +660,10 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
 
                 <div className="sds-card">
                   <h4 className="sds-card-title">
-                    <Activity className="w-4 h-4" style={{ color: '#059669' }} />
+                    <Activity className="w-4 h-4" style={{ color: 'var(--emerald-600)' }} />
                     Kiểm Soát Tranh Chấp & Concurrency
                   </h4>
-                  <div style={{ fontSize: '12.5px', color: '#334155', lineHeight: '1.6', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '12.5px', color: 'var(--slate-700)', lineHeight: '1.6', background: 'var(--slate-50)', padding: '12px', borderRadius: '8px', border: '1px solid var(--slate-200)' }}>
                     {blueprint.deepDive.concurrencyControl}
                   </div>
                 </div>
@@ -671,20 +671,20 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
 
               <div className="sds-card">
                 <h4 className="sds-card-title">
-                  <ShieldAlert className="w-4 h-4" style={{ color: '#dc2626' }} />
+                  <ShieldAlert className="w-4 h-4" style={{ color: 'var(--red-600)' }} />
                   Chống Điểm Nghẽn Đơn Độc (SPOF) & Phục Hồi Thảm Họa
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
                   {blueprint.resilience.singlePointsOfFailure.map((spof, idx) => (
-                    <div key={idx} style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '12.5px', color: '#991b1b' }}>
+                    <div key={idx} style={{ padding: '10px 14px', background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: '8px', fontSize: '12.5px', color: 'var(--red-800)' }}>
                       <strong>SPOF #{idx + 1}:</strong> {spof}
                     </div>
                   ))}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px', marginTop: '4px' }}>
-                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}>
+                    <div style={{ background: 'var(--slate-50)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--slate-200)', fontSize: '12px' }}>
                       <strong>Rate Limiting:</strong> {blueprint.resilience.rateLimitingStrategy}
                     </div>
-                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}>
+                    <div style={{ background: 'var(--slate-50)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--slate-200)', fontSize: '12px' }}>
                       <strong>Circuit Breaker:</strong> {blueprint.resilience.circuitBreakerPolicy}
                     </div>
                   </div>
@@ -699,16 +699,16 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
                 <>
                   <div className="sds-score-banner">
                     <div>
-                      <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#94a3b8', fontWeight: '700' }}>
+                      <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--slate-400)', fontWeight: '700' }}>
                         Điểm Đánh Giá Kiến Trúc Tổng Thể (FAANG Rubric)
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '4px' }}>
                         <span className="sds-score-big">{evaluation.overallScore}</span>
                         <div>
-                          <div style={{ fontSize: '18px', fontWeight: '800', color: '#ffffff' }}>
+                          <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--white)' }}>
                             {evaluation.seniorityVerdict}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                          <div style={{ fontSize: '12px', color: 'var(--slate-300)' }}>
                             Mục tiêu thẩm định: {targetRole}
                           </div>
                         </div>
@@ -720,7 +720,7 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
                         onClick={runAiEvaluation}
                         disabled={evaluating}
                         className="sds-btn-primary"
-                        style={{ background: '#38bdf8', color: '#0f172a' }}
+                        style={{ background: 'var(--sky-400)', color: 'var(--slate-900)' }}
                       >
                         <Sparkles className="w-4 h-4" />
                         {evaluating ? 'Đang thẩm định...' : 'Chấm Lại Điểm AI'}
@@ -732,13 +732,13 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
                     {evaluation.pillars.map((p, idx) => (
                       <div key={idx} className="sds-pillar-card">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{p.name}</span>
-                          <span style={{ fontSize: '14px', fontWeight: '800', color: '#2563eb' }}>{p.score}%</span>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--slate-900)' }}>{p.name}</span>
+                          <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--blue-600)' }}>{p.score}%</span>
                         </div>
                         <div className="sds-bar-bg">
                           <div className="sds-bar-fill" style={{ width: `${p.score}%` }} />
                         </div>
-                        <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '4px' }}>
+                        <div style={{ fontSize: '11.5px', color: 'var(--slate-600)', marginTop: '4px' }}>
                           {p.feedback}
                         </div>
                       </div>
@@ -746,26 +746,26 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
                   </div>
 
                   <div className="sds-grid-2">
-                    <div className="sds-card" style={{ background: '#f0fdf4', borderColor: '#bbf7d0' }}>
-                      <h4 className="sds-card-title" style={{ color: '#166534' }}>
+                    <div className="sds-card" style={{ background: 'var(--green-50)', borderColor: 'var(--green-200)' }}>
+                      <h4 className="sds-card-title" style={{ color: 'var(--green-800)' }}>
                         <Check className="w-4 h-4" />
                         Điểm Mạnh Kiến Trúc Đáng Khen (Top Strengths)
                       </h4>
                       <ul className="sds-list-bullet">
                         {evaluation.topStrengths.map((str, idx) => (
-                          <li key={idx} style={{ color: '#166534', marginBottom: '6px' }}>{str}</li>
+                          <li key={idx} style={{ color: 'var(--green-800)', marginBottom: '6px' }}>{str}</li>
                         ))}
                       </ul>
                     </div>
 
-                    <div className="sds-card" style={{ background: '#fff1f2', borderColor: '#fecdd3' }}>
-                      <h4 className="sds-card-title" style={{ color: '#9f1239' }}>
+                    <div className="sds-card" style={{ background: 'var(--rose-50)', borderColor: 'var(--rose-200)' }}>
+                      <h4 className="sds-card-title" style={{ color: 'var(--rose-800)' }}>
                         <ShieldAlert className="w-4 h-4" />
                         Lỗ Hổng Cần Đào Sâu (Critical Gaps)
                       </h4>
                       <ul className="sds-list-bullet">
                         {evaluation.criticalGaps.map((gap, idx) => (
-                          <li key={idx} style={{ color: '#9f1239', marginBottom: '6px' }}>{gap}</li>
+                          <li key={idx} style={{ color: 'var(--rose-800)', marginBottom: '6px' }}>{gap}</li>
                         ))}
                       </ul>
                     </div>
@@ -773,22 +773,22 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
 
                   <div className="sds-card">
                     <h4 className="sds-card-title">
-                      <ArrowRight className="w-4 h-4" style={{ color: '#2563eb' }} />
+                      <ArrowRight className="w-4 h-4" style={{ color: 'var(--blue-600)' }} />
                       Phân Tích Đánh Đổi Chiến Lược (Trade-Off Analysis)
                     </h4>
-                    <p style={{ fontSize: '12.5px', color: '#334155', lineHeight: '1.6', margin: '4px 0 0' }}>
+                    <p style={{ fontSize: '12.5px', color: 'var(--slate-700)', lineHeight: '1.6', margin: '4px 0 0' }}>
                       {evaluation.tradeOffAnalysis}
                     </p>
                   </div>
                 </>
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-                  <Award className="w-12 h-12" style={{ color: '#94a3b8' }} />
+                  <Award className="w-12 h-12" style={{ color: 'var(--slate-400)' }} />
                   <div>
-                    <h4 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: '0 0 6px' }}>
+                    <h4 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--slate-900)', margin: '0 0 6px' }}>
                       Chưa có kết quả đánh giá AI cho bản thiết kế này
                     </h4>
-                    <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '480px', margin: '0' }}>
+                    <p style={{ fontSize: '13px', color: 'var(--slate-500)', maxWidth: '480px', margin: '0' }}>
                       Nhấn nút bên dưới để AI kiểm tra 4 giai đoạn thiết kế, đối chiếu tiêu chuẩn Senior/Staff/Principal và chấm điểm 5 trụ cột.
                     </p>
                   </div>
@@ -814,7 +814,7 @@ export function SystemDesignStudioModal({ onClose, notify }: SystemDesignStudioM
               className="sds-btn-secondary sds-copy-btn"
               title="Sao chép toàn bộ bản thiết kế sang định dạng Markdown"
             >
-              {copied ? <Check className="w-4 h-4" style={{ color: '#166534' }} /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4" style={{ color: 'var(--green-800)' }} /> : <Copy className="w-4 h-4" />}
               {copied ? 'Đã sao chép!' : 'Sao Chép Markdown & Mermaid'}
             </button>
             <button

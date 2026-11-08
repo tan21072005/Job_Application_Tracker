@@ -54,11 +54,11 @@ Chưa công khai mức lương, bạn gửi CV qua Zalo hoặc điện thoại �
 };
 
 const RELATIONSHIP_LABELS: Record<RecruiterRelationshipTier, { label: string; color: string; bg: string }> = {
-  trusted_advisor: { label: 'Đối tác chiến lược (Trusted)', color: '#b45309', bg: '#fef3c7' },
-  preferred_partner: { label: 'Ưu tiên hợp tác (Preferred)', color: '#15803d', bg: '#dcfce7' },
-  situational_contingency: { label: 'Tùy cơ hội (Contingency)', color: '#475569', bg: '#f1f5f9' },
-  dormant: { label: 'Đóng băng (Dormant)', color: '#64748b', bg: '#e2e8f0' },
-  blacklisted: { label: 'Cảnh báo rủi ro (Blacklist)', color: '#b91c1c', bg: '#fee2e2' }
+  trusted_advisor: { label: 'Đối tác chiến lược (Trusted)', color: 'var(--amber-700)', bg: 'var(--amber-100)' },
+  preferred_partner: { label: 'Ưu tiên hợp tác (Preferred)', color: 'var(--green-700)', bg: 'var(--green-100)' },
+  situational_contingency: { label: 'Tùy cơ hội (Contingency)', color: 'var(--slate-600)', bg: 'var(--slate-100)' },
+  dormant: { label: 'Đóng băng (Dormant)', color: 'var(--slate-500)', bg: 'var(--slate-200)' },
+  blacklisted: { label: 'Cảnh báo rủi ro (Blacklist)', color: 'var(--red-700)', bg: 'var(--red-100)' }
 };
 
 const AGENCY_TIER_LABELS: Record<HeadhunterAgencyTier, string> = {
@@ -70,10 +70,10 @@ const AGENCY_TIER_LABELS: Record<HeadhunterAgencyTier, string> = {
 };
 
 const EXCLUSIVITY_LABELS: Record<MandateExclusivity, { label: string; color: string }> = {
-  exclusive_retained: { label: 'Độc quyền Retained', color: '#15803d' },
-  contingency_shared: { label: 'Contingency Cạnh tranh', color: '#b45309' },
-  internal_direct: { label: 'Tuyển dụng Trực tiếp', color: '#4338ca' },
-  unconfirmed: { label: 'Chưa xác nhận độc quyền', color: '#64748b' }
+  exclusive_retained: { label: 'Độc quyền Retained', color: 'var(--green-700)' },
+  contingency_shared: { label: 'Contingency Cạnh tranh', color: 'var(--amber-700)' },
+  internal_direct: { label: 'Tuyển dụng Trực tiếp', color: 'var(--indigo-700)' },
+  unconfirmed: { label: 'Chưa xác nhận độc quyền', color: 'var(--slate-500)' }
 };
 
 export function HeadhunterCrmModal({
@@ -388,7 +388,7 @@ export function HeadhunterCrmModal({
                       <UserCheck className="w-4 h-4 text-amber-600" />
                       Thêm Chuyên Viên Săn Đầu Người (Recruiter) Mới
                     </h4>
-                    <button onClick={() => setShowAddLead(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
+                    <button onClick={() => setShowAddLead(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--slate-400)' }}>
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -462,9 +462,9 @@ export function HeadhunterCrmModal({
               )}
 
               {loading ? (
-                <div style={{ padding: '40px 0', textAlign: 'center', color: '#64748b' }}>Đang tải danh bạ...</div>
+                <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--slate-500)' }}>Đang tải danh bạ...</div>
               ) : filteredLeads.length === 0 ? (
-                <div style={{ padding: '40px 0', textAlign: 'center', color: '#64748b' }}>
+                <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--slate-500)' }}>
                   Không tìm thấy headhunter nào phù hợp với bộ lọc.
                 </div>
               ) : (
@@ -527,7 +527,7 @@ export function HeadhunterCrmModal({
 
                         <div className="hh-card-footer">
                           <div className="hh-footer-left">
-                            <span>Mandates: <strong style={{ color: '#0f172a' }}>{lead.mandatesCount}</strong></span>
+                            <span>Mandates: <strong style={{ color: 'var(--slate-900)' }}>{lead.mandatesCount}</strong></span>
                             <div className="hh-stars">
                               {[...Array(lead.rating || 4)].map((_, i) => (
                                 <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
@@ -570,13 +570,13 @@ export function HeadhunterCrmModal({
                       <Sparkles className="w-4 h-4 text-amber-600" />
                       Bóc Tách Tin Nhắn Săn Đầu Người (Inbound Pitch Ingestion)
                     </h3>
-                    <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>
+                    <p style={{ fontSize: '12px', color: 'var(--slate-500)', margin: '2px 0 0' }}>
                       Dán tin nhắn từ LinkedIn InMail, Email hoặc Zalo để AI nhận diện mức lương, độc quyền và tín hiệu cảnh báo
                     </p>
                   </div>
 
                   <div className="hh-presets-row">
-                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>Gợi ý mẫu:</span>
+                    <span style={{ fontSize: '11.5px', color: 'var(--slate-500)' }}>Gợi ý mẫu:</span>
                     <button
                       onClick={() => setPitchText(SAMPLE_PITCH_PRESETS.robert_walters_retained)}
                       className="hh-chip-btn"
@@ -599,7 +599,7 @@ export function HeadhunterCrmModal({
                 </div>
 
                 <div className="hh-channel-row">
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Kênh tiếp cận:</span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate-700)' }}>Kênh tiếp cận:</span>
                   {(['linkedin_inmail', 'email', 'zalo', 'telegram'] as const).map(ch => (
                     <button
                       key={ch}
@@ -620,7 +620,7 @@ export function HeadhunterCrmModal({
                 />
 
                 <div className="hh-inbound-action-row">
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--slate-500)' }}>
                     Hệ thống tự động phát hiện dải lương, công ty stealth và rủi ro tranh chấp hồ sơ
                   </span>
                   <button
@@ -639,15 +639,15 @@ export function HeadhunterCrmModal({
                   <div className="hh-parsed-card">
                     <div className="hh-parsed-header">
                       <div>
-                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--slate-400)', fontWeight: 700, textTransform: 'uppercase' }}>
                           Kết Quả Trích Xuất Thông Minh
                         </span>
-                        <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', margin: '2px 0 0' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--slate-900)', margin: '2px 0 0' }}>
                           {parsedPitch.targetRole} @ {parsedPitch.targetCompany}
                         </h3>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '11.5px', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: '#fef3c7', color: '#92400e' }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: 'var(--amber-100)', color: 'var(--amber-800)' }}>
                           Độ tin cậy: {parsedPitch.confidenceScore}%
                         </span>
                         <span
@@ -668,32 +668,32 @@ export function HeadhunterCrmModal({
 
                     <div className="hh-parsed-grid">
                       <div className="hh-parsed-stat-box">
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>Recruiter & Agency:</span>
-                        <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>Recruiter & Agency:</span>
+                        <strong style={{ fontSize: '13.5px', color: 'var(--slate-900)' }}>
                           {parsedPitch.recruiterName || 'Chưa rõ tên'}
                         </strong>
-                        <span style={{ fontSize: '11.5px', color: '#b45309', fontWeight: 600 }}>
+                        <span style={{ fontSize: '11.5px', color: 'var(--amber-700)', fontWeight: 600 }}>
                           {parsedPitch.agencyName} ({AGENCY_TIER_LABELS[parsedPitch.agencyTier]})
                         </span>
                       </div>
 
                       <div className="hh-parsed-stat-box">
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>Dải Đãi Ngộ Dự Kiến:</span>
-                        <strong style={{ fontSize: '13.5px', color: '#047857', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>Dải Đãi Ngộ Dự Kiến:</span>
+                        <strong style={{ fontSize: '13.5px', color: 'var(--emerald-700)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <DollarSign className="w-4 h-4" />
                           {parsedPitch.salaryClue || 'Không công khai (Cần hỏi sàn)'}
                         </strong>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>
                           {parsedPitch.currency ? `Đơn vị: ${parsedPitch.currency}` : 'Chưa rõ đơn vị'}
                         </span>
                       </div>
 
                       <div className="hh-parsed-stat-box">
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>Địa điểm & Chế độ:</span>
-                        <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>Địa điểm & Chế độ:</span>
+                        <strong style={{ fontSize: '13.5px', color: 'var(--slate-900)' }}>
                           {parsedPitch.location || 'TP. Hồ Chí Minh / Hybrid'}
                         </strong>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>
                           {parsedPitch.isConfidentialCompany ? 'Doanh nghiệp bảo mật' : 'Doanh nghiệp công khai'}
                         </span>
                       </div>
@@ -702,7 +702,7 @@ export function HeadhunterCrmModal({
                     <div className="hh-flags-grid">
                       {parsedPitch.greenFlags.length > 0 && (
                         <div className="hh-flags-box-green">
-                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#14532d', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--green-900)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                             Điểm sáng & Tín hiệu tích cực (Green Flags):
                           </div>
@@ -718,7 +718,7 @@ export function HeadhunterCrmModal({
 
                       {parsedPitch.redFlags.length > 0 && (
                         <div className="hh-flags-box-red">
-                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#881337', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rose-900)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <AlertTriangle className="w-4 h-4 text-rose-600" />
                             Dấu hiệu cảnh báo nguy cơ (Red Flags):
                           </div>
@@ -742,7 +742,7 @@ export function HeadhunterCrmModal({
                             <Send className="w-4 h-4 text-amber-600" />
                             Soạn Thảo Phản Hồi Chiến Lược (1-Click Strategic Reply)
                           </h4>
-                          <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>
+                          <p style={{ fontSize: '12px', color: 'var(--slate-500)', margin: '2px 0 0' }}>
                             {replyDraft.strategyNotes}
                           </p>
                         </div>
@@ -789,7 +789,7 @@ export function HeadhunterCrmModal({
                         <button
                           onClick={handleSaveParsedLeadAndMandate}
                           className="hh-btn-primary save-lead-btn"
-                          style={{ background: '#0f172a' }}
+                          style={{ background: 'var(--slate-900)' }}
                         >
                           <Plus className="w-4 h-4" />
                           Lưu vào Danh bạ & Tạo Mandate
@@ -825,10 +825,10 @@ export function HeadhunterCrmModal({
                 <div className="hh-conflict-banner">
                   <AlertOctagon className="w-5 h-5 text-rose-600 shrink-0" style={{ marginTop: '2px' }} />
                   <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#881337', margin: 0 }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 800, color: 'var(--rose-900)', margin: 0 }}>
                       Cảnh Báo Xung Đột Quyền Đại Diện (Double-Submission Risk)!
                     </h4>
-                    <p style={{ fontSize: '12px', color: '#9f1239', margin: '4px 0 0', lineHeight: 1.5 }}>
+                    <p style={{ fontSize: '12px', color: 'var(--rose-800)', margin: '4px 0 0', lineHeight: 1.5 }}>
                       Phát hiện nhiều hơn một headhunter cùng tiếp cận cho vị trí tại cùng một khách hàng doanh nghiệp ({duplicateMandates.map(m => m.clientCompany).join(', ')}). 
                       Vui lòng yêu cầu văn bản xác nhận quyền đại diện độc quyền trước khi cho phép nộp CV để tránh bị hệ thống ATS của doanh nghiệp khóa hồ sơ 6-12 tháng.
                     </p>
@@ -836,21 +836,21 @@ export function HeadhunterCrmModal({
                 </div>
               )}
 
-              <div style={{ background: '#ffffff', padding: '20px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+              <div style={{ background: 'var(--white)', padding: '20px', borderRadius: '14px', border: '1px solid var(--slate-200)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--slate-100)', paddingBottom: '12px' }}>
                   <div>
-                    <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--slate-900)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Briefcase className="w-4 h-4 text-indigo-600" />
                       Danh Sách Mandate Tuyển Dụng Đang Theo Dõi
                     </h3>
-                    <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>
+                    <p style={{ fontSize: '12px', color: 'var(--slate-500)', margin: '2px 0 0' }}>
                       Theo dõi nguồn tiếp cận, hợp đồng độc quyền và phòng tránh nộp trùng hồ sơ
                     </p>
                   </div>
                 </div>
 
                 {mandates.length === 0 ? (
-                  <div style={{ padding: '32px 0', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>
+                  <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--slate-500)', fontSize: '12px' }}>
                     Chưa có mandate nào được ghi nhận. Hãy bóc tách InMail tại tab Inbound Studio để tạo mandate mới.
                   </div>
                 ) : (
@@ -862,8 +862,8 @@ export function HeadhunterCrmModal({
                       >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <h4 style={{ fontSize: '13.5px', fontWeight: 800, color: '#0f172a', margin: 0 }}>{m.roleTitle}</h4>
-                            <span style={{ fontSize: '11.5px', padding: '2px 7px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontWeight: 600, color: '#334155' }}>
+                            <h4 style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>{m.roleTitle}</h4>
+                            <span style={{ fontSize: '11.5px', padding: '2px 7px', background: 'var(--slate-50)', border: '1px solid var(--slate-200)', borderRadius: '6px', fontWeight: 600, color: 'var(--slate-700)' }}>
                               {m.clientCompany}
                             </span>
                             <span
@@ -879,11 +879,11 @@ export function HeadhunterCrmModal({
                               {EXCLUSIVITY_LABELS[m.exclusivity].label}
                             </span>
                           </div>
-                          <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
-                            Đại diện bởi: <strong style={{ color: '#1e293b' }}>{m.recruiterName}</strong> ({m.agencyName}) · Tiếp cận: {new Date(m.pitchedAt).toLocaleDateString('vi-VN')}
+                          <p style={{ fontSize: '12px', color: 'var(--slate-500)', margin: 0 }}>
+                            Đại diện bởi: <strong style={{ color: 'var(--slate-800)' }}>{m.recruiterName}</strong> ({m.agencyName}) · Tiếp cận: {new Date(m.pitchedAt).toLocaleDateString('vi-VN')}
                           </p>
                           {m.salaryRange && (
-                            <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#047857' }}>
+                            <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--emerald-700)' }}>
                               Ngân sách: {m.salaryRange}
                             </span>
                           )}
@@ -914,7 +914,7 @@ export function HeadhunterCrmModal({
         </div>
 
         <div className="hh-modal-footer">
-          <div style={{ fontSize: '12px', color: '#64748b' }}>
+          <div style={{ fontSize: '12px', color: 'var(--slate-500)' }}>
             Hệ thống CRM cá nhân bảo vệ quyền lợi và vị thế thương lượng của ứng viên cấp cao
           </div>
           <button

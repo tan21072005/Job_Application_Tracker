@@ -2,6 +2,9 @@
 
 :root{font-family:'Noto Sans',sans-serif;color:#17243b;background:#f7f9fc;font-synthesis:none;--canvas:#f7f9fc;--surface:#fff;--ink:#17243b;--text:#17243b;--muted:#52637a;--line:#e0e6ef;--primary:#315bef;--primary-hover:#2447c9;--brand:#315bef;--soft:#edf2ff;--danger:#a92843;--success:#087354;--radius:12px;color-scheme:light;
   --white: #ffffff;
+  --rose-900: #881337;
+  --pink-500: #ec4899;
+  --gray-500: #6b7280;
   --slate-50: #f8fafc;
   --slate-400: #94a3b8;
   --slate-200: #e2e8f0;

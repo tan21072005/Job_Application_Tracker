@@ -300,7 +300,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
 
         <div className="ir-nexus-content">
           {loading && !overview ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--slate-400)' }}>
               Loading institutional capital markets telemetry...
             </div>
           ) : (
@@ -310,21 +310,21 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                   <div className="ir-nexus-grid-3">
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Market Capitalization</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#f59e0b' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--amber-500)' }}>
                         ${((overview?.marketCapUsd || 4837500000) / 1000000000).toFixed(2)}B
                       </div>
                       <div className="ir-nexus-card-sub">Stock Price: ${overview?.stockPriceUsd.toFixed(2)} USD</div>
                     </div>
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Total Shares Outstanding</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#60a5fa' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--blue-400)' }}>
                         {((overview?.sharesOutstanding || 75000000) / 1000000).toFixed(1)}M
                       </div>
                       <div className="ir-nexus-card-sub">Public Float: {((overview?.publicFloatShares || 58500000) / 1000000).toFixed(1)}M Shares</div>
                     </div>
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Activist Vulnerability (AVIS)</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#34d399' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--emerald-400)' }}>
                         {overview?.capTable.activistVulnerability.compositeAvisScore.toFixed(1)} / 100
                       </div>
                       <div className="ir-nexus-card-sub">
@@ -414,7 +414,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           <span className="ir-nexus-pill-gold">
                             {avisSimResult.riskLevel.replace(/_/g, ' ').toUpperCase()}
                           </span>
-                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--slate-400)' }}>
                             Driver: {avisSimResult.primaryVulnerabilityDriver}
                           </span>
                         </div>
@@ -442,7 +442,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                             <td style={{ fontWeight: 600 }}>{sc.shareClassName}</td>
                             <td><span className="ir-nexus-pill-blue">{sc.shareClassType}</span></td>
                             <td>{sc.sharesAuthorized.toLocaleString()}</td>
-                            <td style={{ color: '#f59e0b', fontWeight: 600 }}>{sc.sharesOutstanding.toLocaleString()}</td>
+                            <td style={{ color: 'var(--amber-500)', fontWeight: 600 }}>{sc.sharesOutstanding.toLocaleString()}</td>
                             <td>{sc.votesPerShare}x</td>
                             <td>{sc.isPubliclyTraded ? 'Yes (Nasdaq)' : 'No (Restricted)'}</td>
                             <td><code>{sc.cusip}</code></td>
@@ -472,7 +472,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                             <td style={{ fontWeight: 600 }}>{sh.institutionName}</td>
                             <td><span className="ir-nexus-pill-gold">{sh.investorType.replace(/_/g, ' ')}</span></td>
                             <td>{sh.sharesHeld.toLocaleString()}</td>
-                            <td style={{ color: '#34d399', fontWeight: 700 }}>{sh.percentOwnership.toFixed(2)}%</td>
+                            <td style={{ color: 'var(--emerald-400)', fontWeight: 700 }}>{sh.percentOwnership.toFixed(2)}%</td>
                             <td>{sh.votingPowerPercent.toFixed(2)}%</td>
                             <td><code>{sh.filingType.toUpperCase()}</code></td>
                             <td>
@@ -495,21 +495,21 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                   <div className="ir-nexus-grid-3">
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Reporting Cycle</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#60a5fa' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--blue-400)' }}>
                         {overview?.earnings.fiscalQuarter}
                       </div>
                       <div className="ir-nexus-card-sub">Release: {overview?.earnings.earningsReleaseDate} ({overview?.earnings.timing.replace(/_/g, ' ')})</div>
                     </div>
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Quiet Period Lockout</div>
-                      <div className="ir-nexus-card-val" style={{ color: overview?.earnings.isQuietPeriodActive ? '#f87171' : '#34d399' }}>
+                      <div className="ir-nexus-card-val" style={{ color: overview?.earnings.isQuietPeriodActive ? 'var(--red-400)' : 'var(--emerald-400)' }}>
                         {overview?.earnings.isQuietPeriodActive ? 'ACTIVE LOCKOUT' : 'OPEN WINDOW'}
                       </div>
                       <div className="ir-nexus-card-sub">Commenced: {overview?.earnings.quietPeriodStartDate} (SEC Reg FD Strict Compliance)</div>
                     </div>
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Webcast Streaming</div>
-                      <div className="ir-nexus-card-val" style={{ fontSize: '1rem', color: '#f59e0b', marginTop: '0.5rem' }}>
+                      <div className="ir-nexus-card-val" style={{ fontSize: '1rem', color: 'var(--amber-500)', marginTop: '0.5rem' }}>
                         Dial-in & Webcast Verified
                       </div>
                       <div className="ir-nexus-card-sub"><code>{overview?.earnings.webcastUrl}</code></div>
@@ -534,13 +534,13 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                         {overview?.earnings.consensusMetrics.map((cm, idx) => (
                           <tr key={idx}>
                             <td style={{ fontWeight: 600 }}>{cm.metricName}</td>
-                            <td style={{ color: '#f59e0b', fontWeight: 700 }}>
+                            <td style={{ color: 'var(--amber-500)', fontWeight: 700 }}>
                               {cm.unit === 'usd_per_share' ? `$${cm.consensusMean.toFixed(2)}` : `$${cm.consensusMean.toFixed(2)}M`}
                             </td>
                             <td>{cm.unit === 'usd_per_share' ? `$${cm.consensusMedian.toFixed(2)}` : `$${cm.consensusMedian.toFixed(2)}M`}</td>
                             <td>{cm.unit === 'usd_per_share' ? `$${cm.consensusLow.toFixed(2)} - $${cm.consensusHigh.toFixed(2)}` : `$${cm.consensusLow.toFixed(2)}M - $${cm.consensusHigh.toFixed(2)}M`}</td>
                             <td>{cm.analystCount} firms</td>
-                            <td style={{ color: '#34d399', fontWeight: 600 }}>
+                            <td style={{ color: 'var(--emerald-400)', fontWeight: 600 }}>
                               {cm.unit === 'usd_per_share' ? `$${cm.guidanceMidpoint.toFixed(2)}` : `$${cm.guidanceMidpoint.toFixed(2)}M`}
                             </td>
                             <td>
@@ -566,7 +566,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           type="number"
                           value={gaapNetIncome}
                           onChange={(e) => setGaapNetIncome(parseFloat(e.target.value) || 0)}
-                          style={{ padding: '0.4rem', background: '#080d1a', border: '1px solid #1e293b', color: '#f8fafc', borderRadius: '4px' }}
+                          style={{ padding: '0.4rem', background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', color: 'var(--slate-50)', borderRadius: '4px' }}
                         />
                       </div>
                       <div className="ir-nexus-slider-group">
@@ -575,7 +575,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           type="number"
                           value={stockComp}
                           onChange={(e) => setStockComp(parseFloat(e.target.value) || 0)}
-                          style={{ padding: '0.4rem', background: '#080d1a', border: '1px solid #1e293b', color: '#f8fafc', borderRadius: '4px' }}
+                          style={{ padding: '0.4rem', background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', color: 'var(--slate-50)', borderRadius: '4px' }}
                         />
                       </div>
                       <div className="ir-nexus-slider-group">
@@ -584,7 +584,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           type="number"
                           value={deprAmort}
                           onChange={(e) => setDeprAmort(parseFloat(e.target.value) || 0)}
-                          style={{ padding: '0.4rem', background: '#080d1a', border: '1px solid #1e293b', color: '#f8fafc', borderRadius: '4px' }}
+                          style={{ padding: '0.4rem', background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', color: 'var(--slate-50)', borderRadius: '4px' }}
                         />
                       </div>
                     </div>
@@ -599,10 +599,10 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                       {reconResult && (
                         <div style={{ marginLeft: '1rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                           <span>
-                            Adjusted EBITDA: <strong style={{ color: '#34d399' }}>${(reconResult.adjustedEbitdaUsd / 1000000).toFixed(2)}M</strong>
+                            Adjusted EBITDA: <strong style={{ color: 'var(--emerald-400)' }}>${(reconResult.adjustedEbitdaUsd / 1000000).toFixed(2)}M</strong>
                           </span>
                           <span>
-                            Non-GAAP Net Income: <strong style={{ color: '#60a5fa' }}>${(reconResult.nonGaapNetIncomeUsd / 1000000).toFixed(2)}M</strong>
+                            Non-GAAP Net Income: <strong style={{ color: 'var(--blue-400)' }}>${(reconResult.nonGaapNetIncomeUsd / 1000000).toFixed(2)}M</strong>
                           </span>
                         </div>
                       )}
@@ -611,7 +611,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
 
                   <div className="ir-nexus-card">
                     <div className="ir-nexus-section-title">PSLRA 1995 Safe Harbor Script Prompter</div>
-                    <p style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: '1.6', marginTop: '0.5rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--slate-300)', lineHeight: '1.6', marginTop: '0.5rem' }}>
                       {overview?.earnings.safeHarborScript}
                     </p>
                   </div>
@@ -623,21 +623,21 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                   <div className="ir-nexus-grid-3">
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Upcoming Conferences</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#f59e0b' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--amber-500)' }}>
                         {overview?.roadshows.upcomingConferences.length} Events
                       </div>
                       <div className="ir-nexus-card-sub">Premier sell-side venues scheduled</div>
                     </div>
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Buy-Side Conviction Score</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#34d399' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--emerald-400)' }}>
                         {overview?.roadshows.buySideConvictionScore.toFixed(1)}%
                       </div>
                       <div className="ir-nexus-card-sub">Institutional accumulation bias</div>
                     </div>
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Average NDR Sentiment</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#60a5fa' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--blue-400)' }}>
                         +{overview?.roadshows.averageSentimentScore.toFixed(2)}
                       </div>
                       <div className="ir-nexus-card-sub">Scale: -1.0 (Hostile) to +1.0 (Bullish)</div>
@@ -684,7 +684,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           type="text"
                           value={newInstName}
                           onChange={(e) => setNewInstName(e.target.value)}
-                          style={{ padding: '0.4rem', background: '#080d1a', border: '1px solid #1e293b', color: '#f8fafc', borderRadius: '4px' }}
+                          style={{ padding: '0.4rem', background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', color: 'var(--slate-50)', borderRadius: '4px' }}
                         />
                       </div>
                       <div className="ir-nexus-slider-group">
@@ -693,7 +693,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           type="text"
                           value={newLeadInvestor}
                           onChange={(e) => setNewLeadInvestor(e.target.value)}
-                          style={{ padding: '0.4rem', background: '#080d1a', border: '1px solid #1e293b', color: '#f8fafc', borderRadius: '4px' }}
+                          style={{ padding: '0.4rem', background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', color: 'var(--slate-50)', borderRadius: '4px' }}
                         />
                       </div>
                       <div className="ir-nexus-slider-group">
@@ -758,21 +758,21 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                   <div className="ir-nexus-grid-3">
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Enterprise WACC</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#f59e0b' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--amber-500)' }}>
                         {overview?.capitalMarkets.currentWaccPercent.toFixed(2)}%
                       </div>
                       <div className="ir-nexus-card-sub">Cost of Equity: {overview?.capitalMarkets.costOfEquityPercent.toFixed(2)}% | After-Tax Debt: {overview?.capitalMarkets.costOfDebtAfterTaxPercent.toFixed(2)}%</div>
                     </div>
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Rule 10b-18 Daily Buyback Cap</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#34d399' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--emerald-400)' }}>
                         {overview?.capitalMarkets.repurchaseProgram.rule10b18DailyShareLimit.toLocaleString()} Shares
                       </div>
                       <div className="ir-nexus-card-sub">25% of 4-Week ADTV ({overview?.capitalMarkets.repurchaseProgram.adtvShares.toLocaleString()} shares)</div>
                     </div>
                     <div className="ir-nexus-card">
                       <div className="ir-nexus-card-label">Share Buyback Authorization</div>
-                      <div className="ir-nexus-card-val" style={{ color: '#60a5fa' }}>
+                      <div className="ir-nexus-card-val" style={{ color: 'var(--blue-400)' }}>
                         ${((overview?.capitalMarkets.repurchaseProgram.remainingAuthorizationUsd || 164600000) / 1000000).toFixed(1)}M
                       </div>
                       <div className="ir-nexus-card-sub">Remaining of ${((overview?.capitalMarkets.repurchaseProgram.programAuthorizationUsd || 250000000) / 1000000).toFixed(0)}M Program</div>
@@ -791,7 +791,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           type="text"
                           value={scenName}
                           onChange={(e) => setScenName(e.target.value)}
-                          style={{ padding: '0.4rem', background: '#080d1a', border: '1px solid #1e293b', color: '#f8fafc', borderRadius: '4px' }}
+                          style={{ padding: '0.4rem', background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', color: 'var(--slate-50)', borderRadius: '4px' }}
                         />
                       </div>
                       <div className="ir-nexus-slider-group">
@@ -799,7 +799,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                         <select
                           value={finType}
                           onChange={(e) => setFinType(e.target.value as CapitalFinancingType)}
-                          style={{ padding: '0.4rem', background: '#080d1a', border: '1px solid #1e293b', color: '#f8fafc', borderRadius: '4px' }}
+                          style={{ padding: '0.4rem', background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', color: 'var(--slate-50)', borderRadius: '4px' }}
                         >
                           <option value="convertible_senior_notes">Convertible Senior Notes</option>
                           <option value="secondary_equity_offering">Secondary Equity Offering</option>
@@ -812,7 +812,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           type="number"
                           value={grossProceeds}
                           onChange={(e) => setGrossProceeds(parseFloat(e.target.value) || 0)}
-                          style={{ padding: '0.4rem', background: '#080d1a', border: '1px solid #1e293b', color: '#f8fafc', borderRadius: '4px' }}
+                          style={{ padding: '0.4rem', background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', color: 'var(--slate-50)', borderRadius: '4px' }}
                         />
                       </div>
                     </div>
@@ -827,7 +827,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                       {capitalSimResult && (
                         <div style={{ marginLeft: '1rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                           <span>
-                            Net Proceeds: <strong style={{ color: '#34d399' }}>${(capitalSimResult.netProceedsUsd / 1000000).toFixed(1)}M</strong>
+                            Net Proceeds: <strong style={{ color: 'var(--emerald-400)' }}>${(capitalSimResult.netProceedsUsd / 1000000).toFixed(1)}M</strong>
                           </span>
                           <span>
                             Calculated WACC: <strong>{capitalSimResult.calculatedWaccPercent.toFixed(2)}%</strong>
@@ -863,7 +863,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                             <td style={{ fontWeight: 600 }}>{sc.scenarioName}</td>
                             <td><span className="ir-nexus-pill-blue">{sc.financingType.replace(/_/g, ' ')}</span></td>
                             <td>${(sc.targetGrossProceedsUsd / 1000000).toFixed(1)}M</td>
-                            <td style={{ color: '#34d399', fontWeight: 600 }}>${(sc.netProceedsUsd / 1000000).toFixed(1)}M</td>
+                            <td style={{ color: 'var(--emerald-400)', fontWeight: 600 }}>${(sc.netProceedsUsd / 1000000).toFixed(1)}M</td>
                             <td>{sc.proFormaDilutionPercent > 0 ? `+${sc.proFormaDilutionPercent.toFixed(2)}%` : `${sc.proFormaDilutionPercent.toFixed(2)}%`}</td>
                             <td>{sc.calculatedWaccPercent.toFixed(2)}%</td>
                             <td>
@@ -907,7 +907,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           <span className="ir-nexus-pill-gold">PENDING</span>
                         )}
                       </div>
-                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.5rem 0' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--slate-400)', margin: '0.5rem 0' }}>
                         Audits consensus models, NDR feedback, and Reg G reconciliations.
                       </div>
                       <button
@@ -928,7 +928,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           <span className="ir-nexus-pill-gold">PENDING</span>
                         )}
                       </div>
-                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.5rem 0' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--slate-400)', margin: '0.5rem 0' }}>
                         Ratifies forward financial guidance, capital financing, and Reg G math.
                       </div>
                       <button
@@ -949,7 +949,7 @@ export const InvestorRelationsNexusModal: React.FC<InvestorRelationsNexusModalPr
                           <span className="ir-nexus-pill-gold">PENDING</span>
                         )}
                       </div>
-                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.5rem 0' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--slate-400)', margin: '0.5rem 0' }}>
                         Authorizes strategic disclosures and SEC EDGAR dissemination.
                       </div>
                       <button

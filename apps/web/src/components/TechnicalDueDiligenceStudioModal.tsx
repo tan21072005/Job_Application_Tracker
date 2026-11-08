@@ -107,14 +107,14 @@ export const TechnicalDueDiligenceStudioModal: React.FC<Props> = ({ isOpen, onCl
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ fontSize: '20px' }}>⚖️</span>
-                <span style={{ fontSize: '18px', fontWeight: 800, color: '#f8fafc' }}>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--slate-50)' }}>
                   Technical Due Diligence & M&A VDD Studio
                 </span>
                 <span className={`tdd-studio-badge ${getRiskBadgeClass(currentAudit.scorecard.overallRiskLevel)}`}>
                   {currentAudit.scorecard.overallRiskLevel.toUpperCase()} RISK ({currentAudit.scorecard.compositeRiskIndex}/100)
                 </span>
               </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--slate-400)', marginTop: '4px' }}>
                 Target: <strong>{currentAudit.targetCompanyName}</strong> | Valuation: ${currentAudit.dealSizeUsd.toLocaleString()} | Lead: {currentAudit.auditLeadName}
               </div>
             </div>
@@ -122,7 +122,7 @@ export const TechnicalDueDiligenceStudioModal: React.FC<Props> = ({ isOpen, onCl
           <button className="tdd-studio-close-btn tdd-studio-btn-secondary" onClick={onClose}>✕</button>
         </div>
 
-        <div style={{ padding: '12px 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ padding: '12px 24px', background: 'var(--slate-50)', borderBottom: '1px solid var(--slate-200)', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           <div className="tdd-studio-input-group" style={{ flex: '1 1 200px' }}>
             <label className="tdd-studio-input-label">Target Company</label>
             <input
@@ -411,14 +411,14 @@ export const TechnicalDueDiligenceStudioModal: React.FC<Props> = ({ isOpen, onCl
                 </div>
                 <div className="tdd-studio-card">
                   <div className="tdd-studio-card-header">Projected Gross Margin</div>
-                  <div className="tdd-studio-stat-number" style={{ color: '#16a34a' }}>
+                  <div className="tdd-studio-stat-number" style={{ color: 'var(--green-600)' }}>
                     {currentAudit.cloudEconomics.projectedOptimizedGrossMarginPercent}%
                   </div>
                   <div className="tdd-studio-stat-label">Capture: ${currentAudit.cloudEconomics.finopsOptimizationCaptureEstimate.toLocaleString()}</div>
                 </div>
                 <div className="tdd-studio-card">
                   <div className="tdd-studio-card-header">Annual Idle Wastage</div>
-                  <div className="tdd-studio-stat-number" style={{ color: '#dc2626' }}>
+                  <div className="tdd-studio-stat-number" style={{ color: 'var(--red-600)' }}>
                     ${currentAudit.cloudEconomics.idleResourceWastageAnnual.toLocaleString()}
                   </div>
                   <div className="tdd-studio-stat-label">Commitment Liability: ${currentAudit.cloudEconomics.multiYearCommitmentLiability.toLocaleString()}</div>
@@ -458,7 +458,7 @@ export const TechnicalDueDiligenceStudioModal: React.FC<Props> = ({ isOpen, onCl
                 </div>
                 <div className="tdd-studio-card">
                   <div className="tdd-studio-card-header">Special Escrow Holdback</div>
-                  <div id="tdd-escrow-holdback-stat" className="tdd-studio-stat-number" style={{ color: '#2563eb' }}>
+                  <div id="tdd-escrow-holdback-stat" className="tdd-studio-stat-number" style={{ color: 'var(--blue-600)' }}>
                     ${currentAudit.securityCompliance.recommendedSpecialEscrowHoldback.toLocaleString()}
                   </div>
                   <div className="tdd-studio-stat-label">Remediation: ${currentAudit.securityCompliance.remediationCostEstimate.toLocaleString()}</div>
@@ -472,7 +472,7 @@ export const TechnicalDueDiligenceStudioModal: React.FC<Props> = ({ isOpen, onCl
                 </div>
                 <div className="tdd-studio-card">
                   <div className="tdd-studio-card-header">CVE Vulnerability Backlog</div>
-                  <div className="tdd-studio-stat-number" style={{ color: currentAudit.securityCompliance.criticalCveCount > 0 ? '#dc2626' : '#16a34a' }}>
+                  <div className="tdd-studio-stat-number" style={{ color: currentAudit.securityCompliance.criticalCveCount > 0 ? 'var(--red-600)' : 'var(--green-600)' }}>
                     {currentAudit.securityCompliance.criticalCveCount} Crit / {currentAudit.securityCompliance.highCveCount} High
                   </div>
                   <div className="tdd-studio-stat-label">Medium CVEs: {currentAudit.securityCompliance.mediumCveCount}</div>
@@ -505,14 +505,14 @@ export const TechnicalDueDiligenceStudioModal: React.FC<Props> = ({ isOpen, onCl
                 </div>
                 <div className="tdd-studio-card">
                   <div className="tdd-studio-card-header">Bus Factor Vulnerability</div>
-                  <div className="tdd-studio-stat-number" style={{ color: currentAudit.teamVelocity.busFactorVulnerabilityIndex > 40 ? '#dc2626' : '#16a34a' }}>
+                  <div className="tdd-studio-stat-number" style={{ color: currentAudit.teamVelocity.busFactorVulnerabilityIndex > 40 ? 'var(--red-600)' : 'var(--green-600)' }}>
                     {currentAudit.teamVelocity.busFactorVulnerabilityIndex} / 100
                   </div>
                   <div className="tdd-studio-stat-label">Doc Coverage: {Math.round(currentAudit.teamVelocity.documentationCoverageRatio * 100)}%</div>
                 </div>
                 <div className="tdd-studio-card">
                   <div className="tdd-studio-card-header">Retention Pool Sizing</div>
-                  <div className="tdd-studio-stat-number" style={{ color: '#2563eb' }}>
+                  <div className="tdd-studio-stat-number" style={{ color: 'var(--blue-600)' }}>
                     ${currentAudit.teamVelocity.recommendedRetentionPoolSize.toLocaleString()}
                   </div>
                   <div className="tdd-studio-stat-label">{currentAudit.teamVelocity.retentionProgramDurationMonths} Months Vesting</div>
@@ -589,17 +589,17 @@ export const TechnicalDueDiligenceStudioModal: React.FC<Props> = ({ isOpen, onCl
 
           {activeTab === 'memo' && (
             <>
-              <div className="tdd-studio-card" style={{ background: '#0f172a', color: '#f8fafc' }}>
+              <div className="tdd-studio-card" style={{ background: 'var(--slate-900)', color: 'var(--slate-50)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontSize: '13px', color: '#94a3b8', textTransform: 'uppercase' }}>IC Transaction Recommendation</div>
+                    <div style={{ fontSize: '13px', color: 'var(--slate-400)', textTransform: 'uppercase' }}>IC Transaction Recommendation</div>
                     <div style={{ fontSize: '22px', fontWeight: 800, marginTop: '4px' }}>
                       {currentAudit.recommendation.replace(/_/g, ' ').toUpperCase()}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '13px', color: '#94a3b8' }}>Total Valuation Haircut</div>
-                    <div style={{ fontSize: '22px', fontWeight: 800, color: '#f87171' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--slate-400)' }}>Total Valuation Haircut</div>
+                    <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--red-400)' }}>
                       ${currentAudit.scorecard.totalValuationHaircutEstimate.toLocaleString()}
                     </div>
                   </div>

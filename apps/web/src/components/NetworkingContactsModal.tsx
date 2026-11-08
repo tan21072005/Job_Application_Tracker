@@ -43,12 +43,12 @@ interface NetworkingContactsModalProps {
 }
 
 const TYPE_CONFIG: Record<ContactType, { label: string; bg: string; text: string }> = {
-  recruiter: { label: 'HR / Recruiter', bg: 'rgba(59, 130, 246, 0.12)', text: '#3b82f6' },
-  headhunter: { label: 'Headhunter', bg: 'rgba(168, 85, 247, 0.12)', text: '#a855f7' },
-  hiring_manager: { label: 'Hiring Manager', bg: 'rgba(236, 72, 153, 0.12)', text: '#ec4899' },
-  referrer: { label: 'Người giới thiệu', bg: 'rgba(16, 185, 129, 0.12)', text: '#10b981' },
-  mentor: { label: 'Cố vấn (Mentor)', bg: 'rgba(245, 158, 11, 0.12)', text: '#f59e0b' },
-  peer: { label: 'Đồng nghiệp', bg: 'rgba(107, 114, 128, 0.12)', text: '#6b7280' }
+  recruiter: { label: 'HR / Recruiter', bg: 'rgba(59, 130, 246, 0.12)', text: 'var(--blue-500)' },
+  headhunter: { label: 'Headhunter', bg: 'rgba(168, 85, 247, 0.12)', text: 'var(--purple-500)' },
+  hiring_manager: { label: 'Hiring Manager', bg: 'rgba(236, 72, 153, 0.12)', text: 'var(--pink-500)' },
+  referrer: { label: 'Người giới thiệu', bg: 'rgba(16, 185, 129, 0.12)', text: 'var(--emerald-500)' },
+  mentor: { label: 'Cố vấn (Mentor)', bg: 'rgba(245, 158, 11, 0.12)', text: 'var(--amber-500)' },
+  peer: { label: 'Đồng nghiệp', bg: 'rgba(107, 114, 128, 0.12)', text: 'var(--gray-500)' }
 };
 
 const STRENGTH_CONFIG: Record<RelationshipStrength, { label: string; badge: string }> = {

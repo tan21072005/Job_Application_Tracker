@@ -376,38 +376,38 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                 {screeningResult ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>OFAC 50% Rule Status:</span>
-                      <span style={{ fontWeight: 700, color: screeningResult.isBlockedByFiftyPercentRule ? '#f43f5e' : '#34d399' }}>
+                      <span style={{ color: 'var(--slate-400)' }}>OFAC 50% Rule Status:</span>
+                      <span style={{ fontWeight: 700, color: screeningResult.isBlockedByFiftyPercentRule ? 'var(--rose-500)' : 'var(--emerald-400)' }}>
                         {screeningResult.isBlockedByFiftyPercentRule ? 'BLOCKED PER SE (>= 50%)' : 'CLEAR (< 50%)'}
                       </span>
                     </div>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>Secondary Sanctions Index (SSEI):</span>
-                      <span style={{ fontFamily: 'monospace', color: '#f59e0b', fontWeight: 700 }}>
+                      <span style={{ color: 'var(--slate-400)' }}>Secondary Sanctions Index (SSEI):</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--amber-500)', fontWeight: 700 }}>
                         {screeningResult.secondarySanctionsExposureIndex} / 100
                       </span>
                     </div>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>Mandated Compliance Action:</span>
-                      <span style={{ fontWeight: 600, color: '#a78bfa', textTransform: 'uppercase' }}>
+                      <span style={{ color: 'var(--slate-400)' }}>Mandated Compliance Action:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--violet-400)', textTransform: 'uppercase' }}>
                         {screeningResult.recommendedAction.replace(/_/g, ' ')}
                       </span>
                     </div>
                     {screeningResult.directMatches.map((m) => (
                       <div key={m.id} className="trade-nexus-hit-box">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fda4af', fontWeight: 600 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--rose-300)', fontWeight: 600 }}>
                           <span>{m.entityName}</span>
                           <span style={{ fontFamily: 'monospace' }}>{Math.round(m.compositeSimilarityScore * 100)}% Match</span>
                         </div>
-                        <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>{m.regulatoryReference}</p>
-                        <p style={{ margin: 0, fontSize: '0.7rem', color: '#64748b' }}>
+                        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--slate-400)' }}>{m.regulatoryReference}</p>
+                        <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--slate-500)' }}>
                           Jaro-Winkler: {m.scoreJaroWinkler} &bull; Levenshtein: {m.scoreLevenshtein} &bull; Phonetic: {m.scorePhonetic}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--slate-500)', fontStyle: 'italic' }}>
                     No screening executed yet. Run simulator to test fuzzy match & 50% rule algorithms.
                   </p>
                 )}
@@ -453,9 +453,9 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                       id="massMarket"
                       checked={isMassMarket}
                       onChange={(e) => setIsMassMarket(e.target.checked)}
-                      style={{ accentColor: '#8b5cf6', cursor: 'pointer' }}
+                      style={{ accentColor: 'var(--violet-500)', cursor: 'pointer' }}
                     />
-                    <label htmlFor="massMarket" style={{ fontSize: '0.75rem', color: '#cbd5e1', cursor: 'pointer' }}>
+                    <label htmlFor="massMarket" style={{ fontSize: '0.75rem', color: 'var(--slate-300)', cursor: 'pointer' }}>
                       Qualifies for Mass Market Retail under Note 3 to Category 5 Part 2
                     </label>
                   </div>
@@ -473,29 +473,29 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                   {eccnResult ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       <div className="trade-nexus-outcome-box">
-                        <span style={{ color: '#94a3b8' }}>Assigned ECCN:</span>
-                        <span style={{ fontFamily: 'monospace', color: '#34d399', fontWeight: 700, fontSize: '0.95rem' }}>
+                        <span style={{ color: 'var(--slate-400)' }}>Assigned ECCN:</span>
+                        <span style={{ fontFamily: 'monospace', color: 'var(--emerald-400)', fontWeight: 700, fontSize: '0.95rem' }}>
                           {eccnResult.assignedEccn}
                         </span>
                       </div>
                       <div className="trade-nexus-outcome-box">
-                        <span style={{ color: '#94a3b8' }}>License Exception:</span>
-                        <span style={{ fontFamily: 'monospace', color: '#a78bfa', fontWeight: 600, textTransform: 'uppercase' }}>
+                        <span style={{ color: 'var(--slate-400)' }}>License Exception:</span>
+                        <span style={{ fontFamily: 'monospace', color: 'var(--violet-400)', fontWeight: 600, textTransform: 'uppercase' }}>
                           {eccnResult.applicableLicenseException}
                         </span>
                       </div>
                       <div className="trade-nexus-outcome-box">
-                        <span style={{ color: '#94a3b8' }}>Semi-Annual ENC Reporting:</span>
-                        <span style={{ fontWeight: 600, color: eccnResult.requiresSemiAnnualReporting ? '#f59e0b' : '#94a3b8' }}>
+                        <span style={{ color: 'var(--slate-400)' }}>Semi-Annual ENC Reporting:</span>
+                        <span style={{ fontWeight: 600, color: eccnResult.requiresSemiAnnualReporting ? 'var(--amber-500)' : 'var(--slate-400)' }}>
                           {eccnResult.requiresSemiAnnualReporting ? 'MANDATORY (15 CFR § 740.17(e))' : 'EXEMPT'}
                         </span>
                       </div>
-                      <div style={{ background: '#080d1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.8rem 1rem', fontSize: '0.75rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                      <div style={{ background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.8rem 1rem', fontSize: '0.75rem', color: 'var(--slate-300)', lineHeight: 1.5 }}>
                         {eccnResult.determinationJustification}
                       </div>
                     </div>
                   ) : (
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--slate-500)', fontStyle: 'italic' }}>
                       Configure technical parameters to generate deterministic ECCN classification.
                     </p>
                   )}
@@ -547,18 +547,18 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                 </button>
 
                 {deemedResult && (
-                  <div className="trade-nexus-grid-3" style={{ background: '#080d1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.8rem 1rem' }}>
+                  <div className="trade-nexus-grid-3" style={{ background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.8rem 1rem' }}>
                     <div>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>EAR Country Group:</span>
-                      <span style={{ fontWeight: 600, color: '#f59e0b', textTransform: 'uppercase' }}>{deemedResult.earCountryGroup}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block' }}>EAR Country Group:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--amber-500)', textTransform: 'uppercase' }}>{deemedResult.earCountryGroup}</span>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Exposure Score:</span>
-                      <span style={{ fontFamily: 'monospace', color: '#a78bfa', fontWeight: 700 }}>{deemedResult.deemedExportExposureScore} / 100</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block' }}>Exposure Score:</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--violet-400)', fontWeight: 700 }}>{deemedResult.deemedExportExposureScore} / 100</span>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>License Mandate:</span>
-                      <span style={{ fontWeight: 700, color: deemedResult.requiresDeemedExportLicense ? '#f43f5e' : '#34d399' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', display: 'block' }}>License Mandate:</span>
+                      <span style={{ fontWeight: 700, color: deemedResult.requiresDeemedExportLicense ? 'var(--rose-500)' : 'var(--emerald-400)' }}>
                         {deemedResult.requiresDeemedExportLicense ? 'LICENSE REQUIRED BEFORE ACCESS' : 'CLEAR'}
                       </span>
                     </div>
@@ -589,7 +589,7 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                     onChange={(e) => setPersonalDataRecords(Number(e.target.value))}
                     className="trade-nexus-input"
                   />
-                  <span style={{ fontSize: '0.68rem', color: '#64748b' }}>Threshold: 1,000,000 records triggers Sensitive Personal Data TID</span>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--slate-500)' }}>Threshold: 1,000,000 records triggers Sensitive Personal Data TID</span>
                 </div>
                 <div className="trade-nexus-grid-2">
                   <div className="trade-nexus-form-group">
@@ -600,7 +600,7 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                       onChange={(e) => setForeignGovVoting(Number(e.target.value))}
                       className="trade-nexus-input"
                     />
-                    <span style={{ fontSize: '0.68rem', color: '#64748b' }}>Threshold: 25% substantial interest</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--slate-500)' }}>Threshold: 25% substantial interest</span>
                   </div>
                   <div className="trade-nexus-form-group">
                     <label className="trade-nexus-label">Foreign Acquisition (%)</label>
@@ -610,7 +610,7 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                       onChange={(e) => setForeignOwnership(Number(e.target.value))}
                       className="trade-nexus-input"
                     />
-                    <span style={{ fontSize: '0.68rem', color: '#64748b' }}>Threshold: 49% acquisition trigger</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--slate-500)' }}>Threshold: 49% acquisition trigger</span>
                   </div>
                 </div>
                 <button
@@ -627,31 +627,31 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                 {cfiusResult ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>TID Status:</span>
-                      <span style={{ fontWeight: 600, color: '#f59e0b', textTransform: 'uppercase' }}>{cfiusResult.tidStatus}</span>
+                      <span style={{ color: 'var(--slate-400)' }}>TID Status:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--amber-500)', textTransform: 'uppercase' }}>{cfiusResult.tidStatus}</span>
                     </div>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>Filing Obligation:</span>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase', color: cfiusResult.filingRequirement.includes('mandatory') ? '#f43f5e' : '#34d399' }}>
+                      <span style={{ color: 'var(--slate-400)' }}>Filing Obligation:</span>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', color: cfiusResult.filingRequirement.includes('mandatory') ? 'var(--rose-500)' : 'var(--emerald-400)' }}>
                         {cfiusResult.filingRequirement.replace(/_/g, ' ')}
                       </span>
                     </div>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>National Security Risk Score:</span>
-                      <span style={{ fontFamily: 'monospace', color: '#a78bfa', fontWeight: 700 }}>{cfiusResult.nationalSecurityRiskScore} / 100</span>
+                      <span style={{ color: 'var(--slate-400)' }}>National Security Risk Score:</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--violet-400)', fontWeight: 700 }}>{cfiusResult.nationalSecurityRiskScore} / 100</span>
                     </div>
-                    <div style={{ background: '#080d1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.8rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Recommended NSMA Mitigation Covenants:</span>
+                    <div style={{ background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.8rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', fontWeight: 600 }}>Recommended NSMA Mitigation Covenants:</span>
                       {cfiusResult.recommendedMitigationMeasures.map((c, i) => (
-                        <div key={i} style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'flex', alignItems: 'flex-start', gap: '0.35rem' }}>
-                          <span style={{ color: '#8b5cf6' }}>&bull;</span>
+                        <div key={i} style={{ fontSize: '0.75rem', color: 'var(--slate-300)', display: 'flex', alignItems: 'flex-start', gap: '0.35rem' }}>
+                          <span style={{ color: 'var(--violet-500)' }}>&bull;</span>
                           <span>{c}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--slate-500)', fontStyle: 'italic' }}>
                     Enter deal parameters to analyze Part 800 mandatory declaration thresholds.
                   </p>
                 )}
@@ -721,32 +721,32 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                 {customsResult ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>Total Duty Payable:</span>
-                      <span style={{ fontFamily: 'monospace', color: '#f43f5e', fontWeight: 700, fontSize: '0.95rem' }}>
+                      <span style={{ color: 'var(--slate-400)' }}>Total Duty Payable:</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--rose-500)', fontWeight: 700, fontSize: '0.95rem' }}>
                         ${customsResult.totalDutyPayableUsd.toLocaleString()} USD
                       </span>
                     </div>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>FTA Preferential Duty Savings:</span>
-                      <span style={{ fontFamily: 'monospace', color: '#34d399', fontWeight: 700 }}>
+                      <span style={{ color: 'var(--slate-400)' }}>FTA Preferential Duty Savings:</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--emerald-400)', fontWeight: 700 }}>
                         ${customsResult.dutySavedByFtaUsd.toLocaleString()} USD
                       </span>
                     </div>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>Section 301 Punitive Tariff:</span>
-                      <span style={{ fontFamily: 'monospace', color: '#f59e0b', fontWeight: 600 }}>
+                      <span style={{ color: 'var(--slate-400)' }}>Section 301 Punitive Tariff:</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--amber-500)', fontWeight: 600 }}>
                         ${customsResult.section301AmountUsd.toLocaleString()} USD ({customsResult.section301DutyRate}%)
                       </span>
                     </div>
                     <div className="trade-nexus-outcome-box">
-                      <span style={{ color: '#94a3b8' }}>Regional Value Content (RVC):</span>
-                      <span style={{ fontFamily: 'monospace', color: '#a78bfa', fontWeight: 600 }}>
+                      <span style={{ color: 'var(--slate-400)' }}>Regional Value Content (RVC):</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--violet-400)', fontWeight: 600 }}>
                         {customsResult.regionalValueContentPercentage}% ({customsResult.isFtaOriginQualified ? 'QUALIFIED' : 'FAILED'})
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--slate-500)', fontStyle: 'italic' }}>
                     Submit customs parameters to calculate Section 301/232 duty stacks and FTA qualification.
                   </p>
                 )}
@@ -759,7 +759,7 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
               <div className="trade-nexus-card" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <h3 className="trade-nexus-card-title">Automated Voluntary Self-Disclosure (VSD) Protocol</h3>
-                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                     Generate regulatory markdown dossier for BIS/OFAC self-disclosure with binding tripartite executive execution.
                   </p>
                 </div>
@@ -775,11 +775,11 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
 
               {vsdDossier && (
                 <div className="trade-nexus-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.6rem', borderBottom: '1px solid #1e293b' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#a78bfa', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.6rem', borderBottom: '1px solid var(--slate-800)' }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--violet-400)', fontWeight: 600 }}>
                       {vsdDossier.vsdReferenceNumber} &bull; {vsdDossier.targetAuthority.toUpperCase()}
                     </span>
-                    <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '4px', background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '4px', background: 'rgba(245,158,11,0.15)', color: 'var(--amber-400)', border: '1px solid rgba(245,158,11,0.3)', fontWeight: 600 }}>
                       {signedCompliance && signedClo && signedCeo ? 'FULLY EXECUTED & SEALED' : 'PENDING TRIPARTITE SIGN-OFF'}
                     </span>
                   </div>
@@ -789,8 +789,8 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                   </pre>
 
                   <div className="trade-nexus-grid-3" style={{ paddingTop: '0.5rem' }}>
-                    <div style={{ background: '#080d1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.8rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>1. Head of Global Trade Compliance</span>
+                    <div style={{ background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.8rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', fontWeight: 600 }}>1. Head of Global Trade Compliance</span>
                       <button
                         disabled={signedCompliance}
                         onClick={handleSignCompliance}
@@ -801,8 +801,8 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                       </button>
                     </div>
 
-                    <div style={{ background: '#080d1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.8rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>2. Chief Legal Officer / GC</span>
+                    <div style={{ background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.8rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', fontWeight: 600 }}>2. Chief Legal Officer / GC</span>
                       <button
                         disabled={!signedCompliance || signedClo}
                         onClick={handleSignClo}
@@ -813,8 +813,8 @@ export const GlobalTradeSanctionsNexusModal: React.FC<GlobalTradeSanctionsNexusM
                       </button>
                     </div>
 
-                    <div style={{ background: '#080d1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.8rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>3. Chief Executive Officer</span>
+                    <div style={{ background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.8rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)', fontWeight: 600 }}>3. Chief Executive Officer</span>
                       <button
                         disabled={!signedClo || signedCeo}
                         onClick={handleSignCeo}

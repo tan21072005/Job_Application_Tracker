@@ -260,14 +260,14 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
         </nav>
 
         {errorMessage && (
-          <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '0.75rem 1.75rem', fontSize: '0.85rem' }}>
+          <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid var(--red-500)', color: 'var(--red-300)', padding: '0.75rem 1.75rem', fontSize: '0.85rem' }}>
             {errorMessage}
           </div>
         )}
 
         <main className="comms-nexus-body">
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--slate-400)' }}>
               Synthesizing crisis telemetry and reputation metrics...
             </div>
           ) : (
@@ -279,33 +279,33 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                       <div className="comms-nexus-card-title">Active Incident Command Overview</div>
                       {currentIncident ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                          <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc' }}>
+                          <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--slate-50)' }}>
                             {currentIncident.title}
                           </div>
-                          <div style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--slate-300)', lineHeight: 1.5 }}>
                             {currentIncident.summary}
                           </div>
                           <div className="comms-nexus-grid-2" style={{ gap: '0.6rem' }}>
                             <div className="comms-nexus-outcome-box">
-                              <span style={{ color: '#94a3b8' }}>Commander:</span>
+                              <span style={{ color: 'var(--slate-400)' }}>Commander:</span>
                               <span style={{ fontWeight: 600 }}>{currentIncident.incidentCommander}</span>
                             </div>
                             <div className="comms-nexus-outcome-box">
-                              <span style={{ color: '#94a3b8' }}>Comms Lead:</span>
+                              <span style={{ color: 'var(--slate-400)' }}>Comms Lead:</span>
                               <span style={{ fontWeight: 600 }}>{currentIncident.communicationsLead}</span>
                             </div>
                             <div className="comms-nexus-outcome-box">
-                              <span style={{ color: '#94a3b8' }}>Legal Counsel:</span>
+                              <span style={{ color: 'var(--slate-400)' }}>Legal Counsel:</span>
                               <span style={{ fontWeight: 600 }}>{currentIncident.legalCounselLead}</span>
                             </div>
                             <div className="comms-nexus-outcome-box">
-                              <span style={{ color: '#94a3b8' }}>Technical Lead:</span>
+                              <span style={{ color: 'var(--slate-400)' }}>Technical Lead:</span>
                               <span style={{ fontWeight: 600 }}>{currentIncident.technicalLead}</span>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div style={{ color: '#94a3b8' }}>No active incident. Declare incident below.</div>
+                        <div style={{ color: 'var(--slate-400)' }}>No active incident. Declare incident below.</div>
                       )}
                     </div>
 
@@ -378,19 +378,19 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                       {currentIncident?.checkpoints.map(cp => (
                         <div key={cp.id} className="comms-nexus-outcome-box">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                            <span style={{ color: cp.isCompleted ? '#10b981' : '#64748b', fontSize: '1.2rem', fontWeight: 800 }}>
+                            <span style={{ color: cp.isCompleted ? 'var(--emerald-500)' : 'var(--slate-500)', fontSize: '1.2rem', fontWeight: 800 }}>
                               {cp.isCompleted ? '✓' : '○'}
                             </span>
                             <div>
-                              <div style={{ fontWeight: 600, color: '#f8fafc' }}>
+                              <div style={{ fontWeight: 600, color: 'var(--slate-50)' }}>
                                 T+{cp.targetMinutes.toString().padStart(2, '0')}: {cp.milestone.replace(/^t_\d+_/,'').replace(/_/g, ' ').toUpperCase()}
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{cp.notes}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>{cp.notes}</div>
                             </div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             <span className="comms-nexus-badge comms-badge-blue">{cp.assignedLead}</span>
-                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--slate-500)', marginTop: '0.2rem' }}>
                               {cp.isCompleted ? `Completed: ${new Date(cp.completedAt || '').toLocaleTimeString()}` : 'Pending Action'}
                             </div>
                           </div>
@@ -406,42 +406,42 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                   <div className="comms-nexus-grid-4">
                     <div className="comms-nexus-card">
                       <div className="comms-nexus-label">Net Sentiment Score (NSS)</div>
-                      <div style={{ fontSize: '2rem', fontWeight: 800, color: overview?.mediaSummary.netSentimentScore! < 0 ? '#ef4444' : '#10b981' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 800, color: overview?.mediaSummary.netSentimentScore! < 0 ? 'var(--red-500)' : 'var(--emerald-500)' }}>
                         {overview?.mediaSummary.netSentimentScore}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Scale: [-100 (Hostile) to +100]</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Scale: [-100 (Hostile) to +100]</div>
                     </div>
                     <div className="comms-nexus-card">
                       <div className="comms-nexus-label">Narrative Velocity Index (NVI)</div>
-                      <div style={{ fontSize: '2rem', fontWeight: 800, color: '#fbbf24' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--amber-400)' }}>
                         {overview?.mediaSummary.narrativeVelocityIndex}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Hourly Acceleration & Syndication</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Hourly Acceleration & Syndication</div>
                     </div>
                     <div className="comms-nexus-card">
                       <div className="comms-nexus-label">Viral Vector (R_0)</div>
-                      <div style={{ fontSize: '2rem', fontWeight: 800, color: overview?.mediaSummary.viralPropagationVector! > 1.0 ? '#ef4444' : '#10b981' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 800, color: overview?.mediaSummary.viralPropagationVector! > 1.0 ? 'var(--red-500)' : 'var(--emerald-500)' }}>
                         {overview?.mediaSummary.viralPropagationVector}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Epidemic Dispersion Threshold = 1.0</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Epidemic Dispersion Threshold = 1.0</div>
                     </div>
                     <div className="comms-nexus-card">
                       <div className="comms-nexus-label">Total Monitored Mentions</div>
-                      <div style={{ fontSize: '2rem', fontWeight: 800, color: '#60a5fa' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--blue-400)' }}>
                         {overview?.mediaSummary.totalMentions}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Tier-1 Wire, Print, Social Feeds</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Tier-1 Wire, Print, Social Feeds</div>
                     </div>
                   </div>
 
                   {overview && overview.mediaSummary.viralPropagationVector > 1.0 && (
-                    <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', borderRadius: '8px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <span style={{ fontSize: '1.8rem', color: '#ef4444' }}>&#9888;</span>
+                    <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid var(--red-500)', borderRadius: '8px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <span style={{ fontSize: '1.8rem', color: 'var(--red-500)' }}>&#9888;</span>
                       <div>
-                        <div style={{ fontWeight: 700, color: '#f87171' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--red-400)' }}>
                           EPIDEMIC CONTAGION ALERT: Narrative Viral Vector R_0 = {overview.mediaSummary.viralPropagationVector} &gt; 1.0
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--slate-300)' }}>
                           Social amplification and bot syndication exceed self-sustaining threshold. Outbound verified holding statements required to break transmission loop.
                         </div>
                       </div>
@@ -455,15 +455,15 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                         {overview?.mediaSummary.topNarrativeClusters.map(nc => (
                           <div key={nc.id} className="comms-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.4rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                              <span style={{ fontWeight: 700, color: '#f8fafc' }}>{nc.clusterTitle}</span>
+                              <span style={{ fontWeight: 700, color: 'var(--slate-50)' }}>{nc.clusterTitle}</span>
                               {nc.isAdversarialCampaign && (
                                 <span className="comms-nexus-badge comms-badge-crimson">ADVERSARIAL BOT CAMPAIGN</span>
                               )}
                             </div>
-                            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{nc.dominantTheme}</div>
-                            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#cbd5e1', marginTop: '0.2rem' }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--slate-400)' }}>{nc.dominantTheme}</div>
+                            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--slate-300)', marginTop: '0.2rem' }}>
                               <span>Mentions: <b>{nc.mentionCount}</b></span>
-                              <span>NSS: <b style={{ color: nc.netSentimentScore < 0 ? '#ef4444' : '#10b981' }}>{nc.netSentimentScore}</b></span>
+                              <span>NSS: <b style={{ color: nc.netSentimentScore < 0 ? 'var(--red-500)' : 'var(--emerald-500)' }}>{nc.netSentimentScore}</b></span>
                               <span>Velocity: <b>{nc.narrativeVelocityIndex}</b></span>
                               <span>R_0: <b>{nc.viralPropagationVector}</b></span>
                             </div>
@@ -478,8 +478,8 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                         {overview?.mediaSummary.recentMentions.map(m => (
                           <div key={m.id} className="comms-nexus-outcome-box">
                             <div>
-                              <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.85rem' }}>{m.headline}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                              <div style={{ fontWeight: 600, color: 'var(--slate-50)', fontSize: '0.85rem' }}>{m.headline}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                                 {m.sourceOutlet} &bull; Reach: {m.reachEstimate.toLocaleString()}
                               </div>
                             </div>
@@ -556,7 +556,7 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                         </div>
 
                         <div style={{ display: 'flex', gap: '1.5rem' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--slate-300)' }}>
                             <input
                               type="checkbox"
                               checked={includePslra}
@@ -564,7 +564,7 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                             />
                             PSLRA 1995 Safe-Harbor
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--slate-300)' }}>
                             <input
                               type="checkbox"
                               checked={includeRegFd}
@@ -586,13 +586,13 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                         {overview?.stakeholderProfiles.map(st => (
                           <div key={st.id} className="comms-nexus-outcome-box">
                             <div>
-                              <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.85rem' }}>
+                              <div style={{ fontWeight: 700, color: 'var(--slate-50)', fontSize: '0.85rem' }}>
                                 {st.targetAudience}
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                                 Concern: {st.primaryConcern}
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: '#60a5fa' }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--blue-400)' }}>
                                 Channel: {st.preferredChannel}
                               </div>
                             </div>
@@ -616,16 +616,16 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                       {overview?.holdingStatements.map(stmt => (
                         <div key={stmt.id} className="comms-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.6rem' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>{stmt.headline}</span>
+                            <span style={{ fontWeight: 700, color: 'var(--slate-50)', fontSize: '0.95rem' }}>{stmt.headline}</span>
                             <span className="comms-nexus-badge comms-badge-emerald">v{stmt.version} &bull; {stmt.status.toUpperCase()}</span>
                           </div>
-                          <div style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.5 }}>{stmt.bodyText}</div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--slate-300)', lineHeight: 1.5 }}>{stmt.bodyText}</div>
                           {stmt.safeHarborDisclaimer && (
-                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontStyle: 'italic', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '4px' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)', fontStyle: 'italic', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '4px' }}>
                               {stmt.safeHarborDisclaimer}
                             </div>
                           )}
-                          <div style={{ fontSize: '0.7rem', color: '#64748b', fontFamily: 'monospace' }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--slate-500)', fontFamily: 'monospace' }}>
                             Content Hash: {stmt.contentHashSha256}
                           </div>
                         </div>
@@ -644,21 +644,21 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <div style={{ fontWeight: 800, color: '#f8fafc', fontSize: '1rem' }}>
+                              <div style={{ fontWeight: 800, color: 'var(--slate-50)', fontSize: '1rem' }}>
                                 {overview.spokespersonCards[0].spokespersonName}
                               </div>
-                              <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--slate-400)' }}>
                                 {overview.spokespersonCards[0].spokespersonRole}
                               </div>
                             </div>
                             <span className="comms-nexus-badge comms-badge-emerald">BRIEFING LOCKED</span>
                           </div>
 
-                          <div style={{ background: '#080d1a', padding: '0.8rem', borderRadius: '6px' }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                          <div style={{ background: 'var(--custom-080d1a)', padding: '0.8rem', borderRadius: '6px' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--blue-400)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
                               Core Talking Points (Sticky Messages)
                             </div>
-                            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.8rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.8rem', color: 'var(--slate-300)', lineHeight: 1.5 }}>
                               {overview.spokespersonCards[0].coreTalkingPoints.map((tp, idx) => (
                                 <li key={idx}>{tp}</li>
                               ))}
@@ -667,10 +667,10 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
 
                           <div className="comms-nexus-grid-2" style={{ gap: '0.6rem' }}>
                             <div style={{ background: 'rgba(16,185,129,0.08)', padding: '0.8rem', borderRadius: '6px', border: '1px solid rgba(16,185,129,0.2)' }}>
-                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#34d399', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--emerald-400)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
                                 Mandatory Phrases
                               </div>
-                              <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                              <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.75rem', color: 'var(--slate-300)' }}>
                                 {overview.spokespersonCards[0].mandatoryPhrases.map((mp, idx) => (
                                   <li key={idx}>{mp}</li>
                                 ))}
@@ -678,10 +678,10 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                             </div>
 
                             <div style={{ background: 'rgba(239,68,68,0.08)', padding: '0.8rem', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.2)' }}>
-                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f87171', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--red-400)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
                                 Prohibited Trap Phrases
                               </div>
-                              <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                              <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.75rem', color: 'var(--slate-300)' }}>
                                 {overview.spokespersonCards[0].prohibitedPhrases.map((pp, idx) => (
                                   <li key={idx}>{pp}</li>
                                 ))}
@@ -794,15 +794,15 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                       {overview?.factMoatSummary.entries.map(fact => (
                         <div key={fact.id} className="comms-nexus-outcome-box">
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                            <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.9rem' }}>{fact.factClaim}</div>
-                            <div style={{ fontSize: '0.78rem', color: '#60a5fa' }}>Corroboration: {fact.technicalCorroboration}</div>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)', fontSize: '0.9rem' }}>{fact.factClaim}</div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--blue-400)' }}>Corroboration: {fact.technicalCorroboration}</div>
                             {fact.refutedRumor && (
-                              <div style={{ fontSize: '0.75rem', color: '#f87171' }}>Refutes Rumor: {fact.refutedRumor}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--red-400)' }}>Refutes Rumor: {fact.refutedRumor}</div>
                             )}
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             <span className="comms-nexus-badge comms-badge-emerald">VERIFIED</span>
-                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.2rem' }}>{fact.evidenceReferenceId}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)', marginTop: '0.2rem' }}>{fact.evidenceReferenceId}</div>
                           </div>
                         </div>
                       ))}
@@ -817,14 +817,14 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                     <div className="comms-nexus-card">
                       <div className="comms-nexus-card-title">Brand Reputation Resilience Index (BRRI)</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', margin: '0.5rem 0' }}>
-                        <div style={{ fontSize: '3rem', fontWeight: 900, color: overview?.resilienceIndex.compositeScore! >= 70 ? '#10b981' : '#fbbf24' }}>
+                        <div style={{ fontSize: '3rem', fontWeight: 900, color: overview?.resilienceIndex.compositeScore! >= 70 ? 'var(--emerald-500)' : 'var(--amber-400)' }}>
                           {overview?.resilienceIndex.compositeScore}
                         </div>
                         <div>
                           <span className="comms-nexus-badge comms-badge-emerald" style={{ fontSize: '0.85rem' }}>
                             {overview?.resilienceIndex.resilienceBand.replace(/_/g, ' ').toUpperCase()}
                           </span>
-                          <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.3rem' }}>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--slate-400)', marginTop: '0.3rem' }}>
                             Composite multi-vector score evaluating sentiment stability, velocity damping, and fact fortification.
                           </div>
                         </div>
@@ -832,19 +832,19 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
 
                       <div className="comms-nexus-grid-2" style={{ gap: '0.6rem' }}>
                         <div className="comms-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Sentiment Stability:</span>
+                          <span style={{ color: 'var(--slate-400)' }}>Sentiment Stability:</span>
                           <span style={{ fontWeight: 700 }}>{overview?.resilienceIndex.sentimentStabilityScore}%</span>
                         </div>
                         <div className="comms-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Velocity Mitigation:</span>
+                          <span style={{ color: 'var(--slate-400)' }}>Velocity Mitigation:</span>
                           <span style={{ fontWeight: 700 }}>{overview?.resilienceIndex.velocityMitigationFactor}%</span>
                         </div>
                         <div className="comms-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Viral Containment:</span>
+                          <span style={{ color: 'var(--slate-400)' }}>Viral Containment:</span>
                           <span style={{ fontWeight: 700 }}>{overview?.resilienceIndex.viralContainmentRatio}%</span>
                         </div>
                         <div className="comms-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Fact Fortification:</span>
+                          <span style={{ color: 'var(--slate-400)' }}>Fact Fortification:</span>
                           <span style={{ fontWeight: 700 }}>{overview?.resilienceIndex.factMoatFortificationScore}%</span>
                         </div>
                       </div>
@@ -852,15 +852,15 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
 
                     <div className="comms-nexus-card">
                       <div className="comms-nexus-card-title">Tripartite Digital Release Authority Gate</div>
-                      <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--slate-400)', marginBottom: '0.5rem' }}>
                         Sequential cryptographic authorization required for all external holding statements under SEC Rule 10b-5.
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <div className="comms-nexus-outcome-box">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#f8fafc' }}>1. Head of Strategic Communications</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Narrative alignment & spokesperson sign-off</div>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)' }}>1. Head of Strategic Communications</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Narrative alignment & spokesperson sign-off</div>
                           </div>
                           {currentSignoff?.headOfCommsSignoff?.isSigned ? (
                             <span className="comms-nexus-badge comms-badge-emerald">SIGNED: {currentSignoff.headOfCommsSignoff.signoffSignerName}</span>
@@ -877,8 +877,8 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
 
                         <div className="comms-nexus-outcome-box">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#f8fafc' }}>2. Chief Legal Officer (CLO)</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>PSLRA Safe Harbor & Regulation FD audit</div>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)' }}>2. Chief Legal Officer (CLO)</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>PSLRA Safe Harbor & Regulation FD audit</div>
                           </div>
                           {currentSignoff?.chiefLegalOfficerSignoff?.isSigned ? (
                             <span className="comms-nexus-badge comms-badge-emerald">SIGNED: {currentSignoff.chiefLegalOfficerSignoff.signoffSignerName}</span>
@@ -895,8 +895,8 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
 
                         <div className="comms-nexus-outcome-box">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#f8fafc' }}>3. Chief Executive Officer (CEO)</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Final fiduciary ratification & release authorization</div>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)' }}>3. Chief Executive Officer (CEO)</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Final fiduciary ratification & release authorization</div>
                           </div>
                           {currentSignoff?.ceoSignoff?.isSigned ? (
                             <span className="comms-nexus-badge comms-badge-emerald">SIGNED: {currentSignoff.ceoSignoff.signoffSignerName}</span>
@@ -912,13 +912,13 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                         </div>
                       </div>
 
-                      <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: '#080d1a', borderRadius: '6px', textAlign: 'center' }}>
+                      <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: 'var(--custom-080d1a)', borderRadius: '6px', textAlign: 'center' }}>
                         {currentSignoff?.isFullyAuthorized ? (
-                          <div style={{ color: '#10b981', fontWeight: 800 }}>
+                          <div style={{ color: 'var(--emerald-500)', fontWeight: 800 }}>
                             &#10003; FULL TRIPARTITE RATIFICATION CONFIRMED &bull; AUTHORIZED FOR OMNICHANNEL DISPATCH
                           </div>
                         ) : (
-                          <div style={{ color: '#fbbf24', fontWeight: 600, fontSize: '0.85rem' }}>
+                          <div style={{ color: 'var(--amber-400)', fontWeight: 600, fontSize: '0.85rem' }}>
                             Awaiting complete tripartite sign-off before wire transmission release
                           </div>
                         )}
@@ -930,18 +930,18 @@ export const StrategicCommsCrisisNexusModal: React.FC<StrategicCommsCrisisNexusM
                     <div className="comms-nexus-card-title">Chronological Crisis Event Log</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <div className="comms-nexus-outcome-box">
-                        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>T-18m</span>
-                        <span style={{ color: '#f8fafc' }}>Automated SIEM intrusion alert raised to Incident Response Commander</span>
+                        <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>T-18m</span>
+                        <span style={{ color: 'var(--slate-50)' }}>Automated SIEM intrusion alert raised to Incident Response Commander</span>
                         <span className="comms-nexus-badge comms-badge-blue">SOC MONITOR</span>
                       </div>
                       <div className="comms-nexus-outcome-box">
-                        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>T-12m</span>
-                        <span style={{ color: '#f8fafc' }}>Mandiant DFIR forensics deployed to verify data vault encryption boundaries</span>
+                        <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>T-12m</span>
+                        <span style={{ color: 'var(--slate-50)' }}>Mandiant DFIR forensics deployed to verify data vault encryption boundaries</span>
                         <span className="comms-nexus-badge comms-badge-emerald">FORENSICS</span>
                       </div>
                       <div className="comms-nexus-outcome-box">
-                        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>T-06m</span>
-                        <span style={{ color: '#f8fafc' }}>Head of Communications approved investor holding statement v1 draft</span>
+                        <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>T-06m</span>
+                        <span style={{ color: 'var(--slate-50)' }}>Head of Communications approved investor holding statement v1 draft</span>
                         <span className="comms-nexus-badge comms-badge-amber">COMMS SIGN</span>
                       </div>
                     </div>

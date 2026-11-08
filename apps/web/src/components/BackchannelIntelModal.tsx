@@ -225,7 +225,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
 
         <div className="bci-audit-bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569' }}>Target Mandate:</span>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate-600)' }}>Target Mandate:</span>
             <select
               className="bci-audit-select"
               value={selectedAuditId}
@@ -295,7 +295,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                     <span className="bci-metric-lbl">Active Advocates</span>
                   </div>
                   <div className="bci-metric-card">
-                    <span className="bci-metric-val" style={{ color: '#059669' }}>
+                    <span className="bci-metric-val" style={{ color: 'var(--emerald-600)' }}>
                       {currentAudit.coverageMatrix.overallReadinessScore}%
                     </span>
                     <span className="bci-metric-lbl">360° Readiness Score</span>
@@ -307,7 +307,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                     <span className="bci-metric-lbl">Archetypes Balanced</span>
                   </div>
                   <div className="bci-metric-card">
-                    <span className="bci-metric-val" style={{ color: currentAudit.coverageMatrix.criticalGaps.length > 0 ? '#e11d48' : '#059669' }}>
+                    <span className="bci-metric-val" style={{ color: currentAudit.coverageMatrix.criticalGaps.length > 0 ? 'var(--rose-600)' : 'var(--emerald-600)' }}>
                       {currentAudit.coverageMatrix.criticalGaps.length}
                     </span>
                     <span className="bci-metric-lbl">Identified Blindspots</span>
@@ -316,13 +316,13 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
               )}
 
               {currentAudit && currentAudit.coverageMatrix.criticalGaps.length > 0 && (
-                <div className="bci-callout-box" style={{ background: '#fff1f2', borderColor: '#fecdd3' }}>
-                  <AlertTriangle size={18} color="#e11d48" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div className="bci-callout-box" style={{ background: 'var(--rose-50)', borderColor: 'var(--rose-200)' }}>
+                  <AlertTriangle size={18} color="var(--rose-600)" style={{ marginTop: '2px', flexShrink: 0 }} />
                   <div>
-                    <strong style={{ fontSize: '13px', color: '#9f1239' }}>Panel Blindspots & Vulnerabilities Detected:</strong>
+                    <strong style={{ fontSize: '13px', color: 'var(--rose-800)' }}>Panel Blindspots & Vulnerabilities Detected:</strong>
                     <ul className="bci-checklist" style={{ marginTop: '6px' }}>
                       {currentAudit.coverageMatrix.criticalGaps.map((gap, i) => (
-                        <li key={i} className="bci-check-item" style={{ color: '#be123c' }}>
+                        <li key={i} className="bci-check-item" style={{ color: 'var(--rose-700)' }}>
                           {gap}
                         </li>
                       ))}
@@ -335,7 +335,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                 <div className="bci-card">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <h3 className="bci-card-title">
-                      <ShieldCheck size={16} color="#4f46e5" />
+                      <ShieldCheck size={16} color="var(--indigo-600)" />
                       360° Executive Competency Coverage Matrix
                     </h3>
                   </div>
@@ -362,11 +362,11 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                             </td>
                             <td className="bci-td">
                               {cell.advocateCount > 0 ? (
-                                <span style={{ fontWeight: 700, color: '#059669' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--emerald-600)' }}>
                                   {cell.advocateCount} Endorsement{cell.advocateCount > 1 ? 's' : ''}
                                 </span>
                               ) : (
-                                <span style={{ color: '#94a3b8' }}>None</span>
+                                <span style={{ color: 'var(--slate-400)' }}>None</span>
                               )}
                             </td>
                             <td className="bci-td">
@@ -389,7 +389,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
               <div className="bci-card">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                   <h3 className="bci-card-title">
-                    <Users size={16} color="#4f46e5" />
+                    <Users size={16} color="var(--indigo-600)" />
                     Curated Executive Advocates ({advocates.length})
                   </h3>
                   <button
@@ -402,7 +402,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                 </div>
 
                 {showAddAdvocate && (
-                  <form onSubmit={handleCreateAdvocate} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <form onSubmit={handleCreateAdvocate} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: 'var(--slate-50)', borderRadius: '10px', border: '1px solid var(--slate-200)' }}>
                     <div className="bci-grid-3">
                       <div className="bci-input-row">
                         <label className="bci-label">Full Name *</label>
@@ -487,7 +487,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                           <span className="bci-node-role">{adv.currentTitle} @ {adv.currentCompany}</span>
                         </div>
                         <button
-                          style={{ border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer' }}
+                          style={{ border: 'none', background: 'transparent', color: 'var(--slate-400)', cursor: 'pointer' }}
                           onClick={() => handleDeleteAdvocate(adv.id)}
                           title="Remove advocate"
                         >
@@ -505,13 +505,13 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                           {adv.sharedCompany} ({adv.sharedTenureMonths} mos)
                         </span>
                       </div>
-                      <div style={{ fontSize: '12px', color: '#475569' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--slate-600)' }}>
                         <strong>Co-Delivered:</strong> {adv.projectsCoDelivered.join(', ')}
                       </div>
-                      <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+                      <div style={{ fontSize: '11.5px', color: 'var(--slate-500)' }}>
                         <strong>Vouched:</strong> {adv.vouchedCompetencies.map(c => EXECUTIVE_COMPETENCY_LABELS[c]).join(' • ')}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', gap: '12px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--slate-500)', display: 'flex', gap: '12px' }}>
                         <span>Channel: <strong>{adv.preferredChannel.toUpperCase()}</strong></span>
                         <span>Email: <strong>{adv.email}</strong></span>
                       </div>
@@ -527,8 +527,8 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
               <div className="bci-grid-3">
                 <div className="bci-metric-card">
                   <span className="bci-metric-val" style={{
-                    color: currentAudit.overallBackchannelVulnerabilityIndex >= 75 ? '#e11d48' :
-                           currentAudit.overallBackchannelVulnerabilityIndex >= 50 ? '#d97706' : '#059669'
+                    color: currentAudit.overallBackchannelVulnerabilityIndex >= 75 ? 'var(--rose-600)' :
+                           currentAudit.overallBackchannelVulnerabilityIndex >= 50 ? 'var(--amber-600)' : 'var(--emerald-600)'
                   }}>
                     {currentAudit.overallBackchannelVulnerabilityIndex}%
                   </span>
@@ -539,7 +539,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                   <span className="bci-metric-lbl">Mapped Stakeholder Nodes</span>
                 </div>
                 <div className="bci-metric-card">
-                  <span className="bci-metric-val" style={{ color: '#4f46e5' }}>
+                  <span className="bci-metric-val" style={{ color: 'var(--indigo-600)' }}>
                     {currentAudit.stakeholders.filter(s => s.probabilityScore >= 70).length}
                   </span>
                   <span className="bci-metric-lbl">High-Probability Contact Paths</span>
@@ -547,9 +547,9 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
               </div>
 
               <div className="bci-callout-box">
-                <ShieldCheck size={20} color="#4f46e5" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <ShieldCheck size={20} color="var(--indigo-600)" style={{ marginTop: '2px', flexShrink: 0 }} />
                 <div>
-                  <strong style={{ fontSize: '13px', color: '#312e81' }}>Strategic Backchannel Defense Directives:</strong>
+                  <strong style={{ fontSize: '13px', color: 'var(--indigo-900)' }}>Strategic Backchannel Defense Directives:</strong>
                   <ul className="bci-checklist" style={{ marginTop: '6px' }}>
                     {currentAudit.strategicRecommendations.map((rec, i) => (
                       <li key={i} className="bci-check-item">
@@ -563,7 +563,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
               <div className="bci-card">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                   <h3 className="bci-card-title">
-                    <Network size={16} color="#4f46e5" />
+                    <Network size={16} color="var(--indigo-600)" />
                     Target Leadership & Intermediary Backchannel Graph
                   </h3>
                   <button
@@ -576,7 +576,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                 </div>
 
                 {showAddStakeholder && (
-                  <form onSubmit={handleAddStakeholder} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <form onSubmit={handleAddStakeholder} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: 'var(--slate-50)', borderRadius: '10px', border: '1px solid var(--slate-200)' }}>
                     <div className="bci-grid-3">
                       <div className="bci-input-row">
                         <label className="bci-label">Stakeholder Name *</label>
@@ -662,7 +662,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                           <span className="bci-node-role">{s.role} @ {s.organization}</span>
                         </div>
                         <button
-                          style={{ border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer' }}
+                          style={{ border: 'none', background: 'transparent', color: 'var(--slate-400)', cursor: 'pointer' }}
                           onClick={() => handleDeleteStakeholder(s.id)}
                           title="Remove node"
                         >
@@ -687,10 +687,10 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', fontWeight: 600 }}>
-                          <span style={{ color: '#475569' }}>Backchannel Probability:</span>
+                          <span style={{ color: 'var(--slate-600)' }}>Backchannel Probability:</span>
                           <span style={{
-                            color: s.probabilityScore >= 75 ? '#e11d48' :
-                                   s.probabilityScore >= 50 ? '#d97706' : '#059669'
+                            color: s.probabilityScore >= 75 ? 'var(--rose-600)' :
+                                   s.probabilityScore >= 50 ? 'var(--amber-600)' : 'var(--emerald-600)'
                           }}>
                             {s.probabilityScore}%
                           </span>
@@ -700,19 +700,19 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                             className="bci-prob-fill"
                             style={{
                               width: `${s.probabilityScore}%`,
-                              backgroundColor: s.probabilityScore >= 75 ? '#e11d48' :
-                                               s.probabilityScore >= 50 ? '#f59e0b' : '#10b981'
+                              backgroundColor: s.probabilityScore >= 75 ? 'var(--rose-600)' :
+                                               s.probabilityScore >= 50 ? 'var(--amber-500)' : 'var(--emerald-500)'
                             }}
                           />
                         </div>
                       </div>
 
-                      <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.4 }}>
+                      <div style={{ fontSize: '12px', color: 'var(--slate-600)', lineHeight: 1.4 }}>
                         <strong>Rationale:</strong> {s.rationale}
                       </div>
 
                       {s.potentialBackchannelIntermediaries.length > 0 && (
-                        <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+                        <div style={{ fontSize: '11.5px', color: 'var(--slate-500)' }}>
                           <strong>Intermediary Paths:</strong> {s.potentialBackchannelIntermediaries.join(', ')}
                         </div>
                       )}
@@ -754,7 +754,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                         className="bci-btn-secondary"
                         onClick={handleCopyBriefingMarkdown}
                       >
-                        {copiedBriefing ? <Check size={15} color="#059669" /> : <Copy size={15} />}
+                        {copiedBriefing ? <Check size={15} color="var(--emerald-600)" /> : <Copy size={15} />}
                         {copiedBriefing ? 'Copied to Clipboard' : 'Copy Markdown'}
                       </button>
                     )}
@@ -783,8 +783,8 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div style={{ padding: '36px', textAlign: 'center', color: '#64748b' }}>
-                    <FileText size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
+                  <div style={{ padding: '36px', textAlign: 'center', color: 'var(--slate-500)' }}>
+                    <FileText size={32} color="var(--slate-400)" style={{ marginBottom: '8px' }} />
                     <p style={{ margin: 0, fontSize: '13px' }}>
                       Select an executive advocate above and click <strong>Generate Tailored Briefing</strong> to synthesize a 1-page tailored Markdown briefing packet with talking points, project metrics, and probing question pivots.
                     </p>
@@ -796,11 +796,11 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
 
           {activeTab === 'risks' && currentAudit && (
             <>
-              <div className="bci-callout-box" style={{ background: '#f8fafc', borderColor: '#cbd5e1' }}>
-                <ShieldAlert size={20} color="#475569" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <div className="bci-callout-box" style={{ background: 'var(--slate-50)', borderColor: 'var(--slate-300)' }}>
+                <ShieldAlert size={20} color="var(--slate-600)" style={{ marginTop: '2px', flexShrink: 0 }} />
                 <div>
-                  <strong style={{ fontSize: '13px', color: '#1e293b' }}>Transition Friction Neutralization Strategy:</strong>
-                  <p style={{ fontSize: '12.5px', color: '#475569', margin: '4px 0 0', lineHeight: 1.5 }}>
+                  <strong style={{ fontSize: '13px', color: 'var(--slate-800)' }}>Transition Friction Neutralization Strategy:</strong>
+                  <p style={{ fontSize: '12.5px', color: 'var(--slate-600)', margin: '4px 0 0', lineHeight: 1.5 }}>
                     Senior candidates face scrutiny over down-round restructurings, M&A spin-downs, and founder departures. These playbooks provide synchronized, defensible framing so that referees and candidates articulate consistent facts.
                   </p>
                 </div>
@@ -811,7 +811,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                   <div key={r.id} className="bci-card">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div>
-                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
+                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--slate-900)' }}>
                           {r.company} ({r.timeframe})
                         </h4>
                         <span className="bci-badge bci-badge-amber" style={{ marginTop: '4px' }}>
@@ -822,15 +822,15 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                       <div>
-                        <strong style={{ color: '#475569' }}>Context:</strong> {r.candidateContext}
+                        <strong style={{ color: 'var(--slate-600)' }}>Context:</strong> {r.candidateContext}
                       </div>
                       <div>
-                        <strong style={{ color: '#475569' }}>Executive Framing Narrative:</strong> {r.framingNarrative}
+                        <strong style={{ color: 'var(--slate-600)' }}>Executive Framing Narrative:</strong> {r.framingNarrative}
                       </div>
                     </div>
 
-                    <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <strong style={{ fontSize: '12px', color: '#0f172a' }}>Defensible Objective Facts:</strong>
+                    <div style={{ background: 'var(--slate-50)', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--slate-200)' }}>
+                      <strong style={{ fontSize: '12px', color: 'var(--slate-900)' }}>Defensible Objective Facts:</strong>
                       <ul className="bci-checklist" style={{ marginTop: '6px' }}>
                         {r.defensibleFacts.map((fact, idx) => (
                           <li key={idx} className="bci-check-item">
@@ -840,14 +840,14 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
                       </ul>
                     </div>
 
-                    <div style={{ background: '#ede9fe', padding: '12px 14px', borderRadius: '8px', border: '1px solid #ddd6fe' }}>
-                      <strong style={{ fontSize: '12px', color: '#4338ca' }}>Referee Alignment Script (Off-The-Record):</strong>
-                      <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#312e81', fontStyle: 'italic', lineHeight: 1.5 }}>
+                    <div style={{ background: 'var(--violet-100)', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--violet-200)' }}>
+                      <strong style={{ fontSize: '12px', color: 'var(--indigo-700)' }}>Referee Alignment Script (Off-The-Record):</strong>
+                      <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: 'var(--indigo-900)', fontStyle: 'italic', lineHeight: 1.5 }}>
                         {r.refereeAlignmentScript}
                       </p>
                     </div>
 
-                    <div style={{ fontSize: '12px', color: '#059669' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--emerald-600)' }}>
                       <strong>Proactive Pivot:</strong> {r.proactiveReframing}
                     </div>
                   </div>
@@ -858,7 +858,7 @@ export const BackchannelIntelModal: React.FC<BackchannelIntelModalProps> = ({
         </div>
 
         <div className="bci-modal-footer">
-          <div style={{ fontSize: '12px', color: '#64748b' }}>
+          <div style={{ fontSize: '12px', color: 'var(--slate-500)' }}>
             {advocates.length} Advocates • {currentAudit?.stakeholders.length || 0} Stakeholders Mapped
           </div>
           <button className="bci-btn-secondary" onClick={onClose}>

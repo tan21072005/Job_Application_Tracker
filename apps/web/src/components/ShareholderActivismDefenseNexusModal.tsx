@@ -256,14 +256,14 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
         </nav>
 
         {errorMessage && (
-          <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '0.75rem 1.75rem', fontSize: '0.85rem' }}>
+          <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid var(--red-500)', color: 'var(--red-300)', padding: '0.75rem 1.75rem', fontSize: '0.85rem' }}>
             {errorMessage}
           </div>
         )}
 
         <main className="activism-nexus-body">
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--slate-400)' }}>
               Synthesizing shareholder activism telemetry, SEC Schedule 13D filings, and boardroom defense matrices...
             </div>
           ) : (
@@ -280,33 +280,33 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                       </div>
                       {currentCampaign ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f8fafc' }}>
+                          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--slate-50)' }}>
                             {currentCampaign.activistFundName}
                           </div>
-                          <div style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--slate-300)', lineHeight: 1.5 }}>
                             {currentCampaign.demandSummary}
                           </div>
                           <div className="activism-nexus-grid-2" style={{ gap: '0.6rem' }}>
                             <div className="activism-nexus-outcome-box">
-                              <span style={{ color: '#94a3b8' }}>Lead Partner:</span>
+                              <span style={{ color: 'var(--slate-400)' }}>Lead Partner:</span>
                               <span style={{ fontWeight: 600 }}>{currentCampaign.leadPartnerName}</span>
                             </div>
                             <div className="activism-nexus-outcome-box">
-                              <span style={{ color: '#94a3b8' }}>Primary Demand:</span>
+                              <span style={{ color: 'var(--slate-400)' }}>Primary Demand:</span>
                               <span style={{ fontWeight: 600 }}>{currentCampaign.primaryDemand.replace(/_/g, ' ')}</span>
                             </div>
                             <div className="activism-nexus-outcome-box">
-                              <span style={{ color: '#94a3b8' }}>Direct Equity:</span>
-                              <span style={{ fontWeight: 700, color: '#f87171' }}>{currentCampaign.percentageOwnership}%</span>
+                              <span style={{ color: 'var(--slate-400)' }}>Direct Equity:</span>
+                              <span style={{ fontWeight: 700, color: 'var(--red-400)' }}>{currentCampaign.percentageOwnership}%</span>
                             </div>
                             <div className="activism-nexus-outcome-box">
-                              <span style={{ color: '#94a3b8' }}>Effective Exposure:</span>
-                              <span style={{ fontWeight: 700, color: '#c084fc' }}>{currentCampaign.effectiveEconomicExposure}%</span>
+                              <span style={{ color: 'var(--slate-400)' }}>Effective Exposure:</span>
+                              <span style={{ fontWeight: 700, color: 'var(--purple-400)' }}>{currentCampaign.effectiveEconomicExposure}%</span>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div style={{ color: '#94a3b8' }}>No active activist campaign detected.</div>
+                        <div style={{ color: 'var(--slate-400)' }}>No active activist campaign detected.</div>
                       )}
                     </div>
 
@@ -318,14 +318,14 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', margin: '0.5rem 0' }}>
-                        <div style={{ fontSize: '3.2rem', fontWeight: 900, color: overview?.wolfpackCoordinationIndex! >= 50 ? '#ef4444' : '#fbbf24' }}>
+                        <div style={{ fontSize: '3.2rem', fontWeight: 900, color: overview?.wolfpackCoordinationIndex! >= 50 ? 'var(--red-500)' : 'var(--amber-400)' }}>
                           {overview?.wolfpackCoordinationIndex}
                         </div>
                         <div>
                           <span className="activism-nexus-badge activism-badge-crimson" style={{ fontSize: '0.85rem' }}>
                             HIGH WOLFPACK COORDINATION PROBABILITY
                           </span>
-                          <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.3rem' }}>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--slate-400)', marginTop: '0.3rem' }}>
                             Concerted accumulation pattern detected across affiliated hedge funds and swaps desks under Exchange Act Section 13(d)(3).
                           </div>
                         </div>
@@ -333,12 +333,12 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
 
                       <div className="activism-nexus-grid-2" style={{ gap: '0.6rem', marginTop: '0.5rem' }}>
                         <div className="activism-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Wolfpack Funds:</span>
+                          <span style={{ color: 'var(--slate-400)' }}>Wolfpack Funds:</span>
                           <span style={{ fontWeight: 700 }}>{overview?.wolfpackAccumulations.length} Syndicate Nodes</span>
                         </div>
                         <div className="activism-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Aggregate Stake:</span>
-                          <span style={{ fontWeight: 700, color: '#f87171' }}>
+                          <span style={{ color: 'var(--slate-400)' }}>Aggregate Stake:</span>
+                          <span style={{ fontWeight: 700, color: 'var(--red-400)' }}>
                             {overview?.wolfpackAccumulations.reduce((acc, w) => acc + w.ownershipPercentage, 0).toFixed(2)}% Float
                           </span>
                         </div>
@@ -449,17 +449,17 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                       {overview?.wolfpackAccumulations.map(w => (
                         <div key={w.id} className="activism-nexus-outcome-box">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#f8fafc' }}>{w.fundName}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)' }}>{w.fundName}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)', marginTop: '0.2rem' }}>
                               Crossed 5% Threshold: {w.schedule13dCrossDate} &bull; Statutory 5-Day Deadline: {w.filingDeadlineDate}
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f87171' }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--red-400)' }}>
                                 {w.ownershipPercentage}% Direct ({w.derivativeExposurePercentage}% Swaps)
                               </div>
-                              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)' }}>
                                 Velocity: {w.accumulationVelocitySharesPerDay.toLocaleString()} sh/day
                               </div>
                             </div>
@@ -485,14 +485,14 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', margin: '0.5rem 0' }}>
-                        <div style={{ fontSize: '3rem', fontWeight: 900, color: overview?.vulnerabilityAudit.compositeVulnerabilityScore! >= 60 ? '#fbbf24' : '#10b981' }}>
+                        <div style={{ fontSize: '3rem', fontWeight: 900, color: overview?.vulnerabilityAudit.compositeVulnerabilityScore! >= 60 ? 'var(--amber-400)' : 'var(--emerald-500)' }}>
                           {overview?.vulnerabilityAudit.compositeVulnerabilityScore}
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--slate-300)' }}>
                             Multi-vector quantitative corporate vulnerability audit benchmarked against S&P 500 peer quartiles.
                           </div>
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)', marginTop: '0.2rem' }}>
                             Audit Date: {overview?.vulnerabilityAudit.auditDate}
                           </div>
                         </div>
@@ -500,19 +500,19 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
 
                       <div className="activism-nexus-grid-2" style={{ gap: '0.6rem' }}>
                         <div className="activism-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>TSR Underperformance:</span>
-                          <span style={{ fontWeight: 700, color: '#f87171' }}>{overview?.vulnerabilityAudit.tsrUnderperformanceScore}/100</span>
+                          <span style={{ color: 'var(--slate-400)' }}>TSR Underperformance:</span>
+                          <span style={{ fontWeight: 700, color: 'var(--red-400)' }}>{overview?.vulnerabilityAudit.tsrUnderperformanceScore}/100</span>
                         </div>
                         <div className="activism-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>ROIC-WACC Deficit:</span>
-                          <span style={{ fontWeight: 700, color: '#fbbf24' }}>{overview?.vulnerabilityAudit.roicWaccDeficitScore}/100</span>
+                          <span style={{ color: 'var(--slate-400)' }}>ROIC-WACC Deficit:</span>
+                          <span style={{ fontWeight: 700, color: 'var(--amber-400)' }}>{overview?.vulnerabilityAudit.roicWaccDeficitScore}/100</span>
                         </div>
                         <div className="activism-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Conglomerate Discount:</span>
-                          <span style={{ fontWeight: 700, color: '#f87171' }}>{overview?.vulnerabilityAudit.sotpConglomerateDiscountScore}/100</span>
+                          <span style={{ color: 'var(--slate-400)' }}>Conglomerate Discount:</span>
+                          <span style={{ fontWeight: 700, color: 'var(--red-400)' }}>{overview?.vulnerabilityAudit.sotpConglomerateDiscountScore}/100</span>
                         </div>
                         <div className="activism-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Governance Profile Risk:</span>
+                          <span style={{ color: 'var(--slate-400)' }}>Governance Profile Risk:</span>
                           <span style={{ fontWeight: 700 }}>{overview?.vulnerabilityAudit.governanceVulnerabilityScore}/100</span>
                         </div>
                       </div>
@@ -523,8 +523,8 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                         {overview?.vulnerabilityAudit.keyVulnerabilities.map((v, i) => (
                           <div key={i} className="activism-nexus-outcome-box" style={{ justifyContent: 'flex-start', gap: '0.6rem' }}>
-                            <span style={{ color: '#f87171', fontWeight: 800 }}>&bull;</span>
-                            <span style={{ color: '#f8fafc', fontSize: '0.8rem' }}>{v}</span>
+                            <span style={{ color: 'var(--red-400)', fontWeight: 800 }}>&bull;</span>
+                            <span style={{ color: 'var(--slate-50)', fontSize: '0.8rem' }}>{v}</span>
                           </div>
                         ))}
                       </div>
@@ -537,17 +537,17 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                       {overview?.sotpSegments.map(s => (
                         <div key={s.id} className="activism-nexus-outcome-box">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#f8fafc' }}>{s.segmentName}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)' }}>{s.segmentName}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)', marginTop: '0.2rem' }}>
                               Revenue: ${(s.revenueUsd / 1e9).toFixed(2)}B &bull; EBITDA: ${(s.ebitdaUsd / 1e6).toFixed(0)}M &bull; Peer Multiple: {s.peerMultiple}x
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#cbd5e1' }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--slate-300)' }}>
                                 Current: ${(s.impliedSegmentValueUsd / 1e9).toFixed(2)}B
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: '#34d399' }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--emerald-400)' }}>
                                 Activist Target: ${(s.activistTargetValueUsd / 1e9).toFixed(2)}B
                               </div>
                             </div>
@@ -571,16 +571,16 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                         {overview?.institutionalCohorts.map(c => (
                           <div key={c.id} className="activism-nexus-outcome-box">
                             <div>
-                              <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.82rem' }}>{c.institutionName}</div>
-                              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                              <div style={{ fontWeight: 700, color: 'var(--slate-50)', fontSize: '0.82rem' }}>{c.institutionName}</div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)' }}>
                                 {c.cohortCategory.replace(/_/g, ' ').toUpperCase()} &bull; Last Contact: {c.lastEngagementDate}
                               </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontWeight: 800, color: '#c084fc', fontSize: '0.85rem' }}>
+                              <div style={{ fontWeight: 800, color: 'var(--purple-400)', fontSize: '0.85rem' }}>
                                 {c.votingPowerPercentage}% Voting Power
                               </div>
-                              <div style={{ fontSize: '0.7rem', color: '#34d399' }}>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--emerald-400)' }}>
                                 Mgmt Support: {c.historicalManagementSupportRate}%
                               </div>
                             </div>
@@ -593,14 +593,14 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                       <div className="activism-nexus-card-title">Proxy Advisory Benchmark Evaluations (ISS vs Glass Lewis)</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                         {overview?.proxyAdvisorEvaluations.map(p => (
-                          <div key={p.id} style={{ background: '#080d1a', border: '1px solid #1e293b', borderRadius: '6px', padding: '0.8rem' }}>
+                          <div key={p.id} style={{ background: 'var(--custom-080d1a)', border: '1px solid var(--slate-800)', borderRadius: '6px', padding: '0.8rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                              <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#f8fafc' }}>{p.advisorName} Benchmark Policy</div>
+                              <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--slate-50)' }}>{p.advisorName} Benchmark Policy</div>
                               <span className={`activism-nexus-badge ${p.contestedElectionRecommendation.includes('management') ? 'activism-badge-emerald' : 'activism-badge-amber'}`}>
                                 {p.contestedElectionRecommendation.replace(/_/g, ' ').toUpperCase()}
                               </span>
                             </div>
-                            <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.4, marginBottom: '0.5rem' }}>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--slate-300)', lineHeight: 1.4, marginBottom: '0.5rem' }}>
                               {p.rationalesSummary}
                             </div>
                             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -647,26 +647,26 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
 
                     <div className="activism-nexus-grid-4" style={{ gap: '0.8rem' }}>
                       <div className="activism-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Management Projected:</span>
-                        <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34d399' }}>
+                        <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Management Projected:</span>
+                        <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--emerald-400)' }}>
                           {dynamicContestSim?.managementVotesProjected}%
                         </span>
                       </div>
                       <div className="activism-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Dissident Projected:</span>
-                        <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f87171' }}>
+                        <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Dissident Projected:</span>
+                        <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--red-400)' }}>
                           {dynamicContestSim?.dissidentVotesProjected}%
                         </span>
                       </div>
                       <div className="activism-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Management Win Probability:</span>
-                        <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#60a5fa' }}>
+                        <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Management Win Probability:</span>
+                        <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--blue-400)' }}>
                           {dynamicContestSim?.managementWinProbability}%
                         </span>
                       </div>
                       <div className="activism-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Dissident Seats Won:</span>
-                        <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fbbf24' }}>
+                        <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Dissident Seats Won:</span>
+                        <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--amber-400)' }}>
                           {dynamicContestSim?.projectedDissidentSeatsWon} of 3
                         </span>
                       </div>
@@ -685,7 +685,7 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                           {overview?.rightsPlan.status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.8rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--slate-400)', marginBottom: '0.8rem' }}>
                         Delaware DGCL Section 157 & Unocal two-prong enhanced scrutiny proportionality defense.
                       </div>
 
@@ -716,21 +716,21 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
 
                       <div className="activism-nexus-grid-2" style={{ gap: '0.6rem', marginBottom: '0.8rem' }}>
                         <div className="activism-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Post-Dilution Stake:</span>
-                          <span style={{ fontWeight: 800, color: '#34d399' }}>{pillOutcome.postDilutionAcquirerPct}%</span>
+                          <span style={{ color: 'var(--slate-400)' }}>Post-Dilution Stake:</span>
+                          <span style={{ fontWeight: 800, color: 'var(--emerald-400)' }}>{pillOutcome.postDilutionAcquirerPct}%</span>
                         </div>
                         <div className="activism-nexus-outcome-box">
-                          <span style={{ color: '#94a3b8' }}>Dilution Factor:</span>
-                          <span style={{ fontWeight: 800, color: '#f87171' }}>{pillOutcome.dilutionFactor}x</span>
+                          <span style={{ color: 'var(--slate-400)' }}>Dilution Factor:</span>
+                          <span style={{ fontWeight: 800, color: 'var(--red-400)' }}>{pillOutcome.dilutionFactor}x</span>
                         </div>
                       </div>
 
-                      <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', padding: '0.6rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', color: '#fca5a5', marginBottom: '0.8rem' }}>
+                      <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', padding: '0.6rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', color: 'var(--red-300)', marginBottom: '0.8rem' }}>
                         {pillOutcome.economicDeterrenceEffect}
                       </div>
 
                       {overview?.rightsPlan.status === 'active_in_place' ? (
-                        <div style={{ textAlign: 'center', color: '#34d399', fontWeight: 700, fontSize: '0.85rem' }}>
+                        <div style={{ textAlign: 'center', color: 'var(--emerald-400)', fontWeight: 700, fontSize: '0.85rem' }}>
                           &#10003; 15% Flip-In Rights Plan Active in Place
                         </div>
                       ) : (
@@ -751,17 +751,17 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                         {overview?.settlementScenarios.map(s => (
                           <div key={s.id} className="activism-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.4rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                              <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.85rem' }}>{s.scenarioTitle}</div>
+                              <div style={{ fontWeight: 700, color: 'var(--slate-50)', fontSize: '0.85rem' }}>{s.scenarioTitle}</div>
                               <span className={`activism-nexus-badge ${s.recommendationVerdict.includes('standstill') ? 'activism-badge-emerald' : 'activism-badge-amber'}`}>
                                 {s.recommendationVerdict.replace(/_/g, ' ').toUpperCase()}
                               </span>
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                               Board Seats Granted: {s.proposedBoardSeats} &bull; Standstill: {s.standstillDurationMonths} mos &bull; Defense Costs: ${(s.expenseReimbursementUsd / 1e6).toFixed(1)}M
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.8rem', marginTop: '0.2rem' }}>
-                              <span style={{ color: '#cbd5e1' }}>Settle Net EV: ${(s.settleNetEnterpriseValueUsd / 1e9).toFixed(2)}B</span>
-                              <span style={{ color: s.projectedStockImpactPct > 0 ? '#34d399' : '#f87171', fontWeight: 700 }}>
+                              <span style={{ color: 'var(--slate-300)' }}>Settle Net EV: ${(s.settleNetEnterpriseValueUsd / 1e9).toFixed(2)}B</span>
+                              <span style={{ color: s.projectedStockImpactPct > 0 ? 'var(--emerald-400)' : 'var(--red-400)', fontWeight: 700 }}>
                                 Stock Impact: {s.projectedStockImpactPct > 0 ? '+' : ''}{s.projectedStockImpactPct}%
                               </span>
                             </div>
@@ -777,10 +777,10 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                       {overview?.directorNominees.map(n => (
                         <div key={n.id} className="activism-nexus-outcome-box">
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 800, color: '#34d399', fontSize: '0.85rem' }}>
+                            <div style={{ fontWeight: 800, color: 'var(--emerald-400)', fontSize: '0.85rem' }}>
                               Seat #{n.seatNumber} Incumbent: {n.incumbentName} ({n.incumbentYearsServed} yrs)
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>{n.incumbentSkills}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-300)' }}>{n.incumbentSkills}</div>
                           </div>
                           <div style={{ textAlign: 'center', padding: '0 1rem' }}>
                             <span className="activism-nexus-badge activism-badge-purple">
@@ -788,10 +788,10 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                             </span>
                           </div>
                           <div style={{ flex: 1, textAlign: 'right' }}>
-                            <div style={{ fontWeight: 800, color: '#f87171', fontSize: '0.85rem' }}>
+                            <div style={{ fontWeight: 800, color: 'var(--red-400)', fontSize: '0.85rem' }}>
                               Dissident: {n.dissidentName}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>
                               {n.dissidentAffiliation} &bull; {n.dissidentExpertise}
                             </div>
                           </div>
@@ -799,8 +799,8 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                       ))}
                     </div>
 
-                    <form onSubmit={handleAddNominee} style={{ background: '#080d1a', padding: '0.8rem', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#f8fafc' }}>Benchmark Contested Seat Nominee Pair</div>
+                    <form onSubmit={handleAddNominee} style={{ background: 'var(--custom-080d1a)', padding: '0.8rem', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--slate-50)' }}>Benchmark Contested Seat Nominee Pair</div>
                       <div className="activism-nexus-grid-2" style={{ gap: '0.6rem' }}>
                         <div className="activism-nexus-form-group">
                           <label className="activism-nexus-label">Incumbent Nominee Name</label>
@@ -860,38 +860,38 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                   <div className="activism-nexus-grid-2">
                     <div className="activism-nexus-card">
                       <div className="activism-nexus-card-title">Universal Proxy Card Battle Station (SEC Rule 14a-19)</div>
-                      <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.6rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--slate-400)', marginBottom: '0.6rem' }}>
                         Statutory 67% solicitation condition confirmed. Projected voting turnout modeling across all institutional and retail cohorts.
                       </div>
 
                       <div className="activism-nexus-grid-3" style={{ gap: '0.6rem', marginBottom: '1rem' }}>
                         <div className="activism-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>White Card (Mgmt):</span>
-                          <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#34d399' }}>
+                          <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>White Card (Mgmt):</span>
+                          <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--emerald-400)' }}>
                             {overview?.proxyContest.managementVotesProjected}%
                           </span>
                         </div>
                         <div className="activism-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Gold Card (Dissident):</span>
-                          <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f87171' }}>
+                          <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Gold Card (Dissident):</span>
+                          <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--red-400)' }}>
                             {overview?.proxyContest.dissidentVotesProjected}%
                           </span>
                         </div>
                         <div className="activism-nexus-outcome-box" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Undecided Swing:</span>
-                          <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fbbf24' }}>
+                          <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>Undecided Swing:</span>
+                          <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--amber-400)' }}>
                             {overview?.proxyContest.undecidedVotesProjected}%
                           </span>
                         </div>
                       </div>
 
                       <div className="activism-nexus-outcome-box" style={{ marginBottom: '0.6rem' }}>
-                        <span style={{ color: '#94a3b8' }}>Management Win Probability:</span>
-                        <span style={{ fontWeight: 800, color: '#34d399' }}>{overview?.proxyContest.managementWinProbability}%</span>
+                        <span style={{ color: 'var(--slate-400)' }}>Management Win Probability:</span>
+                        <span style={{ fontWeight: 800, color: 'var(--emerald-400)' }}>{overview?.proxyContest.managementWinProbability}%</span>
                       </div>
                       <div className="activism-nexus-outcome-box">
-                        <span style={{ color: '#94a3b8' }}>Projected Dissident Seats Won:</span>
-                        <span style={{ fontWeight: 800, color: '#fbbf24' }}>
+                        <span style={{ color: 'var(--slate-400)' }}>Projected Dissident Seats Won:</span>
+                        <span style={{ fontWeight: 800, color: 'var(--amber-400)' }}>
                           {overview?.proxyContest.projectedDissidentSeatsWon} of 3 Contested Seats
                         </span>
                       </div>
@@ -899,15 +899,15 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
 
                     <div className="activism-nexus-card">
                       <div className="activism-nexus-card-title">Tripartite Board Defense Resolution Ratification Gate</div>
-                      <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.6rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--slate-400)', marginBottom: '0.6rem' }}>
                         Sequential cryptographic authorization required under Delaware DGCL Section 141 before dispatching fight letters or deploying pills.
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <div className="activism-nexus-outcome-box">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#f8fafc' }}>1. Lead Independent Director</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Fiduciary defense review & independent director caucus</div>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)' }}>1. Lead Independent Director</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Fiduciary defense review & independent director caucus</div>
                           </div>
                           {currentSignoff?.leadDirectorSignoff?.isSigned ? (
                             <span className="activism-nexus-badge activism-badge-emerald">SIGNED: {currentSignoff.leadDirectorSignoff.signoffSignerName}</span>
@@ -924,8 +924,8 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
 
                         <div className="activism-nexus-outcome-box">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#f8fafc' }}>2. Nominating & Governance Committee Chair</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Universal Proxy Card & board slate qualifications audit</div>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)' }}>2. Nominating & Governance Committee Chair</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Universal Proxy Card & board slate qualifications audit</div>
                           </div>
                           {currentSignoff?.governanceChairSignoff?.isSigned ? (
                             <span className="activism-nexus-badge activism-badge-emerald">SIGNED: {currentSignoff.governanceChairSignoff.signoffSignerName}</span>
@@ -942,8 +942,8 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
 
                         <div className="activism-nexus-outcome-box">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#f8fafc' }}>3. Board Chair & Chief Executive Officer</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Final corporate defense ratification & execution seal</div>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)' }}>3. Board Chair & Chief Executive Officer</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>Final corporate defense ratification & execution seal</div>
                           </div>
                           {currentSignoff?.boardChairCeoSignoff?.isSigned ? (
                             <span className="activism-nexus-badge activism-badge-emerald">SIGNED: {currentSignoff.boardChairCeoSignoff.signoffSignerName}</span>
@@ -959,16 +959,16 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                         </div>
                       </div>
 
-                      <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: '#080d1a', borderRadius: '6px', textAlign: 'center' }}>
+                      <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: 'var(--custom-080d1a)', borderRadius: '6px', textAlign: 'center' }}>
                         {currentSignoff?.isFullyRatified ? (
-                          <div style={{ color: '#10b981', fontWeight: 800 }}>
+                          <div style={{ color: 'var(--emerald-500)', fontWeight: 800 }}>
                             &#10003; FULL BOARDROOM RATIFICATION CONFIRMED &bull; DEFENSE CHARTER DEPLOYED
-                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.2rem', fontFamily: 'monospace' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)', marginTop: '0.2rem', fontFamily: 'monospace' }}>
                               SEAL: {currentSignoff.cryptographicIntegrityHash}
                             </div>
                           </div>
                         ) : (
-                          <div style={{ color: '#fbbf24', fontWeight: 600, fontSize: '0.85rem' }}>
+                          <div style={{ color: 'var(--amber-400)', fontWeight: 600, fontSize: '0.85rem' }}>
                             Awaiting complete tripartite sign-off before dispatching formal shareholder fight letters
                           </div>
                         )}
@@ -982,14 +982,14 @@ export const ShareholderActivismDefenseNexusModal: React.FC<Props> = ({ isOpen, 
                       {overview?.eventLogs.map(l => (
                         <div key={l.id} className="activism-nexus-outcome-box">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.82rem' }}>{l.headline}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '0.1rem' }}>{l.details}</div>
+                            <div style={{ fontWeight: 700, color: 'var(--slate-50)', fontSize: '0.82rem' }}>{l.headline}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--slate-300)', marginTop: '0.1rem' }}>{l.details}</div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             <span className={`activism-nexus-badge ${l.severity === 'critical' || l.severity === 'high' ? 'activism-badge-crimson' : 'activism-badge-blue'}`}>
                               {l.eventCategory.replace(/_/g, ' ').toUpperCase()}
                             </span>
-                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.2rem' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)', marginTop: '0.2rem' }}>
                               {new Date(l.eventTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>
