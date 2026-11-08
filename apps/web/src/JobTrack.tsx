@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Check, ChevronLeft, ChevronRight, CircleAlert, LayoutDashboard, LoaderCircle, LogOut, Menu, Plus, RotateCcw, Settings, Trash2, X, KeyRound, Sparkles, Database, UserCheck, Radar, CalendarDays, Crown, TrendingUp, FileText, Building2, Users, Scale, Compass, Mail, Send, Cpu, ShieldCheck, CircleDollarSign, FileCheck, Gauge, Coins, Network, FileSignature, FileSearch, Workflow, BarChart3, ShieldAlert, Leaf, Truck, Landmark } from 'lucide-react';
 import { demoMode, repository, proRepository, enterpriseModulesEnabled } from './data';
 import type { ProStatusDTO } from '@jobtrack/contract';
@@ -36,35 +36,8 @@ import { CareerTrajectoryModal } from './components/CareerTrajectoryModal';
 import { ResumeOptimizerModal } from './components/ResumeOptimizerModal';
 import { PipelineVelocityModal } from './components/PipelineVelocityModal';
 import { CultureRadarModal } from './components/CultureRadarModal';
-import { HeadhunterCrmModal } from './components/HeadhunterCrmModal';
-import { SystemDesignStudioModal } from './components/SystemDesignStudioModal';
-import { EquityLiquidityModal } from './components/EquityLiquidityModal';
-import { BackchannelIntelModal } from './components/BackchannelIntelModal';
-import { ExecutiveContractGuardModal } from './components/ExecutiveContractGuardModal';
-import { ExecutiveOnboardingModal } from './components/ExecutiveOnboardingModal';
-import { BoardAdvisoryNexusModal } from './components/BoardAdvisoryNexusModal';
-import { ExecutiveSeveranceGuardModal } from './components/ExecutiveSeveranceGuardModal';
-import { TechnicalDueDiligenceStudioModal } from './components/TechnicalDueDiligenceStudioModal';
-import { OrgTopologyStudioModal } from './components/OrgTopologyStudioModal';
-import { ValueStreamStudioModal } from './components/ValueStreamStudioModal';
-import { CloudFinopsStudioModal } from './components/CloudFinopsStudioModal';
-import { AiGovernanceStudioModal } from './components/AiGovernanceStudioModal';
-import { SuccessionPipelineStudioModal } from './components/SuccessionPipelineStudioModal';
-import { CyberRiskGovernanceStudioModal } from './components/CyberRiskGovernanceStudioModal';
-import { EsgSustainabilityStudioModal } from './components/EsgSustainabilityStudioModal';
-import { SupplyChainResilienceStudioModal } from './components/SupplyChainResilienceStudioModal';
-import { WorkforceTotalRewardsStudioModal } from './components/WorkforceTotalRewardsStudioModal';
-import { CorporateTreasuryNexusModal } from './components/CorporateTreasuryNexusModal';
-import { InternalAuditErmNexusModal } from './components/InternalAuditErmNexusModal';
-import { LegalOperationsNexusModal } from './components/LegalOperationsNexusModal';
-import { InvestorRelationsNexusModal } from './components/InvestorRelationsNexusModal';
-import { CorpDevPmiNexusModal } from './components/CorpDevPmiNexusModal';
-import { GlobalTradeSanctionsNexusModal } from './components/GlobalTradeSanctionsNexusModal';
-import { StrategicCommsCrisisNexusModal } from './components/StrategicCommsCrisisNexusModal';
-import { ShareholderActivismDefenseNexusModal } from './components/ShareholderActivismDefenseNexusModal';
-import { AntitrustCompetitionNexusModal } from './components/AntitrustCompetitionNexusModal';
-import { PrivacyDataSovereigntyNexusModal } from './components/PrivacyDataSovereigntyNexusModal';
 import PasswordSecurityModal from './components/PasswordSecurityModal';
+import { HeadhunterCrmModal, SystemDesignStudioModal, EquityLiquidityModal, BackchannelIntelModal, ExecutiveContractGuardModal, ExecutiveOnboardingModal, BoardAdvisoryNexusModal, ExecutiveSeveranceGuardModal, TechnicalDueDiligenceStudioModal, OrgTopologyStudioModal, ValueStreamStudioModal, CloudFinopsStudioModal, AiGovernanceStudioModal, SuccessionPipelineStudioModal, CyberRiskGovernanceStudioModal, EsgSustainabilityStudioModal, SupplyChainResilienceStudioModal, WorkforceTotalRewardsStudioModal, CorporateTreasuryNexusModal, InternalAuditErmNexusModal, LegalOperationsNexusModal, InvestorRelationsNexusModal, CorpDevPmiNexusModal, GlobalTradeSanctionsNexusModal, StrategicCommsCrisisNexusModal, ShareholderActivismDefenseNexusModal, AntitrustCompetitionNexusModal, PrivacyDataSovereigntyNexusModal } from './components/enterprise';
 import Sidebar from './components/Sidebar';
 import MobileDrawer from './components/MobileDrawer';
 import SettingsView from './views/SettingsView';
@@ -463,34 +436,36 @@ export default function JobTrack() {
   {resumeOptimizerModal && <ResumeOptimizerModal isOpen={resumeOptimizerModal} onClose={() => setResumeOptimizerModal(false)} applications={apps} notify={notify} />}
   {pipelineVelocityModal && <PipelineVelocityModal applications={apps} onClose={() => setPipelineVelocityModal(false)} notify={notify} />}
   {cultureRadarModal && <CultureRadarModal currentApplications={apps} defaultCompany={apps[0]?.company || 'FPT Software'} onClose={() => setCultureRadarModal(false)} notify={notify} />}
-  {enterpriseModulesEnabled && headhunterCrmModal && <HeadhunterCrmModal applications={apps} onClose={() => setHeadhunterCrmModal(false)} onApplicationCreated={refresh} notify={notify} />}
-  {enterpriseModulesEnabled && systemDesignStudioModal && <SystemDesignStudioModal onClose={() => setSystemDesignStudioModal(false)} notify={notify} />}
-  {enterpriseModulesEnabled && equityLiquidityModal && <EquityLiquidityModal isOpen={equityLiquidityModal} onClose={() => setEquityLiquidityModal(false)} defaultCompany={apps[0]?.company} defaultRole={apps[0]?.position} />}
-  {enterpriseModulesEnabled && backchannelIntelModal && <BackchannelIntelModal isOpen={backchannelIntelModal} onClose={() => setBackchannelIntelModal(false)} />}
-  {enterpriseModulesEnabled && executiveContractModal && <ExecutiveContractGuardModal isOpen={executiveContractModal} onClose={() => setExecutiveContractModal(false)} />}
-  {enterpriseModulesEnabled && executiveOnboardingModal && <ExecutiveOnboardingModal isOpen={executiveOnboardingModal} onClose={() => setExecutiveOnboardingModal(false)} defaultCompany={apps[0]?.company} defaultRole={apps[0]?.position} />}
-  {enterpriseModulesEnabled && boardAdvisoryModal && <BoardAdvisoryNexusModal isOpen={boardAdvisoryModal} onClose={() => setBoardAdvisoryModal(false)} />}
-  {enterpriseModulesEnabled && executiveSeveranceModal && <ExecutiveSeveranceGuardModal isOpen={executiveSeveranceModal} onClose={() => setExecutiveSeveranceModal(false)} />}
-  {enterpriseModulesEnabled && technicalDueDiligenceModal && <TechnicalDueDiligenceStudioModal isOpen={technicalDueDiligenceModal} onClose={() => setTechnicalDueDiligenceModal(false)} />}
-  {enterpriseModulesEnabled && orgTopologyStudioModal && <OrgTopologyStudioModal isOpen={orgTopologyStudioModal} onClose={() => setOrgTopologyStudioModal(false)} />}
-  {enterpriseModulesEnabled && valueStreamStudioModal && <ValueStreamStudioModal isOpen={valueStreamStudioModal} onClose={() => setValueStreamStudioModal(false)} />}
-  {enterpriseModulesEnabled && cloudFinopsStudioModal && <CloudFinopsStudioModal isOpen={cloudFinopsStudioModal} onClose={() => setCloudFinopsStudioModal(false)} />}
-  {enterpriseModulesEnabled && aiGovernanceStudioModal && <AiGovernanceStudioModal isOpen={aiGovernanceStudioModal} onClose={() => setAiGovernanceStudioModal(false)} />}
-  {enterpriseModulesEnabled && successionStudioModal && <SuccessionPipelineStudioModal isOpen={successionStudioModal} onClose={() => setSuccessionStudioModal(false)} />}
-  {enterpriseModulesEnabled && cyberRiskStudioModal && <CyberRiskGovernanceStudioModal isOpen={cyberRiskStudioModal} onClose={() => setCyberRiskStudioModal(false)} />}
-  {enterpriseModulesEnabled && esgStudioModal && <EsgSustainabilityStudioModal isOpen={esgStudioModal} onClose={() => setEsgStudioModal(false)} />}
-  {enterpriseModulesEnabled && supplyChainStudioModal && <SupplyChainResilienceStudioModal isOpen={supplyChainStudioModal} onClose={() => setSupplyChainStudioModal(false)} />}
-  {enterpriseModulesEnabled && totalRewardsStudioModal && <WorkforceTotalRewardsStudioModal isOpen={totalRewardsStudioModal} onClose={() => setTotalRewardsStudioModal(false)} />}
-  {enterpriseModulesEnabled && corporateTreasuryModal && <CorporateTreasuryNexusModal isOpen={corporateTreasuryModal} onClose={() => setCorporateTreasuryModal(false)} />}
-  {enterpriseModulesEnabled && internalAuditErmModal && <InternalAuditErmNexusModal isOpen={internalAuditErmModal} onClose={() => setInternalAuditErmModal(false)} />}
-  {enterpriseModulesEnabled && legalOperationsModal && <LegalOperationsNexusModal isOpen={legalOperationsModal} onClose={() => setLegalOperationsModal(false)} />}
-  {enterpriseModulesEnabled && investorRelationsModal && <InvestorRelationsNexusModal isOpen={investorRelationsModal} onClose={() => setInvestorRelationsModal(false)} />}
-  {enterpriseModulesEnabled && corpDevModal && <CorpDevPmiNexusModal isOpen={corpDevModal} onClose={() => setCorpDevModal(false)} />}
-  {enterpriseModulesEnabled && tradeSanctionsModal && <GlobalTradeSanctionsNexusModal isOpen={tradeSanctionsModal} onClose={() => setTradeSanctionsModal(false)} />}
-  {enterpriseModulesEnabled && commsCrisisModal && <StrategicCommsCrisisNexusModal isOpen={commsCrisisModal} onClose={() => setCommsCrisisModal(false)} />}
-  {enterpriseModulesEnabled && shareholderActivismModal && <ShareholderActivismDefenseNexusModal isOpen={shareholderActivismModal} onClose={() => setShareholderActivismModal(false)} />}
-  {enterpriseModulesEnabled && antitrustModal && <AntitrustCompetitionNexusModal isOpen={antitrustModal} onClose={() => setAntitrustModal(false)} />}
-  {enterpriseModulesEnabled && privacyNexusModal && <PrivacyDataSovereigntyNexusModal isOpen={privacyNexusModal} onClose={() => setPrivacyNexusModal(false)} />}
+  {enterpriseModulesEnabled && <Suspense fallback={null}>
+    {enterpriseModulesEnabled && headhunterCrmModal && <HeadhunterCrmModal applications={apps} onClose={() => setHeadhunterCrmModal(false)} onApplicationCreated={refresh} notify={notify} />}
+    {enterpriseModulesEnabled && systemDesignStudioModal && <SystemDesignStudioModal onClose={() => setSystemDesignStudioModal(false)} notify={notify} />}
+    {enterpriseModulesEnabled && equityLiquidityModal && <EquityLiquidityModal isOpen={equityLiquidityModal} onClose={() => setEquityLiquidityModal(false)} defaultCompany={apps[0]?.company} defaultRole={apps[0]?.position} />}
+    {enterpriseModulesEnabled && backchannelIntelModal && <BackchannelIntelModal isOpen={backchannelIntelModal} onClose={() => setBackchannelIntelModal(false)} />}
+    {enterpriseModulesEnabled && executiveContractModal && <ExecutiveContractGuardModal isOpen={executiveContractModal} onClose={() => setExecutiveContractModal(false)} />}
+    {enterpriseModulesEnabled && executiveOnboardingModal && <ExecutiveOnboardingModal isOpen={executiveOnboardingModal} onClose={() => setExecutiveOnboardingModal(false)} defaultCompany={apps[0]?.company} defaultRole={apps[0]?.position} />}
+    {enterpriseModulesEnabled && boardAdvisoryModal && <BoardAdvisoryNexusModal isOpen={boardAdvisoryModal} onClose={() => setBoardAdvisoryModal(false)} />}
+    {enterpriseModulesEnabled && executiveSeveranceModal && <ExecutiveSeveranceGuardModal isOpen={executiveSeveranceModal} onClose={() => setExecutiveSeveranceModal(false)} />}
+    {enterpriseModulesEnabled && technicalDueDiligenceModal && <TechnicalDueDiligenceStudioModal isOpen={technicalDueDiligenceModal} onClose={() => setTechnicalDueDiligenceModal(false)} />}
+    {enterpriseModulesEnabled && orgTopologyStudioModal && <OrgTopologyStudioModal isOpen={orgTopologyStudioModal} onClose={() => setOrgTopologyStudioModal(false)} />}
+    {enterpriseModulesEnabled && valueStreamStudioModal && <ValueStreamStudioModal isOpen={valueStreamStudioModal} onClose={() => setValueStreamStudioModal(false)} />}
+    {enterpriseModulesEnabled && cloudFinopsStudioModal && <CloudFinopsStudioModal isOpen={cloudFinopsStudioModal} onClose={() => setCloudFinopsStudioModal(false)} />}
+    {enterpriseModulesEnabled && aiGovernanceStudioModal && <AiGovernanceStudioModal isOpen={aiGovernanceStudioModal} onClose={() => setAiGovernanceStudioModal(false)} />}
+    {enterpriseModulesEnabled && successionStudioModal && <SuccessionPipelineStudioModal isOpen={successionStudioModal} onClose={() => setSuccessionStudioModal(false)} />}
+    {enterpriseModulesEnabled && cyberRiskStudioModal && <CyberRiskGovernanceStudioModal isOpen={cyberRiskStudioModal} onClose={() => setCyberRiskStudioModal(false)} />}
+    {enterpriseModulesEnabled && esgStudioModal && <EsgSustainabilityStudioModal isOpen={esgStudioModal} onClose={() => setEsgStudioModal(false)} />}
+    {enterpriseModulesEnabled && supplyChainStudioModal && <SupplyChainResilienceStudioModal isOpen={supplyChainStudioModal} onClose={() => setSupplyChainStudioModal(false)} />}
+    {enterpriseModulesEnabled && totalRewardsStudioModal && <WorkforceTotalRewardsStudioModal isOpen={totalRewardsStudioModal} onClose={() => setTotalRewardsStudioModal(false)} />}
+    {enterpriseModulesEnabled && corporateTreasuryModal && <CorporateTreasuryNexusModal isOpen={corporateTreasuryModal} onClose={() => setCorporateTreasuryModal(false)} />}
+    {enterpriseModulesEnabled && internalAuditErmModal && <InternalAuditErmNexusModal isOpen={internalAuditErmModal} onClose={() => setInternalAuditErmModal(false)} />}
+    {enterpriseModulesEnabled && legalOperationsModal && <LegalOperationsNexusModal isOpen={legalOperationsModal} onClose={() => setLegalOperationsModal(false)} />}
+    {enterpriseModulesEnabled && investorRelationsModal && <InvestorRelationsNexusModal isOpen={investorRelationsModal} onClose={() => setInvestorRelationsModal(false)} />}
+    {enterpriseModulesEnabled && corpDevModal && <CorpDevPmiNexusModal isOpen={corpDevModal} onClose={() => setCorpDevModal(false)} />}
+    {enterpriseModulesEnabled && tradeSanctionsModal && <GlobalTradeSanctionsNexusModal isOpen={tradeSanctionsModal} onClose={() => setTradeSanctionsModal(false)} />}
+    {enterpriseModulesEnabled && commsCrisisModal && <StrategicCommsCrisisNexusModal isOpen={commsCrisisModal} onClose={() => setCommsCrisisModal(false)} />}
+    {enterpriseModulesEnabled && shareholderActivismModal && <ShareholderActivismDefenseNexusModal isOpen={shareholderActivismModal} onClose={() => setShareholderActivismModal(false)} />}
+    {enterpriseModulesEnabled && antitrustModal && <AntitrustCompetitionNexusModal isOpen={antitrustModal} onClose={() => setAntitrustModal(false)} />}
+    {enterpriseModulesEnabled && privacyNexusModal && <PrivacyDataSovereigntyNexusModal isOpen={privacyNexusModal} onClose={() => setPrivacyNexusModal(false)} />}
+  </Suspense>}
   {authState === 'authenticated' && <ChatWidget onRefreshApps={() => void refresh()} onNavigate={navigate} />}
   <MobileDrawer open={drawer} onClose={() => setDrawer(false)} onFeature={openFeature} onSettings={() => { navigate('settings'); }} enterpriseEnabled={enterpriseModulesEnabled} />
   {reset && <Dialog title="Khôi phục dữ liệu mẫu?" busy={busy} onClose={() => setReset(false)}><div className="dialog-body"><p>Các thay đổi trong bản dùng thử này sẽ được thay bằng dữ liệu mẫu ban đầu. Không thể hoàn tác.</p></div><footer className="dialog-actions"><Button kind="secondary" disabled={busy} onClick={() => setReset(false)}>Hủy</Button><Button disabled={busy} onClick={async () => { setBusy(true); try { await repository.reset(); setReset(false); await refresh(); navigate('dashboard'); notify('Đã khôi phục dữ liệu mẫu.'); } catch (error) { notify((error as Error).message, true); } finally { setBusy(false); } }}>Khôi phục</Button></footer></Dialog>}
