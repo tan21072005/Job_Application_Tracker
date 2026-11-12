@@ -17,12 +17,8 @@ import {
   Trash2,
   RotateCcw
 } from 'lucide-react';
-import {
-  portfolioRepository,
-  type PortfolioConfigDTO,
-  type PublicDossierViewDTO,
-  type PortfolioDisplaySettings
-} from '../data';
+import { portfolioRepository } from '../data';
+import { type PortfolioConfigDTO, type PublicDossierViewDTO, type PortfolioDisplaySettings } from '../domain';
 
 interface DossierConfigModalProps {
   isOpen: boolean;

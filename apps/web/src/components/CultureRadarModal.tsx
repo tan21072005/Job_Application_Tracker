@@ -19,14 +19,8 @@ import {
   CULTURE_DIMENSION_LABELS,
   CULTURE_INDUSTRY_BENCHMARKS
 } from '../domain';
-import {
-  type CultureDimension,
-  type ReverseInterviewTargetRole,
-  type CultureDimensionScoreDTO,
-  type ReverseInterviewQuestionDTO,
-  type CultureCompatibilityReportDTO,
-  cultureRadarRepository
-} from '../data';
+import { cultureRadarRepository } from '../data';
+import { type CultureDimension, type ReverseInterviewTargetRole, type CultureDimensionScoreDTO, type ReverseInterviewQuestionDTO, type CultureCompatibilityReportDTO } from '../domain';
 
 interface CultureRadarModalProps {
   currentApplications?: Application[];

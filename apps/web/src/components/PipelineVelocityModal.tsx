@@ -15,13 +15,8 @@ import {
   Clock
 } from 'lucide-react';
 import type { Application } from '../domain';
-import {
-  type PipelineVelocityReportDTO,
-  type PipelineVelocitySimulationDTO,
-  type StageConversionRateDTO,
-  type BottleneckDiagnosticDTO,
-  pipelineVelocityRepository
-} from '../data';
+import { pipelineVelocityRepository } from '../data';
+import { type PipelineVelocityReportDTO, type PipelineVelocitySimulationDTO, type StageConversionRateDTO, type BottleneckDiagnosticDTO } from '../domain';
 
 interface PipelineVelocityModalProps {
   applications: Application[];

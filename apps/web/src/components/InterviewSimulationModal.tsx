@@ -17,14 +17,8 @@ import {
   Flame,
   FileCheck
 } from 'lucide-react';
-import {
-  simulationRepository,
-  type SimulationSessionDTO,
-  type TurnEvaluationDTO,
-  type SimulationTrack,
-  type SimulationDifficulty,
-  type SimulationPacingMode
-} from '../data';
+import { simulationRepository } from '../data';
+import { type SimulationSessionDTO, type TurnEvaluationDTO, type SimulationTrack, type SimulationDifficulty, type SimulationPacingMode } from '../domain';
 import { getPacingDurationSeconds } from '../domain';
 
 interface InterviewSimulationModalProps {
