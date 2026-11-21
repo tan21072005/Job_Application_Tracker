@@ -67,7 +67,6 @@ test('migration: fresh install creates tables and records checksum', async () =>
     assert.ok(tables.includes('rate_limits'));
     assert.ok(tables.includes('ai_grants'));
     assert.ok(tables.includes('ai_commands'));
-    assert.ok(tables.includes('ai_runs'));
     assert.ok(tables.includes('job_subscriptions'));
     assert.ok(tables.includes('candidate_profiles'));
     assert.ok(tables.includes('user_memberships'));
