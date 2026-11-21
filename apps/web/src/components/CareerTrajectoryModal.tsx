@@ -445,9 +445,11 @@ export const CareerTrajectoryModal: React.FC<CareerTrajectoryModalProps> = ({
               Đã lưu lộ trình thăng tiến thành công!
             </div>
           )}
+          {!embedded && (
           <button className="career-btn-secondary" onClick={onClose}>
             Đóng
           </button>
+          )}
           <button
             className="career-btn-primary career-save-btn"
             onClick={handleSaveTrajectory}

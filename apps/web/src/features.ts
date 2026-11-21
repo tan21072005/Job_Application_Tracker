@@ -1,5 +1,5 @@
 import {
-  Building2, CircleDollarSign, Cpu, FileCheck, FileText, Gauge, Mail, Radar, Scale, Send, ShieldCheck,
+  Building2, CircleDollarSign, Cpu, FileCheck, FileText, Gauge, Mail, Scale, Send, ShieldCheck,
   Users, type LucideIcon
 } from 'lucide-react';
 
@@ -14,8 +14,8 @@ export type FeatureKey =
   | 'simulation'
   | 'velocity'
   | 'compensation'
-  | 'dossier'
-  | 'radar';
+  | 'dossier';
+
 
 export type FeatureItem = {
   label: string;
@@ -25,7 +25,7 @@ export type FeatureItem = {
 };
 
 export type FeatureGroup = {
-  id: 'work' | 'prepare' | 'discover';
+  id: 'work' | 'prepare';
   label: string;
   items: FeatureItem[];
 };
@@ -52,13 +52,6 @@ export const featureGroups: FeatureGroup[] = [
     { label: 'Tốc độ & Điểm nghẽn', icon: Gauge, key: 'velocity', className: 'pipeline-velocity-sidebar-btn' },
     { label: 'Dự báo thu nhập & ESOP', icon: CircleDollarSign, key: 'compensation', className: 'compensation-forecaster-sidebar-btn' },
     { label: 'Hồ sơ bảo chứng', icon: ShieldCheck, key: 'dossier', className: 'dossier-sidebar-btn' },
-    ]
-  },
-  {
-    id: 'discover',
-    label: 'Khám phá',
-    items: [
-    { label: 'Rada việc làm', icon: Radar, key: 'radar' },
     ]
   },
 ];

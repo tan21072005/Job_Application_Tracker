@@ -508,11 +508,7 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
         </div>
 
         <div className="resume-optimizer-footer">
-          {activeStep === 'input' ? (
-            <button className="optimizer-btn-secondary" onClick={onClose}>
-              Đóng
-            </button>
-          ) : activeStep === 'studio' ? (
+          {activeStep === 'studio' ? (
             <>
               <button className="optimizer-btn-secondary" onClick={() => setActiveStep('input')}>
                 Quay lại

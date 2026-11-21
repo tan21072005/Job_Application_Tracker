@@ -12,7 +12,8 @@ import {
   ExternalLink,
   AlertCircle,
   FileCheck,
-  RotateCcw
+  RotateCcw,
+  Radar
 } from 'lucide-react';
 import type {
   EmailCategory,
@@ -21,12 +22,14 @@ import type {
 } from '@jobtrack/contract';
 import { emailIngestRepository } from '../data';
 import { Button, Dialog } from './ui';
+import { SubscriptionsModal } from './SubscriptionsModal';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   notify: (msg: string, error?: boolean) => void;
+  initialTab?: 'email' | 'radar';
 }
 
 const EMAIL_PRESETS = [
@@ -76,13 +79,14 @@ Trân trọng cảm ơn sự quan tâm của bạn đối với Viettel.`
   }
 ];
 
-export function EmailIngestModal({ isOpen, onClose, onSuccess, notify }: Props) {
+export function EmailIngestModal({ isOpen, onClose, onSuccess, notify, initialTab = 'email' }: Props) {
   const [subject, setSubject] = useState(EMAIL_PRESETS[0].subject);
   const [sender, setSender] = useState(EMAIL_PRESETS[0].sender);
   const [emailContent, setEmailContent] = useState(EMAIL_PRESETS[0].content);
   const [parsing, setParsing] = useState(false);
   const [proposal, setProposal] = useState<EmailIngestProposalDTO | null>(null);
   const [applying, setApplying] = useState(false);
+  const [activeTab, setActiveTab] = useState<'email' | 'radar'>(initialTab);
 
   if (!isOpen) return null;
 
@@ -159,6 +163,30 @@ export function EmailIngestModal({ isOpen, onClose, onSuccess, notify }: Props) 
 
   return (
     <Dialog title="Hộp thư thông minh (Smart Email Ingestion)" onClose={onClose} inline>
+      <div className="feature-tabs" role="tablist" aria-label="Nội dung hộp thư">
+        <button
+          role="tab"
+          aria-selected={activeTab === 'email'}
+          className={`feature-tab ${activeTab === 'email' ? 'active' : ''}`}
+          onClick={() => setActiveTab('email')}
+        >
+          <Mail size={15} />
+          <span>Bóc tách email</span>
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'radar'}
+          className={`feature-tab ${activeTab === 'radar' ? 'active' : ''}`}
+          onClick={() => setActiveTab('radar')}
+        >
+          <Radar size={15} />
+          <span>Rada việc làm</span>
+        </button>
+      </div>
+
+      {activeTab === 'radar' ? (
+        <SubscriptionsModal isOpen onClose={onClose} onScanCompleted={onSuccess} embedded />
+      ) : (
       <div className="email-ingest-container">
         <div className="ingest-intro">
           <p>
@@ -337,6 +365,7 @@ export function EmailIngestModal({ isOpen, onClose, onSuccess, notify }: Props) 
           </div>
         )}
       </div>
+      )}
     </Dialog>
   );
 }

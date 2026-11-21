@@ -581,9 +581,6 @@ export function CompanyIntelligenceModal({
               Chọn công ty này
             </button>
           )}
-          <button type="button" className="btn btn-outline" onClick={onClose}>
-            Đóng
-          </button>
         </div>
       </div>
     </div>

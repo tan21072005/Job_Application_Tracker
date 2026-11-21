@@ -147,7 +147,7 @@ export default function ProUpgradeModal({
   };
 
   return (
-    <Dialog title="Gói Hội Viên JobTrack Pro" wide onClose={onClose} busy={busy || simulating}>
+    <Dialog title="Gói Hội Viên JobTrack Pro" wide onClose={onClose} busy={busy || simulating} inline>
       <div className="dialog-body">
         <div className="pro-modal-container">
           {view === 'plans' && (
@@ -222,9 +222,6 @@ export default function ProUpgradeModal({
               </div>
 
               <div className="pro-modal-actions">
-                <Button kind="secondary" onClick={onClose} disabled={busy}>
-                  Đóng
-                </Button>
                 <Button
                   kind="primary"
                   onClick={handleCreateCheckout}
@@ -352,11 +349,6 @@ export default function ProUpgradeModal({
                 </button>
               </div>
 
-              <div className="pro-modal-actions">
-                <Button kind="secondary" onClick={onClose}>
-                  Đóng
-                </Button>
-              </div>
             </div>
           )}
 

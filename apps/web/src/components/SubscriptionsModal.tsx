@@ -21,9 +21,10 @@ interface SubscriptionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onScanCompleted?: () => void;
+  embedded?: boolean;
 }
 
-export function SubscriptionsModal({ isOpen, onClose, onScanCompleted }: SubscriptionsModalProps) {
+export function SubscriptionsModal({ isOpen, onClose, onScanCompleted, embedded = false }: SubscriptionsModalProps) {
   const [subscriptions, setSubscriptions] = useState<JobSubscriptionDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionBusyId, setActionBusyId] = useState<string | null>(null);
@@ -140,8 +141,9 @@ export function SubscriptionsModal({ isOpen, onClose, onScanCompleted }: Subscri
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="modal-card modal-radar" onClick={e => e.stopPropagation()}>
+    <div className={embedded ? 'radar-embedded' : 'modal-backdrop'} onClick={embedded ? undefined : onClose} role={embedded ? undefined : 'dialog'} aria-modal={embedded ? undefined : true}>
+      <div className={embedded ? 'radar-embedded-inner' : 'modal-card modal-radar'} onClick={e => e.stopPropagation()}>
+        {!embedded && (
         <div className="modal-header">
           <div className="modal-title-with-icon">
             <span className="modal-icon-badge radar-icon-badge">
@@ -156,6 +158,7 @@ export function SubscriptionsModal({ isOpen, onClose, onScanCompleted }: Subscri
             <X size={18} />
           </button>
         </div>
+        )}
 
         {error && (
           <div className="notice notice-error" role="alert">

@@ -440,9 +440,6 @@ export function PipelineVelocityModal({
         </div>
 
         <div className="pipeline-velocity-modal-footer">
-          <button className="velocity-secondary-btn velocity-close-footer-btn" onClick={onClose}>
-            Đóng
-          </button>
           <button className="velocity-primary-btn velocity-save-btn" onClick={handleSaveSimulation}>
             Lưu kịch bản mô phỏng
           </button>

@@ -521,9 +521,6 @@ export const CompensationForecasterModal: React.FC<CompensationForecasterModalPr
             )}
           </div>
           <div className="footer-actions">
-            <button className="btn-secondary comp-close-btn" onClick={onClose}>
-              Đóng
-            </button>
             <button
               className="btn-primary comp-save-forecast-btn"
               onClick={handleSaveForecast}

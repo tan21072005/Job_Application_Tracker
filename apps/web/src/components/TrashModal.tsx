@@ -66,7 +66,7 @@ export default function TrashModal({
   }
 
   return (
-    <Dialog title="Thùng rác hồ sơ ứng tuyển" onClose={onClose} wide busy={loading || !!busyId}>
+    <Dialog title="Thùng rác hồ sơ ứng tuyển" onClose={onClose} wide busy={loading || !!busyId} inline>
       <div className="trash-modal-container">
         <div className="trash-modal-header-note">
           <AlertTriangle size={16} />
@@ -130,11 +130,6 @@ export default function TrashModal({
           </div>
         )}
 
-        <footer className="trash-modal-footer">
-          <Button kind="secondary" onClick={onClose}>
-            Đóng
-          </Button>
-        </footer>
       </div>
     </Dialog>
   );

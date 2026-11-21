@@ -1,6 +1,7 @@
 import type { Application } from '../domain';
 import type { FeatureKey } from '../features';
 import { featureGroups } from '../features';
+import type { ProStatusDTO } from '@jobtrack/contract';
 import { NetworkingContactsModal } from '../components/NetworkingContactsModal';
 import { EmailIngestModal } from '../components/EmailIngestModal';
 import { OutreachCampaignModal } from '../components/OutreachCampaignModal';
@@ -12,7 +13,8 @@ import { InterviewSimulationModal } from '../components/InterviewSimulationModal
 import { PipelineVelocityModal } from '../components/PipelineVelocityModal';
 import { CompensationForecasterModal } from '../components/CompensationForecasterModal';
 import { DossierConfigModal } from '../components/DossierConfigModal';
-import { SubscriptionsModal } from '../components/SubscriptionsModal';
+import TrashModal from '../components/TrashModal';
+import ProUpgradeModal from '../components/ProUpgradeModal';
 
 export const featureTitles: Record<FeatureKey, string> = {
   contacts: 'Mạng lưới kết nối',
@@ -25,8 +27,12 @@ export const featureTitles: Record<FeatureKey, string> = {
   simulation: 'Giả lập phỏng vấn',
   velocity: 'Tốc độ & Điểm nghẽn',
   compensation: 'Dự báo thu nhập & ESOP',
-  dossier: 'Hồ sơ bảo chứng',
-  radar: 'Rada việc làm'
+  dossier: 'Hồ sơ bảo chứng'
+};
+
+export const extraPages: Record<string, string> = {
+  trash: 'Thùng rác',
+  pro: 'Gói Hội Viên JobTrack Pro'
 };
 
 export function featureFromHash(id: string): FeatureKey | null {
@@ -39,10 +45,11 @@ export function featureFromHash(id: string): FeatureKey | null {
 }
 
 export default function FeaturePage({
-  featureKey, apps, notify, onBack, onRefresh
+  featureKey, apps, proStatus, notify, onBack, onRefresh
 }: {
   featureKey: FeatureKey;
   apps: Application[];
+  proStatus: ProStatusDTO | null;
   notify: (message: string, isError?: boolean) => void;
   onBack: () => void;
   onRefresh: () => void;
@@ -63,7 +70,34 @@ export default function FeaturePage({
       {featureKey === 'velocity' && <PipelineVelocityModal applications={apps} onClose={onBack} notify={notify} />}
       {featureKey === 'compensation' && <CompensationForecasterModal isOpen onClose={onBack} initialCompany={companyName} />}
       {featureKey === 'dossier' && <DossierConfigModal isOpen onClose={onBack} />}
-      {featureKey === 'radar' && <SubscriptionsModal isOpen onClose={onBack} onScanCompleted={onRefresh} />}
     </div>
   );
+}
+
+export function ExtraPage({
+  page, proStatus, notify, onBack, onRefresh
+}: {
+  page: string;
+  proStatus: ProStatusDTO | null;
+  notify: (message: string, isError?: boolean) => void;
+  onBack: () => void;
+  onRefresh: () => void;
+}) {
+  if (page === 'trash') {
+    return (
+      <div className="feature-page" data-feature="trash">
+        <h1 className="sr-only">Thùng rác</h1>
+        <TrashModal onClose={onBack} onRestored={onRefresh} notify={notify} />
+      </div>
+    );
+  }
+  if (page === 'pro') {
+    return (
+      <div className="feature-page" data-feature="pro">
+        <h1 className="sr-only">Gói Hội Viên JobTrack Pro</h1>
+        <ProUpgradeModal onClose={onBack} onSuccess={() => { onRefresh(); }} notify={notify} />
+      </div>
+    );
+  }
+  return null;
 }
