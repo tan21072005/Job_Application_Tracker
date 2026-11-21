@@ -201,7 +201,7 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
               <FileCheck className="w-6 h-6 text-emerald-400" />
             </div>
             <div>
-              <h2 className="resume-optimizer-title">Trợ lý Tối ưu CV & Khắc phục Lỗ hổng ATS</h2>
+              <h2 className="resume-optimizer-title">Tối ưu từ khóa ATS cho CV</h2>
               <p className="resume-optimizer-subtitle">Resume ATS Optimizer & Google X-Y-Z Impact Rewriter</p>
             </div>
           </div>

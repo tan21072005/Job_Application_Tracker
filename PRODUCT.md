@@ -1,18 +1,42 @@
-# JobTrack
+﻿# JobTrack
 
 ## Purpose and audience
 Người tìm việc cá nhân quản lý cơ hội ứng tuyển và biết bước cần làm tiếp theo. Dùng web trên máy tính khi xem/tổ chức hồ sơ, mobile khi tra cứu hoặc nhập nhanh cơ hội và lịch phỏng vấn.
 
-## Product truth
-Phạm vi dựa trên ba tài liệu trong `Tài liệu/` và `PLAN.md`. Có đăng ký/đăng nhập, CRUD hồ sơ, bảy trạng thái hồ sơ, tìm/lọc/sắp xếp, ghi chú, một hành động tiếp theo và deadline, nhiều vòng phỏng vấn với UTC và múi giờ IANA gốc, chống trùng và dashboard bốn chỉ số. Interview có ba trạng thái riêng. Mỗi người dùng chỉ xem dữ liệu của mình.
+Sản phẩm **không** dành cho nhà tuyển dụng. Không có tin tuyển dụng, ATS phía công ty, pipeline ứng viên hay quản lý offer. Bề mặt công khai duy nhất là `/api/public/dossier/:token`, cho phép ứng viên chia sẻ hồ sơ năng lực của chính mình.
 
-Không thêm AI, CV, Admin, email/calendar sync, lịch sử trạng thái, nhiều task, reset mật khẩu hoặc tự động ứng tuyển. Dữ liệu trong bản thiết kế là fixture minh họa, không phải dữ liệu sản xuất.
+## Product truth
+Ứng dụng chạy thật với Express 5 + PostgreSQL 18, đăng nhập bằng mật khẩu hoặc Google OAuth 2.0, session cookie HttpOnly.
+
+**Trang chính:** Tổng quan, Hồ sơ ứng tuyển (danh sách + pipeline), Lịch phỏng vấn, Phân tích, Lộ trình AI, Dữ liệu Web, Cài đặt.
+
+**Nhóm Làm việc:** Mạng lưới kết nối (CRM liên hệ HR/headhunter), Hộp thư thông minh (bóc tách email mời phỏng vấn), Chiến dịch Outreach, So sánh cơ hội (ma trận quyết định có trọng số), Hồ sơ công ty.
+
+**Nhóm Chuẩn bị:** Thư viện CV (bản gốc + bản theo vị trí), Tối ưu hóa ATS (chẩn đoán từ khóa, viết lại bullet theo Google X-Y-Z), Giả lập phỏng vấn (phiên nhiều lượt), Luyện trả lời phỏng vấn (STAR Coach), Lộ trình thăng tiến, Tốc độ & Điểm nghẽn pipeline, Radar Văn hóa, Dự báo thu nhập & ESOP, Hồ sơ bảo chứng (dossier chia sẻ được).
+
+**Nhóm Khám phá:** Rada việc làm (theo dõi tin tuyển dụng theo tiêu chí).
+
+Bảy trạng thái hồ sơ: Saved, Applied, Screening, Interview, Offer, Rejected, Withdrawn. Mỗi hồ sơ có ghi chú, một hành động tiếp theo, deadline và nhiều vòng phỏng vấn lưu UTC + múi giờ IANA gốc. Có chống trùng theo URL hoặc cặp source + job code, optimistic concurrency qua `version`, thùng rác có khôi phục, và dashboard bốn chỉ số. Mỗi người dùng chỉ thấy dữ liệu của mình.
+
+**Phạm vi đã thu hẹp:** 28 module doanh nghiệp (FinOps, ESG, Cyber Risk, Antitrust, Treasury, SOX, IR, M&A, Supply Chain, Total Rewards, Succession, AI Governance, Privacy…) đã bị xoá ở commit `469afed`. Chúng mô phỏng công việc nội bộ của CFO/CISO/General Counsel — không phục vụ người tìm việc, và chiếm 72,8% service code. Migration `011_drop_enterprise_tables.sql` xoá 175 bảng tương ứng, đưa DB từ 215 xuống 40 bảng.
 
 ## Delivery and stack
-Vòng hiện tại gồm năm frontend React/Vite/TypeScript độc lập tại `apps/experiences`: Dossier, Rhythm, Atlas, Workbench và Index. Mỗi bản có web/mobile, các luồng MVP và Draw.io chỉnh sửa được 25 trang. Domain và adapter dữ liệu dùng chung ở `packages/jobtrack-core`, không dùng chung shell bố cục. Mặc định là bản preview dùng dữ liệu mẫu lưu ở trình duyệt. API contract đã ghi; backend Express/PostgreSQL, auth thật và ownership chưa được triển khai/nghiệm thu trong vòng giao diện này, nên chưa gọi toàn hệ thống là production.
+`apps/web` — React 19 + Vite 8 + TypeScript, Tailwind 4 cho utility, `jobtrack.css` cho component với 280 design token.
+
+`apps/api` — Express 5, PostgreSQL 18, 10 migration (011 là migration xoá bảng enterprise). Argon2id cho mật khẩu, JWT cho session, rate limit 60/15 phút theo IP và 7/15 phút theo cặp IP + email.
+
+`packages/jobtrack-contract` — schema, validator và hàm thuần dùng chung giữa web và API.
+
+`packages/jobtrack-mcp` — MCP server stdio cho phép trợ lý AI thao tác hồ sơ qua grant token.
+
+`apps/web/src/components/enterprise.ts` đã bị xoá cùng 28 module. Không còn cờ `VITE_ENTERPRISE_MODULES`.
+
+Mặc định chạy bằng `docker compose up -d`, web ở `http://127.0.0.1:64364`.
 
 ## Voice and success
-Nhãn tiếng Việt rõ nghĩa. Ưu tiên lịch sắp tới, việc cần làm và trạng thái hồ sơ; thao tác xóa có xác nhận. Không thay đổi quy tắc nghiệp vụ để tạo vẻ mới. Thành công của vòng thiết kế: người dùng so sánh được năm chủ đề khác bố cục, mở bản nguồn và sửa từng khối.
+Nhãn tiếng Việt rõ nghĩa. Ưu tiên lịch sắp tới, việc cần làm và trạng thái hồ sơ; thao tác xoá có xác nhận và đi qua thùng rác.
+
+Thành công: người dùng biết ngay hôm nay cần làm gì cho cơ hội nào, không phải mở nhiều màn hình.
 
 ## Evidence
-`PLAN.md`, `planning/jobtrack-five-websites/PLAN.md`, các brief và evidence; `apps/experiences`, `design/experiences`. Vòng trước `apps/web` và `design/themes` được giữ làm anti-reference. Chưa có kết quả nghiên cứu người dùng thực tế; không suy diễn từ fixture.
+`RUN-LOCAL.md` mô tả cách chạy, cấu hình Google OAuth, nhắc việc qua email và phạm vi tính năng hiện tại. `docs/screenshots/README.md` chụp 17 màn hình ở 1440×900 và 390×844. `planning/` giữ tài liệu lịch sử và không phản ánh phạm vi hiện tại.

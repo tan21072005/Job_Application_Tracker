@@ -260,7 +260,7 @@ export function ResumeManagerModal({
         <div className="modal-header">
           <div className="header-title-group">
             <span className="badge badge-accent">Resume Repository</span>
-            <h2 className="modal-title">Quản lý các Phiên bản CV (Master & Target Variants)</h2>
+            <h2 className="modal-title">Thư viện CV · bản gốc và bản theo vị trí</h2>
           </div>
           <button type="button" className="btn-icon close-manager-btn" onClick={onClose} aria-label="Đóng">✕</button>
         </div>

@@ -10,13 +10,12 @@ const pages = [
 ];
 
 export default function MobileDrawer({
-  open, onClose, onFeature, onSettings, enterpriseEnabled
+  open, onClose, onFeature, onSettings
 }: {
   open: boolean;
   onClose: () => void;
   onFeature: (key: FeatureKey) => void;
   onSettings: () => void;
-  enterpriseEnabled: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -53,7 +52,6 @@ export default function MobileDrawer({
             </div>
           </section>
           {featureGroups.map(group => {
-            if (group.id === 'enterprise' && !enterpriseEnabled) return null;
             return (
               <section key={group.id}>
                 <h3>{group.label}</h3>

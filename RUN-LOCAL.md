@@ -4,30 +4,17 @@ Repo: `F:\Project\Job_Application_Tracker`
 
 Máy đã có sẵn trong PATH hệ thống: Node.js 24.20.0, npm 11.19, Git 2.5x, Docker CLI 29.9.2 (`F:\long-app\docker\bin`), Docker Compose v5.7.0. Chỉ shell đang mở trước khi cài mới cần nạp lại PATH.
 
-## Bật/tắt 28 module enterprise
-Sidebar có hai chế độ, điều khiển bằng biến `VITE_ENTERPRISE_MODULES`:
+## Phạm vi tính năng
 
-| Chế độ | Sidebar | Dùng khi |
+Sidebar có ba nhóm, tất cả đều phục vụ người tìm việc:
+
+| Nhóm | Số mục | Nội dung |
 | --- | --- | --- |
-| Tắt (mặc định) | 6 trang + 16 modal | Sản phẩm cho người tìm việc (`PRODUCT.md`) |
-| Bật | 6 trang + 44 modal | Cần xem các console doanh nghiệp |
+| Làm việc | 5 | Mạng lưới kết nối, Hộp thư thông minh, Chiến dịch Outreach, So sánh cơ hội, Hồ sơ công ty |
+| Chuẩn bị | 8 | Thư viện CV, Tối ưu hóa ATS, Giả lập phỏng vấn, Lộ trình thăng tiến, Tốc độ & Điểm nghẽn, Radar Văn hóa, Dự báo thu nhập & ESOP, Hồ sơ bảo chứng |
+| Khám phá | 1 | Rada việc làm |
 
-Chạy Docker với flag bật:
-
-```powershell
-docker compose build --build-arg VITE_ENTERPRISE_MODULES=true web
-docker compose up -d web
-```
-
-Chạy dev với flag bật, thêm dòng này vào `apps/web/.env.development`:
-
-```
-VITE_ENTERPRISE_MODULES=true
-```
-
-Ba tính năng luôn hiển thị ở cả hai chế độ vì phục vụ người tìm việc: Chiến dịch Outreach, Dự báo thu nhập & ESOP, Lộ trình thăng tiến.
-
-Lưu ý: ẩn giao diện **không** chặn API. 28 module vẫn gọi được nếu biết đường dẫn. Muốn chặn thật cần RBAC ở tầng API — chưa làm.
+28 module doanh nghiệp (FinOps, ESG, Cyber Risk, Antitrust, Treasury…) đã được xoá ở commit `469afed` cùng 175 bảng dữ liệu ở migration `011_drop_enterprise_tables.sql`, vì chúng mô phỏng công việc nội bộ của CFO/CISO/General Counsel chứ không giúp người tìm việc.
 
 ---
 

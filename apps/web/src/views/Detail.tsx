@@ -70,7 +70,7 @@ export default function Detail({
           <Building2 size={16} />Hồ sơ công ty
         </Button>
         <Button kind="secondary" className="tailor-resume-btn" onClick={() => setShowTailorModal(true)}>
-          <FileText size={16} />May đo CV (ATS)
+          <FileText size={16} />May đo CV theo JD
         </Button>
         <Button kind="secondary" onClick={onEdit}>
           <Pencil size={16} />Sửa hồ sơ

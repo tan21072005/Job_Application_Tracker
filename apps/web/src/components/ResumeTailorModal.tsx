@@ -147,7 +147,7 @@ export function ResumeTailorModal({
         <div className="modal-header">
           <div className="header-title-group">
             <span className="badge badge-accent">AI ATS Optimizer</span>
-            <h2 className="modal-title">May đo CV Thông Minh Theo Job Description</h2>
+            <h2 className="modal-title">May đo CV theo mô tả công việc</h2>
           </div>
           <button type="button" className="btn-icon close-tailor-btn" onClick={onClose} aria-label="Đóng">✕</button>
         </div>

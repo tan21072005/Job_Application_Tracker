@@ -174,7 +174,7 @@ export default function MockInterviewModal({
   return (
     <Dialog
       onClose={onClose}
-      title="Huấn luyện viên Phỏng vấn AI · STAR Practice Coach"
+      title="Luyện trả lời phỏng vấn · STAR Coach"
       wide
       busy={loading || evaluating || savingPrep}
     >

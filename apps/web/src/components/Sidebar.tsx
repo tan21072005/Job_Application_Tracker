@@ -7,7 +7,6 @@ type Props = {
   collapsed: boolean;
   onToggle: () => void;
   navigation: ReactNode;
-  enterpriseEnabled: boolean;
   accountEmail: string;
   isPro: boolean;
   onAccount: () => void;
@@ -17,7 +16,7 @@ type Props = {
 };
 
 export default function Sidebar({
-  collapsed, onToggle, navigation, enterpriseEnabled, accountEmail, isPro, onAccount, onUpgrade, onTrash, onFeature
+  collapsed, onToggle, navigation, accountEmail, isPro, onAccount, onUpgrade, onTrash, onFeature
 }: Props) {
   const hint = (label: string) => (collapsed ? label : undefined);
 
@@ -38,7 +37,6 @@ export default function Sidebar({
       <nav aria-label="Điều hướng chính">
         {navigation}
         {featureGroups.map(group => {
-          if (group.id === 'enterprise' && !enterpriseEnabled) return null;
           return (
             <div className="sidebar-group" key={group.id}>
               <span className="sidebar-group-label">{group.label}</span>

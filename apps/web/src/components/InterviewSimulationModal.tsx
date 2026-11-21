@@ -253,7 +253,7 @@ export const InterviewSimulationModal: React.FC<InterviewSimulationModalProps> =
             </div>
             <div>
               <div className="simulation-title-row">
-                <h2 className="simulation-modal-title">Phòng Giả Lập Phỏng Vấn AI</h2>
+                <h2 className="simulation-modal-title">Giả lập phiên phỏng vấn nhiều lượt</h2>
                 <span className="simulation-studio-badge">Studio Live</span>
               </div>
               <p className="simulation-modal-sub">

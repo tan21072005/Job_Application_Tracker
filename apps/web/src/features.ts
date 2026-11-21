@@ -56,7 +56,7 @@ export type FeatureItem = {
 };
 
 export type FeatureGroup = {
-  id: 'work' | 'prepare' | 'discover' | 'enterprise';
+  id: 'work' | 'prepare' | 'discover';
   label: string;
   items: FeatureItem[];
 };
@@ -77,7 +77,7 @@ export const featureGroups: FeatureGroup[] = [
     id: 'prepare',
     label: 'Chuẩn bị',
     items: [
-    { label: 'Kho CV & May đo', icon: FileText, key: 'resume', className: 'resume-manager-sidebar-btn' },
+    { label: 'Thư viện CV', icon: FileText, key: 'resume', className: 'resume-manager-sidebar-btn' },
     { label: 'Tối ưu hóa ATS', icon: FileCheck, key: 'resumeOptimizer', className: 'resume-optimizer-sidebar-btn' },
     { label: 'Giả lập phỏng vấn', icon: Cpu, key: 'simulation', className: 'simulation-studio-sidebar-btn' },
     { label: 'Lộ trình thăng tiến', icon: Compass, key: 'trajectory', className: 'career-trajectory-sidebar-btn' },
@@ -94,38 +94,4 @@ export const featureGroups: FeatureGroup[] = [
     { label: 'Rada việc làm', icon: Radar, key: 'radar' },
     ]
   },
-  {
-    id: 'enterprise',
-    label: 'Doanh nghiệp',
-    items: [
-    { label: 'Headhunter & Độc quyền', icon: UserCheck, key: 'headhunter', className: 'headhunter-crm-sidebar-btn' },
-    { label: 'System Design AI', icon: Cpu, key: 'systemDesign', className: 'system-design-studio-sidebar-btn' },
-    { label: 'Định giá Cổ phần & Exit', icon: Coins, key: 'equity', className: 'equity-liquidity-sidebar-btn' },
-    { label: 'Backchannel & Bảo chứng', icon: Network, key: 'backchannel', className: 'backchannel-sidebar-btn' },
-    { label: 'Hợp đồng & Sa thải', icon: FileSignature, key: 'executiveContract', className: 'executive-contract-guard-sidebar-btn' },
-    { label: '100 Ngày Đầu tiên (C-Level)', icon: Compass, key: 'executiveOnboarding', className: 'executive-onboarding-sidebar-btn' },
-    { label: 'Hội đồng & Cố vấn (Board)', icon: Scale, key: 'board', className: 'board-advisory-nexus-sidebar-btn' },
-    { label: 'Bảo vệ Thôi việc (Severance)', icon: ShieldCheck, key: 'severance', className: 'executive-severance-sidebar-btn' },
-    { label: 'Thẩm định Kỹ thuật (M&A VDD)', icon: FileSearch, key: 'dueDiligence', className: 'technical-due-diligence-sidebar-btn' },
-    { label: 'Org Topology & Nhân sự', icon: Workflow, key: 'orgTopology', className: 'org-topology-studio-sidebar-btn' },
-    { label: 'Value Stream & DORA Studio', icon: BarChart3, key: 'valueStream', className: 'value-stream-studio-sidebar-btn' },
-    { label: 'FinOps & Cloud Unit Economics', icon: CircleDollarSign, key: 'finops', className: 'finops-studio-sidebar-btn' },
-    { label: 'AI Governance & LLM Studio', icon: ShieldAlert, key: 'aiGovernance', className: 'ai-gov-studio-sidebar-btn' },
-    { label: 'Succession & 9-Box Studio', icon: Users, key: 'succession', className: 'succession-studio-sidebar-btn' },
-    { label: 'Cyber Risk & CISO Studio', icon: ShieldCheck, key: 'cyberRisk', className: 'cyber-studio-sidebar-btn' },
-    { label: 'ESG & Climate Studio', icon: Leaf, key: 'esg', className: 'esg-studio-sidebar-btn' },
-    { label: 'Supply Chain Resilience', icon: Truck, key: 'supplyChain', className: 'sc-studio-sidebar-btn' },
-    { label: 'Total Rewards & LTI', icon: Coins, key: 'totalRewards', className: 'tr-studio-sidebar-btn' },
-    { label: 'Kho bạc & Treasury', icon: Landmark, key: 'treasury', className: 'treasury-nexus-sidebar-btn' },
-    { label: 'Kiểm toán & SOX', icon: Scale, key: 'internalAudit', className: 'sox-nexus-sidebar-btn' },
-    { label: 'Pháp lý & IP Nexus', icon: BriefcaseBusiness, key: 'legal', className: 'legal-ops-sidebar-btn' },
-    { label: 'Quan hệ Nhà đầu tư (IR)', icon: TrendingUp, key: 'investorRelations', className: 'ir-nexus-sidebar-btn' },
-    { label: 'M&A & Hậu sáp nhập (PMI)', icon: Compass, key: 'corpDev', className: 'corp-dev-sidebar-btn' },
-    { label: 'Xuất nhập khẩu & Trừng phạt (Trade)', icon: ShieldAlert, key: 'tradeSanctions', className: 'global-trade-sanctions-sidebar-btn' },
-    { label: 'Khủng hoảng & Truyền thông', icon: ShieldAlert, key: 'commsCrisis', className: 'comms-crisis-sidebar-btn' },
-    { label: 'Bảo vệ Cổ đông & Activism', icon: ShieldAlert, key: 'activism', className: 'activism-sidebar-btn' },
-    { label: 'Chống độc quyền & M&A (Antitrust)', icon: Scale, key: 'antitrust', className: 'antitrust-sidebar-btn' },
-    { label: 'Bảo mật Dữ liệu & AI (Privacy)', icon: ShieldCheck, key: 'privacy', className: 'privacy-sovereignty-sidebar-btn' },
-    ]
-  }
 ];

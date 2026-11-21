@@ -1,28 +1,50 @@
-# JobTrack
+﻿# JobTrack
 
-Quy trình agent/worktree/feature ownership hiện hành: [docs/agents](docs/agents/README.md). Bắt đầu bằng `rtk npm run agents -- doctor`; đọc `AGENTS.md` trước khi giao việc. Kiểm thử bộ điều phối: `rtk npm run agents:test`. Các mô tả frontend demo bên dưới là lịch sử; trạng thái sản phẩm hiện tại lấy từ source và context master riêng của người duy trì.
+Ứng dụng theo dõi ứng tuyển cho **người tìm việc cá nhân**: quản lý hồ sơ, lịch phỏng vấn, deadline và biết bước tiếp theo cần làm.
 
-Bản giao diện nâng cấp hiện tại chạy tại **http://127.0.0.1:64364/**. Mở `START-JOBTRACK-WEB.cmd` hoặc chạy `npm run dev:web`. Nếu thiếu dependency của app, chạy `npm ci --prefix apps/web`.
+Chạy local: **http://127.0.0.1:64364/** — xem [RUN-LOCAL.md](RUN-LOCAL.md) để biết cách khởi động, cấu hình Google OAuth và nhắc việc qua email.
 
-Sửa giao diện tại `apps/web/src/JobTrack.tsx`, `views/`, `components/` và `jobtrack.css`. Xem [hướng dẫn bản web/mobile](apps/web/README.md) và [bàn giao triển khai](planning/jobtrack-ui-redesign/FRONTEND-IMPLEMENTATION.md). Bản mặc định có đầy đủ tương tác với dữ liệu mẫu lưu trong trình duyệt; backend thật chưa nằm trong vòng bàn giao này.
+## Tính năng
 
-## 5 phiên bản sáng tạo trước đó
+**Bảy trang chính:** Tổng quan, Hồ sơ ứng tuyển, Lịch phỏng vấn, Phân tích, Lộ trình AI, Dữ liệu Web, Cài đặt.
 
-Mở `START-JOBTRACK.cmd`, rồi truy cập **http://127.0.0.1:64363/** để chọn Dossier, Rhythm, Atlas, Workbench hoặc Index. Nếu chưa cài dependency, chạy `npm ci` tại thư mục này trước.
+**Mười bốn công cụ hỗ trợ**, chia ba nhóm:
 
-Đây là năm frontend hoạt động với dữ liệu mẫu, mỗi bản có bố cục desktop/mobile riêng. Backend tài khoản và dữ liệu production chưa được nghiệm thu.
+| Nhóm | Công cụ |
+| --- | --- |
+| Làm việc | Mạng lưới kết nối, Hộp thư thông minh, Chiến dịch Outreach, So sánh cơ hội, Hồ sơ công ty |
+| Chuẩn bị | Thư viện CV, Tối ưu hóa ATS, Giả lập phỏng vấn, Luyện trả lời phỏng vấn, Lộ trình thăng tiến, Tốc độ & Điểm nghẽn, Radar Văn hóa, Dự báo thu nhập & ESOP, Hồ sơ bảo chứng |
+| Khám phá | Rada việc làm |
 
-| Bạn muốn | Xem ở đâu |
-|---|---|
-| Sửa giao diện chạy thật | `apps/experiences/<tên bản>/src/App.tsx` và `styles.css` |
-| Sửa thiết kế trong draw.io | `design/experiences/<tên bản>/<tên bản>.drawio` |
-| Chạy/build/test | [Hướng dẫn frontend](apps/experiences/README.md) |
-| Xem phạm vi đã kiểm tra và phần còn mở | [Bàn giao](planning/jobtrack-five-websites/HANDOFF.md) |
-| Xem plan và khác biệt giữa các bản | [Plan](planning/jobtrack-five-websites/PLAN.md), [ma trận bố cục](planning/jobtrack-five-websites/novelty-matrix.md) |
-| Kết nối backend thật | [API contract và điều kiện production](apps/experiences/API.md) |
-| Thiết kế hệ thống áp dụng System Design 101 | [Kiến trúc, dữ liệu, API và lộ trình](docs/system-design/README.md) |
-| Lấy gói source, Draw.io và build | `deliverables/jobtrack-five-experiences/` |
+## Kiến trúc
 
-Tên thư mục là `dossier`, `rhythm`, `atlas`, `workbench`, **`indexer`** (tên hiển thị Index).
+| Thư mục | Nội dung |
+| --- | --- |
+| `apps/web` | React 19 + Vite 8 + TypeScript, Tailwind 4, 280 design token |
+| `apps/api` | Express 5 + PostgreSQL 18, 11 migration, Argon2id, JWT session |
+| `packages/jobtrack-contract` | Schema, validator, hàm thuần dùng chung |
+| `packages/jobtrack-mcp` | MCP server cho trợ lý AI thao tác hồ sơ |
 
-`design/JobTrack-UI.drawio` và `design/themes` lưu các thiết kế trước đó. Bộ trong `apps/experiences` và `design/experiences` có năm cây giao diện độc lập. Ngày 19/10/2026, `apps/web` được nâng cấp riêng theo brief hiện tại và chạy tại cổng 64364 như hướng dẫn đầu trang.
+Stack chạy bằng Docker Compose: web (nginx) ở cổng 64364, api và postgres trong mạng nội bộ.
+
+## Đăng nhập
+
+Email + mật khẩu (15–64 ký tự), hoặc **Tiếp tục với Google** qua OAuth 2.0 authorization code + PKCE. Google client cần redirect URI `http://127.0.0.1:64364/api/auth/google/callback`; hướng dẫn đầy đủ ở [RUN-LOCAL.md](RUN-LOCAL.md).
+
+## Phát triển
+
+```bash
+npm --prefix apps/web run dev     # web ở 64364
+npm --prefix apps/api run dev     # api ở 64366
+npm --prefix apps/web run test    # 187 test
+npm --prefix apps/api run test    # 291 test
+npm run check:all                 # toàn bộ: contract, api, mcp, extension, web, build, kiến trúc
+```
+
+Quy trình điều phối agent/worktree nằm ở [docs/agents](docs/agents/README.md); đọc `AGENTS.md` trước khi giao việc.
+
+## Phạm vi
+
+Sản phẩm **không** dành cho nhà tuyển dụng — không có tin tuyển dụng, ATS phía công ty, pipeline ứng viên hay quản lý offer. 28 module doanh nghiệp từng có trong repo đã bị xoá ở commit `469afed` vì mô phỏng công việc của CFO/CISO thay vì giúp người tìm việc; migration `011_drop_enterprise_tables.sql` xoá 175 bảng tương ứng và đưa database từ 215 xuống 40 bảng. Chi tiết phạm vi ở [PRODUCT.md](PRODUCT.md).
+
+Ảnh giao diện: [docs/screenshots](docs/screenshots/README.md).
