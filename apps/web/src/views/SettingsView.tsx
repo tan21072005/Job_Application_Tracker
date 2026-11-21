@@ -9,14 +9,15 @@ import type { Application } from '../domain';
 import { Button } from '../components/ui';
 import { applyPreferences, readPreferences, savePreferences, type Preferences } from '../preferences';
 
-type TabId = 'profile' | 'security' | 'notifications' | 'appearance' | 'data';
+type TabId = 'profile' | 'security' | 'notifications' | 'appearance' | 'data' | 'advanced';
 
 const tabs: Array<{ id: TabId; label: string; icon: typeof UserCheck }> = [
   { id: 'profile', label: 'Hồ sơ', icon: UserCheck },
   { id: 'security', label: 'Bảo mật', icon: ShieldCheck },
   { id: 'notifications', label: 'Thông báo', icon: BellRing },
   { id: 'appearance', label: 'Giao diện', icon: Monitor },
-  { id: 'data', label: 'Dữ liệu', icon: Database }
+  { id: 'data', label: 'Dữ liệu', icon: Database },
+  { id: 'advanced', label: 'Nâng cao', icon: Wand2 }
 ];
 
 type Notifications = {
@@ -59,7 +60,7 @@ function Toggle({ checked, onChange, label, help, disabled }: { checked: boolean
 }
 
 export default function SettingsView({
-  apps, accountEmail, proStatus, notify, onProfile, onSecurity, onGrants, onTrash, onUpgrade, onResumes
+  apps, accountEmail, proStatus, notify, onProfile, onSecurity, onGrants, onTrash, onUpgrade, onResumes, onDatasets
 }: {
   apps: Application[];
   accountEmail: string;
@@ -71,6 +72,7 @@ export default function SettingsView({
   onTrash: () => void;
   onUpgrade: () => void;
   onResumes: () => void;
+  onDatasets: () => void;
 }) {
   const [tab, setTab] = useState<TabId>('profile');
   const [preferences, setPreferences] = useState<Preferences>(readPreferences);
@@ -347,6 +349,23 @@ export default function SettingsView({
             <div className="settings-actions">
               <Button kind="danger" onClick={onSecurity}><Trash2 size={16} />Xoá tài khoản vĩnh viễn</Button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {tab === 'advanced' && (
+        <div className="settings-stack">
+          <section className="settings-card">
+            <header>
+              <h2>Dữ liệu Web</h2>
+              <p>Bộ thu thập và chuẩn hoá dữ liệu tuyển dụng từ các trang web. Dành cho người dùng cần nhập dữ liệu thủ công.</p>
+            </header>
+            <div className="settings-actions">
+              <Button kind="secondary" onClick={onDatasets}><Database size={16} />Mở Dữ liệu Web</Button>
+            </div>
+            <p className="settings-note">
+              <Sparkles size={14} />Mục này không nằm trong menu chính vì đa số người tìm việc không cần dùng.
+            </p>
           </section>
           <section className="settings-card">
             <header>

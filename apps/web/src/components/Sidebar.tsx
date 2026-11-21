@@ -9,6 +9,7 @@ type Props = {
   navigation: ReactNode;
   accountEmail: string;
   isPro: boolean;
+  activeFeature: string;
   onAccount: () => void;
   onUpgrade: () => void;
   onTrash: () => void;
@@ -16,7 +17,7 @@ type Props = {
 };
 
 export default function Sidebar({
-  collapsed, onToggle, navigation, accountEmail, isPro, onAccount, onUpgrade, onTrash, onFeature
+  collapsed, onToggle, navigation, accountEmail, isPro, activeFeature, onAccount, onUpgrade, onTrash, onFeature
 }: Props) {
   const hint = (label: string) => (collapsed ? label : undefined);
 
@@ -43,7 +44,7 @@ export default function Sidebar({
               {group.items.map(item => (
                 <button
                   key={item.key}
-                  className={`sidebar-trash-btn ${item.className ?? ''}`.trim()}
+                  className={`sidebar-trash-btn ${item.className ?? ''} ${activeFeature === item.key ? 'active' : ''}`.trim()}
                   title={hint(item.label)}
                   data-label={item.label}
                   data-feature={item.key}

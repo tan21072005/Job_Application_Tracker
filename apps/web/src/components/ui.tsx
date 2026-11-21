@@ -32,15 +32,18 @@ export function Field({ label, error, help, children }: { label: string; error?:
   return <div className={`field ${error ? 'field-error' : ''}`}><label htmlFor={id}>{label}</label>{control}{(error || help) && <small id={`${id}-help`} role={error ? 'alert' : undefined}>{error || help}</small>}</div>;
 }
 
-export function Dialog({ title, children, onClose, wide = false, busy = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; busy?: boolean }) {
+export function Dialog({ title, children, onClose, wide = false, busy = false, inline = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; busy?: boolean; inline?: boolean }) {
   const id = useId();
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
+    if (inline) return;
     const previous = document.activeElement as HTMLElement | null;
     const dialog = ref.current;
     dialog?.showModal();
     return () => { dialog?.close(); if (previous?.isConnected) previous.focus(); };
-  }, []);
+  }, [inline]);
+  const body = <><header className="dialog-header"><h2 id={id}>{title}</h2><button className="icon-button" aria-label="Đóng" disabled={busy} onClick={onClose}><X size={20} /></button></header>{children}</>;
+  if (inline) return <section className={`dialog dialog-inline ${wide ? 'dialog-wide' : ''}`} aria-labelledby={id}>{body}</section>;
   return <dialog ref={ref} className={`dialog ${wide ? 'dialog-wide' : ''}`} aria-labelledby={id}
     onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}
     onClick={event => {
@@ -48,8 +51,7 @@ export function Dialog({ title, children, onClose, wide = false, busy = false }:
       const rect = event.currentTarget.getBoundingClientRect();
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose();
     }}>
-    <header className="dialog-header"><h2 id={id}>{title}</h2><button className="icon-button" aria-label="Đóng" disabled={busy} onClick={onClose}><X size={20} /></button></header>
-    {children}
+    {body}
   </dialog>;
 }
 

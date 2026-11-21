@@ -300,7 +300,7 @@ export function OutreachCampaignModal({ isOpen, onClose, notify }: Props) {
   if (!isOpen) return null;
 
   return (
-    <Dialog title="Chiến dịch kết nối & Referral (Outreach Sequencer)" onClose={onClose}>
+    <Dialog title="Chiến dịch kết nối & Referral (Outreach Sequencer)" onClose={onClose} inline>
       <div className="outreach-campaign-container">
         <div className="outreach-top-bar">
           <div className="campaign-picker-group">

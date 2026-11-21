@@ -222,7 +222,7 @@ export function DecisionMatrixModal({
   const topPick = matrix && matrix.opportunities.length > 0 ? matrix.opportunities[0] : null;
 
   return (
-    <Dialog title="Ma trận Quyết định & So sánh Cơ hội" onClose={onClose} wide>
+    <Dialog title="Ma trận Quyết định & So sánh Cơ hội" onClose={onClose} wide inline>
       <div className="decision-matrix-modal">
         <header className="decision-matrix-header">
           <div className="decision-matrix-tabs">

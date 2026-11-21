@@ -27,6 +27,7 @@ interface CultureRadarModalProps {
   defaultCompany?: string;
   onClose: () => void;
   notify?: (message: string, error?: boolean) => void;
+  embedded?: boolean;
 }
 
 const PRESET_COMPANIES = [
@@ -57,7 +58,8 @@ export function CultureRadarModal({
   currentApplications = [],
   defaultCompany,
   onClose,
-  notify
+  notify,
+  embedded = false
 }: CultureRadarModalProps) {
   const initialCompany = defaultCompany || (currentApplications.length > 0 ? currentApplications[0].company : 'FPT Software');
   
@@ -158,8 +160,9 @@ export function CultureRadarModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto culture-radar-modal-overlay">
-      <div className="relative w-full max-w-5xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden culture-radar-modal">
+    <div className={embedded ? 'culture-radar-embedded' : 'fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto culture-radar-modal-overlay'}>
+      <div className={embedded ? 'culture-radar-embedded-inner' : 'relative w-full max-w-5xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden culture-radar-modal'}>
+        {!embedded && (
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-md">
@@ -187,8 +190,8 @@ export function CultureRadarModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
+        )}
+        <div className={embedded ? 'hidden' : 'px-6 py-3 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4'}>
           <div className="flex items-center gap-2 flex-1 min-w-[300px]">
             <Building2 className="w-4 h-4 text-gray-500" />
             <input
@@ -559,10 +562,12 @@ export function CultureRadarModal({
           )}
         </div>
 
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">
+        <div className={embedded ? 'flex items-center justify-end gap-3 pt-4 border-t border-gray-200 bg-white' : 'flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white'}>
+          {!embedded && (
           <div className="text-xs text-gray-500">
             Dữ liệu hỗ trợ ứng viên đánh giá chân thực môi trường làm việc trước khi nhận Offer
           </div>
+          )}
           <div className="flex items-center gap-3">
             <button
               onClick={handleSaveRadar}
@@ -571,12 +576,14 @@ export function CultureRadarModal({
               <Check className="w-4 h-4" />
               Lưu Đánh giá
             </button>
+            {!embedded && (
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition"
             >
               Đóng
             </button>
+            )}
           </div>
         </div>
       </div>

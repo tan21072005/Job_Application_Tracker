@@ -4,6 +4,7 @@ import {
   type CompanyReviewDTO,
   companyRepository
 } from '../data';
+import { CultureRadarModal } from './CultureRadarModal';
 
 interface CompanyIntelligenceModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ export function CompanyIntelligenceModal({
   const [profile, setProfile] = useState<CompanyProfileDTO | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'culture' | 'salaries' | 'interviews' | 'reviews'>('culture');
+  const [activeTab, setActiveTab] = useState<'culture' | 'radar' | 'salaries' | 'interviews' | 'reviews'>('culture');
 
   const [showReviewForm, setShowReviewForm] = useState<boolean>(false);
   const [reviewRole, setReviewRole] = useState<string>('');
@@ -219,6 +220,13 @@ export function CompanyIntelligenceModal({
                 </button>
                 <button
                   type="button"
+                  className={`tab-btn tab-radar ${activeTab === 'radar' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('radar')}
+                >
+                  Radar Văn hóa
+                </button>
+                <button
+                  type="button"
                   className={`tab-btn tab-salaries ${activeTab === 'salaries' ? 'active' : ''}`}
                   onClick={() => setActiveTab('salaries')}
                 >
@@ -275,6 +283,17 @@ export function CompanyIntelligenceModal({
                       </ul>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'radar' && (
+                <div className="tab-pane radar-pane">
+                  <CultureRadarModal
+                    embedded
+                    defaultCompany={profile.name}
+                    onClose={() => setActiveTab('culture')}
+                    notify={() => {}}
+                  />
                 </div>
               )}
 

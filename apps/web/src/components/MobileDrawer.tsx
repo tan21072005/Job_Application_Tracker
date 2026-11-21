@@ -1,11 +1,10 @@
-import { Database, Settings, TrendingUp, Compass, X } from 'lucide-react';
+import { Settings, TrendingUp, Compass, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { featureGroups, type FeatureKey } from '../features';
 
 const pages = [
   { href: '#analytics', label: 'Phân tích', icon: TrendingUp },
   { href: '#roadmap', label: 'Lộ trình AI', icon: Compass },
-  { href: '#datasets', label: 'Dữ liệu Web', icon: Database },
   { href: '#settings', label: 'Cài đặt', icon: Settings }
 ];
 

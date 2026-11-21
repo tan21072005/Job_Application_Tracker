@@ -158,7 +158,7 @@ export function EmailIngestModal({ isOpen, onClose, onSuccess, notify }: Props) 
   }
 
   return (
-    <Dialog title="Hộp thư thông minh (Smart Email Ingestion)" onClose={onClose}>
+    <Dialog title="Hộp thư thông minh (Smart Email Ingestion)" onClose={onClose} inline>
       <div className="email-ingest-container">
         <div className="ingest-intro">
           <p>

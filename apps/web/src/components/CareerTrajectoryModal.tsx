@@ -30,13 +30,15 @@ interface CareerTrajectoryModalProps {
   onClose: () => void;
   initialRole?: string;
   initialTrack?: TrackType;
+  embedded?: boolean;
 }
 
 export const CareerTrajectoryModal: React.FC<CareerTrajectoryModalProps> = ({
   isOpen,
   onClose,
   initialRole,
-  initialTrack
+  initialTrack,
+  embedded = false
 }) => {
   const [currentRole, setCurrentRole] = useState(initialRole || 'Senior Frontend Engineer');
   const [currentLevel, setCurrentLevel] = useState('Senior');
@@ -134,25 +136,34 @@ export const CareerTrajectoryModal: React.FC<CareerTrajectoryModalProps> = ({
     return `${billion.toFixed(2)} tỷ VND`;
   };
 
-  if (!isOpen) return null;
+  if (!embedded && !isOpen) return null;
 
-  return (
-    <div className="career-trajectory-modal-overlay" onClick={onClose}>
-      <div className="career-trajectory-modal-container" onClick={e => e.stopPropagation()}>
+  const shell = embedded
+    ? (content: React.ReactNode) => <div className="career-trajectory-embedded">{content}</div>
+    : (content: React.ReactNode) => (
+      <div className="career-trajectory-modal-overlay" onClick={onClose}>
+        <div className="career-trajectory-modal-container" onClick={e => e.stopPropagation()}>{content}</div>
+      </div>
+    );
+
+  return shell(
+    <>
+      {!embedded && (
         <div className="career-trajectory-header">
-          <div className="career-trajectory-title-area">
-            <div className="career-trajectory-icon-wrapper">
-              <Compass className="w-6 h-6 text-indigo-400" />
-            </div>
-            <div>
-              <h2 className="career-trajectory-title">Mô phỏng Lộ trình Thăng tiến & Đánh giá Năng lực</h2>
-              <p className="career-trajectory-subtitle">AI Career Trajectory Simulator & Promotion Readiness Engine</p>
-            </div>
-          </div>
-          <button className="career-trajectory-close-btn" onClick={onClose} aria-label="Đóng modal">
-            <X className="w-5 h-5" />
-          </button>
+        <div className="career-trajectory-title-area">
+        <div className="career-trajectory-icon-wrapper">
+        <Compass className="w-6 h-6 text-indigo-400" />
         </div>
+        <div>
+        <h2 className="career-trajectory-title">Mô phỏng Lộ trình Thăng tiến & Đánh giá Năng lực</h2>
+        <p className="career-trajectory-subtitle">AI Career Trajectory Simulator & Promotion Readiness Engine</p>
+        </div>
+        </div>
+        <button className="career-trajectory-close-btn" onClick={onClose} aria-label="Đóng modal">
+        <X className="w-5 h-5" />
+        </button>
+        </div>
+      )}
 
         <div className="career-trajectory-body">
           <div className="career-trajectory-track-selector">
@@ -446,7 +457,6 @@ export const CareerTrajectoryModal: React.FC<CareerTrajectoryModalProps> = ({
             {isSaving ? 'Đang lưu...' : 'Lưu mô phỏng lộ trình'}
           </button>
         </div>
-      </div>
-    </div>
+    </>
   );
 };
