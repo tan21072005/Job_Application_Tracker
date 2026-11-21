@@ -8,13 +8,15 @@ Sản phẩm **không** dành cho nhà tuyển dụng. Không có tin tuyển d�
 ## Product truth
 Ứng dụng chạy thật với Express 5 + PostgreSQL 18, đăng nhập bằng mật khẩu hoặc Google OAuth 2.0, session cookie HttpOnly.
 
-**Trang chính:** Tổng quan, Hồ sơ ứng tuyển (danh sách + pipeline), Lịch phỏng vấn, Phân tích, Lộ trình AI, Dữ liệu Web, Cài đặt.
+**Trang chính:** Tổng quan, Hồ sơ ứng tuyển (danh sách + pipeline), Lịch phỏng vấn, Phân tích, Lộ trình AI, Cài đặt. Mỗi công cụ bên dưới cũng là một trang thật trong vùng nội dung (`#f/<key>`), không mở popup.
 
-**Nhóm Làm việc:** Mạng lưới kết nối (CRM liên hệ HR/headhunter), Hộp thư thông minh (bóc tách email mời phỏng vấn), Chiến dịch Outreach, So sánh cơ hội (ma trận quyết định có trọng số), Hồ sơ công ty.
+**Nhóm Làm việc:** Mạng lưới kết nối (CRM liên hệ HR/headhunter), Hộp thư thông minh (bóc tách email mời phỏng vấn), Chiến dịch Outreach, So sánh cơ hội (ma trận quyết định có trọng số), Hồ sơ công ty (kèm tab Radar Văn hóa và bộ câu hỏi phỏng vấn ngược).
 
-**Nhóm Chuẩn bị:** Thư viện CV (bản gốc + bản theo vị trí), Tối ưu hóa ATS (chẩn đoán từ khóa, viết lại bullet theo Google X-Y-Z), Giả lập phỏng vấn (phiên nhiều lượt), Luyện trả lời phỏng vấn (STAR Coach), Lộ trình thăng tiến, Tốc độ & Điểm nghẽn pipeline, Radar Văn hóa, Dự báo thu nhập & ESOP, Hồ sơ bảo chứng (dossier chia sẻ được).
+**Nhóm Chuẩn bị:** Thư viện CV (bản gốc + bản theo vị trí), Tối ưu hóa ATS (chẩn đoán từ khóa, viết lại bullet theo Google X-Y-Z), Giả lập phỏng vấn (phiên nhiều lượt), Tốc độ & Điểm nghẽn pipeline, Dự báo thu nhập & ESOP, Hồ sơ bảo chứng (dossier chia sẻ được). Lộ trình AI có hai tab: kỹ năng cần bổ sung và năng lực & thăng tiến.
 
 **Nhóm Khám phá:** Rada việc làm (theo dõi tin tuyển dụng theo tiêu chí).
+
+**Cài đặt → Nâng cao:** Dữ liệu Web (PageWeave) nằm ở đây thay vì menu chính, vì đa số người tìm việc không dùng tới.
 
 Bảy trạng thái hồ sơ: Saved, Applied, Screening, Interview, Offer, Rejected, Withdrawn. Mỗi hồ sơ có ghi chú, một hành động tiếp theo, deadline và nhiều vòng phỏng vấn lưu UTC + múi giờ IANA gốc. Có chống trùng theo URL hoặc cặp source + job code, optimistic concurrency qua `version`, thùng rác có khôi phục, và dashboard bốn chỉ số. Mỗi người dùng chỉ thấy dữ liệu của mình.
 
