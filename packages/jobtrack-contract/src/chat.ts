@@ -1,7 +1,7 @@
 import type { ValidationResult } from './validators.ts';
 
 export type ChatMessageSender = 'user' | 'assistant' | 'system';
-export type ChatProvenance = 'n8n' | 'local_fallback' | 'system' | 'client';
+export type ChatProvenance = 'llm' | 'n8n' | 'local_fallback' | 'system' | 'client';
 
 export interface ChatActionReceiptDTO {
   action: string;

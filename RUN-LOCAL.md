@@ -178,6 +178,55 @@ Vào **Tài khoản → Đổi mật khẩu & phiên** trong ứng dụng:
 | Xuất dữ liệu | Tải JSON chứa hồ sơ, phỏng vấn, ghi chú, CV, liên hệ (GDPR Article 20) |
 | Xoá tài khoản | Nhập mật khẩu + gõ `XOA TAI KHOAN`. Xoá vĩnh viễn, cascade 206 bảng (GDPR Article 17) |
 
+### Phân tích JD ↔ CV bằng LLM
+
+Đây là lõi bán hàng. Hệ thống hoạt động theo hai chế độ:
+
+| `LLM_PROVIDER` | Kết quả |
+| --- | --- |
+| Không đặt | Dùng bộ quy tắc có sẵn. Chạy được ngay, không cần tài khoản trả tiền, nhưng chỉ hiểu từ khóa trong từ điển |
+| `openai` / `deepseek` / `gemini` / `openrouter` | Gọi LLM thật. Kết quả có `provenance: "llm"`, phần quy tắc vẫn là phương án dự phòng |
+
+Cấu hình `.env` ở thư mục gốc:
+
+```env
+LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=...
+LLM_MODEL=deepseek-chat
+```
+
+Hoặc với OpenAI:
+
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+LLM_MODEL=gpt-4o-mini
+```
+
+Với Gemini:
+
+```env
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=...
+LLM_MODEL=gemini-2.0-flash
+```
+
+`LLM_BASE_URL` chỉ cần đặt khi dùng proxy hoặc nhà cung cấp tương thích OpenAI khác.
+
+Ba chốt an toàn đã cài trong code:
+
+1. Từ khóa do LLM trả về phải xuất hiện nguyên văn trong JD, nếu không bị loại.
+2. Từ khóa đã có trong CV không bị báo là thiếu.
+3. Bullet gốc phải khớp nguyên văn với CV, nếu không phần viết lại bị bỏ.
+
+Nếu LLM lỗi, hết hạn mức hoặc trả JSON hỏng, hệ thống tự quay về bộ quy tắc và vẫn trả kết quả. Người dùng không thấy màn hình lỗi.
+
+Kiểm tra cấu hình đang chạy:
+
+```powershell
+curl -H "Cookie: jobtrack_session=..." http://127.0.0.1:64364/api/config/status
+```
+
 ### Nhắc việc qua email
 
 Cần biến `REMINDER_RUNNER_SECRET` trong `.env`. Chạy tay:

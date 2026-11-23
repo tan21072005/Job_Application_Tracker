@@ -20,6 +20,8 @@ export interface AtsDiagnosticScoreBreakdownDTO {
   impactQuantification: number;
 }
 
+export type AnalysisProvenance = 'llm' | 'rules';
+
 export interface AtsDiagnosticResultDTO {
   atsScore: number;
   matchedKeywordsCount: number;
@@ -27,6 +29,9 @@ export interface AtsDiagnosticResultDTO {
   keywordGaps: KeywordGapItemDTO[];
   scoreBreakdown: AtsDiagnosticScoreBreakdownDTO;
   recommendations: string[];
+  verdict?: string;
+  provenance?: AnalysisProvenance;
+  model?: string;
 }
 
 export type BulletVariantType = 'metric_driven' | 'leadership' | 'tech_depth';
@@ -116,7 +121,65 @@ export const ATS_KEYWORD_DICTIONARY: Array<{
   { keyword: 'Agile / Scrum', category: 'domain_concept', importance: 'recommended', aliases: ['agile', 'scrum', 'sprint'] },
   { keyword: 'Cross-functional Collaboration', category: 'soft_skill', importance: 'recommended', aliases: ['stakeholder management', 'cross-functional'] },
   { keyword: 'Mentorship', category: 'soft_skill', importance: 'recommended', aliases: ['mentoring', 'coaching engineers'] },
-  { keyword: 'Technical Leadership', category: 'soft_skill', importance: 'critical', aliases: ['team lead', 'tech lead', 'ownership'] }
+  { keyword: 'Technical Leadership', category: 'soft_skill', importance: 'critical', aliases: ['team lead', 'tech lead', 'ownership'] },
+
+  { keyword: 'Marketing', category: 'domain_concept', importance: 'recommended', aliases: ['tiếp thị'] },
+  { keyword: 'Digital Marketing', category: 'hard_skill', importance: 'critical', aliases: ['marketing online', 'tiếp thị số'] },
+  { keyword: 'Facebook Ads', category: 'hard_skill', importance: 'critical', aliases: ['fb ads', 'quảng cáo facebook'] },
+  { keyword: 'Google Ads', category: 'hard_skill', importance: 'critical', aliases: ['google adwords', 'adwords'] },
+  { keyword: 'SEO', category: 'hard_skill', importance: 'critical', aliases: ['search engine optimization', 'tối ưu hóa công cụ tìm kiếm'] },
+  { keyword: 'Google Analytics', category: 'hard_skill', importance: 'critical', aliases: ['ga4', 'analytics'] },
+  { keyword: 'Content Marketing', category: 'hard_skill', importance: 'recommended', aliases: ['content', 'sáng tạo nội dung'] },
+  { keyword: 'Email Marketing', category: 'hard_skill', importance: 'recommended', aliases: ['email campaign', 'marketing qua email'] },
+  { keyword: 'Branding', category: 'domain_concept', importance: 'recommended', aliases: ['thương hiệu', 'brand management'] },
+  { keyword: 'Market Research', category: 'hard_skill', importance: 'recommended', aliases: ['nghiên cứu thị trường'] },
+  { keyword: 'CRM', category: 'hard_skill', importance: 'recommended', aliases: ['quản lý quan hệ khách hàng'] },
+  { keyword: 'HubSpot', category: 'hard_skill', importance: 'optional', aliases: [] },
+  { keyword: 'Salesforce', category: 'hard_skill', importance: 'optional', aliases: [] },
+
+  { keyword: 'Sales', category: 'domain_concept', importance: 'critical', aliases: ['kinh doanh', 'bán hàng'] },
+  { keyword: 'Business Development', category: 'domain_concept', importance: 'recommended', aliases: ['phát triển kinh doanh', 'bizdev'] },
+  { keyword: 'Customer Relationship', category: 'soft_skill', importance: 'recommended', aliases: ['chăm sóc khách hàng', 'customer care'] },
+  { keyword: 'Negotiation', category: 'soft_skill', importance: 'critical', aliases: ['đàm phán', 'thương lượng'] },
+  { keyword: 'KPI', category: 'domain_concept', importance: 'recommended', aliases: ['chỉ số đo lường'] },
+  { keyword: 'Revenue Target', category: 'domain_concept', importance: 'recommended', aliases: ['doanh thu', 'target doanh số'] },
+
+  { keyword: 'Accounting', category: 'domain_concept', importance: 'critical', aliases: ['kế toán'] },
+  { keyword: 'Excel', category: 'hard_skill', importance: 'critical', aliases: ['microsoft excel', 'bảng tính'] },
+  { keyword: 'MISA', category: 'hard_skill', importance: 'recommended', aliases: ['phần mềm misa'] },
+  { keyword: 'Financial Reporting', category: 'hard_skill', importance: 'critical', aliases: ['báo cáo tài chính'] },
+  { keyword: 'Tax Declaration', category: 'hard_skill', importance: 'recommended', aliases: ['kê khai thuế', 'thuế'] },
+  { keyword: 'Accounts Receivable', category: 'hard_skill', importance: 'recommended', aliases: ['công nợ phải thu'] },
+  { keyword: 'Accounts Payable', category: 'hard_skill', importance: 'recommended', aliases: ['công nợ phải trả'] },
+  { keyword: 'Payroll', category: 'hard_skill', importance: 'recommended', aliases: ['tính lương', 'bảng lương'] },
+  { keyword: 'Audit', category: 'domain_concept', importance: 'recommended', aliases: ['kiểm toán'] },
+  { keyword: 'VAS', category: 'domain_concept', importance: 'optional', aliases: ['chuẩn mực kế toán việt nam'] },
+  { keyword: 'IFRS', category: 'domain_concept', importance: 'optional', aliases: [] },
+
+  { keyword: 'Recruitment', category: 'domain_concept', importance: 'critical', aliases: ['tuyển dụng'] },
+  { keyword: 'Human Resources', category: 'domain_concept', importance: 'critical', aliases: ['nhân sự', 'hr'] },
+  { keyword: 'Employee Engagement', category: 'soft_skill', importance: 'recommended', aliases: ['gắn kết nhân viên'] },
+  { keyword: 'Labor Law', category: 'domain_concept', importance: 'recommended', aliases: ['luật lao động'] },
+  { keyword: 'Compensation and Benefits', category: 'domain_concept', importance: 'recommended', aliases: ['c&b', 'lương thưởng', 'phúc lợi'] },
+  { keyword: 'Onboarding', category: 'domain_concept', importance: 'recommended', aliases: ['hội nhập nhân viên'] },
+  { keyword: 'Performance Review', category: 'domain_concept', importance: 'recommended', aliases: ['đánh giá hiệu suất'] },
+
+  { keyword: 'Project Management', category: 'domain_concept', importance: 'critical', aliases: ['quản lý dự án'] },
+  { keyword: 'Stakeholder Management', category: 'soft_skill', importance: 'critical', aliases: ['quản lý các bên liên quan'] },
+  { keyword: 'Budget Management', category: 'hard_skill', importance: 'recommended', aliases: ['quản lý ngân sách', 'quản lý chi phí'] },
+  { keyword: 'Logistics', category: 'domain_concept', importance: 'recommended', aliases: ['vận tải', 'hậu cần'] },
+  { keyword: 'Supply Chain', category: 'domain_concept', importance: 'recommended', aliases: ['chuỗi cung ứng'] },
+  { keyword: 'Inventory Management', category: 'hard_skill', importance: 'recommended', aliases: ['quản lý tồn kho'] },
+  { keyword: 'Customer Service', category: 'soft_skill', importance: 'recommended', aliases: ['dịch vụ khách hàng'] },
+  { keyword: 'Problem Solving', category: 'soft_skill', importance: 'critical', aliases: ['giải quyết vấn đề'] },
+  { keyword: 'Teamwork', category: 'soft_skill', importance: 'recommended', aliases: ['làm việc nhóm'] },
+  { keyword: 'Communication', category: 'soft_skill', importance: 'critical', aliases: ['giao tiếp', 'truyền thông'] },
+  { keyword: 'Presentation', category: 'soft_skill', importance: 'recommended', aliases: ['thuyết trình', 'trình bày'] },
+  { keyword: 'Time Management', category: 'soft_skill', importance: 'recommended', aliases: ['quản lý thời gian'] },
+  { keyword: 'English', category: 'hard_skill', importance: 'recommended', aliases: ['tiếng anh', 'toeic', 'ielts'] },
+  { keyword: 'Microsoft Office', category: 'hard_skill', importance: 'recommended', aliases: ['word', 'powerpoint', 'office'] },
+  { keyword: 'Power BI', category: 'hard_skill', importance: 'optional', aliases: [] },
+  { keyword: 'SQL', category: 'hard_skill', importance: 'recommended', aliases: ['truy vấn dữ liệu'] }
 ];
 
 export function extractKeywordsFromText(text: string): Array<{
@@ -156,9 +219,17 @@ export function extractKeywordsFromText(text: string): Array<{
   const capitalizedWords = text.match(/\b[A-Z][a-zA-Z0-9+#.-]{2,}\b/g) || [];
   const counts: Record<string, number> = {};
   for (const word of capitalizedWords) {
-    if (word.length > 2 && !['The', 'And', 'For', 'With', 'Our', 'You'].includes(word)) {
-      counts[word] = (counts[word] || 0) + 1;
-    }
+    if (word.length <= 2) continue;
+    if (['The', 'And', 'For', 'With', 'Our', 'You'].includes(word)) continue;
+
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const allOccurrences = text.match(new RegExp(`\\b${escaped}\\b`, 'g')) || [];
+    const midSentenceOccurrences = text.match(new RegExp(`(?<=[a-z0-9,;:]\\s)${escaped}\\b`, 'g')) || [];
+    const sentenceStartOnly = allOccurrences.length > 0 && midSentenceOccurrences.length === 0;
+
+    if (sentenceStartOnly) continue;
+
+    counts[word] = midSentenceOccurrences.length;
   }
 
   for (const [word, count] of Object.entries(counts)) {

@@ -14,6 +14,8 @@ Sản phẩm **không** dành cho nhà tuyển dụng. Không có tin tuyển d�
 
 **Nhóm Chuẩn bị:** Thư viện CV (bản gốc + bản theo vị trí), Tối ưu hóa ATS (chẩn đoán từ khóa, viết lại bullet theo Google X-Y-Z), Giả lập phỏng vấn (phiên nhiều lượt), Tốc độ & Điểm nghẽn pipeline, Dự báo thu nhập & ESOP, Hồ sơ bảo chứng (dossier chia sẻ được). Lộ trình AI có hai tab: kỹ năng cần bổ sung và năng lực & thăng tiến.
 
+**Phân tích JD ↔ CV (lõi bán hàng):** `POST /api/resume/diagnose` gọi LLM thật khi có `LLM_PROVIDER` (OpenAI, DeepSeek, Gemini hoặc OpenRouter) và tự quay về bộ quy tắc khi chưa cấu hình hoặc khi LLM lỗi. Ba lớp kiểm tra chặn bịa: từ khóa phải xuất hiện nguyên văn trong JD, từ khóa đã có trong CV không bị báo thiếu, bullet gốc phải khớp nguyên văn với CV. Kết quả mang nhãn `provenance: "llm"` hoặc `"rules"` để người dùng biết đâu là AI thật.
+
 **Nhóm Khám phá:** Rada việc làm (theo dõi tin tuyển dụng theo tiêu chí).
 
 **Cài đặt → Nâng cao:** Dữ liệu Web (PageWeave) nằm ở đây thay vì menu chính, vì đa số người tìm việc không dùng tới.

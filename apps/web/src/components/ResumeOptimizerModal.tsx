@@ -15,8 +15,13 @@ import {
   ShieldCheck,
   RefreshCw,
   Search,
-  BookOpen
+  BookOpen,
+  Download,
+  FileText,
+  Printer,
+  UploadCloud
 } from 'lucide-react';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from 'docx';
 import type { Application } from '../domain.ts';
 import {
   type AtsKeywordCategory,
@@ -88,6 +93,38 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
   const [injectedKeywords, setInjectedKeywords] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [keywordFilter, setKeywordFilter] = useState<'all' | 'missing' | 'matched'>('all');
+  const [isDragging, setIsDragging] = useState(false);
+  const [isParsingFile, setIsParsingFile] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleFileUpload = async (file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!['pdf', 'docx', 'doc', 'txt', 'md'].includes(ext || '')) {
+      notify?.('Chỉ hỗ trợ file .pdf, .docx, .md hoặc .txt.', true);
+      return;
+    }
+    setIsParsingFile(true);
+    try {
+      const text = await resumeOptimizerRepository.parseFile(file);
+      if (!text || text.trim().length === 0) {
+        throw new Error('Không trích xuất được chữ từ file.');
+      }
+      setResumeText(text.trim());
+      notify?.(`Đã tải & đọc thành công file: ${file.name}`);
+    } catch (err) {
+      notify?.('Không thể đọc file: ' + (err as Error).message, true);
+    } finally {
+      setIsParsingFile(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      void handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
 
   useEffect(() => {
     if (!selectedAppId) return;
@@ -175,6 +212,214 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
     setCopied(true);
     notify?.('Đã sao chép nội dung CV tối ưu vào clipboard!');
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleDownloadFile = (ext: 'md' | 'txt') => {
+    const blob = new Blob([synthesizedPreview], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const cleanCompany = (company || 'Company').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9-]/g, '_');
+    const cleanTitle = (jobTitle || 'Role').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9-]/g, '_');
+    a.download = `CV_${cleanCompany}_${cleanTitle}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    notify?.(`Đã tải xuống bản CV tối ưu dạng .${ext}!`);
+  };
+
+  const handleDownloadDocx = async () => {
+    try {
+      const lines = synthesizedPreview.split('\n');
+      const docChildren: Paragraph[] = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) {
+          docChildren.push(new Paragraph({ text: '', spacing: { after: 100 } }));
+          continue;
+        }
+
+        if (line.startsWith('# ')) {
+          const titleText = line.replace(/^#\s+/, '');
+          docChildren.push(
+            new Paragraph({
+              text: titleText,
+              heading: HeadingLevel.TITLE,
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 180, after: 100 }
+            })
+          );
+        } else if (line.startsWith('## ')) {
+          const headingText = line.replace(/^##\s+/, '');
+          docChildren.push(
+            new Paragraph({
+              text: headingText.toUpperCase(),
+              heading: HeadingLevel.HEADING_1,
+              spacing: { before: 200, after: 100 },
+              border: {
+                bottom: {
+                  color: '315bef',
+                  space: 4,
+                  style: BorderStyle.SINGLE,
+                  size: 6
+                }
+              }
+            })
+          );
+        } else if (line.startsWith('- ')) {
+          const bulletText = line.replace(/^-\s+/, '');
+          docChildren.push(
+            new Paragraph({
+              children: [new TextRun({ text: bulletText, size: 21, font: 'Calibri' })],
+              bullet: { level: 0 },
+              spacing: { after: 70 }
+            })
+          );
+        } else {
+          docChildren.push(
+            new Paragraph({
+              children: [new TextRun({ text: line, size: 21, font: 'Calibri' })],
+              spacing: { after: 80 }
+            })
+          );
+        }
+      }
+
+      const doc = new Document({
+        sections: [
+          {
+            properties: {
+              page: {
+                margin: {
+                  top: 720,
+                  right: 720,
+                  bottom: 720,
+                  left: 720
+                }
+              }
+            },
+            children: docChildren
+          }
+        ]
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanCompany = (company || 'Company').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9-]/g, '_');
+      const cleanTitle = (jobTitle || 'Role').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9-]/g, '_');
+      a.download = `CV_${cleanCompany}_${cleanTitle}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      notify?.('Đã xuất file Word (.docx) chuẩn ATS thành công!');
+    } catch (err) {
+      notify?.('Không thể tạo file Word: ' + (err as Error).message, true);
+    }
+  };
+
+  const handlePrintPdf = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      notify?.('Vui lòng cho phép popup để in / lưu PDF.', true);
+      return;
+    }
+    const cleanCompany = company || 'Company';
+    const cleanTitle = jobTitle || 'Position';
+
+    const lines = synthesizedPreview.split('\n');
+    let htmlContent = '';
+    let inList = false;
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) {
+        if (inList) { htmlContent += '</ul>'; inList = false; }
+        continue;
+      }
+      if (line.startsWith('# ')) {
+        if (inList) { htmlContent += '</ul>'; inList = false; }
+        htmlContent += `<h1 class="cv-name">${line.replace(/^#\s+/, '')}</h1>`;
+      } else if (line.startsWith('## ')) {
+        if (inList) { htmlContent += '</ul>'; inList = false; }
+        htmlContent += `<h2 class="cv-section-title">${line.replace(/^##\s+/, '')}</h2>`;
+      } else if (line.startsWith('- ')) {
+        if (!inList) { htmlContent += '<ul class="cv-list">'; inList = true; }
+        htmlContent += `<li>${line.replace(/^-\s+/, '')}</li>`;
+      } else {
+        if (inList) { htmlContent += '</ul>'; inList = false; }
+        htmlContent += `<p class="cv-p">${line}</p>`;
+      }
+    }
+    if (inList) htmlContent += '</ul>';
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>CV_${cleanCompany}_${cleanTitle}</title>
+          <meta charset="utf-8" />
+          <style>
+            @page { size: A4; margin: 15mm 15mm 15mm 15mm; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              line-height: 1.5;
+              color: #111827;
+              background: #fff;
+              padding: 20px;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            .cv-name {
+              font-size: 20px;
+              font-weight: 700;
+              color: #111827;
+              margin-bottom: 4px;
+              text-align: center;
+            }
+            .cv-section-title {
+              font-size: 13px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: #1e3a8a;
+              border-bottom: 1.5px solid #1e3a8a;
+              padding-bottom: 3px;
+              margin-top: 14px;
+              margin-bottom: 6px;
+            }
+            .cv-p {
+              font-size: 12px;
+              color: #374151;
+              margin: 3px 0;
+            }
+            .cv-list {
+              margin: 3px 0;
+              padding-left: 20px;
+            }
+            .cv-list li {
+              font-size: 12px;
+              color: #1f2937;
+              margin-bottom: 3px;
+              line-height: 1.4;
+            }
+          </style>
+        </head>
+        <body>
+          ${htmlContent}
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleSaveOptimization = async () => {
@@ -285,12 +530,52 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
                       Dùng mẫu chuẩn
                     </button>
                   </div>
+
+                  <div
+                    className={`optimizer-dropzone ${isDragging ? 'dragging' : ''}`}
+                    onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      border: isDragging ? '2px dashed #2563eb' : '1.5px dashed #94a3b8',
+                      borderRadius: '8px',
+                      padding: '10px 14px',
+                      textAlign: 'center',
+                      background: isDragging ? '#eff6ff' : 'rgba(241, 245, 249, 0.6)',
+                      cursor: 'pointer',
+                      marginBottom: '10px',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.docx,.doc,.txt,.md"
+                      style={{ display: 'none' }}
+                      onChange={e => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          void handleFileUpload(e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <UploadCloud className="w-5 h-5 text-blue-600" />
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e40af' }}>
+                        {isParsingFile ? 'Đang trích xuất nội dung file CV...' : 'Tải file CV (.pdf, .docx, .md, .txt)'}
+                      </span>
+                    </div>
+                    <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>
+                      Kéo thả file vào đây hoặc bấm để chọn — hệ thống tự động bóc tách chữ
+                    </p>
+                  </div>
+
                   <textarea
                     className="optimizer-textarea optimizer-resume-textarea"
                     rows={12}
                     value={resumeText}
                     onChange={e => setResumeText(e.target.value)}
-                    placeholder="Dán nội dung văn bản CV của bạn vào đây..."
+                    placeholder="Dán nội dung văn bản CV của bạn vào đây hoặc tải file lên..."
                   />
                 </div>
 
@@ -480,17 +765,44 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
                   <ShieldCheck className="w-4 h-4 mr-1 text-emerald-400" />
                   <span>Điểm ATS đạt được: <strong>{liveAtsScore}%</strong></span>
                 </div>
-                <div className="preview-action-btns">
+                <div className="preview-action-btns" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    className="optimizer-btn-primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', fontSize: '12px', background: '#2563eb' }}
+                    onClick={handleDownloadDocx}
+                    title="Tải xuống tài liệu Microsoft Word chuẩn ATS"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Xuất Word (.docx)</span>
+                  </button>
+                  <button
+                    className="optimizer-btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', fontSize: '12px' }}
+                    onClick={handlePrintPdf}
+                    title="In hoặc Lưu thành file PDF chuẩn A4"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>In / Tải PDF</span>
+                  </button>
+                  <button
+                    className="optimizer-text-btn"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '12px' }}
+                    onClick={() => handleDownloadFile('md')}
+                    title="Tải xuống định dạng Markdown"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>.md</span>
+                  </button>
                   <button className="optimizer-copy-btn" onClick={handleCopySynthesized}>
                     {copied ? (
                       <>
                         <Check className="w-4 h-4 mr-1 text-emerald-400" />
-                        Đã sao chép!
+                        Đã chép!
                       </>
                     ) : (
                       <>
                         <Copy className="w-4 h-4 mr-1" />
-                        Sao chép toàn bộ CV
+                        Sao chép
                       </>
                     )}
                   </button>
@@ -529,9 +841,25 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
               <button className="optimizer-btn-secondary" onClick={() => setActiveStep('studio')}>
                 Quay lại chỉnh sửa
               </button>
-              <button className="optimizer-btn-primary optimizer-copy-btn" onClick={handleCopySynthesized}>
+              <button
+                className="optimizer-btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                onClick={handlePrintPdf}
+              >
+                <Printer className="w-4 h-4" />
+                In / Lưu PDF
+              </button>
+              <button
+                className="optimizer-btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#2563eb' }}
+                onClick={handleDownloadDocx}
+              >
+                <FileText className="w-4 h-4" />
+                Xuất file Word (.docx)
+              </button>
+              <button className="optimizer-btn-secondary optimizer-copy-btn" onClick={handleCopySynthesized}>
                 <Copy className="w-4 h-4 mr-2" />
-                {copied ? 'Đã sao chép!' : 'Sao chép CV đã tối ưu'}
+                {copied ? 'Đã sao chép!' : 'Sao chép'}
               </button>
             </>
           )}

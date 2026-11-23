@@ -40,6 +40,63 @@ export class ResumeOptimizerService {
     this.pool = pool;
   }
 
+  async saveAnalysis(
+    userId: string,
+    input: OptimizeResumeInputDTO,
+    analysis: {
+      diagnostic: AtsDiagnosticResultDTO;
+      proposals: BulletOptimizationProposalDTO[];
+      provenance: 'llm' | 'rules';
+    }
+  ): Promise<OptimizedResumeVariantDTO> {
+    await initResumeOptimizationTable(this.pool);
+
+    const defaultAccepted: Record<string, string> = {};
+    for (const proposal of analysis.proposals) {
+      if (proposal.variants.length > 0) {
+        defaultAccepted[proposal.originalBullet] = proposal.variants[0].rewrittenText;
+      }
+    }
+
+    const missingCritical = analysis.diagnostic.keywordGaps
+      .filter(item => !item.matched)
+      .slice(0, 6)
+      .map(item => item.keyword);
+
+    const synthesizedResume = synthesizeOptimizedResume(
+      input.resumeText,
+      defaultAccepted,
+      missingCritical
+    );
+
+    const id = crypto.randomUUID();
+    const now = new Date();
+
+    const insertResult = await this.pool.query(
+      `INSERT INTO resume_optimizations (
+        id, user_id, application_id, job_title, company,
+        original_resume, target_job_text, diagnostic_result, proposals,
+        synthesized_resume, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)
+      RETURNING *`,
+      [
+        id,
+        userId,
+        input.applicationId || null,
+        input.jobTitle || 'Vị trí chưa đặt tên',
+        input.company || 'Công ty chưa đặt tên',
+        input.resumeText,
+        input.jobDescription,
+        JSON.stringify(analysis.diagnostic),
+        JSON.stringify(analysis.proposals),
+        synthesizedResume,
+        now
+      ]
+    );
+
+    return this.mapRow(insertResult.rows[0]);
+  }
+
   async diagnoseAndOptimize(
     userId: string,
     input: OptimizeResumeInputDTO

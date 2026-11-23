@@ -16,7 +16,9 @@
     "@fontsource/lora": "latest",
     "@fontsource/manrope": "latest",
     "@fontsource/outfit": "latest",
+    "docx": "^9.16.0",
     "lucide-react": "latest",
+    "mammoth": "^1.13.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },

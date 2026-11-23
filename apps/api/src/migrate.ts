@@ -24,7 +24,10 @@ if (!databaseUrl) {
 
 const pool = new Pool({
   connectionString: databaseUrl,
-  connectionTimeoutMillis: 5000
+  connectionTimeoutMillis: 10000,
+  ssl: databaseUrl.includes('supabase.co') || databaseUrl.includes('supabase.com') || databaseUrl.includes('sslmode=require')
+    ? { rejectUnauthorized: false }
+    : undefined
 });
 
 try {

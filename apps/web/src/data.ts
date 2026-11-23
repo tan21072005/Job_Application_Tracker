@@ -1348,7 +1348,10 @@ const PRO_ORDERS_KEY = 'jobtrack.pro.orders.v1';
 
 export const proRepository = {
   async getStatus(): Promise<ProStatusDTO> {
-    if (demoMode) {
+    try {
+      return await request<ProStatusDTO>('/pro/status');
+    } catch (err) {
+      if (!demoMode) throw err;
       if (typeof localStorage === 'undefined') {
         return { tier: 'free', isPro: false, expiresAt: null };
       }
@@ -1364,11 +1367,14 @@ export const proRepository = {
         return { tier: 'free', isPro: false, expiresAt: null };
       }
     }
-    return request<ProStatusDTO>('/pro/status');
   },
 
   async getPlans(): Promise<ProPlanDTO[]> {
-    if (demoMode) {
+    try {
+      const res = await request<{ plans: ProPlanDTO[] }>('/pro/plans');
+      return res.plans;
+    } catch (err) {
+      if (!demoMode) throw err;
       return [
         {
           plan: 'monthly',
@@ -1386,46 +1392,50 @@ export const proRepository = {
         },
         {
           plan: 'quarterly',
-          name: 'Gói 3 Tháng',
-          amount: 249000,
+          name: 'Job Search Pass (90 ngày)',
+          amount: 149000,
           currency: 'VND',
           durationDays: 90,
           highlightBadge: 'Phổ biến nhất',
-          savingsPercent: 16,
+          savingsPercent: 50,
           features: [
             'Tất cả tính năng của gói 1 tháng',
-            'Tiết kiệm 16% so với thanh toán từng tháng',
-            'Đồng hành trọn vẹn chu kỳ tìm việc và thử việc',
-            'Ưu tiên tài nguyên AI phản hồi nhanh nhất'
+            'Trả một lần cho trọn chu kỳ tìm việc 90 ngày',
+            'Không tự động gia hạn, không tự trừ tiền',
+            'Phân tích JD ↔ CV không giới hạn trong 90 ngày'
           ]
         },
         {
           plan: 'yearly',
           name: 'Gói 1 Năm',
-          amount: 799000,
+          amount: 499000,
           currency: 'VND',
           durationDays: 365,
           highlightBadge: 'Tiết kiệm nhất',
-          savingsPercent: 33,
+          savingsPercent: 58,
           features: [
             'Tất cả đặc quyền Pro trọn vẹn 365 ngày',
-            'Tiết kiệm 33% chi phí (chỉ ~66.000đ/tháng)',
-            'Job Radar AI tự động quét cơ hội mới định kỳ',
-            'Trải nghiệm sớm nhất các tính năng AI thế hệ mới'
+            'Giữ toàn bộ dữ liệu qua nhiều chu kỳ tìm việc',
+            'Theo dõi dài hạn và so sánh nhiều giai đoạn',
+            'Ưu tiên xử lý khi hệ thống quá tải'
           ]
         }
       ];
     }
-    const res = await request<{ plans: ProPlanDTO[] }>('/pro/plans');
-    return res.plans;
   },
 
   async createCheckout(plan: ProPlan): Promise<CheckoutResultDTO> {
-    if (demoMode) {
+    try {
+      return await request<CheckoutResultDTO>('/pro/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ plan })
+      });
+    } catch (err) {
+      if (!demoMode) throw err;
       const codeSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
       const transferCode = `JTPRO${codeSuffix}`;
       const orderId = `demo_ord_${Date.now()}`;
-      const prices: Record<ProPlan, number> = { monthly: 99000, quarterly: 249000, yearly: 799000 };
+      const prices: Record<ProPlan, number> = { monthly: 99000, quarterly: 149000, yearly: 499000 };
       const amount = prices[plan] || 99000;
       const order: ProOrderDTO = {
         orderId,
@@ -1462,22 +1472,20 @@ export const proRepository = {
         instructions: `Đơn hàng ${transferCode} đã được tạo ở chế độ thử nghiệm với số tiền ${amount.toLocaleString('vi-VN')} VND.`
       };
     }
-    return request<CheckoutResultDTO>('/pro/checkout', {
-      method: 'POST',
-      body: JSON.stringify({ plan })
-    });
   },
 
   async getOrder(orderId: string): Promise<ProOrderDTO> {
-    if (demoMode) {
+    try {
+      return await request<ProOrderDTO>(`/pro/orders/${encodeURIComponent(orderId)}`);
+    } catch (err) {
+      if (!demoMode) throw err;
       if (typeof localStorage !== 'undefined') {
         const ordersRaw = localStorage.getItem(PRO_ORDERS_KEY);
         const orders = ordersRaw ? JSON.parse(ordersRaw) : {};
         if (orders[orderId]) return orders[orderId];
       }
-      throw new ApiError('Không tìm thấy đơn hàng.', 404);
+      throw err;
     }
-    return request<ProOrderDTO>(`/pro/orders/${encodeURIComponent(orderId)}`);
   },
 
   async simulatePaid(orderId: string): Promise<{ success: boolean; replayed?: boolean; orderId: string; plan: ProPlan }> {
@@ -3675,6 +3683,36 @@ function saveDemoOptimizations(list: OptimizedResumeVariantDTO[]): void {
 }
 
 export const resumeOptimizerRepository = {
+  async parseFile(file: File): Promise<string> {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext === 'txt' || ext === 'md') {
+      return await file.text();
+    }
+    if (ext === 'docx') {
+      try {
+        const mammoth = await import('mammoth');
+        const arrayBuffer = await file.arrayBuffer();
+        const res = await mammoth.extractRawText({ arrayBuffer });
+        if (res.value && res.value.trim().length > 0) {
+          return res.value.trim();
+        }
+      } catch {
+        // Fallback to API below
+      }
+    }
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const res = await request<{ text: string }>('/resume/parse-file', {
+      method: 'POST',
+      body: JSON.stringify({ filename: file.name, base64 })
+    });
+    return res.text;
+  },
+
   async diagnose(input: OptimizeResumeInputDTO): Promise<OptimizedResumeVariantDTO> {
     if (demoMode) {
       const diagnostic = diagnoseAtsKeywordGaps(input.resumeText, input.jobDescription);

@@ -26,7 +26,7 @@ services:
     command: ["node", "src/migrate.ts"]
     restart: "no"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-jobtrack}:${POSTGRES_PASSWORD:-jobtrack_secure_local_dev_password}@postgres:5432/${POSTGRES_DB:-jobtrack}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-jobtrack}:${POSTGRES_PASSWORD:-jobtrack_secure_local_dev_password}@postgres:5432/${POSTGRES_DB:-jobtrack}}
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,7 +42,7 @@ services:
     environment:
       PORT: "64366"
       HOST: "0.0.0.0"
-      DATABASE_URL: postgresql://${POSTGRES_USER:-jobtrack}:${POSTGRES_PASSWORD:-jobtrack_secure_local_dev_password}@postgres:5432/${POSTGRES_DB:-jobtrack}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-jobtrack}:${POSTGRES_PASSWORD:-jobtrack_secure_local_dev_password}@postgres:5432/${POSTGRES_DB:-jobtrack}}
       JWT_SECRET: ${JWT_SECRET:-jobtrack_production_local_jwt_secret_minimum_32_characters}
       APP_ORIGIN: ${APP_ORIGIN:-http://127.0.0.1:64364}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
@@ -60,6 +60,17 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://127.0.0.1:64364/api/auth/google/callback}
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID:-}
+      PAYOS_API_KEY: ${PAYOS_API_KEY:-}
+      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
+      PAYMENT_MODE: ${PAYMENT_MODE:-payos}
     depends_on:
       migration:
         condition: service_completed_successfully

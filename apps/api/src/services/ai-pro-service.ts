@@ -1,5 +1,6 @@
 import { Pool, type PoolClient } from 'pg';
 import { randomBytes, randomUUID } from 'node:crypto';
+import { PayOS } from '@payos/node';
 import type { CandidateProfile } from './candidate-profile.ts';
 import { fail } from './jobtrack-service.ts';
 import { verifyPaymentSignature } from '../security/payment-signature.ts';
@@ -43,8 +44,8 @@ export type ProPlan = 'monthly' | 'quarterly' | 'yearly';
 
 export const PLAN_PRICES: Readonly<Record<ProPlan, number>> = Object.freeze({
   monthly: 99000,
-  quarterly: 249000,
-  yearly: 799000
+  quarterly: 149000,
+  yearly: 499000
 });
 
 export const PLAN_DURATION_DAYS: Readonly<Record<ProPlan, number>> = Object.freeze({
@@ -70,25 +71,25 @@ export const PLAN_METADATA: Readonly<Record<ProPlan, {
     ]
   },
   quarterly: {
-    name: 'Gói 3 Tháng',
+    name: 'Job Search Pass (90 ngày)',
     highlightBadge: 'Phổ biến nhất',
-    savingsPercent: 16,
+    savingsPercent: 50,
     features: [
       'Tất cả tính năng của gói 1 tháng',
-      'Tiết kiệm 16% so với thanh toán từng tháng',
-      'Đồng hành trọn vẹn chu kỳ tìm việc và thử việc',
-      'Ưu tiên tài nguyên AI phản hồi nhanh nhất'
+      'Trả một lần cho trọn chu kỳ tìm việc 90 ngày',
+      'Không tự động gia hạn, không tự trừ tiền',
+      'Phân tích JD ↔ CV không giới hạn trong 90 ngày'
     ]
   },
   yearly: {
     name: 'Gói 1 Năm',
     highlightBadge: 'Tiết kiệm nhất',
-    savingsPercent: 33,
+    savingsPercent: 58,
     features: [
       'Tất cả đặc quyền Pro trọn vẹn 365 ngày',
-      'Tiết kiệm 33% chi phí (chỉ ~66.000đ/tháng)',
-      'Job Radar AI tự động quét cơ hội mới định kỳ',
-      'Trải nghiệm sớm nhất các tính năng AI thế hệ mới'
+      'Giữ toàn bộ dữ liệu qua nhiều chu kỳ tìm việc',
+      'Theo dõi dài hạn và so sánh nhiều giai đoạn',
+      'Ưu tiên xử lý khi hệ thống quá tải'
     ]
   }
 });
@@ -108,6 +109,18 @@ export function normalizeProPlan(value: unknown): ProPlan {
   return value === 'quarterly' || value === 'yearly' ? value : 'monthly';
 }
 
+let payosClient: PayOS | null = null;
+export function getPayOSClient(): PayOS | null {
+  const clientId = process.env.PAYOS_CLIENT_ID;
+  const apiKey = process.env.PAYOS_API_KEY;
+  const checksumKey = process.env.PAYOS_CHECKSUM_KEY;
+  if (!clientId || !apiKey || !checksumKey) return null;
+  if (!payosClient) {
+    payosClient = new PayOS({ clientId, apiKey, checksumKey });
+  }
+  return payosClient;
+}
+
 export function isPaymentTestMode(value: string | undefined = process.env[PAYMENT_MODE_ENV]): boolean {
   return value === PAYMENT_TEST_MODE;
 }
@@ -122,13 +135,18 @@ function createTransferCode(): string {
 }
 
 function readTransferCode(payload: Record<string, unknown>): string {
-  const direct = typeof payload.transferCode === 'string' ? payload.transferCode.trim().toUpperCase() : '';
+  const data = (payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data))
+    ? payload.data as Record<string, unknown>
+    : payload;
+  const direct = typeof data.transferCode === 'string' ? data.transferCode.trim().toUpperCase() : '';
   if (TRANSFER_CODE_PATTERN.test(direct)) return direct;
-  const content = typeof payload.content === 'string'
-    ? payload.content
-    : typeof payload.description === 'string'
-      ? payload.description
-      : '';
+  const content = typeof data.content === 'string'
+    ? data.content
+    : typeof data.description === 'string'
+      ? data.description
+      : typeof payload.description === 'string'
+        ? payload.description
+        : '';
   const match = content.toUpperCase().match(TRANSFER_CODE_SEARCH);
   return match ? match[0] : '';
 }
@@ -156,12 +174,13 @@ export interface CheckoutResult {
   amount: number;
   currency: string;
   transferCode: string;
-  mode: 'test';
-  testNotice: string;
-  bankName: null;
-  accountNo: null;
-  accountName: null;
-  vietQrUrl: null;
+  mode: 'test' | 'live' | 'payos';
+  testNotice: string | null;
+  bankName: string | null;
+  accountNo: string | null;
+  accountName: string | null;
+  vietQrUrl: string | null;
+  checkoutUrl?: string | null;
   instructions: string;
 }
 
@@ -349,7 +368,8 @@ export class AiProService {
   }
 
   async createCheckout(userId: string, plan: ProPlan = 'monthly'): Promise<CheckoutResult> {
-    if (!isPaymentTestMode()) {
+    const payos = getPayOSClient();
+    if (!payos && !isPaymentTestMode()) {
       fail(
         503,
         'Thanh toán thật chưa được mở trong phiên bản này. Vui lòng thử lại khi cổng thanh toán được bật.',
@@ -361,6 +381,57 @@ export class AiProService {
     const amount = PLAN_PRICES[resolvedPlan];
     const transferCode = createTransferCode();
     const orderId = randomUUID();
+
+    if (payos) {
+      try {
+        const numericOrderCode = Math.floor(Date.now() % 90000000) + 10000000;
+        const publicUrl = (process.env.APP_ORIGIN || 'http://127.0.0.1:64364').replace(/\/+$/, '');
+        const payosRes = await payos.paymentRequests.create({
+          orderCode: numericOrderCode,
+          amount,
+          description: transferCode.slice(0, 25),
+          cancelUrl: `${publicUrl}/#pro`,
+          returnUrl: `${publicUrl}/#pro?success=true`,
+          items: [
+            {
+              name: PLAN_METADATA[resolvedPlan].name,
+              quantity: 1,
+              price: amount
+            }
+          ]
+        });
+
+        await this.pool.query(
+          `INSERT INTO payment_orders (id, user_id, plan, amount, currency, transfer_code, status, payment_method, expires_at)
+           VALUES ($1, $2, $3, $4, 'VND', $5, 'pending', 'payos', CURRENT_TIMESTAMP + interval '30 minutes')`,
+          [orderId, userId, resolvedPlan, amount, transferCode]
+        );
+
+        const qrImageUrl = `https://img.vietqr.io/image/${payosRes.bin}-${payosRes.accountNumber}-compact2.png?amount=${amount}&addInfo=${transferCode}&accountName=${encodeURIComponent(payosRes.accountName)}`;
+        const resolvedBank = payosRes.bin === '970422' ? 'MBBank (Quân Đội)' : payosRes.bin === '970415' ? 'VietinBank' : (payosRes.bin || 'Ngân hàng');
+
+        return {
+          orderId,
+          plan: resolvedPlan,
+          amount,
+          currency: 'VND',
+          transferCode,
+          mode: 'payos',
+          testNotice: null,
+          bankName: resolvedBank,
+          accountNo: payosRes.accountNumber || null,
+          accountName: payosRes.accountName || null,
+          vietQrUrl: qrImageUrl,
+          checkoutUrl: payosRes.checkoutUrl || null,
+          instructions: `Quét mã VietQR hoặc bấm 'Mở cổng thanh toán PayOS' để chuyển khoản ${amount.toLocaleString('vi-VN')} VND. Nội dung: ${transferCode}`
+        };
+      } catch (err) {
+        console.error('PayOS checkout creation error:', err);
+        if (!isPaymentTestMode()) {
+          fail(500, 'Không thể tạo phiên thanh toán PayOS: ' + (err as Error).message, 'payos_error');
+        }
+      }
+    }
 
     await this.pool.query(
       `INSERT INTO payment_orders (id, user_id, plan, amount, currency, transfer_code, status, payment_method, expires_at)
@@ -380,6 +451,7 @@ export class AiProService {
       accountNo: null,
       accountName: null,
       vietQrUrl: null,
+      checkoutUrl: null,
       instructions: `Đơn hàng ${transferCode} đã được tạo ở chế độ thử nghiệm với số tiền ${amount} VND. Gói Pro chỉ được kích hoạt sau khi máy chủ nhận một webhook thanh toán hợp lệ có chữ ký.`
     };
   }
@@ -476,28 +548,45 @@ export class AiProService {
     timestamp?: string;
     payload: Record<string, unknown>;
   }): Promise<PaymentWebhookResult> {
-    const verification = verifyPaymentSignature({
-      secret: process.env.PAYMENT_WEBHOOK_SECRET,
-      signature: input.signature,
-      timestamp: input.timestamp,
-      rawBody: input.rawBody
-    });
+    const payos = getPayOSClient();
+    let isPayosWebhook = false;
+    let payosVerifiedData: any = null;
 
-    if (!verification.ok) {
-      if (verification.reason === 'secret_not_configured' || verification.reason === 'secret_too_short') {
-        fail(503, 'Webhook thanh toán chưa được cấu hình trên máy chủ.', 'payment_webhook_not_configured');
+    if (payos && input.payload && (input.payload.data || input.payload.orderCode) && input.payload.signature) {
+      try {
+        payosVerifiedData = payos.webhooks.verify(input.payload as any);
+        isPayosWebhook = true;
+      } catch (err) {
+        console.error('PayOS webhook verification failed:', err);
+        fail(401, 'Chữ ký webhook PayOS không hợp lệ.', 'invalid_webhook_signature');
       }
-      if (verification.reason === 'stale_timestamp') {
-        fail(400, 'Dấu thời gian của webhook đã quá cũ.', 'stale_webhook');
-      }
-      fail(401, 'Chữ ký webhook thanh toán không hợp lệ.', 'invalid_webhook_signature');
     }
 
-    const transferCode = readTransferCode(input.payload);
+    if (!isPayosWebhook) {
+      const verification = verifyPaymentSignature({
+        secret: process.env.PAYMENT_WEBHOOK_SECRET,
+        signature: input.signature,
+        timestamp: input.timestamp,
+        rawBody: input.rawBody
+      });
+
+      if (!verification.ok) {
+        if (verification.reason === 'secret_not_configured' || verification.reason === 'secret_too_short') {
+          fail(503, 'Webhook thanh toán chưa được cấu hình trên máy chủ.', 'payment_webhook_not_configured');
+        }
+        if (verification.reason === 'stale_timestamp') {
+          fail(400, 'Dấu thời gian của webhook đã quá cũ.', 'stale_webhook');
+        }
+        fail(401, 'Chữ ký webhook thanh toán không hợp lệ.', 'invalid_webhook_signature');
+      }
+    }
+
+    const effectivePayload = payosVerifiedData || input.payload;
+    const transferCode = readTransferCode(effectivePayload);
     if (!transferCode) {
       fail(404, 'Không tìm thấy đơn hàng cho giao dịch này.', 'order_not_found');
     }
-    const paidAmount = readWebhookAmount(input.payload.amount);
+    const paidAmount = readWebhookAmount(effectivePayload.amount);
 
     const tx = await this.transaction(async client => {
       const orderRes = await client.query<{

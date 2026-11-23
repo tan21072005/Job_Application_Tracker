@@ -95,12 +95,12 @@ test('Pro Order Status: GET /api/pro/plans returns server-owned plan list', asyn
 
   const quarterly = data.plans.find(p => p.plan === 'quarterly');
   assert.ok(quarterly);
-  assert.equal(quarterly.amount, 249000);
+  assert.equal(quarterly.amount, 149000);
   assert.equal(quarterly.durationDays, 90);
 
   const yearly = data.plans.find(p => p.plan === 'yearly');
   assert.ok(yearly);
-  assert.equal(yearly.amount, 799000);
+  assert.equal(yearly.amount, 499000);
   assert.equal(yearly.durationDays, 365);
 });
 

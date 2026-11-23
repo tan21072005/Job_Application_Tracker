@@ -203,5 +203,16 @@ test('Extension: Order lifecycle tracking, dynamic plan loading, and non-duplica
   assert.ok(!checkPaymentHandler.includes('refreshCheckout()'));
 });
 
+test('Extension: Specialized recruitment adapters support VietnamWorks, TopCV, ITviec, and LinkedIn', () => {
+  const contentJs = readFileSync(join(__dirname, 'content.js'), 'utf8');
+
+  assert.ok(contentJs.includes('vietnamworks.com'), 'content.js must support VietnamWorks');
+  assert.ok(contentJs.includes('topcv.vn'), 'content.js must support TopCV');
+  assert.ok(contentJs.includes('itviec.com'), 'content.js must support ITviec');
+  assert.ok(contentJs.includes('linkedin.com'), 'content.js must support LinkedIn');
+  assert.ok(contentJs.includes('job-details-jobs-unified-top-card'), 'content.js must support modern LinkedIn job details');
+});
+
+
 
 

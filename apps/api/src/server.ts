@@ -92,10 +92,13 @@ import { PortfolioService } from './services/portfolio-service.ts';
 import { PasswordResetService } from './services/password-reset-service.ts';
 import { AccountExportService } from './services/account-export-service.ts';
 import { DeadlineReminderService } from './services/deadline-reminder-service.ts';
-import { sendMail, verifyMailer } from './services/mailer.ts';
+import { sendMail, verifyMailer, mailerMode } from './services/mailer.ts';
 import { CompensationService } from './services/compensation-service.ts';
 import { TrajectoryService } from './services/trajectory-service.ts';
 import { ResumeOptimizerService } from './services/resume-optimizer-service.ts';
+import { analyzeResumeAgainstJob } from './services/resume-analysis-service.ts';
+import { respondToChat } from './services/chat-responder.ts';
+import { isLlmConfigured } from './services/llm-client.ts';
 import { PipelineVelocityService } from './services/pipeline-velocity-service.ts';
 import { CultureRadarService } from './services/culture-radar-service.ts';
 import {
@@ -139,10 +142,13 @@ const key = new TextEncoder().encode(secret);
 const pool = new Pool({
   connectionString: databaseUrl,
   max: 12,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
   statement_timeout: 10000,
-  query_timeout: 10000
+  query_timeout: 10000,
+  ssl: databaseUrl.includes('supabase.co') || databaseUrl.includes('supabase.com') || databaseUrl.includes('sslmode=require')
+    ? { rejectUnauthorized: false }
+    : undefined
 });
 
 export const jobTrackService = new JobTrackService(pool);
@@ -350,7 +356,12 @@ app.use('/api', (req, res, next) => {
   if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) return next();
   const requestOrigin = req.get('origin');
   if (!requestOrigin || requestOrigin === origin) return next();
-  if (req.originalUrl?.startsWith('/api/pro/webhook') || req.path?.startsWith('/pro/webhook')) {
+  if (
+    req.originalUrl?.startsWith('/api/pro/webhook') ||
+    req.path?.startsWith('/pro/webhook') ||
+    req.originalUrl?.startsWith('/api/payment/payos-webhook') ||
+    req.path?.startsWith('/payment/payos-webhook')
+  ) {
     return next();
   }
   // Only a grant that the shared resolver verified and whose scopes cover the
@@ -372,6 +383,33 @@ app.use('/api', (req, res, next) => {
 app.use('/api/mcp', createMcpRouter(pool));
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+
+app.get('/api/config/status', auth, async (_req, res, next) => {
+  try {
+    const llmConfigured = isLlmConfigured();
+    const mail = mailerMode();
+    res.json({
+      llm: {
+        configured: llmConfigured,
+        provider: llmConfigured ? (process.env.LLM_PROVIDER || '').toLowerCase() : null
+      },
+      mail: {
+        transport: mail,
+        deliversToUsers: mail !== 'console'
+      },
+      payments: {
+        mode: process.env.PAYMENT_MODE === 'test' ? 'test' : 'live',
+        chargesRealMoney: process.env.PAYMENT_MODE !== 'test'
+      },
+      deployment: {
+        origin: process.env.APP_ORIGIN || 'http://127.0.0.1:64364',
+        cookieSecure: process.env.COOKIE_SECURE === 'true'
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/api/ready', async (_req, res) => {
   if (isShuttingDown) {
@@ -1398,7 +1436,7 @@ app.post('/api/ai/chat', auth, async (req, res, next) => {
     const userId = (req as SessionRequest).userId;
     const sessionId = (req as SessionRequest).sessionId;
     const body = (req.body && typeof req.body === 'object') ? req.body as Record<string, unknown> : {};
-    
+
     const valid = validateChatInput({
       message: body.message || body.chatInput,
       sessionId,
@@ -1411,164 +1449,59 @@ app.post('/api/ai/chat', auth, async (req, res, next) => {
 
     const message = valid.data.message;
 
-    const plainGrantToken = `jt_grant_${randomUUID().replace(/-/g, '')}`;
-    const grantTokenHash = createHash('sha256').update(plainGrantToken).digest('hex');
-    const grantId = randomUUID();
-    await pool.query(
-      "INSERT INTO ai_grants(id, user_id, client, token_hash, scopes, expires_at) VALUES($1, $2, $3, $4, ARRAY['full_control'], CURRENT_TIMESTAMP + interval '10 minutes')",
-      [grantId, userId, 'n8n-agent', grantTokenHash]
-    );
-
     await chatService.saveMessage(userId, sessionId, {
       sender: 'user',
       message
     });
 
-    const n8nUrl = process.env.N8N_WEBHOOK_URL || 'https://maximum-eastcoast-obstruct.ngrok-free.dev/webhook/jobtrack-agent';
-    const n8nApiKey = process.env.N8N_API_KEY || process.env.CHATBOT_API_KEY || '';
+    const [summary, applications, matrix] = await Promise.all([
+      jobTrackService.getDashboardSummary(userId),
+      jobTrackService.listApplications(userId),
+      decisionService.getDecisionMatrix(userId).catch(() => null)
+    ]);
 
-    try {
-      const n8nRes = await fetch(n8nUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(n8nApiKey ? { 'Authorization': `Bearer ${n8nApiKey}` } : {})
-        },
-        body: JSON.stringify({
-          chatInput: message,
-          sessionId,
-          userId,
-          grantToken: plainGrantToken,
-          context: {
-            ...(valid.data.context || {}),
-            grantToken: plainGrantToken,
-            origin,
-            timestamp: new Date().toISOString()
-          }
-        }),
-        signal: AbortSignal.timeout(15000)
-      });
-
-      if (n8nRes.ok) {
-        const data = await n8nRes.json().catch(() => null);
-        if (data && typeof data === 'object') {
-          const rec = data as Record<string, unknown>;
-          const extractedText = String(rec.output || rec.reply || rec.text || rec.message || '').trim();
-          if (extractedText) {
-            const receipts = Array.isArray(rec.receipts) ? (rec.receipts as ChatActionReceiptDTO[]) : [];
-            await chatService.saveMessage(userId, sessionId, {
-              sender: 'assistant',
-              message: extractedText,
-              receipts,
-              provenance: 'n8n'
-            });
-            return res.json({
-              reply: extractedText,
-              sessionId,
-              receipts,
-              provenance: 'n8n',
-              suggestedPrompts: DEFAULT_SUGGESTED_CHAT_PROMPTS,
-              timestamp: new Date().toISOString(),
-              output: extractedText,
-              text: extractedText
-            });
-          }
+    const topOpportunity = matrix && matrix.opportunities.length > 0
+      ? {
+          company: matrix.opportunities[0].company,
+          position: matrix.opportunities[0].position,
+          score: matrix.opportunities[0].compositeScore
         }
-      }
-    } catch (n8nErr) {
-      console.warn('[BFF] n8n webhook call failed, falling back to local grounded response:', (n8nErr as Error).message);
-    }
+      : undefined;
 
-    const summary = await jobTrackService.getDashboardSummary(userId);
-    const lower = message.toLowerCase();
-
-    let reply = '';
-    if (lower.includes('hôm nay') || lower.includes('today') || lower.includes('làm gì') || lower.includes('deadline')) {
-      const apps = await jobTrackService.listApplications(userId);
-      const withDeadline = apps.filter(a => a.deadline);
-      const interviews = apps.flatMap(a => (a.interviews || []).map(i => ({ ...i, company: a.company, position: a.position })));
-
-      reply = `📋 **Kế hoạch công việc hôm nay:**\n\n` +
-        `• Tổng quan: ${summary.total} hồ sơ đang theo dõi (${summary.upcoming} phỏng vấn sắp tới, ${summary.offers} offer).\n`;
-
-      if (interviews.length > 0) {
-        reply += `\n🎯 **Lịch phỏng vấn:**\n` +
-          interviews.slice(0, 3).map(i => `  - **${i.company}** (${i.position}): ${i.title} vào lúc ${i.at}`).join('\n') + '\n';
-      }
-      if (withDeadline.length > 0) {
-        reply += `\n⏰ **Hạn chót & Bước tiếp theo cần làm:**\n` +
-          withDeadline.slice(0, 3).map(a => `  - **${a.company}** - ${a.position}: "${a.nextAction || 'Chưa có bước tiếp theo'}" (Deadline: ${a.deadline})`).join('\n') + '\n';
-      }
-      if (interviews.length === 0 && withDeadline.length === 0) {
-        reply += `\nHiện chưa có deadline gấp trong ngày. Bạn có thể dành thời gian tìm kiếm thêm cơ hội mới hoặc cập nhật ghi chú cho các hồ sơ đang chờ.`;
-      }
-    } else if (lower.includes('phỏng vấn') || lower.includes('interview') || lower.includes('prep') || lower.includes('chuẩn bị')) {
-      const apps = await jobTrackService.listApplications(userId, { status: 'Interview' });
-      if (apps.length > 0) {
-        const target = apps[0];
-        reply = `🎯 **Chuẩn bị phỏng vấn cho ${target.company} (${target.position}):**\n\n` +
-          `1. **Tìm hiểu công ty:** Xem lại mô tả công việc (JD), sản phẩm cốt lõi và tin tức gần đây của ${target.company}.\n` +
-          `2. **Kỹ thuật & Dự án:** Chuẩn bị 2-3 câu chuyện STAR về thử thách kỹ thuật tiêu biểu bạn đã giải quyết.\n` +
-          `3. **Câu hỏi cho nhà tuyển dụng:** Chuẩn bị 3 câu hỏi về cấu trúc team, quy trình deploy và kỳ vọng trong 3 tháng đầu.\n` +
-          `4. **Kiểm tra thiết bị:** Kiểm tra đường truyền internet, webcam, micro và môi trường yên tĩnh trước 10 phút.`;
-      } else {
-        reply = `Hiện bạn chưa có hồ sơ nào ở trạng thái "Interview". Khi có lịch phỏng vấn, tôi sẽ giúp bạn lên checklist chuẩn bị chi tiết theo từng vòng!`;
-      }
-    } else if (lower.includes('lâu') || lower.includes('stale') || lower.includes('nhắc') || lower.includes('chưa cập nhật')) {
-      const apps = await jobTrackService.listApplications(userId);
-      const activeApps = apps.filter(a => !['Offer', 'Rejected', 'Withdrawn'].includes(a.status));
-      const staleApps = activeApps.filter(a => {
-        const updated = new Date(a.updatedAt).getTime();
-        return (Date.now() - updated) > 7 * 86400000;
-      });
-
-      if (staleApps.length > 0) {
-        reply = `⏰ **Hồ sơ lâu chưa có cập nhật (> 7 ngày):**\n\n` +
-          staleApps.slice(0, 5).map(a => `• **${a.company}** (${a.position}) - Trạng thái: ${a.status}. Cập nhật lần cuối: ${new Date(a.updatedAt).toLocaleDateString('vi-VN')}`).join('\n') +
-          `\n\n💡 Bạn có thể gửi email follow-up nhẹ nhàng để hỏi thăm tiến độ tuyển dụng.`;
-      } else {
-        reply = `Tuyệt vời! Tất cả các hồ sơ đang ứng tuyển của bạn đều được cập nhật gần đây (trong vòng 7 ngày qua).`;
-      }
-    } else if (lower.includes('thư') || lower.includes('email') || lower.includes('follow-up') || lower.includes('nháp')) {
-      reply = `✉️ **Mẫu thư Follow-up sau ứng tuyển / phỏng vấn:**\n\n` +
-        `**Tiêu đề:** [Họ và tên] - Thư hỏi thăm tiến độ ứng tuyển vị trí [Tên vị trí]\n\n` +
-        `Kính gửi Bộ phận Tuyển dụng [Tên công ty],\n\n` +
-        `Em là [Họ và tên]. Vừa qua em đã có cơ hội tham gia ứng tuyển vị trí [Tên vị trí] tại quý công ty.\n\n` +
-        `Em rất ấn tượng với định hướng phát triển cũng như văn hóa làm việc của [Tên công ty]. Em viết thư này để hỏi thăm tình hình xét duyệt hồ sơ / kết quả vòng trao đổi vừa qua, cũng như sẵn sàng cung cấp thêm bất kỳ thông tin nào nếu công ty cần.\n\n` +
-        `Rất mong sớm nhận được phản hồi từ anh/chị.\n\n` +
-        `Trân trọng,\n[Họ và tên của bạn] - [Số điện thoại]`;
-    } else if (lower.includes('so sánh') || lower.includes('đánh giá') || lower.includes('matrix') || lower.includes('cơ hội')) {
-      const matrix = await decisionService.getDecisionMatrix(userId);
-      if (matrix.opportunities.length > 0) {
-        const top = matrix.opportunities[0];
-        reply = `⚖️ **Bảng so sánh cơ hội ứng tuyển:**\n\n` +
-          `Hiện bạn đang so sánh **${matrix.totalCompared} cơ hội**.\n` +
-          `• Lựa chọn dẫn đầu hiện tại: **${top.company}** (${top.position}) với điểm tổng hợp: **${top.compositeScore}/100**.\n` +
-          (matrix.categoryWinners.length > 0 ? `• Điểm sáng vượt trội: ${matrix.categoryWinners.map(w => `${w.company} (${w.score}/10)`).slice(0, 3).join(', ')}.\n` : '') +
-          `\n💡 Bạn có thể mở bảng Ma trận Đánh giá (Decision Matrix) trên thanh công cụ để tinh chỉnh trọng số cá nhân!`;
-      } else {
-        reply = `Bạn chưa có hồ sơ nào được chấm điểm trong Ma trận Đánh giá. Hãy vào mục "So sánh cơ hội" để gán điểm cho các công ty bạn quan tâm nhé!`;
-      }
-    } else {
-      reply = `Chào bạn! Tôi là trợ lý JobTrack AI (Full Control). Hiện bạn đang có ${summary.total} hồ sơ ứng tuyển, ${summary.upcoming} phỏng vấn sắp tới và ${summary.offers} offer.\n\nBạn có thể hỏi tôi:\n• "Hôm nay tôi cần làm gì?"\n• "Chuẩn bị phỏng vấn"\n• "Kiểm tra hồ sơ lâu chưa cập nhật"\n• "So sánh các cơ hội ứng tuyển"\n• "Nháp thư follow-up"\nHoặc nhập trực tiếp link tuyển dụng từ nút "Nhập từ link"!`;
-    }
+    const result = await respondToChat(message, {
+      summary,
+      applications: applications.map(app => ({
+        company: app.company,
+        position: app.position,
+        status: app.status,
+        nextAction: app.nextAction,
+        deadline: app.deadline,
+        updatedAt: app.updatedAt,
+        interviews: (app.interviews || []).map(interview => ({
+          title: interview.title,
+          at: interview.at
+        }))
+      })),
+      topOpportunity,
+      comparedCount: matrix ? matrix.totalCompared : 0
+    });
 
     await chatService.saveMessage(userId, sessionId, {
       sender: 'assistant',
-      message: reply,
+      message: result.reply,
       receipts: [],
-      provenance: 'local_fallback'
+      provenance: result.provenance
     });
 
     return res.json({
-      reply,
+      reply: result.reply,
       sessionId,
       receipts: [],
-      provenance: 'local_fallback',
+      provenance: result.provenance,
       suggestedPrompts: DEFAULT_SUGGESTED_CHAT_PROMPTS,
       timestamp: new Date().toISOString(),
-      output: reply,
-      text: reply
+      output: result.reply,
+      text: result.reply
     });
   } catch (error) {
     next(error);
@@ -2046,6 +1979,39 @@ app.put('/api/trajectory/competencies', auth, async (req, res, next) => {
   }
 });
 
+app.post('/api/resume/parse-file', auth, async (req, res, next) => {
+  try {
+    const { filename, base64 } = req.body || {};
+    if (!base64 || typeof base64 !== 'string') {
+      return res.status(400).json({
+        code: 'validation_error',
+        message: 'Vui lòng cung cấp dữ liệu file (base64).'
+      });
+    }
+    const cleanBase64 = base64.replace(/^data:[^;]+;base64,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+    const lowerName = (typeof filename === 'string' ? filename : '').toLowerCase();
+
+    let text = '';
+    if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) {
+      const mammoth = await import('mammoth');
+      const result = await mammoth.extractRawText({ buffer });
+      text = result.value || '';
+    } else if (lowerName.endsWith('.pdf')) {
+      const { PDFParse } = await import('pdf-parse');
+      const parser = new PDFParse(new Uint8Array(buffer));
+      const resText = await parser.getText();
+      text = typeof resText === 'string' ? resText : (resText && typeof resText.text === 'string' ? resText.text : String(resText || ''));
+    } else {
+      text = buffer.toString('utf-8');
+    }
+
+    res.status(200).json({ text: text.trim() });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/resume/diagnose', auth, async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
@@ -2057,8 +2023,14 @@ app.post('/api/resume/diagnose', auth, async (req, res, next) => {
         errors: validation.errors
       });
     }
-    const result = await resumeOptimizerService.diagnoseAndOptimize(userId, validation.data);
-    res.status(201).json(result);
+    const result = await analyzeResumeAgainstJob({
+      resumeText: validation.data.resumeText,
+      jobDescription: validation.data.jobDescription,
+      jobTitle: validation.data.jobTitle,
+      company: validation.data.company
+    });
+    const saved = await resumeOptimizerService.saveAnalysis(userId, validation.data, result);
+    res.status(201).json(saved);
   } catch (error) {
     next(error);
   }
@@ -2722,7 +2694,7 @@ app.post('/api/pro/activate', (_req, _res, next) => {
   next(new Problem(403, 'Gói Pro chỉ được kích hoạt bằng webhook thanh toán đã ký.', 'activation_requires_payment'));
 });
 
-app.post('/api/pro/webhook', async (req, res, next) => {
+const handleWebhookRequest = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
     const b = (req.body && typeof req.body === 'object' && !Array.isArray(req.body))
       ? req.body as Record<string, unknown>
@@ -2735,11 +2707,18 @@ app.post('/api/pro/webhook', async (req, res, next) => {
       payload: b
     });
 
+    if (b.data && b.signature) {
+      return res.json({ error: 0, message: 'Success', data: result });
+    }
+
     res.json(result);
   } catch (error) {
     next(error);
   }
-});
+};
+
+app.post('/api/pro/webhook', handleWebhookRequest);
+app.post('/api/payment/payos-webhook', handleWebhookRequest);
 
 app.post('/api/pro/test/simulate-webhook', auth, async (req, res, next) => {
   try {

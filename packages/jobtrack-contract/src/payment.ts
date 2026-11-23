@@ -51,12 +51,13 @@ export interface CheckoutResultDTO {
   amount: number;
   currency: string;
   transferCode: string;
-  mode: 'test';
-  testNotice: string;
+  mode: 'test' | 'live' | 'payos';
+  testNotice?: string | null;
   bankName: string | null;
   accountNo: string | null;
   accountName: string | null;
   vietQrUrl: string | null;
+  checkoutUrl?: string | null;
   instructions: string;
   expiresAt?: string;
 }

@@ -12,7 +12,7 @@ export default function Auth({ onEnter, onForgot, errorCode = '' }: { onEnter: (
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [googleAvailable, setGoogleAvailable] = useState(false);
+  const [googleAvailable, setGoogleAvailable] = useState(true);
 
   useEffect(() => {
     if (demoMode) return;

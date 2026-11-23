@@ -262,17 +262,108 @@ export default function ProUpgradeModal({
                 </div>
               </div>
 
-              <div className="pro-test-mode-notice">
-                <AlertCircle className="w-5 h-5 text-blue-500 mr-2 shrink-0" />
-                <div>
-                  <strong className="block font-semibold text-blue-900 dark:text-blue-200">
-                    Chế độ thử nghiệm an toàn (Test Mode)
-                  </strong>
-                  <span className="text-xs text-blue-800 dark:text-blue-300">
-                    {checkout.testNotice}
-                  </span>
+              {checkout.vietQrUrl && (
+                <div
+                  className="pro-vietqr-card"
+                  style={{
+                    textAlign: 'center',
+                    margin: '16px auto',
+                    padding: '18px',
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    border: '2px solid #2563eb',
+                    boxShadow: '0 10px 25px -5px rgba(37, 99, 235, 0.15)',
+                    maxWidth: '400px'
+                  }}
+                >
+                  <p style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: '10px', fontSize: '15px' }}>
+                    Quét Mã VietQR Bằng App Ngân Hàng / MoMo:
+                  </p>
+                  <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '12px', display: 'inline-block' }}>
+                    <img
+                      src={checkout.vietQrUrl}
+                      alt="Mã VietQR thanh toán"
+                      style={{ maxWidth: '280px', width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }}
+                    />
+                  </div>
+                  <div style={{ marginTop: '12px', fontSize: '13px', color: '#1f2937', textAlign: 'left', lineHeight: '1.6', background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div>Ngân hàng: <strong>{checkout.bankName || 'MBBank (Quân Đội)'}</strong></div>
+                    <div>Số tài khoản: <strong style={{ color: '#2563eb' }}>{checkout.accountNo || 'VQRQANVNK7832'}</strong></div>
+                    <div>Chủ tài khoản: <strong>{checkout.accountName || 'TRAN NHAT TAN'}</strong></div>
+                    <div>Số tiền: <strong style={{ color: '#059669' }}>{checkout.amount.toLocaleString('vi-VN')} VND</strong></div>
+                    <div>Nội dung: <strong style={{ color: '#d97706' }}>{checkout.transferCode}</strong></div>
+                  </div>
+                  {checkout.checkoutUrl && (
+                    <div style={{ marginTop: '12px' }}>
+                      <a
+                        href={checkout.checkoutUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: '#059669',
+                          color: '#ffffff',
+                          padding: '10px 18px',
+                          borderRadius: '8px',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          fontSize: '13px'
+                        }}
+                      >
+                        <span>Mở Cổng Thanh Toán PayOS Web</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+                  <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '8px', marginBottom: 0 }}>
+                    Hệ thống sẽ tự động kích hoạt gói Pro ngay sau khi bạn hoàn tất chuyển khoản!
+                  </p>
                 </div>
-              </div>
+              )}
+
+              {!checkout.vietQrUrl && checkout.checkoutUrl && (
+                <div style={{ textAlign: 'center', margin: '16px 0', padding: '16px', background: 'rgba(5, 150, 105, 0.08)', borderRadius: '12px', border: '1px solid rgba(5, 150, 105, 0.25)' }}>
+                  <a
+                    href={checkout.checkoutUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: '#059669',
+                      color: '#ffffff',
+                      padding: '12px 24px',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      fontSize: '15px'
+                    }}
+                  >
+                    <span>Mở Cổng Thanh Toán PayOS (Quét mã VietQR)</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px', marginBottom: 0 }}>
+                    Hỗ trợ chuyển khoản tự động qua Vietcombank, Techcombank, VPBank, MBBank, VietinBank và tất cả ngân hàng tại Việt Nam.
+                  </p>
+                </div>
+              )}
+
+              {checkout.testNotice && (
+                <div className="pro-test-mode-notice">
+                  <AlertCircle className="w-5 h-5 text-blue-500 mr-2 shrink-0" />
+                  <div>
+                    <strong className="block font-semibold text-blue-900 dark:text-blue-200">
+                      Chế độ thử nghiệm an toàn (Test Mode)
+                    </strong>
+                    <span className="text-xs text-blue-800 dark:text-blue-300">
+                      {checkout.testNotice}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="pro-checkout-details-box">
                 <div className="pro-detail-row">

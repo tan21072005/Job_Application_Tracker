@@ -607,7 +607,7 @@ test('Simulate Webhook: successfully completes order and promotes user to pro', 
   const { cookie, userId } = await registerUser();
   const checkout = await createOrder(cookie, 'quarterly');
   assert.equal(checkout.status, 200);
-  assert.equal(checkout.body.amount, 249000);
+  assert.equal(checkout.body.amount, 149000);
 
   const simulateRes = await fetch(`${base}/api/pro/test/simulate-webhook`, {
     method: 'POST',

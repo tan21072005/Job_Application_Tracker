@@ -99,7 +99,7 @@ test('chat: POST /api/ai/chat rejects empty or invalid message with 422', async 
   assert.equal(res.status, 422);
 });
 
-test('chat: POST /api/ai/chat processes message, issues ephemeral grant, and responds with local fallback', async () => {
+test('chat: POST /api/ai/chat responds with grounded reply and never issues a grant token', async () => {
   const res = await fetch(`${base}/api/ai/chat`, {
     method: 'POST',
     headers: {
@@ -120,11 +120,10 @@ test('chat: POST /api/ai/chat processes message, issues ephemeral grant, and res
   assert.ok(Array.isArray(data.suggestedPrompts));
 
   const grantRes = await pool.query(
-    'SELECT id, client, scopes FROM ai_grants WHERE user_id = $1 AND client = $2',
-    [userA.userId, 'n8n-agent']
+    'SELECT id FROM ai_grants WHERE user_id = $1',
+    [userA.userId]
   );
-  assert.ok(grantRes.rowCount && grantRes.rowCount > 0);
-  assert.equal(grantRes.rows[0].client, 'n8n-agent');
+  assert.equal(grantRes.rowCount, 0);
 });
 
 test('chat: GET /api/ai/chat/history returns persisted turns and enforces tenant isolation', async () => {

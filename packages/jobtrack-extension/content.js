@@ -212,10 +212,39 @@ function extractCurrentPageJob() {
 
   // 2. DOM Selectors cho sàn tuyển dụng
   if (url.includes('linkedin.com')) {
-    const jobTitleEl = document.querySelector('.job-details-jobs-unified-top-card__job-title, .jobs-unified-top-card__job-title, h1');
+    const jobTitleEl = document.querySelector('.job-details-jobs-unified-top-card__job-title, .jobs-unified-top-card__job-title, h1.t-24, [data-testid="job-details-title"], h1 a[href*="/jobs/view/"], h1');
     if (jobTitleEl && !position) position = jobTitleEl.textContent.trim();
-    const companyEl = document.querySelector('.job-details-jobs-unified-top-card__company-name, .jobs-unified-top-card__company-name');
+
+    const companyEl = document.querySelector('.job-details-jobs-unified-top-card__company-name a, .jobs-unified-top-card__company-name a, .job-details-jobs-unified-top-card__company-name, .jobs-unified-top-card__company-name, .artdeco-entity-lockup__subtitle, [data-testid="company-name"]');
     if (companyEl && !company) company = companyEl.textContent.trim();
+
+    const locEl = document.querySelector('.job-details-jobs-unified-top-card__primary-description-container, .job-details-jobs-unified-top-card__workplace-type, .artdeco-entity-lockup__caption');
+    if (locEl && !location) {
+      const locText = locEl.textContent.trim().replace(/\s+/g, ' ');
+      location = locText;
+      if (/remote|từ xa/i.test(locText)) workMode = 'Remote';
+      else if (/hybrid|linh hoạt/i.test(locText)) workMode = 'Hybrid';
+    }
+
+    const salaryEl = document.querySelector('.job-details-jobs-unified-top-card__job-insight');
+    if (salaryEl && !salary) {
+      const text = salaryEl.textContent.trim();
+      if (/[\$₫€£]|\b(vnd|usd|năm|tháng|yr|hr)\b/i.test(text)) salary = text;
+    }
+  }
+
+  if (url.includes('vietnamworks.com')) {
+    const jobTitleEl = document.querySelector('h1.job-title, h1.title, h1[class*="JobTitle"], .job-header-info h1, h1');
+    if (jobTitleEl && !position) position = jobTitleEl.textContent.trim();
+
+    const companyEl = document.querySelector('a.company-name, span.company-name, a[href*="/nha-tuyen-dung/"], a[href*="/company/"], div[class*="CompanyName"], .employer-name');
+    if (companyEl && !company) company = companyEl.textContent.trim();
+
+    const salaryEl = document.querySelector('.salary, .job-salary, span[class*="salary"], span[class*="Salary"], div[class*="Salary"], .box-item-salary');
+    if (salaryEl && !salary) salary = salaryEl.textContent.trim();
+
+    const locationEl = document.querySelector('.location, .job-location, span[class*="location"], span[class*="Location"], div[class*="Location"]');
+    if (locationEl && !location) location = locationEl.textContent.trim();
   }
 
   if (url.includes('topcv.vn')) {
@@ -281,7 +310,11 @@ function extractCurrentPageJob() {
   if (selection) {
     notes = selection;
   } else {
-    const article = document.querySelector('article, main, .job-description, #job-description');
+    const article = document.querySelector(
+      '#job-details, .jobs-description__content, .jobs-box__html-content, ' +
+      '.job-detail__information-detail, .job-description, #job-description, ' +
+      '.job-details__paragraph, .job-detail-description, article, main'
+    );
     if (article) {
       notes = article.textContent?.replace(/\s+/g, ' ').trim().slice(0, 1000) || '';
     }

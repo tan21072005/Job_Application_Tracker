@@ -9,7 +9,7 @@ interface ChatMessageItem {
   text: string;
   timestamp: string;
   receipts?: ChatActionReceiptDTO[];
-  provenance?: 'n8n' | 'local_fallback' | 'system' | 'client';
+  provenance?: 'llm' | 'n8n' | 'local_fallback' | 'system' | 'client';
 }
 
 interface ChatWidgetProps {
@@ -270,7 +270,7 @@ export default function ChatWidget({ onRefreshApps }: ChatWidgetProps) {
                   <div className="chat-bubble-footer">
                     {msg.sender === 'assistant' && msg.provenance && (
                       <span className={`chat-prov-tag chat-prov-${msg.provenance}`}>
-                        {msg.provenance === 'n8n' ? 'n8n Agent' : 'JobTrack Core'}
+                        {msg.provenance === 'llm' ? 'Trợ lý AI' : msg.provenance === 'n8n' ? 'n8n Agent' : 'JobTrack Core'}
                       </span>
                     )}
                     <span className="chat-time">{msg.timestamp}</span>

@@ -342,6 +342,8 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .chat-receipts-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .chat-receipt-chip{display:inline-flex;align-items:center;gap:4px;background:var(--green-50);border:1px solid var(--green-200);color:var(--green-800);font-size:11px;font-weight:500;padding:2px 8px;border-radius:12px}
 .chat-prov-tag{display:inline-block;font-size:9px;font-weight:600;text-transform:uppercase;padding:1px 5px;border-radius:4px;margin-right:6px}
+.chat-prov-llm{background:#eef7ee;color:#1f7a3a}
+.chat-prov-local_fallback{background:#f3f1ea;color:#6b6455}
 .chat-bubble-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
 
 @media(max-width:700px){

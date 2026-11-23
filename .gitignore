@@ -46,3 +46,5 @@ node_modules/
 PROJECT_CONTEXT_MASTER.md
 SOURCE-MANIFEST*.json
 chatgpt_edge*.html
+
+.vercel
