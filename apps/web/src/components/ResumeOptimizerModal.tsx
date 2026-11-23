@@ -127,6 +127,12 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
   };
 
   useEffect(() => {
+    if (initialApplicationId) {
+      setSelectedAppId(initialApplicationId);
+    }
+  }, [initialApplicationId]);
+
+  useEffect(() => {
     if (!selectedAppId) return;
     const app = applications.find(a => a.id === selectedAppId);
     if (app) {
@@ -201,11 +207,15 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
     return synthesizeOptimizedResume(optimization.originalResume, acceptedBullets, injectedKeywords);
   }, [optimization, acceptedBullets, injectedKeywords, resumeText]);
 
+  const liveAtsDiagnostic = useMemo(() => {
+    if (!optimization) return null;
+    return diagnoseAtsKeywordGaps(synthesizedPreview, optimization.targetJobText);
+  }, [optimization, synthesizedPreview]);
+
   const liveAtsScore = useMemo(() => {
     if (!optimization) return 0;
-    const diag = diagnoseAtsKeywordGaps(synthesizedPreview, optimization.targetJobText);
-    return diag.atsScore;
-  }, [optimization, synthesizedPreview]);
+    return liveAtsDiagnostic ? liveAtsDiagnostic.atsScore : optimization.diagnosticResult.atsScore;
+  }, [optimization, liveAtsDiagnostic]);
 
   const handleCopySynthesized = () => {
     navigator.clipboard.writeText(synthesizedPreview);
@@ -615,32 +625,110 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
           {activeStep === 'studio' && optimization && (
             <div className="optimizer-studio-view">
               <div className="optimizer-score-banner">
-                <div className="optimizer-score-dial">
-                  <div className="optimizer-score-num">{liveAtsScore}%</div>
-                  <div className="optimizer-score-label">Điểm ATS dự báo</div>
+                <div className="optimizer-score-top-row">
+                  <div className="optimizer-score-dial">
+                    <div className="optimizer-score-num">{liveAtsScore}%</div>
+                    <div className="optimizer-score-label">Điểm ATS Chuẩn</div>
+                  </div>
+
+                  <div className="optimizer-score-summary">
+                    <div className="verdict-title">
+                      <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                      <span>{liveAtsDiagnostic?.verdict || optimization.diagnosticResult.verdict || 'Hồ sơ đã qua phân tích'}</span>
+                    </div>
+                    <p className="verdict-advice">
+                      💡 <strong>Nguyên lý ATS thực tế:</strong> Các hệ thống tuyển dụng (Workday, Greenhouse, Taleo) chỉ cần CV đạt ngưỡng <strong>75% - 85%</strong> để xuất hiện trong top tìm kiếm của Recruiter. Tuyệt đối không nhồi nhét để cố ép lên 100% nhằm tránh bị hệ thống trừ điểm phạt và nghi ngờ gian lận khi phỏng vấn.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="optimizer-score-breakdown">
-                  <div className="optimizer-breakdown-item">
-                    <span className="breakdown-name">Độ phủ Từ khóa (Keywords)</span>
-                    <span className="breakdown-val text-indigo-400">
-                      {optimization.diagnosticResult.scoreBreakdown.keywordRelevance}%
-                    </span>
+                {Boolean(liveAtsDiagnostic?.scoreBreakdown?.keywordStuffingPenalty) && (
+                  <div className="optimizer-stuffing-warning">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <div>
+                      <strong>Cảnh báo nhồi từ khóa (Stuffing Penalty - trừ {liveAtsDiagnostic?.scoreBreakdown?.keywordStuffingPenalty}đ):</strong>
+                      <span> Phát hiện một số từ khóa xuất hiện bất thường (&gt;4% mật độ). Hãy phân bổ tự nhiên trong các dự án thực tế.</span>
+                    </div>
                   </div>
-                  <div className="optimizer-breakdown-item">
-                    <span className="breakdown-name">Cấu trúc Định lượng (Quantification)</span>
-                    <span className="breakdown-val text-emerald-400">
-                      {optimization.diagnosticResult.scoreBreakdown.impactQuantification}%
-                    </span>
+                )}
+
+                <div className="optimizer-4pillar-grid">
+                  <div className="optimizer-pillar-card">
+                    <div className="pillar-header">
+                      <span className="pillar-title">1. Độ phủ Kỹ năng</span>
+                      <span className="pillar-score">
+                        {liveAtsDiagnostic?.scoreBreakdown?.skillsCoverage ?? 25} / 40đ
+                      </span>
+                    </div>
+                    <div className="pillar-bar-bg">
+                      <div
+                        className="pillar-bar-fill"
+                        style={{ width: `${Math.min(100, (((liveAtsDiagnostic?.scoreBreakdown?.skillsCoverage ?? 25) / 40) * 100))}%` }}
+                      />
+                    </div>
+                    <span className="pillar-desc">Khớp từ khóa JD & từ đồng nghĩa (Taxonomy: NextJS = Next.js, Postgres = PostgreSQL)</span>
                   </div>
-                  <div className="optimizer-breakdown-item">
-                    <span className="breakdown-name">Độ dài & Định dạng (Formatting)</span>
-                    <span className="breakdown-val text-blue-400">
-                      {optimization.diagnosticResult.scoreBreakdown.formattingHealth}%
-                    </span>
+
+                  <div className="optimizer-pillar-card">
+                    <div className="pillar-header">
+                      <span className="pillar-title">2. Khả năng Máy đọc</span>
+                      <span className="pillar-score">
+                        {liveAtsDiagnostic?.scoreBreakdown?.parseabilityHealth ?? 20} / 25đ
+                      </span>
+                    </div>
+                    <div className="pillar-bar-bg">
+                      <div
+                        className="pillar-bar-fill"
+                        style={{ width: `${Math.min(100, (((liveAtsDiagnostic?.scoreBreakdown?.parseabilityHealth ?? 20) / 25) * 100))}%` }}
+                      />
+                    </div>
+                    <span className="pillar-desc">Bố cục 1 cột sạch, đầy đủ Email, SĐT và các phân vùng tiêu chuẩn (Experience, Skills, Education)</span>
+                  </div>
+
+                  <div className="optimizer-pillar-card">
+                    <div className="pillar-header">
+                      <span className="pillar-title">3. Động từ & Định lượng</span>
+                      <span className="pillar-score">
+                        {liveAtsDiagnostic?.scoreBreakdown?.actionMetrics ?? 15} / 20đ
+                      </span>
+                    </div>
+                    <div className="pillar-bar-bg">
+                      <div
+                        className="pillar-bar-fill"
+                        style={{ width: `${Math.min(100, (((liveAtsDiagnostic?.scoreBreakdown?.actionMetrics ?? 15) / 20) * 100))}%` }}
+                      />
+                    </div>
+                    <span className="pillar-desc">Động từ hành động mạnh đầu câu & Số liệu đo lường cụ thể (%, $, ms, users, tuần)</span>
+                  </div>
+
+                  <div className="optimizer-pillar-card">
+                    <div className="pillar-header">
+                      <span className="pillar-title">4. Súc tích & Chống nhồi</span>
+                      <span className="pillar-score">
+                        {liveAtsDiagnostic?.scoreBreakdown?.brevityAntiStuffing ?? 12} / 15đ
+                      </span>
+                    </div>
+                    <div className="pillar-bar-bg">
+                      <div
+                        className="pillar-bar-fill"
+                        style={{ width: `${Math.min(100, (((liveAtsDiagnostic?.scoreBreakdown?.brevityAntiStuffing ?? 12) / 15) * 100))}%` }}
+                      />
+                    </div>
+                    <span className="pillar-desc">Độ dài 1-2 trang (~250-800 từ) & Trừ điểm nếu lặp từ khóa bất thường (&gt;4%)</span>
                   </div>
                 </div>
               </div>
+
+              {((liveAtsDiagnostic?.recommendations || optimization.diagnosticResult.recommendations).length > 0) && (
+                <div className="optimizer-recommendations-list">
+                  {(liveAtsDiagnostic?.recommendations || optimization.diagnosticResult.recommendations).map((rec, rIdx) => (
+                    <div key={rIdx} className="optimizer-rec-item">
+                      <ChevronRight className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span>{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="optimizer-section">
                 <div className="optimizer-section-header">
@@ -659,7 +747,7 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
                 </div>
 
                 <div className="optimizer-keyword-pills-grid">
-                  {optimization.diagnosticResult.keywordGaps
+                  {(liveAtsDiagnostic?.keywordGaps || optimization.diagnosticResult.keywordGaps)
                     .filter(k => {
                       if (keywordFilter === 'missing') return !k.matched;
                       if (keywordFilter === 'matched') return k.matched;
@@ -693,7 +781,7 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
                 <div className="optimizer-section-header">
                   <h3 className="optimizer-section-title">Studio Tinh chỉnh Gạch đầu dòng (Google X-Y-Z Rewriter)</h3>
                   <p className="optimizer-section-desc">
-                    Mỗi bullet point được phân rã thành [X] Thành quả đạt được, [Y] Số liệu đo lường, và [Z] Phương pháp kỹ thuật.
+                    Tái cấu trúc theo công thức Google: Đạt được [X], Đo lường bằng [Y], Bằng cách làm [Z]. Tuyệt đối không bịa số liệu ảo.
                   </p>
                 </div>
 
@@ -701,11 +789,12 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
                   {optimization.proposals.map((proposal, pIdx) => {
                     const currentVariantType = selectedVariantTypes[proposal.id] || 'metric_driven';
                     const activeVariantObj = proposal.variants.find(v => v.variantType === currentVariantType) || proposal.variants[0];
+                    const currentAcceptedText = acceptedBullets[proposal.originalBullet] ?? activeVariantObj.rewrittenText;
 
                     return (
                       <div key={proposal.id} className="optimizer-proposal-card">
                         <div className="optimizer-original-bullet-box">
-                          <span className="bullet-index-tag">Gạch đầu dòng #{pIdx + 1}</span>
+                          <span className="bullet-index-tag">Gạch đầu dòng #{pIdx + 1} (Gốc)</span>
                           <div className="original-bullet-text">"{proposal.originalBullet}"</div>
                           <div className="weakness-tag">
                             <AlertCircle className="w-3.5 h-3.5 mr-1 text-amber-500" />
@@ -748,6 +837,29 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
                                 <span className="xyz-text">{activeVariantObj.xyzBreakdown.actionZ}</span>
                               </div>
                             </div>
+
+                            <div className="optimizer-custom-edit-area">
+                              <label className="edit-area-label">
+                                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Tinh chỉnh câu văn & Điền số liệu thực tế của bạn:</span>
+                              </label>
+                              <textarea
+                                className="optimizer-custom-edit-input"
+                                rows={2}
+                                value={currentAcceptedText}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setAcceptedBullets(prev => ({
+                                    ...prev,
+                                    [proposal.originalBullet]: val
+                                  }));
+                                }}
+                                placeholder="Thay thế các placeholder [điền số liệu...] bằng con số thực tế..."
+                              />
+                              <span className="edit-area-hint">
+                                Lưu ý: Điền số liệu thực tế trong dự án (ví dụ: ~25%, 150ms, 8 kỹ sư) để tự tin khi phỏng vấn trực tiếp.
+                              </span>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -763,7 +875,7 @@ export const ResumeOptimizerModal: React.FC<ResumeOptimizerModalProps> = ({
               <div className="optimizer-preview-header">
                 <div className="preview-status-pill">
                   <ShieldCheck className="w-4 h-4 mr-1 text-emerald-400" />
-                  <span>Điểm ATS đạt được: <strong>{liveAtsScore}%</strong></span>
+                  <span>Điểm ATS: <strong>{liveAtsScore}%</strong> ({liveAtsScore >= 75 && liveAtsScore <= 88 ? '🟢 Ngưỡng vàng chuẩn' : liveAtsScore > 88 ? '🟢 Rất cao' : '🟡 Cần bổ sung'})</span>
                 </div>
                 <div className="preview-action-btns" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <button

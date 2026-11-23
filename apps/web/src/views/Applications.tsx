@@ -14,7 +14,8 @@ import {
   Clock,
   ChevronRight,
   Scale,
-  MoreHorizontal
+  MoreHorizontal,
+  Sparkles
 } from 'lucide-react';
 import {
   filtered,
@@ -55,10 +56,56 @@ export const initialFilters: Filters = {
 
 const nextStageMap: Partial<Record<Status, Status>> = {
   Saved: 'Applied',
-  Applied: 'Screening',
+  Applied: 'Interview',
   Screening: 'Interview',
   Interview: 'Offer'
 };
+
+export type KanbanLane = {
+  key: string;
+  title: string;
+  targetStatus: Status;
+  icon: string;
+  filter: (app: Application) => boolean;
+};
+
+export const KANBAN_LANES: KanbanLane[] = [
+  {
+    key: 'saved',
+    title: 'Đã lưu',
+    targetStatus: 'Saved',
+    icon: '📌',
+    filter: app => app.status === 'Saved'
+  },
+  {
+    key: 'applied',
+    title: 'Đã nộp',
+    targetStatus: 'Applied',
+    icon: '📤',
+    filter: app => app.status === 'Applied'
+  },
+  {
+    key: 'interview',
+    title: 'Đang phỏng vấn',
+    targetStatus: 'Interview',
+    icon: '🎙️',
+    filter: app => app.status === 'Interview' || app.status === 'Screening'
+  },
+  {
+    key: 'offer',
+    title: 'Nhận Offer',
+    targetStatus: 'Offer',
+    icon: '🎉',
+    filter: app => app.status === 'Offer'
+  },
+  {
+    key: 'closed',
+    title: 'Đã đóng',
+    targetStatus: 'Rejected',
+    icon: '📁',
+    filter: app => app.status === 'Rejected' || app.status === 'Withdrawn'
+  }
+];
 
 export default function Applications({
   apps,
@@ -84,6 +131,31 @@ export default function Applications({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [showCsvModal, setShowCsvModal] = useState(false);
+  const [draggingAppId, setDraggingAppId] = useState<string | null>(null);
+  const [dragOverLaneKey, setDragOverLaneKey] = useState<string | null>(null);
+  const [closedCollapsed, setClosedCollapsed] = useState(false);
+
+  async function handleDropOnLane(appId: string, lane: KanbanLane) {
+    const targetApp = apps.find(a => a.id === appId);
+    if (!targetApp) return;
+    if (lane.filter(targetApp)) return;
+
+    let targetStatus = lane.targetStatus;
+    if (lane.key === 'closed') {
+      targetStatus = 'Rejected';
+    }
+
+    setBusy(true);
+    try {
+      await repository.bulkUpdateStatus([appId], targetStatus);
+      notify?.(`Đã chuyển "${targetApp.position}" sang "${lane.title}".`);
+      await onRefresh?.();
+    } catch (err) {
+      notify?.((err as Error).message || 'Lỗi khi cập nhật trạng thái.', true);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -456,24 +528,106 @@ export default function Applications({
           ))}
         </section>
       ) : (
-        <div className="pipeline" role="region" aria-label="Pipeline bảy trạng thái, có thể cuộn ngang" tabIndex={0}>
-          {statuses
-            .filter(status => filters.status === 'all' || filters.status === status)
-            .map(status => {
-              const entries = visible.filter(app => app.status === status);
+        <div className="pipeline" role="region" aria-label="Pipeline năm trạng thái tự nhiên, có thể kéo thả" tabIndex={0}>
+          {KANBAN_LANES
+            .filter(lane => {
+              if (filters.status === 'all') return true;
+              if (lane.key === 'closed') return filters.status === 'Rejected' || filters.status === 'Withdrawn';
+              if (lane.key === 'interview') return filters.status === 'Interview' || filters.status === 'Screening';
+              return filters.status === lane.targetStatus;
+            })
+            .map(lane => {
+              const entries = visible.filter(lane.filter);
+              const isClosed = lane.key === 'closed';
+
               return (
-                <section className="pipeline-lane" key={status}>
+                <section
+                  className={`pipeline-lane ${dragOverLaneKey === lane.key ? 'drag-over' : ''} ${isClosed && closedCollapsed ? 'lane-collapsed' : ''}`}
+                  key={lane.key}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (dragOverLaneKey !== lane.key) setDragOverLaneKey(lane.key);
+                  }}
+                  onDragLeave={(e) => {
+                    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                    if (dragOverLaneKey === lane.key) setDragOverLaneKey(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverLaneKey(null);
+                    const appId = e.dataTransfer.getData('text/plain') || draggingAppId;
+                    if (appId) {
+                      void handleDropOnLane(appId, lane);
+                    }
+                  }}
+                >
                   <div className="lane-heading">
-                    <StatusBadge status={status} />
-                    <span className="count">{entries.length}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '15px' }}>{lane.icon}</span>
+                      <strong style={{ fontSize: '13px', fontWeight: 600 }}>{lane.title}</strong>
+                      <span className="count">{entries.length}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {isClosed && (
+                        <button
+                          type="button"
+                          style={{
+                            background: 'transparent',
+                            border: 0,
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            color: 'var(--muted)',
+                            padding: '2px 4px'
+                          }}
+                          onClick={() => setClosedCollapsed(prev => !prev)}
+                          title={closedCollapsed ? 'Mở rộng cột Đã đóng' : 'Thu gọn cột Đã đóng'}
+                        >
+                          {closedCollapsed ? 'Mở' : 'Ẩn'}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="lane-quick-add-btn"
+                        title={`Thêm hồ sơ vào cột ${lane.title}`}
+                        onClick={() => onAdd()}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid var(--line)',
+                          borderRadius: '5px',
+                          padding: '2px 5px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--muted)'
+                        }}
+                      >
+                        <Plus size={13} />
+                      </button>
+                    </div>
                   </div>
-                  {entries.map(app => {
+
+                  {(!isClosed || !closedCollapsed) && entries.map(app => {
                     const refDate = app.statusUpdatedAt || (app.appliedAt ? `${app.appliedAt}T00:00:00Z` : app.createdAt);
                     const sla = calculateStageSla(app.status, refDate);
                     const nextStage = nextStageMap[app.status];
 
                     return (
-                      <div key={app.id} className="pipeline-card-wrapper">
+                      <div
+                        key={app.id}
+                        className={`pipeline-card-wrapper ${draggingAppId === app.id ? 'is-dragging' : ''}`}
+                        draggable={!busy}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', app.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                          setDraggingAppId(app.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggingAppId(null);
+                          setDragOverLaneKey(null);
+                        }}
+                      >
                         <div className="pipeline-card" onClick={() => onOpen(app)} role="button" tabIndex={0}>
                           <div className="card-top-meta" onClick={e => e.stopPropagation()}>
                             <label
@@ -501,6 +655,29 @@ export default function Applications({
                             </select>
                           </div>
 
+                          {/* Sub-status badges for natural clarity */}
+                          {app.status === 'Screening' && (
+                            <div style={{ marginTop: '2px' }}>
+                              <span style={{ fontSize: '10px', background: '#eff6ff', color: '#1e40af', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                📞 Vòng sơ loại HR
+                              </span>
+                            </div>
+                          )}
+                          {app.status === 'Rejected' && (
+                            <div style={{ marginTop: '2px' }}>
+                              <span style={{ fontSize: '10px', background: '#fef2f2', color: '#991b1b', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                ❌ Bị từ chối
+                              </span>
+                            </div>
+                          )}
+                          {app.status === 'Withdrawn' && (
+                            <div style={{ marginTop: '2px' }}>
+                              <span style={{ fontSize: '10px', background: '#f8fafc', color: '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                ✋ Đã rút hồ sơ
+                              </span>
+                            </div>
+                          )}
+
                           <div className="card-company-row">
                             <Monogram company={app.company} />
                             <div className="card-company-info">
@@ -512,10 +689,10 @@ export default function Applications({
                           {sla.isStagnant && (
                             <div
                               className={`card-sla-pill card-sla-${sla.slaSeverity}`}
-                              title={sla.recommendation}
+                              title={`Đã ${sla.daysInStage} ngày ở bước này. Gợi ý: Hãy gửi email hỏi thăm (Follow-up) HR.`}
                             >
                               <Clock size={12} />
-                              <span>{sla.daysInStage} ngày ({sla.slaSeverity === 'critical' ? 'Quá hạn SLA' : 'Cần chú ý'})</span>
+                              <span>{sla.daysInStage} ngày (💡 Nhắc Follow-up)</span>
                             </div>
                           )}
 
@@ -539,6 +716,30 @@ export default function Applications({
                           <Deadline value={app.deadline} />
 
                           <div className="card-footer-actions" onClick={e => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              className="quick-ats-btn"
+                              title="Tối ưu CV cho vị trí này theo chuẩn ATS"
+                              onClick={() => {
+                                location.hash = `f/resumeOptimizer?appId=${app.id}`;
+                              }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '11px',
+                                padding: '3px 7px',
+                                borderRadius: '5px',
+                                border: '1px solid #bfdbfe',
+                                background: '#eff6ff',
+                                color: '#1d4ed8',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Sparkles size={12} />
+                              <span>Tối ưu CV</span>
+                            </button>
                             {nextStage && (
                               <button
                                 type="button"
@@ -558,7 +759,7 @@ export default function Applications({
                       </div>
                     );
                   })}
-                  {!entries.length && <p className="lane-empty">Chưa có hồ sơ</p>}
+                  {(!isClosed || !closedCollapsed) && !entries.length && <p className="lane-empty">Chưa có hồ sơ</p>}
                 </section>
               );
             })}

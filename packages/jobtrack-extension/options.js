@@ -15,10 +15,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Tải cài đặt hiện tại từ storage.local (không lưu ở sync và không hardcode token mặc định)
   try {
     const config = await chrome.storage.local.get({
-      serverUrl: 'http://127.0.0.1:64366',
+      serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app',
       apiToken: ''
     });
-    serverUrlInput.value = config.serverUrl || 'http://127.0.0.1:64366';
+    serverUrlInput.value = config.serverUrl || 'https://job-application-tracker-ai-pro24.vercel.app';
     apiTokenInput.value = config.apiToken || '';
   } catch (err) {
     console.error('Không thể đọc storage:', err);

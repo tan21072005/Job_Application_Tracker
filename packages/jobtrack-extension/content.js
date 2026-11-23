@@ -502,12 +502,12 @@ function detectApplicationFormAndShowBadge() {
     try {
       // Đọc an toàn từ chrome.storage.local, không nhúng token cứng
       const config = await chrome.storage.local.get({
-        serverUrl: 'http://127.0.0.1:64366',
+        serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app',
         apiToken: ''
       });
 
       if (!config.apiToken) {
-        throw new Error('Vui lòng mở tiện ích PageWeave và ghép nối tài khoản trước.');
+        throw new Error('Vui lòng mở tiện ích JobTrack và ghép nối tài khoản trước.');
       }
 
       const res = await fetch(`${config.serverUrl}/api/profile`, {
@@ -532,10 +532,176 @@ function detectApplicationFormAndShowBadge() {
   document.body.appendChild(fab);
 }
 
+function isJobPostingPage() {
+  const url = window.location.href.toLowerCase();
+  if (url.includes('linkedin.com/jobs/view') || url.includes('linkedin.com/jobs/collections') || url.includes('linkedin.com/jobs/search')) return true;
+  if (url.includes('topcv.vn/viec-lam') || url.includes('topcv.vn/brand/')) return true;
+  if (url.includes('itviec.com/it-jobs') || url.includes('itviec.com/viec-lam-it/')) return true;
+  if (url.includes('vietnamworks.com/') && (url.includes('-jv') || url.includes('/job/'))) return true;
+
+  const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+  for (const s of scripts) {
+    try {
+      const data = JSON.parse(s.textContent || '');
+      const items = Array.isArray(data) ? data : (data['@graph'] ? data['@graph'] : [data]);
+      for (const item of items) {
+        if (item && (item['@type'] === 'JobPosting' || item['@type']?.includes?.('JobPosting'))) {
+          return true;
+        }
+      }
+    } catch { /* ignore */ }
+  }
+  return false;
+}
+
+function detectJobPostingAndShowQuickSaveBadge() {
+  if (!isJobPostingPage() || document.getElementById('jobtrack-quick-save-fab')) return;
+
+  const quickFab = document.createElement('button');
+  quickFab.id = 'jobtrack-quick-save-fab';
+  quickFab.title = '1-Click lưu việc làm này vào JobTrack Cloud';
+  quickFab.style.cssText = `
+    position: fixed;
+    bottom: 84px;
+    right: 28px;
+    z-index: 999998;
+    background: linear-gradient(135deg, #1e40af, #2563eb);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 10px 18px;
+    border-radius: 50px;
+    box-shadow: 0 8px 24px -4px rgba(37, 99, 235, 0.45);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  `;
+  quickFab.innerHTML = `<span style="font-size: 15px;">⚡</span> <span>Lưu vào JobTrack</span>`;
+  quickFab.onmouseenter = () => { quickFab.style.transform = 'translateY(-2px) scale(1.02)'; quickFab.style.boxShadow = '0 12px 28px -4px rgba(37, 99, 235, 0.6)'; };
+  quickFab.onmouseleave = () => { quickFab.style.transform = 'translateY(0) scale(1)'; quickFab.style.boxShadow = '0 8px 24px -4px rgba(37, 99, 235, 0.45)'; };
+
+  quickFab.onclick = async () => {
+    quickFab.disabled = true;
+    quickFab.innerHTML = `<span style="font-size: 15px;">⏳</span> <span>Đang trích xuất & lưu…</span>`;
+
+    try {
+      const job = extractCurrentPageJob();
+      if (!job || !job.company || !job.position) {
+        throw new Error('Chưa bóc tách được tên công ty hoặc vị trí trên trang này.');
+      }
+
+      const config = await chrome.storage.local.get({
+        serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app',
+        apiToken: ''
+      });
+
+      if (!config.apiToken) {
+        showJobTrackToast('⚠️ Vui lòng mở icon tiện ích JobTrack trên thanh công cụ để kết nối tài khoản trước.', true);
+        quickFab.innerHTML = `<span style="font-size: 15px;">⚡</span> <span>Lưu vào JobTrack</span>`;
+        quickFab.disabled = false;
+        return;
+      }
+
+      const payload = {
+        company: job.company,
+        position: job.position,
+        url: job.url,
+        salary: job.salary || null,
+        location: job.location || null,
+        workMode: job.workMode || 'On-site',
+        status: 'Saved',
+        notes: job.notes || '',
+        priority: 'target'
+      };
+
+      const res = await fetch(`${config.serverUrl}/api/applications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || `Lỗi máy chủ HTTP ${res.status}`);
+      }
+
+      quickFab.style.background = 'linear-gradient(135deg, #15803d, #16a34a)';
+      quickFab.style.boxShadow = '0 8px 24px -4px rgba(22, 163, 74, 0.45)';
+      quickFab.innerHTML = `<span style="font-size: 15px;">✓</span> <span>Đã lưu vào JobTrack!</span>`;
+      showJobTrackToast(`✓ Đã lưu "${job.position} - ${job.company}" vào cột Đã lưu!`, false, `${config.serverUrl}/#applications`);
+
+      setTimeout(() => {
+        quickFab.style.opacity = '0';
+        setTimeout(() => quickFab.remove(), 400);
+      }, 3500);
+    } catch (err) {
+      showJobTrackToast(`✗ Không thể lưu: ${err.message}`, true);
+      quickFab.innerHTML = `<span style="font-size: 15px;">⚡</span> <span>Lưu vào JobTrack</span>`;
+      quickFab.disabled = false;
+    }
+  };
+
+  document.body.appendChild(quickFab);
+}
+
+function showJobTrackToast(message, isError = false, linkUrl = null) {
+  const existing = document.getElementById('jobtrack-toast-banner');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'jobtrack-toast-banner';
+  toast.style.cssText = `
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 999999;
+    background: ${isError ? '#991b1b' : '#0f172a'};
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  `;
+
+  let linkHtml = '';
+  if (linkUrl) {
+    linkHtml = `<a href="${linkUrl}" target="_blank" style="color: #60a5fa; font-weight: 600; text-decoration: underline; margin-left: 6px;">Xem trên Kanban ➔</a>`;
+  }
+
+  toast.innerHTML = `
+    <div>
+      <span style="font-weight: 600;">${message}</span>
+      ${linkHtml}
+    </div>
+    <button id="jobtrack-close-toast" style="background: transparent; border: 0; color: #94a3b8; font-size: 16px; cursor: pointer; margin-left: 8px;">✕</button>
+  `;
+
+  document.body.appendChild(toast);
+  document.getElementById('jobtrack-close-toast')?.addEventListener('click', () => toast.remove());
+  setTimeout(() => toast.remove(), 7000);
+}
+
+function initExtensionContent() {
+  detectApplicationFormAndShowBadge();
+  detectJobPostingAndShowQuickSaveBadge();
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => setTimeout(detectApplicationFormAndShowBadge, 1500));
+  document.addEventListener('DOMContentLoaded', () => setTimeout(initExtensionContent, 1500));
 } else {
-  setTimeout(detectApplicationFormAndShowBadge, 1500);
+  setTimeout(initExtensionContent, 1500);
 }
 
 // =============================================================================

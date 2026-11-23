@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const checkPaymentStatusBtn = document.getElementById('checkPaymentStatusBtn');
 
   // State
-  let serverConfig = { serverUrl: 'http://127.0.0.1:64366', apiToken: '' };
+  let serverConfig = { serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app', apiToken: '' };
   let extractedPageData = null;
   let activeSourceType = 'table';
   let activeTableIndex = 0;
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1. Tải cấu hình từ storage.local (không hardcode token)
   try {
     const stored = await chrome.storage.local.get({
-      serverUrl: 'http://127.0.0.1:64366',
+      serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app',
       apiToken: ''
     });
     serverConfig = stored;
@@ -949,11 +949,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const res = await fetch(`${serverConfig.serverUrl}/api/auth/extension/pair`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Origin': 'http://127.0.0.1:64364'
+          'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify({ client: 'PageWeave Side Panel' })
+        body: JSON.stringify({ client: 'JobTrack Side Panel' })
       });
 
       if (res.ok) {
@@ -966,7 +965,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      chrome.tabs.create({ url: 'http://127.0.0.1:64364' });
+      chrome.tabs.create({ url: serverConfig.serverUrl });
       showAlert(alertInfo, 'Vui lòng đăng nhập trên JobTrack Web rồi bấm nút này lại để kết nối.');
     } catch (err) {
       showAlert(alertError, `Lỗi ghép nối: ${err.message}`);

@@ -37,6 +37,7 @@
     "test:contract": "npm --prefix packages/jobtrack-contract run test",
     "check:contract": "npm --prefix packages/jobtrack-contract run build && npm --prefix packages/jobtrack-contract run test",
     "test:extension": "node --test packages/jobtrack-extension/extension.test.mjs",
+    "pack:extension": "powershell -Command \"Compress-Archive -Path packages/jobtrack-extension/manifest.json, packages/jobtrack-extension/popup.html, packages/jobtrack-extension/popup.js, packages/jobtrack-extension/options.html, packages/jobtrack-extension/options.js, packages/jobtrack-extension/content.js, packages/jobtrack-extension/README.md, packages/jobtrack-extension/icons -DestinationPath packages/jobtrack-extension/jobtrack-pro-extension.zip -Force\"",
     "check:all": "npm run check:contract && npm run check:stack && npm run check:mcp && npm run test:extension && npm run test:web && npm run build:web && npm run test:agent-loop && npm run check:architecture",
     "db:backup": "node tools/ops/backup.mjs create",
     "db:backup:status": "node tools/ops/backup.mjs status",

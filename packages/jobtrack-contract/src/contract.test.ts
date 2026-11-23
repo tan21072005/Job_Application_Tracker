@@ -1676,6 +1676,56 @@ test('contract: validateOptimizeResumeInput and validateRewriteBulletInput valid
 
 
 
+test('contract: diagnoseAtsKeywordGaps evaluates 4-pillar ATS score and anti-stuffing penalty', () => {
+  const resume = `# Nguyen Van A - Fullstack Engineer
+Email: nguyen.a@example.com | Phone: 0901234567 | Location: Ho Chi Minh City
+
+## Kinh nghiệm làm việc
+- Phát triển hệ thống thanh toán điện tử bằng Node.js và PostgreSQL, nâng cao hiệu năng 30%.
+- Tối ưu hóa pipeline CI/CD với Docker, giảm thời gian release xuống còn 15 phút.
+- Thiết kế kiến trúc Microservices xử lý 10,000 req/s với độ tin cậy 99.9%.
+
+## Kỹ năng chuyên môn
+- Node.js, TypeScript, PostgreSQL, Docker, Redis
+
+## Học vấn
+- Đại học Bách Khoa TP.HCM - Kỹ sư CNTT
+`;
+
+  const jd = `Vị trí: Senior Engineer
+Yêu cầu:
+- Thành thạo TypeScript, Node.js, PostgreSQL và Docker.
+- Kinh nghiệm thực tế với Microservices, Redis và CI/CD.`;
+
+  const result = diagnoseAtsKeywordGaps(resume, jd);
+  assert.ok(result.atsScore >= 70 && result.atsScore <= 100);
+  assert.ok(result.scoreBreakdown.skillsCoverage !== undefined);
+  assert.ok(result.scoreBreakdown.parseabilityHealth !== undefined);
+  assert.ok(result.scoreBreakdown.actionMetrics !== undefined);
+  assert.ok(result.scoreBreakdown.brevityAntiStuffing !== undefined);
+  assert.ok(result.verdict && result.verdict.length > 0);
+
+  const stuffedResume = resume + '\nDocker Docker Docker Docker Docker Docker Docker Docker Docker Docker Docker Docker';
+  const stuffedResult = diagnoseAtsKeywordGaps(stuffedResume, jd);
+  assert.ok((stuffedResult.scoreBreakdown.keywordStuffingPenalty || 0) > 0);
+  assert.ok(stuffedResult.recommendations.some(r => r.includes('Cảnh báo nhồi từ khóa')));
+});
+
+test('contract: rewriteBulletPointsXyz provides Google X-Y-Z template without fake hallucinated metrics', () => {
+  const bullets = ['Worked on backend APIs and database queries.'];
+  const proposals = rewriteBulletPointsXyz(bullets, ['TypeScript', 'PostgreSQL']);
+
+  assert.equal(proposals.length, 1);
+  const p = proposals[0];
+  assert.equal(p.variants.length, 3);
+
+  const metricVar = p.variants.find(v => v.variantType === 'metric_driven');
+  assert.ok(metricVar);
+  assert.ok(metricVar.rewrittenText.includes('[điền số liệu:'));
+  assert.ok(metricVar.xyzBreakdown.metricY.includes('[Số liệu'));
+  assert.ok(metricVar.xyzBreakdown.actionZ.includes('TypeScript'));
+});
+
 test('contract: validateAnalyzeCultureInput validates company and preference weights', () => {
   const valid = validateAnalyzeCultureInput({
     company: 'FPT Software',

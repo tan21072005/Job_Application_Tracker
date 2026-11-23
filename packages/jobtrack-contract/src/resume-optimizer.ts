@@ -18,6 +18,11 @@ export interface AtsDiagnosticScoreBreakdownDTO {
   keywordRelevance: number;
   formattingHealth: number;
   impactQuantification: number;
+  skillsCoverage?: number;
+  parseabilityHealth?: number;
+  actionMetrics?: number;
+  brevityAntiStuffing?: number;
+  keywordStuffingPenalty?: number;
 }
 
 export type AnalysisProvenance = 'llm' | 'rules';
@@ -289,13 +294,24 @@ export function diagnoseAtsKeywordGaps(
     const weight = item.importance === 'critical' ? 3 : item.importance === 'recommended' ? 2 : 1;
     totalWeight += weight;
 
-    const regex = new RegExp(`\\b${item.keyword.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    const matched = regex.test(resumeTextLower);
+    const dictEntry = ATS_KEYWORD_DICTIONARY.find(
+      d => d.keyword.toLowerCase() === item.keyword.toLowerCase()
+    );
+    const searchTerms = [item.keyword, ...(dictEntry?.aliases || [])];
 
+    let matched = false;
     let freqInResume = 0;
+    for (const term of searchTerms) {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+      const matches = resumeTextLower.match(regex);
+      if (matches && matches.length > 0) {
+        matched = true;
+        freqInResume += matches.length;
+      }
+    }
+
     if (matched) {
-      const matchAll = resumeTextLower.match(new RegExp(regex.source, 'gi'));
-      freqInResume = matchAll ? matchAll.length : 1;
       matchedWeight += weight;
       matchedCount++;
     } else {
@@ -322,47 +338,135 @@ export function diagnoseAtsKeywordGaps(
     return importanceRank[b.importance] - importanceRank[a.importance];
   });
 
-  const keywordRelevance = totalWeight > 0 ? Math.round((matchedWeight / totalWeight) * 100) : 60;
+  const skillsCoverage = totalWeight > 0 ? Math.round((matchedWeight / totalWeight) * 40) : 25;
+
+  const hasEmail = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(resumeText);
+  const hasPhone = /(?:\+?84|0)(?:[\s.-]*\d){9,10}\b|\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/.test(resumeText);
+  const contactScore = (hasEmail ? 4 : 0) + (hasPhone ? 4 : 0);
+
+  const hasExperience = /(?:experience|kinh nghiệm|lịch sử làm việc|work history|employment)/i.test(resumeText);
+  const hasSkills = /(?:skills|kỹ năng|core competencies|chuyên môn|technologies|công nghệ)/i.test(resumeText);
+  const hasEducation = /(?:education|học vấn|bằng cấp|đào tạo|qualifications)/i.test(resumeText);
+  const sectionScore = (hasExperience ? 5 : 0) + (hasSkills ? 4 : 0) + (hasEducation ? 3 : 0);
+
+  const hasPipesTable = (resumeText.match(/\|.*\|.*\|/g) || []).length >= 4;
+  const hasBullets = /(?:^|\n)\s*[-*•\d+.]\s+/m.test(resumeText);
+  const cleanScore = (hasPipesTable ? 1 : 3) + (hasBullets ? 2 : 1);
+
+  const parseabilityHealth = Math.min(25, contactScore + sectionScore + cleanScore);
 
   const bullets = extractBulletsFromResume(resumeText);
+  const strongActionVerbsRegex = /^(?:xây dựng|phát triển|thiết kế|tối ưu|tối ưu hóa|triển khai|dẫn dắt|kiến trúc|nâng cấp|vận hành|tích hợp|chuyển đổi|tự động hóa|đo lường|lập trình|chỉ đạo|điều phối|phân tích|giải quyết|thực hiện|đóng góp|hướng dẫn|đào tạo|cải thiện|giảm thiểu|gia tăng|đạt được|hoàn thành|tham gia|chịu trách nhiệm|viết|built|developed|designed|optimized|architected|led|engineered|spearheaded|implemented|automated|launched|reduced|increased|improved|scaled|managed|created|delivered|orchestrated|established|executed|conducted|formulated|streamlined|accelerated|collaborated|mentored|directed|refactored)\b/i;
+
+  let actionBulletsCount = 0;
   let quantifiedBulletsCount = 0;
-  let formattingPenalties = 0;
 
   for (const b of bullets) {
-    if (/\b\d+(\.\d+)?%|\$\d+(\.\d+)?|\b\d+\s*(ms|s|x|k|m|dau|mau|users|clients|rps|qps)\b/i.test(b) || /\b\d{2,}\b/.test(b)) {
-      quantifiedBulletsCount++;
+    const trimmedB = b.trim();
+    if (strongActionVerbsRegex.test(trimmedB)) {
+      actionBulletsCount++;
     }
-    if (b.length > 280 || b.length < 35) {
-      formattingPenalties += 8;
+    if (
+      /\b\d+(\.\d+)?%|\$\d+(\.\d+)?|(?:\$|USD|VNĐ|VND|\btr\b|\btỷ\b)\s*\d+|\b\d+\s*(ms|s|giây|phút|giờ|x|k|m|dau|mau|users|người dùng|khách hàng|clients|rps|qps|req\/s|members|kỹ sư)\b/i.test(trimmedB) ||
+      /\b\d{2,}\b/.test(trimmedB)
+    ) {
+      quantifiedBulletsCount++;
     }
   }
 
-  const impactQuantification = bullets.length > 0
-    ? Math.min(100, Math.round((quantifiedBulletsCount / bullets.length) * 100))
-    : 40;
+  const actionVerbRatio = bullets.length > 0 ? actionBulletsCount / bullets.length : 0.5;
+  const quantRatio = bullets.length > 0 ? quantifiedBulletsCount / bullets.length : 0.4;
+  const actionMetrics = Math.min(20, Math.round(actionVerbRatio * 10) + Math.round(quantRatio * 10));
 
-  const formattingHealth = Math.max(20, 100 - formattingPenalties);
+  const words = resumeText.trim().split(/\s+/).filter(Boolean);
+  const totalWordCount = words.length;
+
+  let baseBrevityScore = 15;
+  if (totalWordCount >= 200 && totalWordCount <= 900) {
+    baseBrevityScore = 15;
+  } else if ((totalWordCount >= 120 && totalWordCount < 200) || (totalWordCount > 900 && totalWordCount <= 1300)) {
+    baseBrevityScore = 11;
+  } else if ((totalWordCount >= 80 && totalWordCount < 120) || (totalWordCount > 1300 && totalWordCount <= 1800)) {
+    baseBrevityScore = 7;
+  } else {
+    baseBrevityScore = 4;
+  }
+
+  let keywordStuffingPenalty = 0;
+  const stuffedKeywords: string[] = [];
+
+  for (const item of keywordGaps) {
+    if (item.matched && totalWordCount > 0) {
+      const density = item.frequencyInResume / totalWordCount;
+      if (density > 0.04 || (item.frequencyInResume >= 7 && totalWordCount < 350)) {
+        keywordStuffingPenalty = Math.min(10, keywordStuffingPenalty + 5);
+        stuffedKeywords.push(item.keyword);
+      }
+    }
+  }
+
+  const brevityAntiStuffing = Math.max(0, baseBrevityScore - keywordStuffingPenalty);
 
   const atsScore = Math.min(
     100,
-    Math.max(0, Math.round(0.50 * keywordRelevance + 0.30 * impactQuantification + 0.20 * formattingHealth))
+    Math.max(0, skillsCoverage + parseabilityHealth + actionMetrics + brevityAntiStuffing)
   );
 
+  const keywordRelevance = Math.round((skillsCoverage / 40) * 100);
+  const formattingHealth = Math.round((parseabilityHealth / 25) * 100);
+  const impactQuantification = Math.round((actionMetrics / 20) * 100);
+
+  let verdict = '';
+  if (atsScore >= 75 && atsScore <= 88) {
+    verdict = '🟢 Ngưỡng vàng tối ưu (75% - 85%): Hồ sơ đạt độ tương thích chuẩn ATS thực tế mà không bị nghi ngờ nhồi từ khóa. Sẵn sàng nộp đơn!';
+  } else if (atsScore > 88) {
+    verdict = '🟢 Tương thích rất cao (>88%): Hồ sơ khớp hầu hết yêu cầu. Hãy đảm bảo từ khóa xuất hiện tự nhiên trong các dự án thực tế.';
+  } else if (atsScore >= 60) {
+    verdict = '🟡 Tiềm năng (60% - 74%): Cần bổ sung thêm một số kỹ năng trọng yếu và số liệu định lượng để tăng khả năng vượt qua bộ lọc.';
+  } else {
+    verdict = '🔴 Cần tinh chỉnh mạnh (<60%): Thiếu nhiều từ khóa bắt buộc và thông tin định lượng quan trọng.';
+  }
+
   const recommendations: string[] = [];
-  if (keywordRelevance < 70) {
-    const missingCritical = keywordGaps.filter(k => !k.matched && k.importance === 'critical').slice(0, 3).map(k => k.keyword);
+  if (keywordStuffingPenalty > 0 && stuffedKeywords.length > 0) {
+    recommendations.push(
+      `⚠️ Cảnh báo nhồi từ khóa (Stuffing Penalty - trừ ${keywordStuffingPenalty}đ): Từ khóa ${stuffedKeywords.map(k => `"${k}"`).join(', ')} xuất hiện với mật độ bất thường (>4%). Hãy phân bổ tự nhiên trong bối cảnh công việc thực tế.`
+    );
+  }
+  if (skillsCoverage < 28) {
+    const missingCritical = keywordGaps
+      .filter(k => !k.matched && (k.importance === 'critical' || k.importance === 'recommended'))
+      .slice(0, 3)
+      .map(k => k.keyword);
     if (missingCritical.length > 0) {
-      recommendations.push(`Bổ sung các từ khóa cốt lõi còn thiếu: ${missingCritical.join(', ')}.`);
+      recommendations.push(`Bổ sung các kỹ năng trọng yếu còn thiếu: ${missingCritical.join(', ')}.`);
     }
   }
-  if (impactQuantification < 60) {
-    recommendations.push('Chuyển đổi các gạch đầu dòng công việc sang cấu trúc Google X-Y-Z để tăng chỉ số định lượng đo lường được (%, $, ms, users).');
+  if (!hasEmail) {
+    recommendations.push('Bổ sung địa chỉ Email liên hệ chuyên nghiệp rõ ràng trên đầu CV.');
   }
-  if (formattingHealth < 80) {
-    recommendations.push('Chuẩn hóa độ dài các câu mô tả kinh nghiệm (lý tưởng từ 50 đến 200 ký tự mỗi ý).');
+  if (!hasPhone) {
+    recommendations.push('Bổ sung số điện thoại liên hệ trực tiếp để nhà tuyển dụng dễ dàng liên lạc.');
+  }
+  if (!hasExperience || !hasSkills) {
+    recommendations.push('Chuẩn hóa tiêu đề phân vùng chuẩn ATS: Kinh nghiệm làm việc (Experience) và Kỹ năng (Skills).');
+  }
+  if (actionMetrics < 14) {
+    recommendations.push(
+      'Chuyển đổi các gạch đầu dòng công việc sang cấu trúc Google X-Y-Z: bắt đầu bằng động từ mạnh và bổ sung số liệu đo lường thực tế (%, ms, người dùng, thời gian).'
+    );
+  }
+  if (totalWordCount < 180) {
+    recommendations.push(
+      `Độ dài hồ sơ còn ngắn (${totalWordCount} từ). Độ dài tiêu chuẩn ATS lý tưởng là 250 - 800 từ (1 - 2 trang A4).`
+    );
+  } else if (totalWordCount > 1100) {
+    recommendations.push(
+      `Hồ sơ khá dài (${totalWordCount} từ). Hãy tinh giản để giữ độ dài trong khoảng 1 - 2 trang A4.`
+    );
   }
   if (recommendations.length === 0) {
-    recommendations.push('Hồ sơ đạt độ tương thích cao với yêu cầu tuyển dụng. Sẵn sàng ứng tuyển trực tiếp.');
+    recommendations.push('Hồ sơ đạt cấu trúc và độ tương thích chuẩn ATS rất tốt. Sẵn sàng ứng tuyển trực tiếp.');
   }
 
   return {
@@ -373,9 +477,15 @@ export function diagnoseAtsKeywordGaps(
     scoreBreakdown: {
       keywordRelevance,
       formattingHealth,
-      impactQuantification
+      impactQuantification,
+      skillsCoverage,
+      parseabilityHealth,
+      actionMetrics,
+      brevityAntiStuffing,
+      keywordStuffingPenalty: keywordStuffingPenalty > 0 ? keywordStuffingPenalty : undefined
     },
-    recommendations
+    recommendations,
+    verdict
   };
 }
 
@@ -399,30 +509,30 @@ export function rewriteBulletPointsXyz(
       weakness = 'Câu quá dài, lan man, làm loãng thông điệp chính về thành quả.';
     }
 
-    const metricVariantText = `Đột phá hiệu năng vận hành thêm 38% và giảm thời gian phản hồi API xuống dưới 120ms thông qua việc tối ưu hóa truy vấn ${kw1} và tái cấu trúc pipeline dữ liệu.`;
-    const leadershipVariantText = `Dẫn dắt sáng kiến kỹ thuật liên phòng ban, chuẩn hóa quy trình ${kw1} và ${kw2}, giúp rút ngắn chu kỳ release sản phẩm từ 14 ngày xuống còn 3 ngày cho toàn đội ngũ 8 kỹ sư.`;
-    const techDepthVariantText = `Kiến trúc và triển khai hệ sinh thái dịch vụ phân tán sử dụng ${kw1}, kết hợp cơ chế caching ${kw2} và resilience patterns, đảm bảo 99.98% uptime tại tải đỉnh.`;
+    const metricVariantText = `Nâng cao hiệu năng vận hành và giảm độ trễ xử lý [điền số liệu: ví dụ ~30% hoặc <150ms] thông qua việc tối ưu hóa ${kw1} và tái cấu trúc luồng dữ liệu.`;
+    const leadershipVariantText = `Dẫn dắt sáng kiến kỹ thuật chuẩn hóa quy trình ${kw1} và ${kw2}, giúp rút ngắn chu kỳ release [điền thời gian: ví dụ từ 14 ngày xuống 3 ngày] cho toàn đội ngũ [điền số thành viên] kỹ sư.`;
+    const techDepthVariantText = `Kiến trúc và triển khai hệ sinh thái dịch vụ phân tán sử dụng ${kw1}, kết hợp cơ chế caching ${kw2}, duy trì độ tin cậy hệ thống đạt [điền uptime: ví dụ 99.9%] tại tải đỉnh.`;
 
     const variants: BulletVariantOptionDTO[] = [
       {
         variantType: 'metric_driven',
         variantLabel: 'Tối ưu Chỉ số & Định lượng (Metrics)',
         rewrittenText: metricVariantText,
-        highlightedKeywords: [kw1, '38%', '120ms'],
+        highlightedKeywords: [kw1, '[điền số liệu: ví dụ ~30% hoặc <150ms]'],
         xyzBreakdown: {
-          accomplishmentX: 'Đột phá hiệu năng vận hành và giảm thời gian phản hồi API',
-          metricY: 'Tăng 38% hiệu năng, latency < 120ms',
-          actionZ: `Tối ưu hóa truy vấn ${kw1} và tái cấu trúc pipeline dữ liệu`
+          accomplishmentX: 'Nâng cao hiệu năng vận hành và giảm thời gian phản hồi',
+          metricY: '[Số liệu thực tế: ví dụ ~30% hiệu năng hoặc <150ms]',
+          actionZ: `Tối ưu hóa ${kw1} và tái cấu trúc luồng dữ liệu`
         }
       },
       {
         variantType: 'leadership',
         variantLabel: 'Năng lực Lãnh đạo & Tác động Đội ngũ',
         rewrittenText: leadershipVariantText,
-        highlightedKeywords: [kw1, kw2, 'chu kỳ release từ 14 ngày xuống 3 ngày'],
+        highlightedKeywords: [kw1, kw2, '[chu kỳ release rút ngắn]'],
         xyzBreakdown: {
-          accomplishmentX: 'Rút ngắn chu kỳ release sản phẩm cho toàn đội ngũ 8 kỹ sư',
-          metricY: 'Từ 14 ngày xuống còn 3 ngày',
+          accomplishmentX: 'Rút ngắn chu kỳ release sản phẩm và nâng cao năng suất đội ngũ',
+          metricY: '[Số liệu thực tế: ví dụ từ X ngày xuống Y ngày]',
           actionZ: `Dẫn dắt sáng kiến chuẩn hóa quy trình ${kw1} và ${kw2}`
         }
       },
@@ -430,11 +540,11 @@ export function rewriteBulletPointsXyz(
         variantType: 'tech_depth',
         variantLabel: 'Chuyên sâu Kỹ thuật & Kiến trúc (Tech Depth)',
         rewrittenText: techDepthVariantText,
-        highlightedKeywords: [kw1, kw2, '99.98% uptime'],
+        highlightedKeywords: [kw1, kw2, '[độ tin cậy hệ thống]'],
         xyzBreakdown: {
-          accomplishmentX: 'Đảm bảo độ tin cậy và tính liên tục của hệ thống tại tải đỉnh',
-          metricY: '99.98% uptime',
-          actionZ: `Kiến trúc hệ thống phân tán sử dụng ${kw1} và caching ${kw2}`
+          accomplishmentX: 'Đảm bảo độ tin cậy và tính liên tục của hệ thống phân tán',
+          metricY: '[Số liệu thực tế: ví dụ 99.9% uptime tại tải đỉnh]',
+          actionZ: `Kiến trúc hệ thống sử dụng ${kw1} và tối ưu cơ chế caching ${kw2}`
         }
       }
     ];

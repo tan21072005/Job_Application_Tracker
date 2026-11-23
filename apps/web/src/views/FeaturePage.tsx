@@ -39,10 +39,11 @@ export function featureFromHash(id: string): FeatureKey | null {
 }
 
 export default function FeaturePage({
-  featureKey, apps, proStatus, notify, onBack, onRefresh
+  featureKey, apps, initialApplicationId, proStatus, notify, onBack, onRefresh
 }: {
   featureKey: FeatureKey;
   apps: Application[];
+  initialApplicationId?: string;
   proStatus: ProStatusDTO | null;
   notify: (message: string, isError?: boolean) => void;
   onBack: () => void;
@@ -58,7 +59,15 @@ export default function FeaturePage({
       {featureKey === 'decision' && <DecisionMatrixModal isOpen onClose={onBack} applications={apps} onRefreshApps={onRefresh} notify={notify} />}
       {featureKey === 'company' && <CompanyIntelligenceModal isOpen companyName={companyName} onClose={onBack} />}
       {featureKey === 'resume' && <ResumeManagerModal isOpen onClose={onBack} />}
-      {featureKey === 'resumeOptimizer' && <ResumeOptimizerModal isOpen onClose={onBack} applications={apps} notify={notify} />}
+      {featureKey === 'resumeOptimizer' && (
+        <ResumeOptimizerModal
+          isOpen
+          onClose={onBack}
+          applications={apps}
+          initialApplicationId={initialApplicationId}
+          notify={notify}
+        />
+      )}
       {featureKey === 'simulation' && <InterviewSimulationModal isOpen onClose={onBack} />}
       {featureKey === 'dossier' && <DossierConfigModal isOpen onClose={onBack} />}
     </div>

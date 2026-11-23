@@ -65,12 +65,22 @@ describe('Multi-Variant Resume ATS Optimizer & X-Y-Z Impact Bullet Rewriter', ()
       expect(diagnostic.atsScore).toBeGreaterThan(0);
       expect(diagnostic.atsScore).toBeLessThanOrEqual(100);
       expect(diagnostic.scoreBreakdown.keywordRelevance).toBeGreaterThan(0);
+      expect(diagnostic.scoreBreakdown.skillsCoverage).toBeDefined();
+      expect(diagnostic.scoreBreakdown.parseabilityHealth).toBeDefined();
+      expect(diagnostic.scoreBreakdown.actionMetrics).toBeDefined();
+      expect(diagnostic.scoreBreakdown.brevityAntiStuffing).toBeDefined();
+      expect(diagnostic.verdict).toBeDefined();
       expect(diagnostic.matchedKeywordsCount).toBeGreaterThanOrEqual(2);
       expect(diagnostic.missingKeywordsCount).toBeGreaterThanOrEqual(3);
       expect(diagnostic.recommendations.length).toBeGreaterThan(0);
 
       const k8sGap = diagnostic.keywordGaps.find(k => k.keyword === 'Kubernetes');
       expect(k8sGap?.matched).toBe(false);
+
+      const stuffed = resume + ' ' + Array(10).fill('Node.js').join(' ');
+      const stuffedDiag = diagnoseAtsKeywordGaps(stuffed, jd);
+      expect(stuffedDiag.scoreBreakdown.keywordStuffingPenalty).toBeGreaterThan(0);
+      expect(stuffedDiag.recommendations.some(r => r.includes('nhồi từ khóa'))).toBe(true);
     });
 
     it('rewrites experience bullets according to Google X-Y-Z formula', () => {
