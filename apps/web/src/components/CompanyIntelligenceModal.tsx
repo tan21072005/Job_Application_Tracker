@@ -4,7 +4,6 @@ import {
   type CompanyReviewDTO,
   companyRepository
 } from '../data';
-import { CultureRadarModal } from './CultureRadarModal';
 
 interface CompanyIntelligenceModalProps {
   isOpen: boolean;
@@ -22,7 +21,7 @@ export function CompanyIntelligenceModal({
   const [profile, setProfile] = useState<CompanyProfileDTO | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'culture' | 'radar' | 'salaries' | 'interviews' | 'reviews'>('culture');
+  const [activeTab, setActiveTab] = useState<'salaries' | 'interviews' | 'reviews'>('salaries');
 
   const [showReviewForm, setShowReviewForm] = useState<boolean>(false);
   const [reviewRole, setReviewRole] = useState<string>('');
@@ -41,7 +40,7 @@ export function CompanyIntelligenceModal({
   useEffect(() => {
     if (isOpen && companyName) {
       loadProfile(companyName);
-      setActiveTab('culture');
+      setActiveTab('salaries');
       setShowReviewForm(false);
       setReviewSuccess(null);
       setError(null);
@@ -213,20 +212,6 @@ export function CompanyIntelligenceModal({
               <div className="tab-navigation">
                 <button
                   type="button"
-                  className={`tab-btn tab-culture ${activeTab === 'culture' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('culture')}
-                >
-                  Văn hóa & Công nghệ
-                </button>
-                <button
-                  type="button"
-                  className={`tab-btn tab-radar ${activeTab === 'radar' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('radar')}
-                >
-                  Radar Văn hóa
-                </button>
-                <button
-                  type="button"
                   className={`tab-btn tab-salaries ${activeTab === 'salaries' ? 'active' : ''}`}
                   onClick={() => setActiveTab('salaries')}
                 >
@@ -247,55 +232,6 @@ export function CompanyIntelligenceModal({
                   Đánh giá ({profile.recentReviews.length})
                 </button>
               </div>
-
-              {activeTab === 'culture' && (
-                <div className="tab-pane culture-pane">
-                  <div className="overview-section">
-                    <h3 className="section-title">Giới thiệu tổng quan</h3>
-                    <p className="company-description-text">{profile.description}</p>
-                  </div>
-
-                  <div className="tech-stack-section">
-                    <h3 className="section-title">Ngăn xếp Công nghệ Chính (Tech Stack)</h3>
-                    <div className="tech-chips-wrap">
-                      {profile.techStack.map((tech, i) => (
-                        <span key={i} className="tech-badge-chip">{tech}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="signals-grid">
-                    <div className="signals-card pros-signals">
-                      <h4 className="signals-title text-success">✓ Điểm mạnh & Lợi thế nổi bật</h4>
-                      <ul className="signals-list">
-                        {profile.keyPros.map((pro, i) => (
-                          <li key={i}>{pro}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="signals-card redflags-signals">
-                      <h4 className="signals-title text-warning">⚠ Dấu hiệu cần lưu ý (Red Flags)</h4>
-                      <ul className="signals-list">
-                        {profile.keyRedFlags.map((flag, i) => (
-                          <li key={i}>{flag}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'radar' && (
-                <div className="tab-pane radar-pane">
-                  <CultureRadarModal
-                    embedded
-                    defaultCompany={profile.name}
-                    onClose={() => setActiveTab('culture')}
-                    notify={() => {}}
-                  />
-                </div>
-              )}
 
               {activeTab === 'salaries' && (
                 <div className="tab-pane salaries-pane">

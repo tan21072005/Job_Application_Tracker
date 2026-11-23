@@ -10,7 +10,6 @@ import {
   ExternalLink,
   Target,
   Award,
-  Layers,
   ChevronRight,
   ListCheck,
   AlertCircle
@@ -25,7 +24,6 @@ import type {
 import type { Application } from '../domain';
 import { careerRoadmapRepository } from '../data';
 import { Button, Dialog } from '../components/ui';
-import { CareerTrajectoryModal } from '../components/CareerTrajectoryModal';
 
 interface Props {
   apps: Application[];
@@ -42,7 +40,6 @@ export function CareerRoadmapView({ apps, notify }: Props) {
   const [targetRoleInput, setTargetRoleInput] = useState('Senior Fullstack Engineer');
   const [focusSkillsInput, setFocusSkillsInput] = useState('');
   const [submittingGenerate, setSubmittingGenerate] = useState(false);
-  const [activeTab, setActiveTab] = useState<'skills' | 'competency'>('skills');
 
   async function loadData() {
     setLoading(true);
@@ -152,30 +149,7 @@ export function CareerRoadmapView({ apps, notify }: Props) {
         </div>
       </div>
 
-      <div className="roadmap-tabs" role="tablist" aria-label="Nội dung lộ trình">
-        <button
-          role="tab"
-          aria-selected={activeTab === 'skills'}
-          className={`roadmap-tab ${activeTab === 'skills' ? 'active' : ''}`}
-          onClick={() => setActiveTab('skills')}
-        >
-          <Target size={16} />
-          <span>Kỹ năng cần bổ sung</span>
-        </button>
-        <button
-          role="tab"
-          aria-selected={activeTab === 'competency'}
-          className={`roadmap-tab ${activeTab === 'competency' ? 'active' : ''}`}
-          onClick={() => setActiveTab('competency')}
-        >
-          <Layers size={16} />
-          <span>Năng lực & thăng tiến</span>
-        </button>
-      </div>
-
-      {activeTab === 'competency' ? (
-        <CareerTrajectoryModal isOpen onClose={() => setActiveTab('skills')} embedded />
-      ) : loading && !roadmap ? (
+      {loading && !roadmap ? (
         <div className="roadmap-loading-state">
           <RefreshCw size={24} className="spin text-blue-500" />
           <p>Đang quét hồ sơ ứng tuyển và trích xuất kỹ năng thị trường…</p>

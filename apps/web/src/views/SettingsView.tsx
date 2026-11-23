@@ -60,7 +60,7 @@ function Toggle({ checked, onChange, label, help, disabled }: { checked: boolean
 }
 
 export default function SettingsView({
-  apps, accountEmail, proStatus, notify, onProfile, onSecurity, onGrants, onTrash, onUpgrade, onResumes, onDatasets
+  apps, accountEmail, proStatus, notify, onProfile, onSecurity, onGrants, onTrash, onUpgrade, onResumes
 }: {
   apps: Application[];
   accountEmail: string;
@@ -72,7 +72,6 @@ export default function SettingsView({
   onTrash: () => void;
   onUpgrade: () => void;
   onResumes: () => void;
-  onDatasets: () => void;
 }) {
   const [tab, setTab] = useState<TabId>('profile');
   const [preferences, setPreferences] = useState<Preferences>(readPreferences);
@@ -355,18 +354,6 @@ export default function SettingsView({
 
       {tab === 'advanced' && (
         <div className="settings-stack">
-          <section className="settings-card">
-            <header>
-              <h2>Dữ liệu Web</h2>
-              <p>Bộ thu thập và chuẩn hoá dữ liệu tuyển dụng từ các trang web. Dành cho người dùng cần nhập dữ liệu thủ công.</p>
-            </header>
-            <div className="settings-actions">
-              <Button kind="secondary" onClick={onDatasets}><Database size={16} />Mở Dữ liệu Web</Button>
-            </div>
-            <p className="settings-note">
-              <Sparkles size={14} />Mục này không nằm trong menu chính vì đa số người tìm việc không cần dùng.
-            </p>
-          </section>
           <section className="settings-card">
             <header>
               <h2>Về JobTrack</h2>
