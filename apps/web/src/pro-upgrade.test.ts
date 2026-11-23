@@ -37,20 +37,20 @@ describe('Pro Membership & Checkout Repository (demoMode)', () => {
     expect(monthly?.features?.length).toBeGreaterThan(0);
 
     const quarterly = plans.find(p => p.plan === 'quarterly');
-    expect(quarterly?.amount).toBe(249000);
+    expect(quarterly?.amount).toBe(149000);
     expect(quarterly?.highlightBadge).toBe('Phổ biến nhất');
-    expect(quarterly?.savingsPercent).toBe(16);
+    expect(quarterly?.savingsPercent).toBe(50);
 
     const yearly = plans.find(p => p.plan === 'yearly');
-    expect(yearly?.amount).toBe(799000);
-    expect(yearly?.savingsPercent).toBe(33);
+    expect(yearly?.amount).toBe(499000);
+    expect(yearly?.savingsPercent).toBe(58);
   });
 
   it('createCheckout creates pending order with unique transfer code', async () => {
     const checkout = await proRepository.createCheckout('quarterly');
     expect(checkout.orderId).toBeTruthy();
     expect(checkout.plan).toBe('quarterly');
-    expect(checkout.amount).toBe(249000);
+    expect(checkout.amount).toBe(149000);
     expect(checkout.transferCode).toMatch(/^JTPRO[A-Z0-9]{6}$/);
     expect(checkout.mode).toBe('test');
     expect(checkout.testNotice).toBeTruthy();
@@ -58,7 +58,7 @@ describe('Pro Membership & Checkout Repository (demoMode)', () => {
     const order = await proRepository.getOrder(checkout.orderId);
     expect(order.orderId).toBe(checkout.orderId);
     expect(order.status).toBe('pending');
-    expect(order.amount).toBe(249000);
+    expect(order.amount).toBe(149000);
   });
 
   it('simulatePaid updates order to paid, promotes user to Pro, and behaves idempotently', async () => {

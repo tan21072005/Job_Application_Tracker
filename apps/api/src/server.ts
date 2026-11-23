@@ -3400,7 +3400,7 @@ app.use((error: unknown, req: Request, res: Response, _next: NextFunction) => {
 });
 
 const port = Number(process.env.PORT || 64366);
-const host = process.env.HOST || process.env.BIND_ADDRESS || '127.0.0.1';
+const host = process.env.HOST || process.env.BIND_ADDRESS || '0.0.0.0';
 
 export async function gracefulShutdown(server?: Server, timeoutMs = 10000): Promise<void> {
   isShuttingDown = true;

@@ -199,13 +199,13 @@ test('Universal Datasets, Extension Pairing & Payment Webhook Flow', async () =>
     });
     assert.equal(checkoutRes.status, 200);
     const checkoutData = await checkoutRes.json();
-    assert.equal(checkoutData.amount, 249000);
+    assert.equal(checkoutData.amount, 149000);
     const transferCode = checkoutData.transferCode;
 
     // Simulate external bank webhook to /api/pro/webhook
     const webhookRequest = signedWebhook({
       transferCode,
-      amount: 249000,
+      amount: 149000,
       content: `Thanh toan don hang ${transferCode} tai Napas`
     });
     const webhookRes = await fetch(`${base}/api/pro/webhook`, {

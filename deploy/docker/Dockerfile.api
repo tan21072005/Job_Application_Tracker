@@ -22,7 +22,8 @@ RUN mkdir -p /app/apps/api/node_modules/@jobtrack \
     && ln -s /app/packages/jobtrack-contract /app/apps/api/node_modules/@jobtrack/contract
 
 ENV NODE_ENV=production
-EXPOSE 64366
+ENV HOST=0.0.0.0
+EXPOSE 64366 10000
 
 WORKDIR /app/apps/api
 CMD ["node", "src/server.ts"]
