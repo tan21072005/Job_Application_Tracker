@@ -422,7 +422,7 @@ app.get('/api/config/status', auth, async (_req, res, next) => {
       },
       deployment: {
         origin: process.env.APP_ORIGIN || 'http://127.0.0.1:64364',
-        cookieSecure: process.env.COOKIE_SECURE === 'true'
+        cookieSecure
       }
     });
   } catch (error) {
