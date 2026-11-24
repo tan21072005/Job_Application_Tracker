@@ -355,11 +355,14 @@ app.use('/api', (req, res, next) => {
   res.set('Pragma', 'no-cache');
 
   const requestOrigin = req.get('origin');
+  const authorization = req.get('Authorization') || '';
+  const requestedHeaders = (req.get('Access-Control-Request-Headers') || '').toLowerCase();
   const extensionOrigin = typeof requestOrigin === 'string' && requestOrigin.startsWith('chrome-extension://');
+  const bearerIntent = authorization.startsWith('Bearer ') || requestedHeaders.includes('authorization');
 
-  if (extensionOrigin) {
+  if (extensionOrigin || (requestOrigin && bearerIntent)) {
     res.set('Access-Control-Allow-Origin', requestOrigin);
-    res.set('Access-Control-Allow-Credentials', 'true');
+    if (extensionOrigin) res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,Idempotency-Key,If-Match,If-None-Match');
     res.set('Access-Control-Max-Age', '600');
