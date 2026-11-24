@@ -353,8 +353,22 @@ export function requireScope(scope: string) {
 app.use('/api', (req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.set('Pragma', 'no-cache');
-  if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) return next();
+
   const requestOrigin = req.get('origin');
+  const extensionOrigin = typeof requestOrigin === 'string' && requestOrigin.startsWith('chrome-extension://');
+
+  if (extensionOrigin) {
+    res.set('Access-Control-Allow-Origin', requestOrigin);
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,Idempotency-Key,If-Match,If-None-Match');
+    res.set('Access-Control-Max-Age', '600');
+    res.set('Vary', 'Origin');
+  }
+
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
+  if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) return next();
   if (!requestOrigin || requestOrigin === origin) return next();
   if (
     req.originalUrl?.startsWith('/api/pro/webhook') ||
