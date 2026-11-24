@@ -52,6 +52,7 @@ chatgpt_edge*.html
 # Tool outputs - not part of the product
 repomix-output.xml
 graphify-out/
+docs/system-design/validation-results.json
 logseq/
 logseq_graph/
 docs/logseq/
