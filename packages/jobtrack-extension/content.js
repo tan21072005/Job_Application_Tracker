@@ -356,8 +356,54 @@ function extractCurrentPageJob() {
     location: location || '',
     salary: salary || '',
     workMode,
-    notes: notes ? notes.slice(0, 1000) : ''
+    notes: notes ? notes.slice(0, 1000) : '',
+    source: detectJobBoardSource(url),
+    appliedAt: todayInVietnam()
   };
+}
+
+function detectJobBoardSource(rawUrl) {
+  let host = '';
+  try {
+    host = new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+  const boards = [
+    ['topcv.vn', 'TopCV'],
+    ['vietnamworks.com', 'VietnamWorks'],
+    ['careerlink.vn', 'CareerLink'],
+    ['itviec.com', 'ITviec'],
+    ['linkedin.com', 'LinkedIn'],
+    ['jobstreet.com', 'JobStreet'],
+    ['indeed.com', 'Indeed'],
+    ['glassdoor.com', 'Glassdoor'],
+    ['timviec365.vn', 'TimViec365'],
+    ['careerbuilder.vn', 'CareerBuilder'],
+    ['vieclam24h.vn', 'ViecLam24h'],
+    ['jobsgo.vn', 'JobsGO'],
+    ['tuyendung.vn', 'TuyenDung'],
+    ['facebook.com', 'Facebook'],
+    ['ybox.vn', 'Ybox']
+  ];
+  for (const [domain, label] of boards) {
+    if (host === domain || host.endsWith('.' + domain)) return label;
+  }
+  return '';
+}
+
+function todayInVietnam() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  const year = parts.find(part => part.type === 'year');
+  const month = parts.find(part => part.type === 'month');
+  const day = parts.find(part => part.type === 'day');
+  if (!year || !month || !day) return '';
+  return year.value + '-' + month.value + '-' + day.value;
 }
 
 // Kết hợp toàn bộ dữ liệu trang
@@ -637,7 +683,9 @@ function detectJobPostingAndShowQuickSaveBadge() {
         location: job.location || null,
         workMode: job.workMode || 'On-site',
         status: 'Saved',
-        notes: job.notes || ''
+        notes: job.notes || '',
+        source: job.source || null,
+        appliedAt: job.appliedAt || null
       };
 
       const res = await fetch(`${config.serverUrl}/api/applications`, {

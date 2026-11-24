@@ -213,6 +213,30 @@ test('Extension: Specialized recruitment adapters support VietnamWorks, TopCV, I
   assert.ok(contentJs.includes('job-details-jobs-unified-top-card'), 'content.js must support modern LinkedIn job details');
 });
 
+test('Extension: quick save sends the job board and the save date', () => {
+  const content = readFileSync(join(__dirname, 'content.js'), 'utf8');
 
+  assert.match(content, /function detectJobBoardSource/, 'must map the hostname to a board');
+  assert.match(content, /function todayInVietnam/, 'must produce a calendar date');
+  assert.match(content, /source: job\.source \|\| null/, 'payload must carry source');
+  assert.match(content, /appliedAt: job\.appliedAt \|\| null/, 'payload must carry appliedAt');
 
+  const boardsBlock = content.slice(
+    content.indexOf('const boards = ['),
+    content.indexOf('for (const [domain, label] of boards)')
+  );
+  assert.match(boardsBlock, /\['topcv\.vn', 'TopCV'\]/);
+  assert.match(boardsBlock, /\['vietnamworks\.com', 'VietnamWorks'\]/);
+  assert.match(boardsBlock, /\['linkedin\.com', 'LinkedIn'\]/);
+  assert.doesNotMatch(boardsBlock, /'https?:\/\//, 'board table holds hostnames, not URLs');
+});
 
+test('Extension: quick save never invents a board for an unknown site', () => {
+  const content = readFileSync(join(__dirname, 'content.js'), 'utf8');
+  const start = content.indexOf('function detectJobBoardSource');
+  const end = content.indexOf('function todayInVietnam');
+  const body = content.slice(start, end);
+
+  assert.match(body, /return '';/, 'unknown hosts fall back to an empty string, not a guess');
+  assert.match(body, /host\.endsWith\('\.' \+ domain\)/, 'subdomains must match their board');
+});
