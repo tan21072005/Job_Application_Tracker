@@ -96,6 +96,8 @@ import {
   type GeneratedFollowUpDraftDTO,
   DEFAULT_FOLLOW_UP_TEMPLATES,
   calculateFollowUpCadence,
+  deriveFollowUpAttention,
+  summarizeFollowUpAttention,
   generateFollowUpEmail,
   validateFollowUpLogInput,
   type ContactType,
@@ -1882,6 +1884,26 @@ export const companyRepository = {
 
 const FOLLOW_UP_STORAGE_KEY = 'jobtrack.follow_ups.v1';
 
+const FOLLOW_UP_EVENTS_STORAGE_KEY = 'jobtrack.follow_up_events.v1';
+
+function loadDemoFollowUpEvents(): Record<string, FollowUpEventDTO[]> {
+  if (typeof localStorage === 'undefined') return {};
+  const stored = localStorage.getItem(FOLLOW_UP_EVENTS_STORAGE_KEY);
+  if (!stored) return {};
+  try {
+    const parsed: unknown = JSON.parse(stored);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed as Record<string, FollowUpEventDTO[]>;
+  } catch {
+    return {};
+  }
+}
+
+function saveDemoFollowUpEvents(value: Record<string, FollowUpEventDTO[]>): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(FOLLOW_UP_EVENTS_STORAGE_KEY, JSON.stringify(value));
+}
+
 function loadDemoFollowUpLogs(): Record<string, FollowUpLogDTO[]> {
   if (typeof localStorage === 'undefined') return {};
   const stored = localStorage.getItem(FOLLOW_UP_STORAGE_KEY);
@@ -2016,19 +2038,63 @@ export const followUpRepository = {
   async getAttention(): Promise<FollowUpAttentionSummaryDTO> {
     if (demoMode) {
       const apps = load();
-      const empty: FollowUpAttentionSummaryDTO = {
-        asOf: new Date().toISOString(),
-        timeZone: 'Asia/Ho_Chi_Minh',
-        counts: { attention: 0, overdue: 0, snoozed: 0, ghosted: 0 },
-        items: []
-      };
-      if (!apps.length) return empty;
-      return empty;
+      const allLogs = loadDemoFollowUpLogs();
+      const allEvents = loadDemoFollowUpEvents();
+      const items = apps
+        .filter(app => !app.deletedAt)
+        .map(app => {
+          const candidates: number[] = [];
+          if (app.statusUpdatedAt) candidates.push(new Date(app.statusUpdatedAt).getTime());
+          if (app.appliedAt) candidates.push(new Date(app.appliedAt).getTime());
+          if (app.createdAt) candidates.push(new Date(app.createdAt).getTime());
+          for (const log of allLogs[app.id] || []) candidates.push(new Date(log.sentAt).getTime());
+          for (const interview of app.interviews || []) {
+            const at = new Date(interview.at).getTime();
+            if (Number.isFinite(at) && at <= Date.now()) candidates.push(at);
+          }
+          for (const event of allEvents[app.id] || []) {
+            if (event.kind === 'followed_up') candidates.push(new Date(event.occurredAt).getTime());
+          }
+          const finite = candidates.filter(value => Number.isFinite(value));
+          const anchorMs = finite.length ? Math.max(...finite) : new Date(app.createdAt).getTime();
+          return deriveFollowUpAttention({
+            applicationId: app.id,
+            company: app.company,
+            position: app.position,
+            stage: app.status,
+            statusUpdatedAt: app.statusUpdatedAt || app.createdAt,
+            anchorAt: new Date(anchorMs).toISOString(),
+            events: (allEvents[app.id] || []).map(event => ({ kind: event.kind, occurredAt: event.occurredAt })),
+            timeZone: 'Asia/Ho_Chi_Minh'
+          });
+        });
+
+      const rank: Record<string, number> = { overdue: 0, due: 1, snoozed: 2, ghosted: 3, scheduled: 4, closed: 5 };
+      items.sort((a, b) => {
+        const byState = (rank[a.state] ?? 9) - (rank[b.state] ?? 9);
+        if (byState !== 0) return byState;
+        return b.daysSinceAnchor - a.daysSinceAnchor;
+      });
+
+      return summarizeFollowUpAttention(items, 'Asia/Ho_Chi_Minh');
     }
     return request<FollowUpAttentionSummaryDTO>('/follow-ups/attention');
   },
 
   async recordEvent(applicationId: string, input: { kind: FollowUpEventKind; note?: string | null }): Promise<FollowUpEventDTO> {
+    if (demoMode) {
+      const all = loadDemoFollowUpEvents();
+      const event: FollowUpEventDTO = {
+        id: `demo-event-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        applicationId,
+        kind: input.kind,
+        note: input.note || null,
+        occurredAt: new Date().toISOString()
+      };
+      all[applicationId] = [event, ...(all[applicationId] || [])];
+      saveDemoFollowUpEvents(all);
+      return event;
+    }
     return request<FollowUpEventDTO>(`/applications/${encodeURIComponent(applicationId)}/follow-up-events`, {
       method: 'POST',
       body: JSON.stringify({ kind: input.kind, note: input.note || null })
@@ -2036,7 +2102,7 @@ export const followUpRepository = {
   },
 
   async listEvents(applicationId: string): Promise<FollowUpEventDTO[]> {
-    if (demoMode) return [];
+    if (demoMode) return loadDemoFollowUpEvents()[applicationId] || [];
     return request<FollowUpEventDTO[]>(`/applications/${encodeURIComponent(applicationId)}/follow-up-events`);
   }
 };

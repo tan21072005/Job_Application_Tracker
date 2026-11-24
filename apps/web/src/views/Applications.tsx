@@ -43,7 +43,7 @@ export type Filters = {
   view: 'list' | 'pipeline';
   priority?: string;
   tag?: string;
-  onlyStagnant?: boolean;
+  onlyAttention?: boolean;
 };
 
 export const initialFilters: Filters = {
@@ -53,7 +53,7 @@ export const initialFilters: Filters = {
   view: 'list',
   priority: 'all',
   tag: '',
-  onlyStagnant: false
+  onlyAttention: false
 };
 
 const nextStageMap: Partial<Record<Status, Status>> = {
@@ -241,23 +241,22 @@ export default function Applications({
     return Array.from(set).sort();
   }, [apps]);
 
-  const stagnantApps = useMemo(() => {
+  const attentionApps = useMemo(() => {
     return apps.filter(a => {
-      if (a.status === 'Rejected' || a.status === 'Withdrawn' || a.deletedAt) return false;
-      const refDate = a.statusUpdatedAt || (a.appliedAt ? `${a.appliedAt}T00:00:00Z` : a.createdAt);
-      return calculateStageSla(a.status, refDate).isStagnant;
+      if (a.deletedAt) return false;
+      const state = attentionByApp.get(a.id)?.state;
+      return state === 'due' || state === 'overdue';
     });
-  }, [apps]);
+  }, [apps, attentionByApp]);
 
   const baseVisible = filtered(apps, filters.query, filters.status, filters.sort, filters.priority, filters.tag);
   const visible = useMemo(() => {
-    if (!filters.onlyStagnant) return baseVisible;
+    if (!filters.onlyAttention) return baseVisible;
     return baseVisible.filter(a => {
-      if (a.status === 'Rejected' || a.status === 'Withdrawn' || a.deletedAt) return false;
-      const refDate = a.statusUpdatedAt || (a.appliedAt ? `${a.appliedAt}T00:00:00Z` : a.createdAt);
-      return calculateStageSla(a.status, refDate).isStagnant;
+      const state = attentionByApp.get(a.id)?.state;
+      return state === 'due' || state === 'overdue';
     });
-  }, [baseVisible, filters.onlyStagnant]);
+  }, [baseVisible, filters.onlyAttention, attentionByApp]);
 
   const set = (key: keyof Filters, value: unknown) => onFilters({ ...filters, [key]: value });
 
@@ -436,21 +435,22 @@ export default function Applications({
         </div>
       </div>
 
-      {stagnantApps.length > 0 && (
-        <div className="pipeline-sla-banner" role="alert">
+      {attentionApps.length > 0 && (
+        <div className="pipeline-sla-banner" role="status">
           <div className="sla-banner-icon">
             <AlertTriangle size={18} />
           </div>
           <div className="sla-banner-text">
-            <strong>Cảnh báo tiến độ: Có {stagnantApps.length} hồ sơ đọng lâu hơn thời gian khuyến nghị SLA.</strong>
-            <span>Các cơ hội này cần chủ động gửi follow-up hoặc trao đổi với Recruiter để không bỏ lỡ nhịp độ tuyển dụng.</span>
+            <strong>Cần chú ý: {attentionApps.length} hồ sơ đã quá nhịp follow-up.</strong>
+            <span>Gửi email hỏi thăm hoặc bỏ qua nhắc nếu bạn đã chủ động liên hệ qua kênh khác.</span>
           </div>
           <button
             type="button"
-            className={`sla-banner-filter-btn ${filters.onlyStagnant ? 'active' : ''}`}
-            onClick={() => set('onlyStagnant', !filters.onlyStagnant)}
+            className={`sla-banner-filter-btn ${filters.onlyAttention ? 'active' : ''}`}
+            onClick={() => set('onlyAttention', !filters.onlyAttention)}
+            aria-pressed={Boolean(filters.onlyAttention)}
           >
-            {filters.onlyStagnant ? 'Hiện tất cả hồ sơ' : `Lọc ${stagnantApps.length} hồ sơ cần chú ý`}
+            {filters.onlyAttention ? 'Hiện tất cả hồ sơ' : `Cần chú ý (${attentionApps.length})`}
           </button>
         </div>
       )}
@@ -561,7 +561,7 @@ export default function Applications({
         <Empty
           title={apps.length ? 'Chưa có kết quả phù hợp' : 'Cơ hội đầu tiên đang chờ bạn'}
           action={
-            <Button onClick={() => (apps.length ? onFilters({ ...filters, query: '', status: 'all', priority: 'all', tag: '', onlyStagnant: false }) : onAdd())}>
+            <Button onClick={() => (apps.length ? onFilters({ ...filters, query: '', status: 'all', priority: 'all', tag: '', onlyAttention: false }) : onAdd())}>
               {apps.length ? 'Xóa bộ lọc' : 'Thêm hồ sơ đầu tiên'}
             </Button>
           }
@@ -780,7 +780,7 @@ export default function Applications({
                             </div>
                           )}
 
-                          {sla.isStagnant && (
+                          {!attentionByApp.get(app.id) && sla.isStagnant && (
                             <div
                               className={`card-sla-pill card-sla-${sla.slaSeverity}`}
                               title={`Đã ${sla.daysInStage} ngày ở bước này. Gợi ý: Hãy gửi email hỏi thăm (Follow-up) HR.`}

@@ -373,6 +373,28 @@ export function isFollowUpTerminal(stage: ApplicationStatus): boolean {
   return TERMINAL_STAGES.has(stage);
 }
 
+function dayNumberInZone(value: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(value);
+  const year = Number(parts.find(part => part.type === 'year')?.value);
+  const month = Number(parts.find(part => part.type === 'month')?.value);
+  const day = Number(parts.find(part => part.type === 'day')?.value);
+  return Math.floor(Date.UTC(year, month - 1, day) / (24 * 60 * 60 * 1000));
+}
+
+function calendarDayInZone(value: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(value);
+}
+
 export function deriveFollowUpAttention(input: {
   applicationId: string;
   company: string;
@@ -381,6 +403,7 @@ export function deriveFollowUpAttention(input: {
   statusUpdatedAt: string | Date;
   anchorAt: string | Date;
   events: Array<{ kind: FollowUpEventKind; occurredAt: string | Date }>;
+  timeZone?: string;
   now?: Date;
 }): FollowUpAttentionItemDTO {
   const now = input.now ?? new Date();
@@ -416,9 +439,12 @@ export function deriveFollowUpAttention(input: {
     return { ...base, state: 'closed' };
   }
 
-  const daysSinceAnchor = Math.max(0, Math.floor((now.getTime() - anchorMs) / (1000 * 60 * 60 * 24)));
-  const dueMs = anchorMs + waitDays * 24 * 60 * 60 * 1000;
-  const dueDate = new Date(dueMs).toISOString().slice(0, 10);
+  const timeZone = input.timeZone || 'Asia/Ho_Chi_Minh';
+  const anchorDay = dayNumberInZone(new Date(anchorMs), timeZone);
+  const todayDay = dayNumberInZone(now, timeZone);
+  const daysSinceAnchor = Math.max(0, todayDay - anchorDay);
+  const dueDayNumber = anchorDay + waitDays;
+  const dueDate = calendarDayInZone(new Date(dueDayNumber * 24 * 60 * 60 * 1000), 'UTC');
 
   const withDays: FollowUpAttentionItemDTO = { ...base, daysSinceAnchor, dueDate };
 

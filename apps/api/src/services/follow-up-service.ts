@@ -365,7 +365,8 @@ export class FollowUpService {
           stage: app.status,
           statusUpdatedAt: app.status_updated_at,
           anchorAt: new Date(anchorMs).toISOString(),
-          events: appEvents
+          events: appEvents,
+          timeZone
         })
       );
     }
