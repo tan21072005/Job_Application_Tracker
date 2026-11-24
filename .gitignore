@@ -48,3 +48,13 @@ SOURCE-MANIFEST*.json
 chatgpt_edge*.html
 
 .vercel
+
+# Tool outputs - not part of the product
+repomix-output.xml
+graphify-out/
+logseq/
+logseq_graph/
+docs/logseq/
+docs/obsidian-vault/
+demo_mem0_workflow.py
+docs/mem0_storage.db
