@@ -196,6 +196,14 @@ export default function Detail({
               </div>
               <p>{app.notes || 'Chưa có ghi chú. Lưu những điều bạn muốn nhớ về cơ hội này.'}</p>
             </section>
+            {app.jobDescription && (
+              <section className="notes-panel">
+                <div className="panel-heading">
+                  <h2>Mô tả công việc</h2>
+                </div>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{app.jobDescription}</p>
+              </section>
+            )}
             <ActivityTimeline app={app} />
           </div>
           <aside className="detail-aside">
@@ -282,7 +290,7 @@ export default function Detail({
           isOpen={showTailorModal}
           company={app.company}
           position={app.position}
-          jobDescription={app.notes || ''}
+          jobDescription={app.jobDescription || app.notes || ''}
           onClose={() => setShowTailorModal(false)}
           onSavedVariant={(variant) => {
             if (notify) notify(`Đã lưu phiên bản CV "${variant.name}" thành công!`);

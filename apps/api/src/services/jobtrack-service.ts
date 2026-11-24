@@ -67,7 +67,7 @@ export function parseEtagVersion(headerValue?: string | null): number | undefine
   return undefined;
 }
 
-const appColumns = `a.id, a.company, a.position, a.url, a.normalized_url AS "normalizedUrl", a.source, a.source_normalized AS "sourceNormalized", a.job_code AS "jobCode", a.job_code_normalized AS "jobCodeNormalized", a.location, a.work_mode AS "workMode", to_char(a.applied_at,'YYYY-MM-DD') AS "appliedAt", a.salary, a.notes, a.next_action AS "nextAction", to_char(a.deadline_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS deadline, a.status, a.version, to_char(a.deleted_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "deletedAt", to_char(a.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt", to_char(a.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt", a.priority, a.tags, to_char(a.status_updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "statusUpdatedAt"`;
+const appColumns = `a.id, a.company, a.position, a.url, a.normalized_url AS "normalizedUrl", a.source, a.source_normalized AS "sourceNormalized", a.job_code AS "jobCode", a.job_code_normalized AS "jobCodeNormalized", a.location, a.work_mode AS "workMode", to_char(a.applied_at,'YYYY-MM-DD') AS "appliedAt", a.salary, a.notes, a.job_description AS "jobDescription", a.next_action AS "nextAction", to_char(a.deadline_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS deadline, a.status, a.version, to_char(a.deleted_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "deletedAt", to_char(a.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt", to_char(a.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt", a.priority, a.tags, to_char(a.status_updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "statusUpdatedAt"`;
 const roundColumns = `i.id, i.application_id AS "applicationId", i.title, to_char(i.at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS at, i.timezone, i.format, i.location, i.preparation, i.notes, i.status, to_char(i.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "createdAt", to_char(i.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "updatedAt"`;
 
 const appValues = (input: ValidatedApplicationData) => [
@@ -84,13 +84,14 @@ const appValues = (input: ValidatedApplicationData) => [
   input.appliedAt || null,
   input.salary || null,
   input.notes || null,
+  input.jobDescription || null,
   input.nextAction || null,
   input.deadline || null,
   input.status
 ];
 
 const updateFields =
-  'company=$3,position=$4,url=$5,normalized_url=$6,source=$7,source_normalized=$8,job_code=$9,job_code_normalized=$10,location=$11,work_mode=$12,applied_at=$13,salary=$14,notes=$15,next_action=$16,deadline_at=$17,status=$18,version=version+1,updated_at=CURRENT_TIMESTAMP,status_updated_at=CASE WHEN status IS DISTINCT FROM $18 THEN CURRENT_TIMESTAMP ELSE status_updated_at END';
+  'company=$3,position=$4,url=$5,normalized_url=$6,source=$7,source_normalized=$8,job_code=$9,job_code_normalized=$10,location=$11,work_mode=$12,applied_at=$13,salary=$14,notes=$15,job_description=$16,next_action=$17,deadline_at=$18,status=$19,version=version+1,updated_at=CURRENT_TIMESTAMP,status_updated_at=CASE WHEN status IS DISTINCT FROM $19 THEN CURRENT_TIMESTAMP ELSE status_updated_at END';
 
 export interface MutationOptions {
   idempotencyKey?: string;
@@ -386,7 +387,7 @@ export class JobTrackService {
 
           const id = randomUUID();
           await client.query(
-            `INSERT INTO applications(id,user_id,company,position,url,normalized_url,source,source_normalized,job_code,job_code_normalized,location,work_mode,applied_at,salary,notes,next_action,deadline_at,status) VALUES($1,$2,${Array.from({ length: 16 }, (_, i) => `$${i + 3}`).join(',')})`,
+            `INSERT INTO applications(id,user_id,company,position,url,normalized_url,source,source_normalized,job_code,job_code_normalized,location,work_mode,applied_at,salary,notes,job_description,next_action,deadline_at,status) VALUES($1,$2,${Array.from({ length: 17 }, (_, i) => `$${i + 3}`).join(',')})`,
             [id, userId, ...appValues(input)]
           );
 
@@ -436,6 +437,7 @@ export class JobTrackService {
         appliedAt: patch.appliedAt !== undefined ? patch.appliedAt : current.appliedAt,
         salary: patch.salary !== undefined ? patch.salary : current.salary,
         notes: patch.notes !== undefined ? patch.notes : current.notes,
+        jobDescription: patch.jobDescription !== undefined ? patch.jobDescription : current.jobDescription,
         nextAction: patch.nextAction !== undefined ? patch.nextAction : current.nextAction,
         deadline: patch.deadline !== undefined ? patch.deadline : current.deadline,
         status: patch.status !== undefined ? patch.status : current.status,

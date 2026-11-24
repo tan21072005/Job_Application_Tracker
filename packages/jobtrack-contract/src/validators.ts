@@ -57,6 +57,7 @@ export interface ValidatedApplicationData {
   appliedAt: string | null;
   salary: string | null;
   notes: string | null;
+  jobDescription: string | null;
   nextAction: string | null;
   deadline: string | null;
   status: ApplicationStatus;
@@ -75,6 +76,7 @@ export interface ValidatedInterviewData {
 }
 
 const APP_ALLOWED_FIELDS = new Set([
+  'jobDescription',
   'company', 'position', 'url', 'source', 'jobCode', 'location',
   'workMode', 'appliedAt', 'salary', 'notes', 'nextAction', 'deadline',
   'status', 'confirmReapply'
@@ -263,6 +265,17 @@ export function validateApplicationInput(
     }
   } else if (!isPatch || 'notes' in b) {
     data.notes = null;
+  }
+
+  if ('jobDescription' in b && b.jobDescription !== undefined && b.jobDescription !== null && b.jobDescription !== '') {
+    const val = b.jobDescription;
+    if (typeof val !== 'string' || val.length > 20000) {
+      errors.jobDescription = 'Mô tả công việc không được vượt quá 20.000 ký tự.';
+    } else {
+      data.jobDescription = val.trim();
+    }
+  } else if (!isPatch || 'jobDescription' in b) {
+    data.jobDescription = null;
   }
 
   // Next Action

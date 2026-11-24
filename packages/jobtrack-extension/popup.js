@@ -629,7 +629,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         workMode: workModeSelect.value,
         location: locationInput.value.trim() || null,
         status: statusSelect.value,
-        notes: notesInput.value.trim() || null,
+        jobDescription: notesInput.value.trim() || null,
+        notes: null,
         url: urlInput.value.trim() || null
       };
 

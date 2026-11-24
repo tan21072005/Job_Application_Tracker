@@ -45,7 +45,7 @@ export default function AiAssistantPanel({
       const res = await aiRepository.analyzeAtsMatch({
         company: app.company,
         position: app.position,
-        notes: app.notes
+        notes: app.jobDescription || app.notes || ''
       });
       setAtsResult(res);
     } catch (err) {
@@ -64,7 +64,7 @@ export default function AiAssistantPanel({
       const res = await aiRepository.generateCoverLetter({
         company: app.company,
         position: app.position,
-        notes: app.notes,
+        notes: app.jobDescription || app.notes || '',
         language: lang
       });
       setLetterResult(res);
@@ -362,7 +362,7 @@ export default function AiAssistantPanel({
         <MockInterviewModal
           company={app.company}
           position={app.position}
-          notes={app.notes}
+          notes={app.jobDescription || app.notes || ''}
           onClose={() => setShowMockModal(false)}
           notify={notify}
         />

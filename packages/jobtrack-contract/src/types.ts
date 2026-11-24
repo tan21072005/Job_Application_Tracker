@@ -70,6 +70,7 @@ export interface ApplicationWireDTO {
   appliedAt: string | null; // YYYY-MM-DD
   salary: string | null;
   notes: string | null;
+  jobDescription: string | null;
   nextAction: string | null;
   deadline: string | null; // ISO instant or null (never empty string on wire)
   status: ApplicationStatus;

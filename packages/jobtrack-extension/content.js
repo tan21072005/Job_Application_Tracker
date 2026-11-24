@@ -685,7 +685,8 @@ function detectJobPostingAndShowQuickSaveBadge() {
         location: job.location || null,
         workMode: job.workMode || 'On-site',
         status: 'Saved',
-        notes: job.notes || '',
+        notes: '',
+        jobDescription: job.notes || null,
         source: job.source || null,
         appliedAt: job.appliedAt || null
       };
