@@ -240,3 +240,15 @@ test('Extension: quick save never invents a board for an unknown site', () => {
   assert.match(body, /return '';/, 'unknown hosts fall back to an empty string, not a guess');
   assert.match(body, /host\.endsWith\('\.' \+ domain\)/, 'subdomains must match their board');
 });
+
+test('Extension: JD capture keeps the whole posting, not the first 1000 chars', () => {
+  const content = readFileSync(join(__dirname, 'content.js'), 'utf8');
+
+  assert.match(content, /const NOTES_MAX_LENGTH = 5000;/, 'limit must match the API validator ceiling');
+
+  const occurrences = (content.match(/NOTES_MAX_LENGTH/g) || []).length;
+  assert.equal(occurrences, 4, 'one declaration plus the three cut points must all use the constant');
+
+  assert.doesNotMatch(content, /slice\(0, 1000\)/, 'no cut point may stay at 1000');
+  assert.doesNotMatch(content, /slice\(0, 2000\)/, 'no cut point may stay at 2000');
+});

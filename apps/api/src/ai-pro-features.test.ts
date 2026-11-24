@@ -97,6 +97,40 @@ test('ATS Match: accurately matches skills against candidate profile', async () 
   assert.ok(match.keywordBreakdown.length > 0);
 });
 
+test('ATS Match: finds skills that sit late in a long job description', async () => {
+  const user = await registerUser();
+
+  await fetch(`${base}/api/profile`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Cookie: user.cookie, Origin: origin },
+    body: JSON.stringify({
+      fullName: 'Le Thi Ke Toan',
+      email: 'lethiketoan@example.com',
+      skills: ['Excel', 'MISA', 'Báo cáo tài chính'],
+      bio: 'Ke toan tong hop 4 nam kinh nghiem.'
+    })
+  });
+
+  const filler = 'Mô tả công việc chung về môi trường làm việc và văn hóa công ty. '.repeat(14);
+  const res = await fetch(`${base}/api/ai/pro/ats-match`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: user.cookie, Origin: origin },
+    body: JSON.stringify({
+      company: 'Cong Ty Ke Toan',
+      position: 'Ke Toan Tong Hop',
+      notes: `${filler} Yêu cầu ứng viên thành thạo Excel, MISA và lập Báo cáo tài chính.`
+    })
+  });
+  assert.equal(res.status, 200);
+  const match = await res.json() as AtsMatchResultDTO;
+
+  const surfaced = [...match.matchedSkills, ...match.missingSkills].map(s => s.toLowerCase());
+  assert.ok(
+    surfaced.includes('excel') || surfaced.includes('misa'),
+    `skills at the end of the posting must still be detected, got: ${surfaced.join(', ')}`
+  );
+});
+
 test('Cover Letter: generates personalized letter in Vietnamese and English', async () => {
   const user = await registerUser();
 

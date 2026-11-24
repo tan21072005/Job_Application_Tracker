@@ -185,6 +185,8 @@ function extractMetadata() {
 // =============================================================================
 // 4. SPECIALIZED ADAPTER: JOBTRACK JOBPOSTING EXTRACTOR
 // =============================================================================
+const NOTES_MAX_LENGTH = 5000;
+
 function extractCurrentPageJob() {
   const url = window.location.href;
   let company = '';
@@ -222,7 +224,7 @@ function extractCurrentPageJob() {
               .replace(/&nbsp;/g, ' ')
               .replace(/\s+/g, ' ')
               .trim()
-              .slice(0, 2000);
+              .slice(0, NOTES_MAX_LENGTH);
           }
         }
       }
@@ -337,7 +339,7 @@ function extractCurrentPageJob() {
       '.job-details__paragraph, .job-detail-description, article, main'
     );
     if (article) {
-      notes = article.textContent?.replace(/\s+/g, ' ').trim().slice(0, 1000) || '';
+      notes = article.textContent?.replace(/\s+/g, ' ').trim().slice(0, NOTES_MAX_LENGTH) || '';
     }
   }
 
@@ -356,7 +358,7 @@ function extractCurrentPageJob() {
     location: location || '',
     salary: salary || '',
     workMode,
-    notes: notes ? notes.slice(0, 1000) : '',
+    notes: notes ? notes.slice(0, NOTES_MAX_LENGTH) : '',
     source: detectJobBoardSource(url),
     appliedAt: todayInVietnam()
   };

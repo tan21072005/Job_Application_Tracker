@@ -16,6 +16,7 @@ import type {
   InterviewEvaluateRequestDTO,
   InterviewEvaluateResultDTO
 } from '@jobtrack/contract';
+import { extractKeywordsFromText } from '@jobtrack/contract';
 import {
   generateInterviewQuestions,
   evaluateStarAnswer,
@@ -192,20 +193,6 @@ export interface PaymentWebhookResult {
 }
 
 
-const COMMON_SKILL_KEYWORDS = [
-  'JavaScript', 'TypeScript', 'React', 'Vue', 'Angular', 'Node.js', 'Python', 'Java',
-  'C#', 'Golang', 'PHP', 'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis',
-  'Docker', 'Kubernetes', 'AWS', 'GCP', 'Azure', 'CI/CD', 'Git', 'Linux',
-  'REST API', 'GraphQL', 'Microservices', 'Agile', 'Scrum', 'Jira',
-  'Kế toán trưởng', 'Kế toán tổng hợp', 'Báo cáo tài chính', 'Quyết toán thuế',
-  'Hóa đơn điện tử', 'Kiểm toán', 'MISA', 'FAST', 'SAP', 'ERP', 'Quản trị chi phí',
-  'Dòng tiền', 'Phân tích tài chính', 'Thuế TNDN', 'Thuế GTGT',
-  'Vận hành trạm', 'Xử lý nước thải', 'Hóa chất', 'An toàn lao động', 'ISO 14001',
-  'ISO 9001', 'Bảo trì thiết bị', 'Kỹ thuật môi trường', 'Giám sát kỹ thuật',
-  'Quản lý đội ngũ', 'Lãnh đạo', 'Giao tiếp', 'Đàm phán', 'Giải quyết vấn đề',
-  'Tiếng Anh', 'TOEIC', 'IELTS', 'Lập kế hoạch'
-];
-
 export class AiProService {
   private pool: Pool;
 
@@ -217,14 +204,16 @@ export class AiProService {
     jd: { company: string; position: string; notes?: string | null },
     profile: CandidateProfile | null
   ): Promise<AtsMatchResult> {
-    const jdText = `${jd.position} ${jd.company} ${jd.notes || ''}`.toLowerCase();
+    const jdText = `${jd.position} ${jd.company} ${jd.notes || ''}`;
 
-    const detectedJdSkills: string[] = [];
-    for (const skill of COMMON_SKILL_KEYWORDS) {
-      if (jdText.includes(skill.toLowerCase())) {
-        detectedJdSkills.push(skill);
-      }
-    }
+    const extracted = extractKeywordsFromText(jdText);
+    const IMPORTANCE_ORDER: Record<string, number> = { critical: 0, recommended: 1, optional: 2 };
+    extracted.sort((a, b) => {
+      const byImportance = (IMPORTANCE_ORDER[a.importance] ?? 3) - (IMPORTANCE_ORDER[b.importance] ?? 3);
+      if (byImportance !== 0) return byImportance;
+      return b.frequency - a.frequency;
+    });
+    const detectedJdSkills: string[] = extracted.map(item => item.keyword);
 
     if (detectedJdSkills.length === 0) {
       const words = jd.position.split(/\s+/).filter(w => w.length > 2);

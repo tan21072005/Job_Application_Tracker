@@ -205,7 +205,9 @@ export function extractKeywordsFromText(text: string): Array<{
     let freq = 0;
     const candidates = [item.keyword.toLowerCase(), ...item.aliases.map(a => a.toLowerCase())];
     for (const cand of candidates) {
-      const regex = new RegExp(`\\b${cand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+      const head = '(?<![\\w.])';
+      const tail = '(?![\\w])';
+      const regex = new RegExp(`${head}${cand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${tail}`, 'gi');
       const matches = normalizedText.match(regex);
       if (matches) {
         freq += matches.length;
