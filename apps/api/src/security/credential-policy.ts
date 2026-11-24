@@ -19,7 +19,7 @@ export type CredentialRejection =
   | 'invalid-session';
 
 export type CredentialDecision =
-  | { kind: 'grant'; userId: string; sessionId: string; scopes: string[]; client: string }
+  | { kind: 'grant'; userId: string; sessionId: null; scopes: string[]; client: string }
   | { kind: 'session'; userId: string; sessionId: string; scopes: string[] }
   | { kind: 'rejected'; reason: CredentialRejection };
 
@@ -73,7 +73,7 @@ export function decideCredential(input: {
     return {
       kind: 'grant',
       userId: input.grant.userId,
-      sessionId: 'ai-bearer-session',
+      sessionId: null,
       scopes: input.grant.scopes,
       client: input.grant.client
     };

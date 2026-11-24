@@ -38,7 +38,7 @@ test('Credential policy: a valid grant authenticates the bearer identity and ign
 
   assert.equal(decision.kind, 'grant');
   assert.equal(decision.kind === 'grant' ? decision.userId : null, 'user-grant');
-  assert.equal(decision.kind === 'grant' ? decision.sessionId : null, 'ai-bearer-session');
+  assert.equal(decision.kind === 'grant' ? decision.sessionId : 'sentinel', null);
   assert.deepEqual(decision.kind === 'grant' ? decision.scopes : null, ['full_control']);
   assert.equal(decision.kind === 'grant' ? decision.client : null, 'test-client');
 });
