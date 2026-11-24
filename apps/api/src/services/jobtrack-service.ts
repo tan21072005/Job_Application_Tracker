@@ -90,7 +90,7 @@ const appValues = (input: ValidatedApplicationData) => [
 ];
 
 const updateFields =
-  'company=$3,position=$4,url=$5,normalized_url=$6,source=$7,source_normalized=$8,job_code=$9,job_code_normalized=$10,location=$11,work_mode=$12,applied_at=$13,salary=$14,notes=$15,next_action=$16,deadline_at=$17,status=$18,version=version+1,updated_at=CURRENT_TIMESTAMP';
+  'company=$3,position=$4,url=$5,normalized_url=$6,source=$7,source_normalized=$8,job_code=$9,job_code_normalized=$10,location=$11,work_mode=$12,applied_at=$13,salary=$14,notes=$15,next_action=$16,deadline_at=$17,status=$18,version=version+1,updated_at=CURRENT_TIMESTAMP,status_updated_at=CASE WHEN status IS DISTINCT FROM $18 THEN CURRENT_TIMESTAMP ELSE status_updated_at END';
 
 export interface MutationOptions {
   idempotencyKey?: string;
