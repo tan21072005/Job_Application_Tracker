@@ -363,6 +363,7 @@ app.use('/api', (req, res, next) => {
   if (extensionOrigin || (requestOrigin && bearerIntent)) {
     res.set('Access-Control-Allow-Origin', requestOrigin);
     if (extensionOrigin) res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Expose-Headers', 'ETag, X-Request-Id, Idempotency-Replayed, Retry-After');
     res.set('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,Idempotency-Key,If-Match,If-None-Match');
     res.set('Access-Control-Max-Age', '600');
