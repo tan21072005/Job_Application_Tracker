@@ -30,7 +30,7 @@ export interface LlmConfig {
 const DEFAULT_MODELS: Record<Exclude<LlmProvider, 'none'>, string> = {
   openai: 'gpt-4o-mini',
   deepseek: 'deepseek-chat',
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-3.5-flash',
   openrouter: 'google/gemini-2.0-flash-001'
 };
 
@@ -130,6 +130,7 @@ async function callOpenAiCompatible(
       messages,
       temperature: options.temperature ?? 0.2,
       max_tokens: options.maxOutputTokens ?? 1500,
+      stream: false,
       ...(options.jsonMode ? { response_format: { type: 'json_object' } } : {})
     }),
     signal: AbortSignal.timeout(options.timeoutMs ?? 30_000)
