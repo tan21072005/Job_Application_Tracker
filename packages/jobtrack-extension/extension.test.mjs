@@ -252,3 +252,15 @@ test('Extension: JD capture keeps the whole posting, not the first 1000 chars', 
   assert.doesNotMatch(content, /slice\(0, 1000\)/, 'no cut point may stay at 1000');
   assert.doesNotMatch(content, /slice\(0, 2000\)/, 'no cut point may stay at 2000');
 });
+
+test('Extension: the popup save path sends the same fields as quick save', () => {
+  const popup = readFileSync(join(__dirname, 'popup.js'), 'utf8');
+
+  assert.match(popup, /source: detectedSource/, 'popup payload must carry the detected board');
+  assert.match(popup, /appliedAt: detectedAppliedAt/, 'popup payload must carry the save date');
+  assert.match(popup, /jobDescription: notesInput\.value\.trim\(\) \|\| null/, 'the textarea feeds jobDescription');
+  assert.match(popup, /notes: null/, 'popup must not overwrite the user note');
+
+  assert.match(popup, /detectedSource = jobPosting\.source/, 'board comes from the content script');
+  assert.match(popup, /detectedAppliedAt = jobPosting\.appliedAt/, 'date comes from the content script');
+});

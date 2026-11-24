@@ -75,6 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // State
   let serverConfig = { serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app', apiToken: '' };
   let extractedPageData = null;
+  let detectedSource = null;
+  let detectedAppliedAt = null;
   let activeSourceType = 'table';
   let activeTableIndex = 0;
   let currentPreviewRows = [];
@@ -238,6 +240,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         locationInput.value = jobPosting.location || '';
         notesInput.value = jobPosting.notes || '';
         urlInput.value = jobPosting.url || tab.url || '';
+        detectedSource = jobPosting.source || null;
+        detectedAppliedAt = jobPosting.appliedAt || null;
       }
 
       // Tự động chọn nguồn dữ liệu tốt nhất
@@ -631,6 +635,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         status: statusSelect.value,
         jobDescription: notesInput.value.trim() || null,
         notes: null,
+        source: detectedSource,
+        appliedAt: detectedAppliedAt,
         url: urlInput.value.trim() || null
       };
 
