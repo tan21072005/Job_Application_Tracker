@@ -565,7 +565,7 @@ export class JobTrackService {
     const affected = await this.transaction(async client => {
       await this.lockActor(client, userId, options.sessionId);
       const res = await client.query(
-        'UPDATE applications SET status = $1, version = version + 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2 AND id = ANY($3::uuid[]) AND deleted_at IS NULL RETURNING id',
+        'UPDATE applications SET status = $1, version = version + 1, updated_at = CURRENT_TIMESTAMP, status_updated_at = CASE WHEN status IS DISTINCT FROM $1 THEN CURRENT_TIMESTAMP ELSE status_updated_at END WHERE user_id = $2 AND id = ANY($3::uuid[]) AND deleted_at IS NULL RETURNING id',
         [status, userId, ids]
       );
       return res.rows.map(r => r.id as string);

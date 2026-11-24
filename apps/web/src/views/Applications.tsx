@@ -138,7 +138,7 @@ export default function Applications({
   async function handleDropOnLane(appId: string, lane: KanbanLane) {
     const targetApp = apps.find(a => a.id === appId);
     if (!targetApp) return;
-    if (lane.filter(targetApp)) return;
+    if (targetApp.status === lane.targetStatus) return;
 
     let targetStatus = lane.targetStatus;
     if (lane.key === 'closed') {
