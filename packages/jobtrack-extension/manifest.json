@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PageWeave — Web Data Assistant & JobTrack Pro",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "1-Click lưu tin tuyển dụng từ TopCV, ITviec, LinkedIn về JobTrack Cloud và trợ lý bóc tách dữ liệu thông minh.",
   "permissions": [
     "activeTab",
