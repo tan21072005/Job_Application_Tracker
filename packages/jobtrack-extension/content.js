@@ -216,6 +216,14 @@ function extractCurrentPageJob() {
           if (item.jobLocationType === 'TELECOMMUTE' || item.workMode === 'Remote') {
             workMode = 'Remote';
           }
+          if (item.description && !notes) {
+            notes = String(item.description)
+              .replace(/<[^>]*>/g, ' ')
+              .replace(/&nbsp;/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .slice(0, 2000);
+          }
         }
       }
     } catch {
