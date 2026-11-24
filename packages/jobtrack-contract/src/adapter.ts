@@ -18,6 +18,7 @@ export interface UIApplicationModel {
   appliedAt: string;
   salary: string;
   notes: string;
+  jobDescription: string;
   nextAction: string;
   deadline: string;
   status: ApplicationWireDTO['status'];
@@ -77,6 +78,7 @@ export function wireApplicationToUI(wire: ApplicationWireDTO): UIApplicationMode
     appliedAt: wire.appliedAt || '',
     salary: wire.salary || '',
     notes: wire.notes || '',
+    jobDescription: wire.jobDescription || '',
     nextAction: wire.nextAction || '',
     deadline: wire.deadline || '',
     status: wire.status,
