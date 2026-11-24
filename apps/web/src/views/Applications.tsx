@@ -861,7 +861,7 @@ export default function Applications({
                                   className="quick-advance-btn"
                                   title="Đã gửi follow-up — đặt lại đồng hồ"
                                   onClick={() => void handleFollowUpEvent(app, 'followed_up')}
-                                  style={{ minWidth: 0, whiteSpace: 'nowrap', padding: '3px 6px' }}
+                                  style={{ whiteSpace: 'nowrap', padding: '3px 6px' }}
                                 >
                                   Đã gửi
                                 </button>
@@ -870,7 +870,7 @@ export default function Applications({
                                   className="quick-advance-btn"
                                   title="Bỏ qua nhắc cho hồ sơ này"
                                   onClick={() => void handleFollowUpEvent(app, 'dismissed')}
-                                  style={{ minWidth: 0, whiteSpace: 'nowrap', padding: '3px 6px' }}
+                                  style={{ whiteSpace: 'nowrap', padding: '3px 6px' }}
                                 >
                                   Bỏ qua
                                 </button>
