@@ -682,7 +682,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       if (response && response.success) {
-        showAlert(alertSuccess, `✓ Đã tự động điền ${response.count} trường thông tin.`);
+        if (response.count > 0) {
+          showAlert(alertSuccess, `✓ Đã tự động điền ${response.count} trường thông tin.`);
+        } else {
+          showAlert(alertInfo, 'Form đã có sẵn dữ liệu hoặc không có trường nào khớp hồ sơ của bạn. Kiểm tra lại trước khi gửi đơn.', 4000);
+        }
       }
     } catch (err) {
       showAlert(alertError, `Auto-Apply: ${err.message}`);

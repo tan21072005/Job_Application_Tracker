@@ -61,7 +61,7 @@ const login = async (email: string, pass: string) =>
 
 test.before(async () => {
   await passwordResetService.purgeExpired();
-  await pool.query('DELETE FROM rate_limits');
+  await pool.query(`DELETE FROM rate_limits WHERE key LIKE 'auth-%'`);
 });
 
 test.after(async () => {

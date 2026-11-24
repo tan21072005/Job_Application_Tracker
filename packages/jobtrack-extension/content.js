@@ -1,6 +1,19 @@
 // PageWeave — Universal Web Data Assistant Content Script
 // Bóc tách dữ liệu web đa tầng (HTML Tables, Repeating Lists, Selection, Schema.org) & Trợ lý JobTrack
 
+function idempotencyKey() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+
 // =============================================================================
 // 1. UNIVERSAL EXTRACTOR LAYER 1: BÓC TÁCH BẢNG HTML (HTML TABLES)
 // =============================================================================
@@ -624,7 +637,7 @@ function detectJobPostingAndShowQuickSaveBadge() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${config.apiToken}`,
-          'Idempotency-Key': crypto.randomUUID()
+          'Idempotency-Key': idempotencyKey()
         },
         body: JSON.stringify(payload)
       });
