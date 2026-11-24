@@ -1,94 +1,339 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JobTrack — Job Application Tracker</title>
-<meta name="description" content="JobTrack helps candidates track job applications, interview rounds and reminders in one place.">
+<title>JobTrack — Biết CV còn thiếu gì trước khi nộp</title>
+<meta name="description" content="Dán JD và CV, JobTrack chỉ ra từ khóa còn thiếu, gợi ý viết lại 3 bullet, và nhắc bạn follow-up đúng lúc. 149.000đ cho 90 ngày tìm việc.">
+<meta property="og:title" content="JobTrack — Biết CV còn thiếu gì trước khi nộp">
+<meta property="og:description" content="Dán JD và CV. Thấy ngay từ khóa còn thiếu. Sửa 3 bullet. Theo dõi tới khi có kết quả.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="vi_VN">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23315bef'/><text x='50' y='72' font-size='62' font-family='system-ui' font-weight='700' fill='white' text-anchor='middle'>J</text></svg>">
 <style>
-:root{--ink:#17243b;--muted:#52637a;--line:#e0e6ef;--brand:#315bef;--soft:#edf2ff;--canvas:#f7f9fc}
+:root{
+  --ink:#0f172a;--muted:#52637a;--line:#e2e8f2;--brand:#315bef;--brand-dark:#2447c9;
+  --soft:#edf2ff;--canvas:#f8fafc;--white:#fff;--green:#15803d;--green-soft:#dcfce7;
+  --amber:#b45309;--amber-soft:#fef3c7;
+}
 *{box-sizing:border-box}
-body{margin:0;font-family:'Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);background:var(--canvas);line-height:1.7}
-header{background:#fff;border-bottom:1px solid var(--line)}
-.wrap{max-width:860px;margin:0 auto;padding:0 24px}
-header .wrap{display:flex;align-items:center;gap:12px;height:72px}
-.mark{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:var(--brand);color:#fff;font-weight:700;font-size:20px}
-.brand{font-weight:700;font-size:19px;letter-spacing:-.4px}
-nav{margin-left:auto;display:flex;gap:18px;font-size:14px}
+body{
+  margin:0;font-family:'Be Vietnam Pro','Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color:var(--ink);background:var(--canvas);line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+a{color:inherit}
+
+header{background:var(--white);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+header .wrap{display:flex;align-items:center;gap:12px;height:68px}
+.mark{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--brand);color:#fff;font-weight:700;font-size:18px;flex:0 0 auto}
+.brand{font-weight:700;font-size:18px;letter-spacing:-.3px}
+nav{margin-left:auto;display:flex;align-items:center;gap:20px;font-size:14px}
 nav a{color:var(--muted);text-decoration:none}
 nav a:hover{color:var(--brand)}
-main{padding:56px 0 72px}
-.hero{background:#fff;border:1px solid var(--line);border-radius:16px;padding:40px}
-h1{font-size:32px;line-height:1.25;letter-spacing:-.9px;margin:0 0 12px}
-.lead{color:var(--muted);font-size:16px;margin:0 0 26px;max-width:64ch}
-h2{font-size:19px;margin:36px 0 10px;letter-spacing:-.3px}
-ul{padding-left:20px;margin:10px 0}
-li{margin:6px 0;color:var(--muted)}
-li strong{color:var(--ink);font-weight:600}
-.cta{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:9px;background:var(--brand);color:#fff;text-decoration:none;font-weight:600;font-size:14px}
-.cta:hover{background:#2447c9}
-.legal{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px;padding-top:22px;border-top:1px solid var(--line);font-size:13px}
-.legal a{color:var(--brand);text-decoration:none}
-.legal a:hover{text-decoration:underline}
-footer{border-top:1px solid var(--line);padding:26px 0;font-size:13px;color:var(--muted)}
-@media(max-width:640px){.hero{padding:26px}header .wrap{height:64px}nav{gap:12px;font-size:13px}}
+.nav-cta{padding:8px 16px;border-radius:8px;background:var(--brand);color:#fff !important;font-weight:600}
+.nav-cta:hover{background:var(--brand-dark)}
+
+.hero{padding:64px 0 48px}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:var(--soft);color:var(--brand);font-size:12.5px;font-weight:600;margin-bottom:18px}
+h1{font-size:clamp(30px,4.2vw,46px);line-height:1.14;letter-spacing:-1.4px;margin:0 0 18px}
+h1 em{font-style:normal;color:var(--brand)}
+.lead{color:var(--muted);font-size:16.5px;margin:0 0 28px;max-width:52ch}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.cta{display:inline-flex;align-items:center;gap:8px;padding:13px 24px;border-radius:10px;background:var(--brand);color:#fff;text-decoration:none;font-weight:600;font-size:15px;box-shadow:0 8px 20px -6px rgba(49,91,239,.5)}
+.cta:hover{background:var(--brand-dark)}
+.cta-note{font-size:13px;color:var(--muted)}
+
+.demo{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 18px 40px -24px rgba(15,23,42,.28)}
+.demo-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
+.demo-score{font-weight:700;font-size:26px;color:var(--amber);letter-spacing:-1px}
+.demo-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
+.demo-row span:first-child{color:var(--ink);font-weight:500}
+.miss{color:#b91c1c;font-weight:600;font-size:12.5px}
+.have{color:var(--green);font-weight:600;font-size:12.5px}
+
+section{padding:56px 0}
+.alt{background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+h2{font-size:clamp(22px,3vw,30px);letter-spacing:-.8px;margin:0 0 10px}
+.sub{color:var(--muted);margin:0 0 32px;max-width:60ch}
+
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;counter-reset:s}
+.step{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:20px}
+.alt .step{background:var(--canvas)}
+.step::before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:26px;height:26px;border-radius:7px;background:var(--brand);color:#fff;font-size:13px;font-weight:700;margin-bottom:11px}
+.step h3{margin:0 0 6px;font-size:15px}
+.step p{margin:0;font-size:13.5px;color:var(--muted)}
+
+.pain{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.pain-card{border-radius:12px;padding:22px;border:1px solid var(--line)}
+.pain-bad{background:#fff5f5;border-color:#fecaca}
+.pain-good{background:var(--green-soft);border-color:#bbf7d0}
+.pain-card h3{margin:0 0 10px;font-size:15px}
+.pain-card ul{margin:0;padding-left:18px;font-size:14px;color:var(--muted)}
+.pain-card li{margin:5px 0}
+
+.pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
+.plan{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:26px;display:flex;flex-direction:column;height:100%}
+.plan.featured{border:2px solid var(--brand);box-shadow:0 20px 44px -26px rgba(49,91,239,.55);position:relative}
+.badge{position:absolute;top:-12px;left:26px;background:var(--brand);color:#fff;font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px;letter-spacing:.2px}
+.plan h3{margin:0 0 4px;font-size:16px}
+.plan .for{font-size:13px;color:var(--muted);margin:0 0 16px;min-height:38px}
+.price{font-size:32px;font-weight:700;letter-spacing:-1.4px;line-height:1.1}
+.price small{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}
+.plan ul{list-style:none;margin:18px 0 22px;padding:0;font-size:13.5px;flex:1}
+.plan li{padding:5px 0 5px 22px;position:relative;color:var(--muted)}
+.plan li::before{content:'';position:absolute;left:0;top:11px;width:13px;height:7px;border-left:2px solid var(--green);border-bottom:2px solid var(--green);transform:rotate(-45deg)}
+.plan .cta{width:100%;justify-content:center;padding:11px 18px;font-size:14px;box-shadow:none}
+.plan .ghost{background:var(--white);color:var(--brand);border:1.5px solid var(--brand)}
+.plan .ghost:hover{background:var(--soft)}
+.plan .quiet{background:var(--canvas);color:var(--muted);border:1px solid var(--line);box-shadow:none}
+.plan .quiet:hover{background:#eef2f7;color:var(--ink)}
+
+.intro-offer{margin-top:26px;background:var(--amber-soft);border:1px solid #fde68a;border-radius:11px;padding:15px 18px;font-size:13.5px;color:#78350f}
+.intro-offer strong{color:#92400e}
+
+.faq{max-width:760px}
+details{border-bottom:1px solid var(--line);padding:16px 0}
+details summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;gap:16px}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:'+';color:var(--brand);font-weight:400;font-size:20px;line-height:1}
+details[open] summary::after{content:'−'}
+details p{margin:10px 0 0;font-size:14px;color:var(--muted)}
+
+footer{background:var(--white);border-top:1px solid var(--line);padding:36px 0;font-size:13px;color:var(--muted)}
+.foot-grid{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-start}
+.foot-links{display:flex;gap:18px;flex-wrap:wrap}
+.foot-links a{color:var(--muted);text-decoration:none}
+.foot-links a:hover{color:var(--brand)}
+
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr;gap:32px}
+  .steps{grid-template-columns:1fr 1fr}
+  .pricing{grid-template-columns:1fr}
+  .plan.featured{order:-1}
+  .pain{grid-template-columns:1fr}
+  nav{gap:12px;font-size:13px}
+  section{padding:40px 0}
+}
+@media(max-width:560px){
+  .steps{grid-template-columns:1fr}
+  nav a:not(.nav-cta){display:none}
+  .hero{padding:40px 0 32px}
+}
 </style>
 </head>
 <body>
+
 <header>
   <div class="wrap">
     <span class="mark" aria-hidden="true">J</span>
     <span class="brand">JobTrack</span>
-    <nav>
-      <a href="./privacy.html">Privacy</a>
-      <a href="./terms.html">Terms</a>
+    <nav aria-label="Điều hướng chính">
+      <a href="#cach-hoat-dong">Cách hoạt động</a>
+      <a href="#gia">Giá</a>
+      <a href="#hoi-dap">Hỏi đáp</a>
+      <a class="nav-cta" href="https://job-application-tracker-ai-pro24.vercel.app/">Dùng thử miễn phí</a>
     </nav>
   </div>
 </header>
-<main class="wrap">
-  <div class="hero">
-    <h1>Track every application, interview and follow-up in one place.</h1>
-    <p class="lead">
-      JobTrack is a personal job-search workspace. It keeps your applications, interview rounds,
-      deadlines and reminders organised so you always know the next step to take.
-    </p>
-    <a class="cta" href="https://github.com/tan21072005/Job_Application_Tracker">View the project</a>
 
-    <h2>What JobTrack does</h2>
-    <ul>
-      <li><strong>Application pipeline</strong> — record company, role, source, salary range and status from <em>Saved</em> to <em>Offer</em>.</li>
-      <li><strong>Interview schedule</strong> — log each round with time, timezone, format and meeting link, and export an ICS calendar.</li>
-      <li><strong>Deadline reminders</strong> — optional email alerts 7, 3 and 1 day before a deadline you set yourself.</li>
-      <li><strong>Notes and next actions</strong> — private notes and a clear next action with an optional deadline.</li>
-      <li><strong>Analytics</strong> — response rate, pipeline velocity and stage distribution for your own search.</li>
-      <li><strong>Export and deletion</strong> — download everything as JSON or CSV, or delete the account and its data at any time.</li>
-    </ul>
+<main>
 
-    <h2>Signing in with Google</h2>
-    <p class="lead">
-      You can create a JobTrack account with an email and password, or sign in with Google.
-      When you choose Google, JobTrack only receives your verified email address and basic profile
-      identifier from Google, and uses them to authenticate you and let you return to your account.
-      It does not read your Gmail, Drive, Calendar or contacts.
-    </p>
+<div class="hero wrap">
+  <div class="hero-grid">
+    <div>
+      <span class="eyebrow">Dành cho người đang tìm việc</span>
+      <h1>Nộp 30 chỗ, không ai trả lời. Vì CV của bạn <em>đang thiếu đúng từ khóa</em>.</h1>
+      <p class="lead">
+        Dán mô tả công việc và CV của bạn. JobTrack chỉ ra từ khóa nào JD yêu cầu mà CV chưa có,
+        gợi ý viết lại 3 dòng kinh nghiệm, rồi nhắc bạn follow-up đúng lúc — thay vì nộp rồi quên.
+      </p>
+      <div class="cta-row">
+        <a class="cta" href="https://job-application-tracker-ai-pro24.vercel.app/">Phân tích CV đầu tiên — miễn phí</a>
+        <span class="cta-note">Không cần thẻ. 3 lượt miễn phí mỗi tháng.</span>
+      </div>
+    </div>
 
-    <h2>Your data</h2>
-    <p class="lead">
-      Data is stored in the JobTrack application database and is visible only to your account.
-      You can export it or delete it at any time from the Settings page in the app.
-    </p>
-
-    <div class="legal">
-      <a href="./privacy.html">Privacy Policy</a>
-      <span aria-hidden="true">·</span>
-      <a href="./terms.html">Terms of Service</a>
+    <div class="demo" role="img" aria-label="Ví dụ kết quả phân tích: điểm 42 trên 100, thiếu Docker, Kubernetes, CI/CD">
+      <div class="demo-head">
+        <span>Backend Engineer · TechCorp</span>
+        <span class="demo-score">42<span style="font-size:14px;color:#94a3b8">/100</span></span>
+      </div>
+      <div class="demo-row"><span>TypeScript</span><span class="have">đã có</span></div>
+      <div class="demo-row"><span>Node.js</span><span class="have">đã có</span></div>
+      <div class="demo-row"><span>PostgreSQL</span><span class="have">đã có</span></div>
+      <div class="demo-row"><span>Docker</span><span class="miss">còn thiếu</span></div>
+      <div class="demo-row"><span>Kubernetes</span><span class="miss">còn thiếu</span></div>
+      <div class="demo-row"><span>CI/CD</span><span class="miss">còn thiếu</span></div>
     </div>
   </div>
-</main>
-<footer>
+</div>
+
+<section class="alt" id="cach-hoat-dong">
   <div class="wrap">
-    JobTrack — a personal job application tracker. Last updated <time datetime="2026-11-08">8 November 2026</time>.
+    <h2>Bốn bước, một vòng lặp bạn lặp lại mỗi lần nộp</h2>
+    <p class="sub">Không phải thêm một ứng dụng quản lý nữa. Đây là chỗ bạn sửa CV cho đúng vị trí, và biết mình đã nộp bao lâu.</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Dán JD</h3>
+        <p>Hoặc dùng extension lưu thẳng từ TopCV, ITviec, LinkedIn, VietnamWorks.</p>
+      </div>
+      <div class="step">
+        <h3>Thấy từ khóa thiếu</h3>
+        <p>AI đọc JD, đối chiếu CV, chỉ ra 5–8 từ khóa bạn chưa có và mức quan trọng của từng cái.</p>
+      </div>
+      <div class="step">
+        <h3>Sửa 3 bullet</h3>
+        <p>Gợi ý viết lại theo mẫu X-Y-Z, dựa trên kinh nghiệm thật của bạn. Không bịa số.</p>
+      </div>
+      <div class="step">
+        <h3>Follow-up đúng lúc</h3>
+        <p>5 ngày sau khi nộp, thẻ tự nhắc. Bạn đánh dấu "đã gửi" hoặc "bỏ qua" — không phải nhớ.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Hai cách tìm việc</h2>
+    <p class="sub">Cùng một người, cùng một CV. Khác nhau ở chỗ có nhìn thấy vấn đề hay không.</p>
+    <div class="pain">
+      <div class="pain-card pain-bad">
+        <h3>Không có gì</h3>
+        <ul>
+          <li>Nộp 30 chỗ bằng cùng một CV, không biết vì sao rớt</li>
+          <li>Quên mình đã nộp công ty nào, khi nào</li>
+          <li>Không dám follow-up vì sợ "làm phiền"</li>
+          <li>Không biết mình yếu ở đâu để sửa cho lần sau</li>
+        </ul>
+      </div>
+      <div class="pain-card pain-good">
+        <h3>Có JobTrack</h3>
+        <ul>
+          <li>Mỗi JD là một danh sách từ khóa cụ thể cần bổ sung</li>
+          <li>Pipeline 5 cột: đã lưu, đã nộp, phỏng vấn, offer, đã đóng</li>
+          <li>Nhắc follow-up theo từng bước, không phải đoán</li>
+          <li>Nhìn lại được tỷ lệ phản hồi và chỗ tắc</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="gia">
+  <div class="wrap">
+    <h2>Giá</h2>
+    <p class="sub">Trả một lần cho một đợt tìm việc, không phải thuê bao hàng tháng. Không tự động trừ tiền.</p>
+    <div class="pricing">
+
+      <div class="plan">
+        <h3>Miễn phí</h3>
+        <p class="for">Thử trước khi trả tiền</p>
+        <div class="price">0đ</div>
+        <ul>
+          <li>20 hồ sơ ứng tuyển</li>
+          <li>3 lượt phân tích JD/CV mỗi tháng</li>
+          <li>Nhắc việc cơ bản</li>
+          <li>Xuất CSV</li>
+        </ul>
+        <a class="cta quiet" href="https://job-application-tracker-ai-pro24.vercel.app/">Bắt đầu miễn phí</a>
+      </div>
+
+      <div class="plan featured">
+        <span class="badge">Chọn gói này</span>
+        <h3>Job Search Pass</h3>
+        <p class="for">Đang tìm việc tích cực, 1–3 tháng tới</p>
+        <div class="price">149.000đ <small>/ 90 ngày</small></div>
+        <ul>
+          <li>Không giới hạn hồ sơ</li>
+          <li>50 lượt phân tích JD/CV</li>
+          <li>Thư viện CV không giới hạn</li>
+          <li>Nhắc follow-up qua email</li>
+          <li>Xuất báo cáo</li>
+        </ul>
+        <a class="cta" href="https://job-application-tracker-ai-pro24.vercel.app/#f/pro">Mua Pass 90 ngày</a>
+      </div>
+
+      <div class="plan">
+        <h3>Pro năm</h3>
+        <p class="for">Giữ dữ liệu nghề nghiệp lâu dài</p>
+        <div class="price">499.000đ <small>/ năm</small></div>
+        <ul>
+          <li>Mọi thứ của Pass</li>
+          <li>Lịch sử nhiều chu kỳ tìm việc</li>
+          <li>Theo dõi dài hạn</li>
+        </ul>
+        <a class="cta ghost" href="https://job-application-tracker-ai-pro24.vercel.app/#f/pro">Xem gói năm</a>
+      </div>
+
+    </div>
+    <p class="intro-offer">
+      <strong>50 người đầu tiên: 99.000đ</strong> cho Pass 90 ngày, đổi lại một buổi phỏng vấn 15 phút
+      để góp ý sản phẩm. Đây là giá giới thiệu, sẽ tăng sau đợt đầu.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2 id="hoi-dap">Hỏi đáp</h2>
+    <div class="faq">
+      <details>
+        <summary>Có phải AI tự viết CV cho tôi không?</summary>
+        <p>Không. JobTrack không bịa kinh nghiệm. Nó đọc JD, đối chiếu với CV bạn đã có, rồi chỉ ra từ khóa thiếu và gợi ý cách diễn đạt lại những gì bạn đã làm. Mọi con số trong CV là của bạn, không phải của AI.</p>
+      </details>
+      <details>
+        <summary>Dữ liệu của tôi có bị dùng để train không?</summary>
+        <p>Không. CV và JD của bạn chỉ dùng để trả kết quả cho chính bạn, không dùng huấn luyện mô hình, không bán cho bên thứ ba. Bạn xoá tài khoản là dữ liệu bị xoá.</p>
+      </details>
+      <details>
+        <summary>Trả tiền một lần hay bị trừ hàng tháng?</summary>
+        <p>Một lần. Pass 90 ngày là 149.000đ trả một lần, dùng 90 ngày, hết hạn thì thôi — không tự động gia hạn, không trừ thẻ. Bạn chủ động mua lại nếu cần.</p>
+      </details>
+      <details>
+        <summary>Tôi dùng TopCV, LinkedIn thì có lưu được không?</summary>
+        <p>Có. Cài extension PageWeave trên Chrome, mở tin tuyển dụng, bấm một nút. JobTrack tự điền tên công ty, vị trí, mức lương, địa điểm, ngày lưu và tên sàn. Hỗ trợ TopCV, ITviec, VietnamWorks, LinkedIn, JobStreet và một số sàn khác.</p>
+      </details>
+      <details>
+        <summary>Không trả tiền thì dùng được gì?</summary>
+        <p>20 hồ sơ, 3 lượt phân tích JD/CV mỗi tháng, nhắc việc cơ bản, xuất CSV. Đủ để biết sản phẩm có ích với bạn hay không, không cần thẻ.</p>
+      </details>
+      <details>
+        <summary>Tôi có thể lấy lại dữ liệu nếu không dùng nữa?</summary>
+        <p>Có. Xuất toàn bộ hồ sơ ra CSV hoặc JSON bất cứ lúc nào trong Cài đặt. Xoá tài khoản cũng xoá toàn bộ dữ liệu, không giữ bản sao.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap" style="text-align:center">
+    <h2>Biết CV thiếu gì trước khi nộp, không phải sau khi rớt</h2>
+    <p class="sub" style="margin-left:auto;margin-right:auto">Ba lượt phân tích miễn phí mỗi tháng. Không cần thẻ.</p>
+    <a class="cta" href="https://job-application-tracker-ai-pro24.vercel.app/">Phân tích CV đầu tiên</a>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span class="mark" style="width:28px;height:28px;font-size:14px" aria-hidden="true">J</span>
+        <strong style="color:var(--ink)">JobTrack</strong>
+      </div>
+      <div>Công cụ tìm việc cho người Việt. Cập nhật 25/11/2026.</div>
+    </div>
+    <div class="foot-links">
+      <a href="./privacy.html">Chính sách riêng tư</a>
+      <a href="./terms.html">Điều khoản sử dụng</a>
+      <a href="https://job-application-tracker-ai-pro24.vercel.app/">Vào ứng dụng</a>
+    </div>
   </div>
 </footer>
+
 </body>
 </html>
