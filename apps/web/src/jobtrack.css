@@ -1297,6 +1297,11 @@ h1,h2,h3,.dialog-header h2,.page-heading h1,.auth-form h2,.focus-panel h3,.sched
 .card-company-info span{font-size:11px;color:var(--muted);line-height:1.4}
 .card-company-info .card-meta-line{display:block;max-width:100%;margin-top:1px;font-size:11px;line-height:1.2;color:var(--slate-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 .card-sla-pill{display:flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;font-size:10.5px;font-weight:600;margin-top:2px}
+.card-attention-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;font-size:10.5px;font-weight:600;margin-top:2px;white-space:nowrap}
+.card-attention-due{background:#fef3c7;color:#92400e}
+.card-attention-overdue{background:#fee2e2;color:#991b1b}
+.card-attention-snoozed{background:#f1f5f9;color:#64748b}
+.card-attention-ghosted{background:#e5e7eb;color:#4b5563}
 .card-tags-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .card-tag-pill{font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--slate-50);color:var(--slate-500);border:1px solid var(--line);cursor:pointer}
 .card-tag-pill:hover{background:var(--slate-100);color:var(--ink)}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Columns3,
   List,
@@ -28,10 +28,11 @@ import {
   type Status,
   type ApplicationPriority
 } from '../domain';
+import type { FollowUpAttentionSummaryDTO, FollowUpAttentionItemDTO } from '@jobtrack/contract';
 import { Button, Empty, Monogram, StatusBadge } from '../components/ui';
 import { ApplicationRow, Deadline } from './Dashboard';
 import BulkActionBar from '../components/BulkActionBar';
-import { repository, pipelineRepository, downloadApplicationsCsv } from '../data';
+import { repository, pipelineRepository, followUpRepository, downloadApplicationsCsv } from '../data';
 import ImportCsvModal from '../components/ImportCsvModal';
 import type { CsvImportResultDTO } from '@jobtrack/contract';
 
@@ -136,6 +137,41 @@ export default function Applications({
   const [dragOverLaneKey, setDragOverLaneKey] = useState<string | null>(null);
   const [closedCollapsed, setClosedCollapsed] = useState(false);
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
+  const [attention, setAttention] = useState<FollowUpAttentionSummaryDTO | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void followUpRepository
+      .getAttention()
+      .then(summary => {
+        if (!cancelled) setAttention(summary);
+      })
+      .catch(() => {
+        if (!cancelled) setAttention(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [apps]);
+
+  const attentionByApp = useMemo(() => {
+    const map = new Map<string, FollowUpAttentionItemDTO>();
+    for (const item of attention?.items || []) map.set(item.applicationId, item);
+    return map;
+  }, [attention]);
+
+  async function handleFollowUpEvent(app: Application, kind: 'followed_up' | 'dismissed' | 'ghosted') {
+    try {
+      await followUpRepository.recordEvent(app.id, { kind });
+      const summary = await followUpRepository.getAttention();
+      setAttention(summary);
+      const label = kind === 'followed_up' ? 'đã đánh dấu follow-up' : kind === 'dismissed' ? 'đã bỏ qua nhắc' : 'đã đánh dấu không phản hồi';
+      setLiveAnnouncement(`${app.position} tại ${app.company} ${label}`);
+      notify?.(`Đã cập nhật: ${app.position} — ${label}.`);
+    } catch (error) {
+      notify?.((error as Error).message || 'Không cập nhật được follow-up.', true);
+    }
+  }
 
   function laneKeyOf(status: Status) {
     return KANBAN_LANES.find(lane => lane.filter({ status } as Application))?.key ?? KANBAN_LANES[0].key;
@@ -735,6 +771,15 @@ export default function Applications({
                             </div>
                           </div>
 
+                          {attentionByApp.get(app.id) && ['due', 'overdue', 'snoozed', 'ghosted'].includes(attentionByApp.get(app.id)!.state) && (
+                            <div className={`card-attention-pill card-attention-${attentionByApp.get(app.id)!.state}`}>
+                              {attentionByApp.get(app.id)!.state === 'due' && `⏰ ${attentionByApp.get(app.id)!.daysSinceAnchor} ngày chưa phản hồi`}
+                              {attentionByApp.get(app.id)!.state === 'overdue' && `🔴 ${attentionByApp.get(app.id)!.daysSinceAnchor} ngày — quá hạn`}
+                              {attentionByApp.get(app.id)!.state === 'snoozed' && '💤 Đã bỏ qua'}
+                              {attentionByApp.get(app.id)!.state === 'ghosted' && '👻 Không phản hồi'}
+                            </div>
+                          )}
+
                           {sla.isStagnant && (
                             <div
                               className={`card-sla-pill card-sla-${sla.slaSeverity}`}
@@ -808,6 +853,28 @@ export default function Applications({
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labels[nextStage]}</span>
                                 <ChevronRight size={13} style={{ flexShrink: 0 }} />
                               </button>
+                            )}
+                            {attentionByApp.get(app.id) && ['due', 'overdue'].includes(attentionByApp.get(app.id)!.state) && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="quick-advance-btn"
+                                  title="Đã gửi follow-up — đặt lại đồng hồ"
+                                  onClick={() => void handleFollowUpEvent(app, 'followed_up')}
+                                  style={{ minWidth: 0, whiteSpace: 'nowrap', padding: '3px 6px' }}
+                                >
+                                  Đã gửi
+                                </button>
+                                <button
+                                  type="button"
+                                  className="quick-advance-btn"
+                                  title="Bỏ qua nhắc cho hồ sơ này"
+                                  onClick={() => void handleFollowUpEvent(app, 'dismissed')}
+                                  style={{ minWidth: 0, whiteSpace: 'nowrap', padding: '3px 6px' }}
+                                >
+                                  Bỏ qua
+                                </button>
+                              </>
                             )}
                             <span
                               className="pipeline-open"

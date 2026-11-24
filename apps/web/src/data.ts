@@ -88,6 +88,9 @@ import {
   synthesizeCompanyIntelligence,
   type FollowUpLogDTO,
   type FollowUpCadenceStatusDTO,
+  type FollowUpAttentionSummaryDTO,
+  type FollowUpEventDTO,
+  type FollowUpEventKind,
   type FollowUpTemplateDTO,
   type GenerateFollowUpInput,
   type GeneratedFollowUpDraftDTO,
@@ -2008,6 +2011,33 @@ export const followUpRepository = {
       });
     }
     return request<FollowUpCadenceStatusDTO[]>('/follow-ups/due');
+  },
+
+  async getAttention(): Promise<FollowUpAttentionSummaryDTO> {
+    if (demoMode) {
+      const apps = load();
+      const empty: FollowUpAttentionSummaryDTO = {
+        asOf: new Date().toISOString(),
+        timeZone: 'Asia/Ho_Chi_Minh',
+        counts: { attention: 0, overdue: 0, snoozed: 0, ghosted: 0 },
+        items: []
+      };
+      if (!apps.length) return empty;
+      return empty;
+    }
+    return request<FollowUpAttentionSummaryDTO>('/follow-ups/attention');
+  },
+
+  async recordEvent(applicationId: string, input: { kind: FollowUpEventKind; note?: string | null }): Promise<FollowUpEventDTO> {
+    return request<FollowUpEventDTO>(`/applications/${encodeURIComponent(applicationId)}/follow-up-events`, {
+      method: 'POST',
+      body: JSON.stringify({ kind: input.kind, note: input.note || null })
+    });
+  },
+
+  async listEvents(applicationId: string): Promise<FollowUpEventDTO[]> {
+    if (demoMode) return [];
+    return request<FollowUpEventDTO[]>(`/applications/${encodeURIComponent(applicationId)}/follow-up-events`);
   }
 };
 

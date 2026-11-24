@@ -114,6 +114,7 @@ import {
   rewriteBulletPointsXyz,
   validateCalculateVelocityReportInput,
   validateAnalyzeCultureInput,
+  validateFollowUpEventInput,
 } from '@jobtrack/contract';
 import { createHash } from 'node:crypto';
 
@@ -2936,6 +2937,41 @@ app.get('/api/follow-ups/due', auth, async (req, res, next) => {
     const userId = (req as SessionRequest).userId;
     const dueList = await followUpService.getDueFollowUps(userId);
     res.json(dueList);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/follow-ups/attention', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const timeZone = (process.env.REMINDER_TIMEZONE || 'Asia/Ho_Chi_Minh').trim();
+    const summary = await followUpService.listAttention(userId, timeZone);
+    res.json(summary);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/applications/:id/follow-up-events', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const events = await followUpService.listEvents(userId, String(req.params.id));
+    res.json(events);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/applications/:id/follow-up-events', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const validation = validateFollowUpEventInput(req.body);
+    if (!validation.ok) {
+      throw new Problem(422, validation.message, 'invalid_request', validation.errors);
+    }
+    const event = await followUpService.recordEvent(userId, String(req.params.id), validation.data);
+    res.status(201).json(event);
   } catch (error) {
     next(error);
   }

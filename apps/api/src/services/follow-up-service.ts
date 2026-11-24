@@ -1,14 +1,21 @@
 import { Pool } from 'pg';
 import { randomUUID } from 'node:crypto';
 import {
+  type ApplicationStatus,
   type FollowUpLogDTO,
   type FollowUpCadenceStatusDTO,
   type FollowUpTemplateDTO,
+  type FollowUpEventDTO,
+  type FollowUpEventKind,
+  type FollowUpAttentionItemDTO,
+  type FollowUpAttentionSummaryDTO,
   type GenerateFollowUpInput,
   type GeneratedFollowUpDraftDTO,
   DEFAULT_FOLLOW_UP_TEMPLATES,
   calculateFollowUpCadence,
+  deriveFollowUpAttention,
   generateFollowUpEmail,
+  summarizeFollowUpAttention,
   validateFollowUpLogInput
 } from '@jobtrack/contract';
 import { fail } from './jobtrack-service.ts';
@@ -31,6 +38,7 @@ export interface DueFollowUpItemDTO {
 export class FollowUpService {
   private pool: Pool;
   private tableReady: boolean = false;
+  private eventsReady: boolean = false;
 
   constructor(pool: Pool) {
     this.pool = pool;
@@ -275,5 +283,168 @@ export class FollowUpService {
     });
 
     return dueList;
+  }
+
+  async listAttention(userId: string, timeZone: string): Promise<FollowUpAttentionSummaryDTO> {
+    await this.ensureTable();
+
+    const appsRes = await this.pool.query<{
+      id: string;
+      company: string;
+      position: string;
+      status: ApplicationStatus;
+      status_updated_at: Date;
+      applied_at: Date | null;
+      created_at: Date;
+    }>(
+      `SELECT id, company, position, status, status_updated_at, applied_at, created_at
+       FROM applications
+       WHERE user_id = $1 AND deleted_at IS NULL
+       ORDER BY status_updated_at DESC`,
+      [userId]
+    );
+
+    const eventsRes = await this.pool.query<{ application_id: string; kind: FollowUpEventKind; occurred_at: Date }>(
+      `SELECT application_id, kind, occurred_at
+       FROM application_follow_up_events
+       WHERE user_id = $1
+       ORDER BY occurred_at DESC`,
+      [userId]
+    );
+
+    const eventsByApp = new Map<string, Array<{ kind: FollowUpEventKind; occurredAt: Date }>>();
+    for (const row of eventsRes.rows) {
+      const list = eventsByApp.get(row.application_id) || [];
+      list.push({ kind: row.kind, occurredAt: row.occurred_at });
+      eventsByApp.set(row.application_id, list);
+    }
+
+    const logRes = await this.pool.query<{ application_id: string; sent_at: Date }>(
+      `SELECT application_id, MAX(sent_at) AS sent_at
+       FROM application_follow_up_logs
+       WHERE user_id = $1
+       GROUP BY application_id`,
+      [userId]
+    );
+    const logByApp = new Map<string, Date>();
+    for (const row of logRes.rows) logByApp.set(row.application_id, row.sent_at);
+
+    const interviewRes = await this.pool.query<{ application_id: string; at: Date }>(
+      `SELECT i.application_id, MAX(i.at) AS at
+       FROM interviews i
+       JOIN applications a ON a.id = i.application_id
+       WHERE a.user_id = $1 AND i.at <= CURRENT_TIMESTAMP
+       GROUP BY i.application_id`,
+      [userId]
+    );
+    const interviewByApp = new Map<string, Date>();
+    for (const row of interviewRes.rows) interviewByApp.set(row.application_id, row.at);
+
+    const items: FollowUpAttentionItemDTO[] = [];
+    for (const app of appsRes.rows) {
+      const candidates: number[] = [new Date(app.status_updated_at).getTime()];
+      if (app.applied_at) candidates.push(new Date(app.applied_at).getTime());
+      candidates.push(new Date(app.created_at).getTime());
+
+      const appEvents = eventsByApp.get(app.id) || [];
+      for (const event of appEvents) {
+        if (event.kind === 'followed_up') candidates.push(new Date(event.occurredAt).getTime());
+      }
+      const logDate = logByApp.get(app.id);
+      if (logDate) candidates.push(new Date(logDate).getTime());
+      const interviewDate = interviewByApp.get(app.id);
+      if (interviewDate) candidates.push(new Date(interviewDate).getTime());
+
+      const anchorMs = Math.max(...candidates.filter(value => Number.isFinite(value)));
+
+      items.push(
+        deriveFollowUpAttention({
+          applicationId: app.id,
+          company: app.company,
+          position: app.position,
+          stage: app.status,
+          statusUpdatedAt: app.status_updated_at,
+          anchorAt: new Date(anchorMs).toISOString(),
+          events: appEvents
+        })
+      );
+    }
+
+    const rank: Record<string, number> = { overdue: 0, due: 1, snoozed: 2, ghosted: 3, scheduled: 4, closed: 5 };
+    items.sort((a, b) => {
+      const byState = (rank[a.state] ?? 9) - (rank[b.state] ?? 9);
+      if (byState !== 0) return byState;
+      return b.daysSinceAnchor - a.daysSinceAnchor;
+    });
+
+    return summarizeFollowUpAttention(items, timeZone);
+  }
+
+  async recordEvent(
+    userId: string,
+    applicationId: string,
+    input: { kind: FollowUpEventKind; note: string | null }
+  ): Promise<FollowUpEventDTO> {
+    await this.ensureEventTable();
+
+    const owned = await this.pool.query<{ id: string }>(
+      `SELECT id FROM applications WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
+      [applicationId, userId]
+    );
+    if (!owned.rowCount) fail(404, 'Không tìm thấy hồ sơ.', 'not_found');
+
+    const id = randomUUID();
+    const res = await this.pool.query<{ id: string; kind: FollowUpEventKind; note: string | null; occurred_at: Date }>(
+      `INSERT INTO application_follow_up_events (id, user_id, application_id, kind, note)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, kind, note, occurred_at`,
+      [id, userId, applicationId, input.kind, input.note]
+    );
+
+    const row = res.rows[0];
+    return {
+      id: row.id,
+      applicationId,
+      kind: row.kind,
+      note: row.note,
+      occurredAt: row.occurred_at.toISOString()
+    };
+  }
+
+  async listEvents(userId: string, applicationId: string): Promise<FollowUpEventDTO[]> {
+    await this.ensureEventTable();
+    const res = await this.pool.query<{ id: string; kind: FollowUpEventKind; note: string | null; occurred_at: Date }>(
+      `SELECT id, kind, note, occurred_at
+       FROM application_follow_up_events
+       WHERE user_id = $1 AND application_id = $2
+       ORDER BY occurred_at DESC
+       LIMIT 100`,
+      [userId, applicationId]
+    );
+    return res.rows.map(row => ({
+      id: row.id,
+      applicationId,
+      kind: row.kind,
+      note: row.note,
+      occurredAt: row.occurred_at.toISOString()
+    }));
+  }
+
+  private async ensureEventTable(): Promise<void> {
+    if (this.eventsReady) return;
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS application_follow_up_events (
+        id uuid PRIMARY KEY,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        application_id uuid NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+        kind varchar(16) NOT NULL CHECK (kind IN ('followed_up','dismissed','ghosted','reopened')),
+        note varchar(500),
+        occurred_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_fu_events_app ON application_follow_up_events (application_id, occurred_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_fu_events_user ON application_follow_up_events (user_id, occurred_at DESC);
+    `);
+    this.eventsReady = true;
   }
 }

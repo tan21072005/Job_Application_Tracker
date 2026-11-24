@@ -1,4 +1,5 @@
 import type { ApplicationStatus } from './types.js';
+import type { ValidationResult } from './validators.js';
 
 export type OutreachTone =
   | 'polite_check_in'
@@ -319,4 +320,158 @@ export function validateFollowUpLogInput(raw: unknown): {
       notes
     }
   };
+}
+
+export type FollowUpEventKind = 'followed_up' | 'dismissed' | 'ghosted' | 'reopened';
+
+export interface FollowUpEventDTO {
+  id: string;
+  applicationId: string;
+  kind: FollowUpEventKind;
+  note: string | null;
+  occurredAt: string;
+}
+
+export type FollowUpAttentionState =
+  | 'closed'
+  | 'ghosted'
+  | 'snoozed'
+  | 'scheduled'
+  | 'due'
+  | 'overdue';
+
+export interface FollowUpAttentionItemDTO {
+  applicationId: string;
+  company: string;
+  position: string;
+  stage: ApplicationStatus;
+  state: FollowUpAttentionState;
+  daysSinceAnchor: number;
+  waitDays: number | null;
+  dueDate: string | null;
+  anchorAt: string;
+  lastEventKind: FollowUpEventKind | null;
+}
+
+export interface FollowUpAttentionSummaryDTO {
+  asOf: string;
+  timeZone: string;
+  counts: {
+    attention: number;
+    overdue: number;
+    snoozed: number;
+    ghosted: number;
+  };
+  items: FollowUpAttentionItemDTO[];
+}
+
+const TERMINAL_STAGES: ReadonlySet<ApplicationStatus> = new Set<ApplicationStatus>(['Rejected', 'Withdrawn']);
+
+const SUPPRESSING_KINDS: ReadonlySet<FollowUpEventKind> = new Set<FollowUpEventKind>(['dismissed', 'ghosted']);
+
+export function isFollowUpTerminal(stage: ApplicationStatus): boolean {
+  return TERMINAL_STAGES.has(stage);
+}
+
+export function deriveFollowUpAttention(input: {
+  applicationId: string;
+  company: string;
+  position: string;
+  stage: ApplicationStatus;
+  statusUpdatedAt: string | Date;
+  anchorAt: string | Date;
+  events: Array<{ kind: FollowUpEventKind; occurredAt: string | Date }>;
+  now?: Date;
+}): FollowUpAttentionItemDTO {
+  const now = input.now ?? new Date();
+  const anchorMs = new Date(input.anchorAt).getTime();
+  const statusMs = new Date(input.statusUpdatedAt).getTime();
+
+  const waitDays = FOLLOW_UP_CADENCE[input.stage] ?? null;
+  const applicableEvents = input.events
+    .filter(event => new Date(event.occurredAt).getTime() >= statusMs)
+    .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+
+  const latestSuppressing = applicableEvents.find(event => SUPPRESSING_KINDS.has(event.kind)) ?? null;
+  const lastEventKind = applicableEvents[0]?.kind ?? null;
+
+  const base: FollowUpAttentionItemDTO = {
+    applicationId: input.applicationId,
+    company: input.company,
+    position: input.position,
+    stage: input.stage,
+    state: 'scheduled',
+    daysSinceAnchor: 0,
+    waitDays,
+    dueDate: null,
+    anchorAt: new Date(anchorMs).toISOString(),
+    lastEventKind
+  };
+
+  if (isFollowUpTerminal(input.stage) || waitDays === null) {
+    return { ...base, state: 'closed' };
+  }
+
+  if (!Number.isFinite(anchorMs)) {
+    return { ...base, state: 'closed' };
+  }
+
+  const daysSinceAnchor = Math.max(0, Math.floor((now.getTime() - anchorMs) / (1000 * 60 * 60 * 24)));
+  const dueMs = anchorMs + waitDays * 24 * 60 * 60 * 1000;
+  const dueDate = new Date(dueMs).toISOString().slice(0, 10);
+
+  const withDays: FollowUpAttentionItemDTO = { ...base, daysSinceAnchor, dueDate };
+
+  if (latestSuppressing) {
+    return {
+      ...withDays,
+      state: latestSuppressing.kind === 'ghosted' ? 'ghosted' : 'snoozed'
+    };
+  }
+
+  if (daysSinceAnchor >= waitDays + FOLLOW_UP_OVERDUE_EXTRA_DAYS) {
+    return { ...withDays, state: 'overdue' };
+  }
+  if (daysSinceAnchor >= waitDays) {
+    return { ...withDays, state: 'due' };
+  }
+  return withDays;
+}
+
+export function summarizeFollowUpAttention(
+  items: FollowUpAttentionItemDTO[],
+  timeZone: string,
+  now: Date = new Date()
+): FollowUpAttentionSummaryDTO {
+  return {
+    asOf: now.toISOString(),
+    timeZone,
+    counts: {
+      attention: items.filter(item => item.state === 'due' || item.state === 'overdue').length,
+      overdue: items.filter(item => item.state === 'overdue').length,
+      snoozed: items.filter(item => item.state === 'snoozed').length,
+      ghosted: items.filter(item => item.state === 'ghosted').length
+    },
+    items
+  };
+}
+
+export function validateFollowUpEventInput(input: unknown): ValidationResult<{ kind: FollowUpEventKind; note: string | null }> {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return { ok: false, message: 'Nội dung yêu cầu chưa hợp lệ.', errors: { body: 'Phải là đối tượng JSON.' } };
+  }
+  const body = input as Record<string, unknown>;
+  const kind = body.kind;
+  if (kind !== 'followed_up' && kind !== 'dismissed' && kind !== 'ghosted' && kind !== 'reopened') {
+    return { ok: false, message: 'Loại sự kiện chưa hợp lệ.', errors: { kind: 'Cho phép: followed_up, dismissed, ghosted, reopened.' } };
+  }
+  const rawNote = body.note;
+  if (rawNote !== undefined && rawNote !== null && typeof rawNote !== 'string') {
+    return { ok: false, message: 'Ghi chú chưa hợp lệ.', errors: { note: 'Ghi chú phải là chuỗi.' } };
+  }
+  const note = typeof rawNote === 'string' ? rawNote.trim() : '';
+  if (note.length > 500) {
+    return { ok: false, message: 'Ghi chú quá dài.', errors: { note: 'Tối đa 500 ký tự.' } };
+  }
+  return { ok: true, data: { kind, note: note || null } };
 }
