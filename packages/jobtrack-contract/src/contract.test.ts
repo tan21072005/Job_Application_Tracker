@@ -1108,19 +1108,36 @@ test('contract: calculateFollowUpCadence calculates schedule, due, and overdue u
   const eightDaysAgo = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString();
 
   const scheduled = calculateFollowUpCadence('app-1', 'Applied', oneDayAgo, 5);
+  assert.ok(scheduled);
   assert.equal(scheduled.urgency, 'scheduled');
   assert.equal(scheduled.isDue, false);
   assert.equal(scheduled.isOverdue, false);
 
   const due = calculateFollowUpCadence('app-1', 'Applied', fiveDaysAgo, 5);
+  assert.ok(due);
   assert.equal(due.urgency, 'due');
   assert.equal(due.isDue, true);
   assert.equal(due.isOverdue, false);
 
   const overdue = calculateFollowUpCadence('app-1', 'Applied', eightDaysAgo, 5);
+  assert.ok(overdue);
   assert.equal(overdue.urgency, 'overdue');
   assert.equal(overdue.isDue, true);
   assert.equal(overdue.isOverdue, true);
+});
+
+test('contract: calculateFollowUpCadence returns null for terminal stages', () => {
+  assert.equal(calculateFollowUpCadence('app-1', 'Rejected', new Date().toISOString()), null);
+  assert.equal(calculateFollowUpCadence('app-1', 'Withdrawn', new Date().toISOString()), null);
+});
+
+test('contract: calculateFollowUpCadence honours the injected clock', () => {
+  const base = new Date('2026-01-01T00:00:00Z');
+  const later = new Date('2026-01-09T00:00:00Z');
+  const result = calculateFollowUpCadence('app-1', 'Applied', base.toISOString(), 5, later);
+  assert.ok(result);
+  assert.equal(result.daysSinceLastInteraction, 8);
+  assert.equal(result.isOverdue, true);
 });
 
 test('contract: generateFollowUpEmail interpolates variables and provides stage-appropriate advice', () => {
@@ -1238,14 +1255,14 @@ test('contract: calculateStageSla evaluates SLA thresholds and stagnation severi
   const normal = calculateStageSla('Applied', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
   assert.equal(normal.stage, 'Applied');
   assert.equal(normal.daysInStage, 3);
-  assert.equal(normal.maxRecommendedDays, 14);
+  assert.equal(normal.maxRecommendedDays, 10);
   assert.equal(normal.isStagnant, false);
   assert.equal(normal.slaSeverity, 'normal');
 
-  const warning = calculateStageSla('Interview', new Date(Date.now() - 8 * 24 * 60 * 60 * 1000));
+  const warning = calculateStageSla('Interview', new Date(Date.now() - 6 * 24 * 60 * 60 * 1000));
   assert.equal(warning.stage, 'Interview');
-  assert.equal(warning.daysInStage, 8);
-  assert.equal(warning.maxRecommendedDays, 7);
+  assert.equal(warning.daysInStage, 6);
+  assert.equal(warning.maxRecommendedDays, 5);
   assert.equal(warning.isStagnant, true);
   assert.equal(warning.slaSeverity, 'warning');
 

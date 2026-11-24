@@ -23,6 +23,7 @@ import {
   statuses,
   priorityLabels,
   calculateStageSla,
+  formatDayMonth,
   type Application,
   type Status,
   type ApplicationPriority
@@ -134,6 +135,41 @@ export default function Applications({
   const [draggingAppId, setDraggingAppId] = useState<string | null>(null);
   const [dragOverLaneKey, setDragOverLaneKey] = useState<string | null>(null);
   const [closedCollapsed, setClosedCollapsed] = useState(false);
+  const [liveAnnouncement, setLiveAnnouncement] = useState('');
+
+  function laneKeyOf(status: Status) {
+    return KANBAN_LANES.find(lane => lane.filter({ status } as Application))?.key ?? KANBAN_LANES[0].key;
+  }
+
+  function handleCardKeyDown(event: React.KeyboardEvent<HTMLDivElement>, app: Application) {
+    if (event.target !== event.currentTarget) return;
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpen(app);
+      return;
+    }
+
+    if (!event.ctrlKey && !event.metaKey) return;
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+    event.preventDefault();
+    if (busy) return;
+
+    const currentIndex = KANBAN_LANES.findIndex(lane => lane.key === laneKeyOf(app.status));
+    const nextIndex = event.key === 'ArrowRight' ? currentIndex + 1 : currentIndex - 1;
+    const target = KANBAN_LANES[nextIndex];
+    if (!target) return;
+    if (target.targetStatus === app.status) return;
+
+    void handleDropOnLane(app.id, target).then(() => {
+      setLiveAnnouncement(`Đã chuyển ${app.position} tại ${app.company} sang cột ${target.title}`);
+      window.setTimeout(() => {
+        const card = document.querySelector<HTMLElement>(`[data-card-id="${app.id}"]`);
+        card?.focus();
+      }, 120);
+    });
+  }
 
   async function handleDropOnLane(appId: string, lane: KanbanLane) {
     const targetApp = apps.find(a => a.id === appId);
@@ -612,6 +648,10 @@ export default function Applications({
                     const refDate = app.statusUpdatedAt || (app.appliedAt ? `${app.appliedAt}T00:00:00Z` : app.createdAt);
                     const sla = calculateStageSla(app.status, refDate);
                     const nextStage = nextStageMap[app.status];
+                    const appliedDate = formatDayMonth(app.appliedAt);
+                    const appliedLabel = appliedDate ? `📅 ${appliedDate}` : 'Chưa nộp';
+                    const sourceLabel = (app.source || '').trim();
+                    const metaTitle = sourceLabel ? `${appliedLabel} · ${sourceLabel}` : appliedLabel;
 
                     return (
                       <div
@@ -628,7 +668,15 @@ export default function Applications({
                           setDragOverLaneKey(null);
                         }}
                       >
-                        <div className="pipeline-card" onClick={() => onOpen(app)} role="button" tabIndex={0}>
+                        <div
+                          className="pipeline-card"
+                          data-card-id={app.id}
+                          onClick={() => onOpen(app)}
+                          onKeyDown={event => handleCardKeyDown(event, app)}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${app.position} tại ${app.company}. Enter để mở chi tiết, Ctrl cùng phím mũi tên để chuyển cột.`}
+                        >
                           <div className="card-top-meta" onClick={e => e.stopPropagation()}>
                             <label
                               className="pipeline-card-select"
@@ -683,6 +731,7 @@ export default function Applications({
                             <div className="card-company-info">
                               <strong>{app.position}</strong>
                               <span>{app.company}</span>
+                              <span className="card-meta-line" title={metaTitle}>{metaTitle}</span>
                             </div>
                           </div>
 
@@ -726,19 +775,21 @@ export default function Applications({
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '4px',
+                                gap: '3px',
                                 fontSize: '11px',
-                                padding: '3px 7px',
+                                padding: '3px 6px',
                                 borderRadius: '5px',
                                 border: '1px solid #bfdbfe',
                                 background: '#eff6ff',
                                 color: '#1d4ed8',
                                 fontWeight: 600,
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0
                               }}
                             >
                               <Sparkles size={12} />
-                              <span>Tối ưu CV</span>
+                              <span>Tối ưu</span>
                             </button>
                             {nextStage && (
                               <button
@@ -746,13 +797,25 @@ export default function Applications({
                                 className="quick-advance-btn"
                                 title={`Chuyển nhanh sang "${labels[nextStage]}"`}
                                 onClick={() => handleQuickAdvance(app, nextStage)}
+                                style={{
+                                  minWidth: 0,
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  padding: '3px 6px'
+                                }}
                               >
-                                <span>{labels[nextStage]}</span>
-                                <ChevronRight size={13} />
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labels[nextStage]}</span>
+                                <ChevronRight size={13} style={{ flexShrink: 0 }} />
                               </button>
                             )}
-                            <span className="pipeline-open" onClick={() => onOpen(app)}>
-                              Chi tiết<ArrowUpRight size={14} />
+                            <span
+                              className="pipeline-open"
+                              onClick={() => onOpen(app)}
+                              title="Xem chi tiết hồ sơ"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--primary)', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                            >
+                              Chi tiết<ArrowUpRight size={13} />
                             </span>
                           </div>
                         </div>
@@ -765,6 +828,8 @@ export default function Applications({
             })}
         </div>
       )}
+
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{liveAnnouncement}</div>
 
       <BulkActionBar
         selectedCount={selectedIds.size}

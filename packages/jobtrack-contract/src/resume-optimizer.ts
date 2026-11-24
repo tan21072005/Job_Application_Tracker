@@ -659,3 +659,169 @@ export function validateRewriteBulletInput(input: unknown): ValidationResult<Rew
     }
   };
 }
+
+export interface DetectFactViolationsOptions {
+  allowedAdditions?: string[];
+  knownTerms?: string[];
+}
+
+const SCALE_MULTIPLIER: Record<string, number> = {
+  k: 1e3, thousand: 1e3, "nghìn": 1e3, "ngàn": 1e3,
+  m: 1e6, million: 1e6, "triệu": 1e6, tr: 1e6,
+  b: 1e9, billion: 1e9, "tỷ": 1e9, "tỉ": 1e9
+};
+
+const UNIT_KIND: Record<string, string> = {
+  "%": "%", percent: "%", "phần trăm": "%",
+  ms: "ms", s: "s", "giây": "s", sec: "s", seconds: "s",
+  x: "x", times: "x", "lần": "x",
+  kb: "kb", mb: "mb", gb: "gb", tb: "tb", rps: "rps", qps: "qps"
+};
+
+const CURRENCY_KIND: Record<string, string> = {
+  "$": "$", usd: "$", "€": "€", eur: "€", "£": "£", gbp: "£",
+  "₫": "₫", vnd: "₫", "vnđ": "₫", "¥": "¥", jpy: "¥"
+};
+
+const SENTENCE_BREAK = /[.!?;:]\s|\n/;
+
+function isStartOfSentence(prefix: string): boolean {
+  const tail = prefix.match(/\W*$/);
+  const tailLength = tail ? tail[0].length : 0;
+  if (tailLength === prefix.length) return true;
+  return SENTENCE_BREAK.test(prefix.slice(Math.max(0, prefix.length - tailLength - 3)));
+}
+
+function extractWordSet(text: string): Set<string> {
+  const words = new Set<string>();
+  const tokenRegex = /[^\s,;!?()[\]{}'"`<>\\]+/gu;
+  let match: RegExpExecArray | null;
+  while ((match = tokenRegex.exec(text)) !== null) {
+    const word = match[0].replace(/[.\-/]+$/, "").toLowerCase();
+    if (word) words.add(word);
+  }
+  return words;
+}
+
+function isNumericToken(token: string): boolean {
+  return /^[$€£¥₫]?\d+(?:[.,]\d+)*(?:%|k|m|b|ms|s|x|gb|mb|tb|vnd|vnđ|usd)?$/i.test(token);
+}
+
+function extractFactTokens(text: string, knownTerms: string[] = []): Set<string> {
+  const tokens = new Set<string>();
+  const known = new Set(knownTerms.map(term => term.trim().toLowerCase()).filter(Boolean));
+  const tokenRegex = /[^\s,;!?()[\]{}'"`<>\\]+/gu;
+
+  let match: RegExpExecArray | null;
+  while ((match = tokenRegex.exec(text)) !== null) {
+    const token = match[0].replace(/[.\-/]+$/, "");
+    if (token.length < 2) continue;
+
+    const lower = token.toLowerCase();
+    if (known.has(lower)) {
+      tokens.add(lower);
+      continue;
+    }
+    if (isNumericToken(token)) continue;
+
+    const prefix = text.slice(0, match.index);
+    const hasDigitOrSymbol = /[\d+#]|\w[./]\w/.test(token);
+    const isAcronym = token === token.toUpperCase() && /[A-Z]/.test(token);
+    const first = token[0];
+    const isCapitalized = first === first.toUpperCase() && first !== first.toLowerCase() && !isStartOfSentence(prefix);
+
+    if (hasDigitOrSymbol || isAcronym || isCapitalized) tokens.add(lower);
+  }
+  return tokens;
+}
+
+function isDateLikeNumber(text: string, start: number, end: number): boolean {
+  const prefix = text.slice(Math.max(0, start - 30), start).toLowerCase();
+  const suffix = text.slice(end, Math.min(text.length, end + 20)).toLowerCase();
+
+  const month = /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|tháng\s*(?:1[0-2]|0?[1-9]))\s*$/i;
+  const prep = /\b(?:in|since|during|from|until|through|between|từ|đến|năm|vào|trong|suốt)\s*$/i;
+  const rangePrefix = /\b\d{4}\s*[-–—/]\s*$/;
+  const rangeSuffix = /^\s*[-–—/]\s*(?:\d{4}|present|current|now|nay|hiện tại)\b/i;
+  const endPunct = /^\s*(?:$|[,.;:)\n])/;
+
+  return month.test(prefix) || (prep.test(prefix) && endPunct.test(suffix)) || rangePrefix.test(prefix) || rangeSuffix.test(suffix);
+}
+
+function parseNumericClaims(text: string): Map<string, number> {
+  const claims = new Map<string, number>();
+  const numberRegex = /(?<![\p{L}\p{N}.])(?:(?<currencyPrefix>[$€£¥₫]|(?:USD|EUR|GBP|VND|VNĐ)\s*))?(?<numStr>\d+(?:[.,]\d+)*)(?:\s*(?<scale>(?:thousand|million|billion|nghìn|ngàn|triệu|tỷ|tỉ|\btr\b|[kmb])(?!\p{L})))?(?:\s*(?<unit>(?:%|percent|phần trăm|ms|giây|sec|seconds|\bs\b|times|lần|\bx\b|kb|mb|gb|tb|rps|qps|[$€£¥₫]|USD|EUR|GBP|VND|VNĐ)(?!\p{L})))?(?![\p{L}\p{N}])/giu;
+
+  let match: RegExpExecArray | null;
+  while ((match = numberRegex.exec(text)) !== null) {
+    const raw = match.groups?.numStr || "";
+    const start = match.index;
+    const end = match.index + match[0].length;
+    const prefix = text.slice(Math.max(0, start - 20), start).toLowerCase();
+
+    if (/(?:python|node(?:\.js)?|java|version|phiên bản|\bv)\s*$/i.test(prefix)) continue;
+
+    let numeric: number;
+    if (raw.includes(".") && raw.includes(",")) {
+      numeric = Number(raw.replace(/\./g, "").replace(",", "."));
+    } else if (raw.includes(",")) {
+      numeric = Number(raw.replace(",", "."));
+    } else {
+      numeric = Number(raw);
+    }
+    if (!Number.isFinite(numeric)) continue;
+
+    const scaleRaw = (match.groups?.scale || "").toLowerCase();
+    if (scaleRaw && SCALE_MULTIPLIER[scaleRaw]) numeric *= SCALE_MULTIPLIER[scaleRaw];
+
+    if (Number.isInteger(numeric) && numeric >= 1900 && numeric <= 2100 && isDateLikeNumber(text, start, end)) continue;
+
+    const currencyRaw = (match.groups?.currencyPrefix || "").trim().toLowerCase();
+    const unitRaw = (match.groups?.unit || "").trim().toLowerCase();
+    const currency = CURRENCY_KIND[currencyRaw] || CURRENCY_KIND[unitRaw] || "";
+    const unit = UNIT_KIND[unitRaw] || "";
+
+    const kind = currency || unit || "";
+    const key = `${kind}:${numeric}`;
+    claims.set(key, (claims.get(key) || 0) + 1);
+  }
+  return claims;
+}
+
+function hasNovelNumbers(before: string, after: string): boolean {
+  const source = parseNumericClaims(before);
+  const candidate = parseNumericClaims(after);
+  for (const [key, count] of candidate) {
+    if (count > (source.get(key) || 0)) return true;
+  }
+  return false;
+}
+
+export function detectFactViolations(
+  before: string,
+  after: string,
+  options: DetectFactViolationsOptions = {}
+): string[] {
+  const violations: string[] = [];
+
+  if (hasNovelNumbers(before, after)) violations.push("added_number");
+  if (hasNovelNumbers(after, before)) violations.push("dropped_number");
+
+  const allowedWords = new Set<string>();
+  for (const term of options.allowedAdditions || []) {
+    for (const word of extractWordSet(term)) allowedWords.add(word);
+  }
+
+  const beforeWords = extractWordSet(before);
+  const afterWords = extractWordSet(after);
+  const beforeTokens = extractFactTokens(before, options.knownTerms);
+  const afterTokens = extractFactTokens(after, options.knownTerms);
+
+  const dropped = Array.from(beforeTokens).filter(token => !afterWords.has(token));
+  const added = Array.from(afterTokens).filter(token => !beforeWords.has(token) && !allowedWords.has(token));
+
+  if (dropped.length > 0) violations.push("dropped_term:" + dropped.sort().join(","));
+  if (added.length > 0) violations.push("added_term:" + added.sort().join(","));
+
+  return Array.from(new Set(violations));
+}

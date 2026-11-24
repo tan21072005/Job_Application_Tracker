@@ -14,7 +14,7 @@ import {
 import { fail } from './jobtrack-service.ts';
 
 export interface ApplicationFollowUpSummaryDTO {
-  cadence: FollowUpCadenceStatusDTO;
+  cadence: FollowUpCadenceStatusDTO | null;
   logs: FollowUpLogDTO[];
   templates: FollowUpTemplateDTO[];
 }
@@ -92,7 +92,7 @@ export class FollowUpService {
 
     const intRes = await this.pool.query<{ at: Date }>(
       `SELECT at FROM interviews
-       WHERE application_id = $1
+       WHERE application_id = $1 AND at <= CURRENT_TIMESTAMP
        ORDER BY at DESC LIMIT 1`,
       [applicationId]
     );
@@ -246,7 +246,7 @@ export class FollowUpService {
     }>(
       `SELECT id, company, position, status, applied_at, created_at
        FROM applications
-       WHERE user_id = $1 AND deleted_at IS NULL AND status NOT IN ('Rejected')
+       WHERE user_id = $1 AND deleted_at IS NULL AND status NOT IN ('Rejected','Withdrawn')
        ORDER BY updated_at DESC`,
       [userId]
     );
@@ -257,7 +257,7 @@ export class FollowUpService {
       const lastDate = await this.getLastInteractionDate(userId, app.id, app.created_at, app.applied_at);
       const cadence = calculateFollowUpCadence(app.id, app.status as any, lastDate);
 
-      if (cadence.isDue) {
+      if (cadence && cadence.isDue) {
         dueList.push({
           applicationId: app.id,
           company: app.company,

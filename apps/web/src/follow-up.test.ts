@@ -26,8 +26,11 @@ describe('Follow-up Repository (demoMode)', () => {
     const res = await followUpRepository.getFollowUps('demo-0');
     expect(res).toBeDefined();
     expect(res.cadence).toBeDefined();
-    expect(res.cadence.applicationId).toBe('demo-0');
-    expect(['scheduled', 'due', 'overdue']).toContain(res.cadence.urgency);
+    const cadence = res.cadence;
+    expect(cadence).not.toBeNull();
+    if (!cadence) throw new Error('cadence missing');
+    expect(cadence.applicationId).toBe('demo-0');
+    expect(['scheduled', 'due', 'overdue']).toContain(cadence.urgency);
     expect(res.templates.length).toBeGreaterThanOrEqual(4);
     expect(Array.isArray(res.logs)).toBe(true);
   });

@@ -135,28 +135,44 @@ export const DEFAULT_FOLLOW_UP_TEMPLATES: FollowUpTemplateDTO[] = [
   }
 ];
 
+export const FOLLOW_UP_CADENCE: Readonly<Record<ApplicationStatus, number | null>> = Object.freeze({
+  Saved: 7,
+  Applied: 5,
+  Screening: 4,
+  Interview: 3,
+  Offer: 2,
+  Rejected: null,
+  Withdrawn: null
+});
+
+export const FOLLOW_UP_OVERDUE_EXTRA_DAYS = 2;
+
+export function stageFollowUpWaitDays(stage: ApplicationStatus): number | null {
+  return FOLLOW_UP_CADENCE[stage] ?? null;
+}
+
 export function calculateFollowUpCadence(
   applicationId: string,
   stage: ApplicationStatus,
   lastInteractionDate: string | Date,
-  customWaitDays?: number
-): FollowUpCadenceStatusDTO {
-  const lastTime = new Date(lastInteractionDate).getTime();
-  const now = Date.now();
-  const diffDays = Math.max(0, Math.floor((now - lastTime) / (1000 * 60 * 60 * 24)));
+  customWaitDays?: number,
+  now: Date = new Date()
+): FollowUpCadenceStatusDTO | null {
+  const baseWait = customWaitDays && customWaitDays >= 1 ? customWaitDays : stageFollowUpWaitDays(stage);
+  if (baseWait === null) return null;
 
-  let waitDays = customWaitDays;
-  if (!waitDays || waitDays < 1) {
-    if (stage === 'Interview') waitDays = 3;
-    else if (stage === 'Offer') waitDays = 2;
-    else if (stage === 'Applied') waitDays = 5;
-    else waitDays = 7;
-  }
+  const lastTime = new Date(lastInteractionDate).getTime();
+  if (!Number.isFinite(lastTime)) return null;
+
+  const nowMs = now.getTime();
+  const diffDays = Math.max(0, Math.floor((nowMs - lastTime) / (1000 * 60 * 60 * 24)));
+
+  const waitDays = baseWait;
 
   const dueTimestamp = lastTime + waitDays * 24 * 60 * 60 * 1000;
   const dueDate = new Date(dueTimestamp).toISOString().split('T')[0];
   const isDue = diffDays >= waitDays;
-  const isOverdue = diffDays >= waitDays + 2;
+  const isOverdue = diffDays >= waitDays + FOLLOW_UP_OVERDUE_EXTRA_DAYS;
 
   const urgency: 'scheduled' | 'due' | 'overdue' = isOverdue
     ? 'overdue'

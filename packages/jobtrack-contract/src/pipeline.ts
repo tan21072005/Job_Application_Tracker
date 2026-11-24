@@ -19,11 +19,11 @@ export interface PipelineMetadataInput {
 }
 
 export const DEFAULT_STAGE_SLAS: Record<ApplicationStatus, number> = {
-  Saved: 30,
-  Applied: 14,
-  Screening: 10,
-  Interview: 7,
-  Offer: 5,
+  Saved: 14,
+  Applied: 10,
+  Screening: 7,
+  Interview: 5,
+  Offer: 3,
   Rejected: 9999,
   Withdrawn: 9999
 };

@@ -1897,7 +1897,7 @@ function saveDemoFollowUpLogs(map: Record<string, FollowUpLogDTO[]>): void {
 }
 
 export const followUpRepository = {
-  async getFollowUps(appId: string): Promise<{ cadence: FollowUpCadenceStatusDTO; templates: FollowUpTemplateDTO[]; logs: FollowUpLogDTO[] }> {
+  async getFollowUps(appId: string): Promise<{ cadence: FollowUpCadenceStatusDTO | null; templates: FollowUpTemplateDTO[]; logs: FollowUpLogDTO[] }> {
     if (demoMode) {
       const apps = load();
       const app = apps.find(a => a.id === appId);
@@ -1912,7 +1912,7 @@ export const followUpRepository = {
         logs
       };
     }
-    return request<{ cadence: FollowUpCadenceStatusDTO; templates: FollowUpTemplateDTO[]; logs: FollowUpLogDTO[] }>(
+    return request<{ cadence: FollowUpCadenceStatusDTO | null; templates: FollowUpTemplateDTO[]; logs: FollowUpLogDTO[] }>(
       `/applications/${encodeURIComponent(appId)}/follow-ups`
     );
   },
@@ -1997,7 +1997,7 @@ export const followUpRepository = {
         const logs = allLogs[app.id] || [];
         const lastDate = logs[0]?.sentAt || app.interviews?.[0]?.at || app.appliedAt || app.createdAt;
         const cadence = calculateFollowUpCadence(app.id, app.status as any, lastDate);
-        if (cadence.urgency === 'due' || cadence.urgency === 'overdue') {
+        if (cadence && (cadence.urgency === 'due' || cadence.urgency === 'overdue')) {
           dueList.push(cadence);
         }
       }
