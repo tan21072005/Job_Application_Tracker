@@ -47,7 +47,7 @@
     "db:rollback-drill": "node tools/ops/rollback-drill.mjs",
     "evidence:capture": "node tools/capture-evidence.mjs",
     "account:create": "node tools/create-account.mjs",
-    "check:no-comments": "node \"F:/long-app/no-comments/check-no-comments.mjs\" --repo . --staged",
-    "check:no-comments:worktree": "node \"F:/long-app/no-comments/check-no-comments.mjs\" --repo . --worktree"
+    "check:no-comments": "node tools/no-comments/check-no-comments.mjs --repo . --staged",
+    "check:no-comments:worktree": "node tools/no-comments/check-no-comments.mjs --repo . --worktree"
   }
 }
