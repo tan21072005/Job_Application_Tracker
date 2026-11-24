@@ -76,12 +76,14 @@ export default function AiGrantsModal({ onClose }: AiGrantsModalProps) {
     setTimeout(() => setCopied(false), 3000);
   }
 
+  const mcpEndpoint = `${typeof window === 'undefined' ? '' : window.location.origin}/api/mcp`;
+
   const sampleConfig = createdToken
     ? JSON.stringify(
         {
           mcpServers: {
             jobtrack: {
-              url: 'http://127.0.0.1:64366/api/mcp',
+              url: mcpEndpoint,
               headers: {
                 Authorization: `Bearer ${createdToken.token}`
               }

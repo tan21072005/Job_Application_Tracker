@@ -637,7 +637,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${serverConfig.apiToken}`
+          'Authorization': `Bearer ${serverConfig.apiToken}`,
+          'Idempotency-Key': crypto.randomUUID()
         },
         body: JSON.stringify(payload)
       });
@@ -1038,6 +1039,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   openSettingsBtn.addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
+
+  const openWebAppLink = document.getElementById('openWebAppLink');
+  if (openWebAppLink) {
+    openWebAppLink.href = serverConfig.serverUrl;
+  }
 
   await checkServerConnection();
   await scanPageData();

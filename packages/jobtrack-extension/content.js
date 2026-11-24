@@ -330,8 +330,8 @@ function extractCurrentPageJob() {
 
   return {
     url,
-    company: company || window.location.hostname.replace(/^www\./, ''),
-    position: position || 'Vị trí tuyển dụng',
+    company: company || '',
+    position: position || '',
     location: location || '',
     salary: salary || '',
     workMode,
@@ -420,7 +420,9 @@ async function autofillApplicationForm(profile) {
     }
   }
 
-  showAutofillBanner(filledCount);
+  if (filledCount > 0) {
+    showAutofillBanner(filledCount);
+  }
   return filledCount;
 }
 
@@ -614,15 +616,15 @@ function detectJobPostingAndShowQuickSaveBadge() {
         location: job.location || null,
         workMode: job.workMode || 'On-site',
         status: 'Saved',
-        notes: job.notes || '',
-        priority: 'target'
+        notes: job.notes || ''
       };
 
       const res = await fetch(`${config.serverUrl}/api/applications`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiToken}`
+          'Authorization': `Bearer ${config.apiToken}`,
+          'Idempotency-Key': crypto.randomUUID()
         },
         body: JSON.stringify(payload)
       });
