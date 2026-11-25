@@ -111,3 +111,29 @@ test('jsonld: missing fields stay null rather than empty strings', () => {
   assert.equal(result.posting!.website, null);
   assert.equal(result.posting!.location, null);
 });
+
+test('jsonld: a job board profile link is not mistaken for the company website', () => {
+  const html = page({
+    '@type': 'JobPosting',
+    title: 'Kế toán tổng hợp',
+    hiringOrganization: {
+      name: 'CÔNG TY TNHH KHOA HỌC CÔNG NGHỆ MINH VIỆT',
+      sameAs: 'https://www.topcv.vn/cong-ty/cong-ty-tnhh-khoa-hoc-cong-nghe-minh-viet/164273.html'
+    }
+  });
+
+  const result = extractJobPostingFromHtml(html);
+  assert.equal(result.posting!.company, 'CÔNG TY TNHH KHOA HỌC CÔNG NGHỆ MINH VIỆT');
+  assert.equal(result.posting!.website, null, 'the board profile is not the employer site');
+});
+
+test('jsonld: an employer own domain is still accepted as the website', () => {
+  const html = page({
+    '@type': 'JobPosting',
+    title: 'Backend Engineer',
+    hiringOrganization: { name: 'Ballow', sameAs: 'https://ballow.io.vn' }
+  });
+
+  const result = extractJobPostingFromHtml(html);
+  assert.equal(result.posting!.website, 'https://ballow.io.vn');
+});

@@ -57,11 +57,41 @@ function addressOf(node: unknown): string | null {
   return pieces.length ? Array.from(new Set(pieces)).join(', ') : null;
 }
 
+const JOB_BOARD_HOSTS = [
+  'topcv.vn',
+  'vietnamworks.com',
+  'itviec.com',
+  'careerlink.vn',
+  'jobstreet.com',
+  'linkedin.com',
+  'indeed.com',
+  'glassdoor.com',
+  'timviec365.vn',
+  'careerbuilder.vn',
+  'vieclam24h.vn',
+  'jobsgo.vn',
+  'tuyendung.vn',
+  'ybox.vn'
+];
+
+function isJobBoardUrl(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    const host = new URL(raw.includes('://') ? raw : `https://${raw}`).hostname.toLowerCase().replace(/^www\./, '');
+    return JOB_BOARD_HOSTS.some(board => host === board || host.endsWith(`.${board}`));
+  } catch {
+    return false;
+  }
+}
+
 function organizationWebsite(item: Record<string, unknown>): string | null {
   const org = item.hiringOrganization;
   if (!org || typeof org !== 'object') return null;
   const record = org as Record<string, unknown>;
-  return asString(record.sameAs) ?? asString(record.url);
+  const candidate = asString(record.sameAs) ?? asString(record.url);
+  if (!candidate) return null;
+  if (isJobBoardUrl(candidate)) return null;
+  return candidate;
 }
 
 function organizationLogo(item: Record<string, unknown>): string | null {
