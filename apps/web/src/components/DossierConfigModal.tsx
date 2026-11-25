@@ -528,7 +528,7 @@ export const DossierConfigModal: React.FC<DossierConfigModalProps> = ({ isOpen, 
               <div className="preview-card-header">
                 <div className="preview-stamp">
                   <ShieldCheck size={18} />
-                  <span>XÁC THỰC BẢO CHỨNG · JOBTRACK SYSTEM</span>
+                  <span>{previewDossier.isVerified ? 'XÁC THỰC BẢO CHỨNG · JOBTRACK SYSTEM' : 'BẢN XEM TRƯỚC · CHƯA CÓ DỮ LIỆU XÁC THỰC'}</span>
                 </div>
                 <button type="button" className="preview-close-btn" onClick={() => setShowPreviewModal(false)}>
                   <X size={18} />
@@ -539,9 +539,11 @@ export const DossierConfigModal: React.FC<DossierConfigModalProps> = ({ isOpen, 
                 <div className="preview-hero">
                   <div className="preview-name-row">
                     <h3 className="preview-candidate-name">{previewDossier.candidateName}</h3>
-                    <span className="preview-verified-pill">
-                      <Check size={12} /> Verified Candidate
-                    </span>
+                    {previewDossier.isVerified && (
+                      <span className="preview-verified-pill">
+                        <Check size={12} /> Verified Candidate
+                      </span>
+                    )}
                   </div>
                   <div className="preview-headline">{previewDossier.title}</div>
                   {previewDossier.location && (
@@ -562,9 +564,9 @@ export const DossierConfigModal: React.FC<DossierConfigModalProps> = ({ isOpen, 
                 </div>
 
                 <div className="preview-grid-cols">
-                  {previewDossier.topSkills && previewDossier.topSkills.length > 0 && (
+                  {previewDossier.topSkills && previewDossier.topSkills.length > 0 ? (
                     <div className="preview-block">
-                      <h4 className="preview-block-title">Kỹ Năng Đã Bảo Chứng</h4>
+                      <h4 className="preview-block-title">Kỹ Năng Từ Hồ Sơ Của Bạn</h4>
                       <div className="preview-skills-grid">
                         {previewDossier.topSkills.map((s, idx) => (
                           <div key={idx} className="preview-skill-badge">
@@ -573,6 +575,11 @@ export const DossierConfigModal: React.FC<DossierConfigModalProps> = ({ isOpen, 
                           </div>
                         ))}
                       </div>
+                    </div>
+                  ) : (
+                    <div className="preview-block">
+                      <h4 className="preview-block-title">Kỹ Năng</h4>
+                      <p className="preview-empty-note">Chưa có kỹ năng nào trong hồ sơ ứng viên hoặc CV. Thêm kỹ năng để hiển thị ở đây.</p>
                     </div>
                   )}
 
@@ -619,13 +626,22 @@ export const DossierConfigModal: React.FC<DossierConfigModalProps> = ({ isOpen, 
                   </div>
                 )}
 
-                <div className="preview-fingerprint-box">
-                  <div className="fp-label">Mã vân tay bảo chứng (SHA-256 Fingerprint):</div>
-                  <div className="fp-code">{previewDossier.verificationFingerprint}</div>
-                  <div className="fp-timestamp">
-                    Thời điểm xác thực: {new Date(previewDossier.verifiedAt).toLocaleString('vi-VN')}
+                {previewDossier.isVerified ? (
+                  <div className="preview-fingerprint-box">
+                    <div className="fp-label">Mã vân tay bảo chứng (SHA-256 Fingerprint):</div>
+                    <div className="fp-code">{previewDossier.verificationFingerprint}</div>
+                    <div className="fp-timestamp">
+                      Thời điểm xác thực: {new Date(previewDossier.verifiedAt).toLocaleString('vi-VN')}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="preview-fingerprint-box">
+                    <div className="fp-label">Chưa có gì để bảo chứng</div>
+                    <div className="fp-timestamp">
+                      Hồ sơ này chưa có kỹ năng, lộ trình hay buổi phỏng vấn thử nào. Thêm dữ liệu thật rồi mở lại để nhận mã bảo chứng.
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="preview-card-footer">

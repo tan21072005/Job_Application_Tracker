@@ -215,48 +215,9 @@ export class PortfolioService {
     );
     const activeInterviewsCount = (userAppsRes.rows[0]?.active_interviews as number) || 0;
 
-    const skills: DossierSkillItemDTO[] = [
-      { name: 'TypeScript', category: 'Language', verified: true },
-      { name: 'Node.js', category: 'Backend', verified: true },
-      { name: 'PostgreSQL', category: 'Database', verified: true },
-      { name: 'System Design', category: 'Architecture', verified: true },
-      { name: 'React', category: 'Frontend', verified: true }
-    ];
-
-    const roadmap: DossierRoadmapProgressDTO = {
-      targetRole: config.targetRoles[0] || 'Senior Engineer',
-      progressPercent: 75,
-      completedMilestones: 3,
-      totalMilestones: 4
-    };
-
-    const simExists = await this.pool.query(
-      `SELECT to_regclass('public.interview_simulation_sessions') AS exists`
-    );
-    const simRes = simExists.rows[0]?.exists
-      ? await this.pool.query(
-          `SELECT * FROM interview_simulation_sessions
-           WHERE user_id = $1 AND status = 'completed' AND report IS NOT NULL
-           ORDER BY updated_at DESC LIMIT 1`,
-          [userId]
-        )
-      : { rowCount: 0, rows: [] as Record<string, unknown>[] };
-
-    let simulation: DossierSimulationReadinessDTO | null = null;
-    if (simRes.rowCount && simRes.rows[0]) {
-      const rep = simRes.rows[0].report;
-      simulation = {
-        grade: rep.readinessGrade || 'Strong Contender',
-        score: rep.overallScore || 85,
-        track: simRes.rows[0].track || 'system_design'
-      };
-    } else {
-      simulation = {
-        grade: 'Strong Contender',
-        score: 82,
-        track: 'system_design'
-      };
-    }
+    const skills = await this.collectVerifiedSkills(userId);
+    const roadmap = await this.collectRoadmapProgress(userId, config);
+    const simulation = await this.collectSimulationReadiness(userId);
 
     const candidateEmail = (row.user_email as string) || '';
     const candidateName = candidateEmail.split('@')[0].replace(/[._-]/g, ' ').toUpperCase() || 'Ứng Viên JobTrack';
@@ -269,6 +230,115 @@ export class PortfolioService {
       simulation,
       activeInterviewsCount
     );
+  }
+
+  private async collectVerifiedSkills(userId: string): Promise<DossierSkillItemDTO[]> {
+    const collected: DossierSkillItemDTO[] = [];
+    const seen = new Set<string>();
+
+    const push = (raw: unknown, category: string) => {
+      if (typeof raw !== 'string') return;
+      const name = raw.trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      collected.push({ name, category, verified: true });
+    };
+
+    const profileExists = await this.pool.query<{ exists: boolean }>(
+      `SELECT (to_regclass('public.candidate_profiles') IS NOT NULL) AS exists`
+    );
+    if (profileExists.rows[0]?.exists) {
+      const profileRes = await this.pool.query<{ skills: unknown }>(
+        `SELECT skills FROM candidate_profiles WHERE user_id = $1 LIMIT 1`,
+        [userId]
+      );
+      const profileSkills = profileRes.rows[0]?.skills;
+      if (Array.isArray(profileSkills)) {
+        for (const entry of profileSkills) push(entry, 'Kỹ năng');
+      }
+    }
+
+    const resumeExists = await this.pool.query<{ exists: boolean }>(
+      `SELECT (to_regclass('public.user_resumes') IS NOT NULL) AS exists`
+    );
+    if (resumeExists.rows[0]?.exists) {
+      const resumeRes = await this.pool.query<{ skill_groups: unknown }>(
+        `SELECT skill_groups FROM user_resumes WHERE user_id = $1 ORDER BY is_master DESC NULLS LAST, updated_at DESC LIMIT 1`,
+        [userId]
+      );
+      const groups = resumeRes.rows[0]?.skill_groups;
+      if (Array.isArray(groups)) {
+        for (const group of groups) {
+          const bucket = group as { category?: unknown; skills?: unknown };
+          const category = typeof bucket.category === 'string' && bucket.category.trim() ? bucket.category.trim() : 'Kỹ năng';
+          if (Array.isArray(bucket.skills)) {
+            for (const entry of bucket.skills) push(entry, category);
+          }
+        }
+      }
+    }
+
+    return collected.slice(0, 12);
+  }
+
+  private async collectRoadmapProgress(
+    userId: string,
+    config: PortfolioConfigDTO
+  ): Promise<DossierRoadmapProgressDTO | null> {
+    const roadmapExists = await this.pool.query<{ exists: boolean }>(
+      `SELECT (to_regclass('public.career_roadmaps') IS NOT NULL) AS exists`
+    );
+    if (!roadmapExists.rows[0]?.exists) return null;
+
+    const res = await this.pool.query<{ target_role: string; milestones: unknown }>(
+      `SELECT target_role, milestones FROM career_roadmaps
+       WHERE user_id = $1
+       ORDER BY updated_at DESC LIMIT 1`,
+      [userId]
+    );
+    if (!res.rowCount || !res.rows[0]) return null;
+
+    const milestones = Array.isArray(res.rows[0].milestones) ? res.rows[0].milestones as Array<{ status?: unknown }> : [];
+    if (milestones.length === 0) return null;
+
+    const completed = milestones.filter(m => m && (m.status === 'completed' || m.status === 'done')).length;
+    const progressPercent = Math.round((completed / milestones.length) * 100);
+
+    return {
+      targetRole: res.rows[0].target_role || config.targetRoles[0] || '',
+      progressPercent,
+      completedMilestones: completed,
+      totalMilestones: milestones.length
+    };
+  }
+
+  private async collectSimulationReadiness(userId: string): Promise<DossierSimulationReadinessDTO | null> {
+    const simExists = await this.pool.query<{ exists: unknown }>(
+      `SELECT to_regclass('public.interview_simulation_sessions') AS exists`
+    );
+    if (!simExists.rows[0]?.exists) return null;
+
+    const simRes = await this.pool.query<{ report: unknown; track: unknown; updated_at: unknown }>(
+      `SELECT report, track, updated_at FROM interview_simulation_sessions
+       WHERE user_id = $1 AND status = 'completed' AND report IS NOT NULL
+       ORDER BY updated_at DESC LIMIT 1`,
+      [userId]
+    );
+    if (!simRes.rowCount || !simRes.rows[0]) return null;
+
+    const report = simRes.rows[0].report as { readinessGrade?: unknown; overallScore?: unknown } | null;
+    if (!report) return null;
+
+    const rawScore = typeof report.overallScore === 'number' ? report.overallScore : null;
+    if (rawScore === null || !Number.isFinite(rawScore)) return null;
+
+    return {
+      grade: (report.readinessGrade as DossierSimulationReadinessDTO['grade']) || 'Needs Practice',
+      score: Math.max(0, Math.min(100, Math.round(rawScore))),
+      track: typeof simRes.rows[0].track === 'string' ? simRes.rows[0].track as string : 'system_design'
+    };
   }
 
   private mapRow(row: Record<string, unknown>): PortfolioConfigDTO {

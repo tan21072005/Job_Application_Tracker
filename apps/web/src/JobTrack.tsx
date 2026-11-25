@@ -24,6 +24,7 @@ import { DecisionMatrixModal } from './components/DecisionMatrixModal';
 import { EmailIngestModal } from './components/EmailIngestModal';
 import { InterviewSimulationModal } from './components/InterviewSimulationModal';
 import { DossierConfigModal } from './components/DossierConfigModal';
+import PublicDossier from './views/PublicDossier';
 import FeaturePage, { ExtraPage, extraPages, featureFromHash, featureTitles } from './views/FeaturePage';
 import AccountPage from './views/AccountPage';
 import { ResumeOptimizerModal } from './components/ResumeOptimizerModal';
@@ -128,6 +129,11 @@ export default function JobTrack() {
   async function bootstrap() {
     setLoading(true);
     setError('');
+    if (readRoute().page === 'dossier') {
+      setAuthState('authenticated');
+      setLoading(false);
+      return;
+    }
     if (demoMode) {
       setAuthState('authenticated');
       void refresh();
@@ -317,6 +323,9 @@ export default function JobTrack() {
   const navigation = <><a href="#dashboard" className={route.page === 'dashboard' ? 'active' : ''} aria-current={route.page === 'dashboard' ? 'page' : undefined}><LayoutDashboard size={19} /><span>Tổng quan</span></a><a href="#applications" className={isApplications ? 'active' : ''} aria-current={isApplications ? 'page' : undefined}><BriefcaseBusiness size={19} /><span>Hồ sơ ứng tuyển</span>{apps.length > 0 && <small>{apps.length}</small>}</a><a href="#interviews" className={route.page === 'interviews' ? 'active' : ''} aria-current={route.page === 'interviews' ? 'page' : undefined}><CalendarDays size={19} /><span>Lịch phỏng vấn</span>{upcomingInterviewsCount > 0 && <small>{upcomingInterviewsCount}</small>}</a><a href="#analytics" className={route.page === 'analytics' ? 'active' : ''} aria-current={route.page === 'analytics' ? 'page' : undefined}><TrendingUp size={19} /><span>Phân tích</span></a><a href="#roadmap" className={route.page === 'roadmap' ? 'active' : ''} aria-current={route.page === 'roadmap' ? 'page' : undefined}><Compass size={19} /><span>Lộ trình AI</span></a><a href="#settings" className={route.page === 'settings' ? 'active' : ''} aria-current={route.page === 'settings' ? 'page' : undefined}><Settings size={19} /><span>Cài đặt</span></a></>;
   const mobileNavigation = <><a href="#dashboard" className={route.page === 'dashboard' ? 'active' : ''} aria-current={route.page === 'dashboard' ? 'page' : undefined}><LayoutDashboard size={21} /><span>Tổng quan</span></a><a href="#applications" className={isApplications ? 'active' : ''} aria-current={isApplications ? 'page' : undefined}><BriefcaseBusiness size={21} /><span>Hồ sơ</span></a><button onClick={() => setForm('new')}><Plus size={21} /><span>Thêm mới</span></button><a href="#interviews" className={route.page === 'interviews' ? 'active' : ''} aria-current={route.page === 'interviews' ? 'page' : undefined}><CalendarDays size={21} /><span>Lịch</span></a><button onClick={() => setDrawer(true)} aria-expanded={drawer} aria-haspopup="dialog"><Menu size={21} /><span>Thêm</span></button></>;
   const recovery = readResetToken();
+  if (route.page === 'dossier' && route.id) {
+    return <div className="jobtrack"><PublicDossier token={route.id} /></div>;
+  }
   return <div className="jobtrack"><a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); headingRef.current?.focus(); }}>Đến nội dung chính</a>{recovery.active ? <PasswordRecovery token={recovery.token || undefined} onDone={() => { location.hash = 'auth'; setRoute(readRoute()); }} /> : route.page === 'auth' || authState === 'unauthenticated' ? <Auth onEnter={user => handleLoginSuccess(user)} errorCode={route.authError} onForgot={() => { location.hash = 'forgot-password'; setRoute(readRoute()); }} /> : <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
     <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} navigation={navigation} accountEmail={accountEmail} isPro={Boolean(proStatus?.isPro)} activeFeature={route.page === 'f' ? route.id : ''} onAccount={() => navigate('account')} onUpgrade={() => navigate('f/pro')} onTrash={() => navigate('f/trash')} onFeature={openFeature} />
     <div className="workspace"><header className="topbar"><div className="mobile-brand"><Logo /></div><div className="breadcrumb"><span>Không gian cá nhân</span><span>/</span><strong>{route.page === 'dashboard' ? 'Tổng quan' : route.page === 'analytics' ? 'Phân tích & Hiệu suất' : route.page === 'roadmap' ? 'Lộ trình Kỹ năng & Sự nghiệp AI' : route.page === 'interviews' ? 'Lịch phỏng vấn' : route.page === 'settings' ? 'Cài đặt' : route.page === 'account' ? 'Tài khoản' : route.page === 'f' ? (extraPages[route.id] ?? featureTitles[featureFromHash(route.id) ?? 'contacts']) : 'Hồ sơ ứng tuyển'}</strong></div><div className="topbar-account">{proStatus?.isPro ? <span className="pro-pill-badge" onClick={() => navigate('f/pro')} style={{ cursor: 'pointer', marginRight: '8px' }}><Crown size={12} />PRO</span> : <button className="pro-upgrade-nav-btn" onClick={() => navigate('f/pro')} style={{ marginRight: '8px' }}><Crown size={14} />Nâng cấp Pro</button>}{demoMode && <span className="demo-label"><span />Dữ liệu mẫu</span>}<button className="avatar" aria-label="Mở tài khoản" onClick={() => navigate('account')}>{demoMode ? 'NT' : 'TK'}</button></div></header>

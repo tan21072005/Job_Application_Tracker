@@ -2804,3 +2804,211 @@ select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .simulation-icon{color:var(--indigo-500)}
 .comp-close-btn{display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--slate-500);cursor:pointer}
 .comp-close-btn:hover{background:var(--slate-100)}
+
+.preview-empty-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.public-dossier-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 20px;
+  background: #f1f5f9;
+}
+
+.public-dossier-shell .public-dossier-state {
+  margin-top: 96px;
+  text-align: center;
+  color: #334155;
+}
+
+.public-dossier-state h1 {
+  margin: 12px 0 8px;
+  font-size: 20px;
+}
+
+.public-dossier-state p {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.public-dossier-card {
+  width: 100%;
+  max-width: 720px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 32px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.public-dossier-head {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.public-dossier-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+.public-dossier-stamp.unverified {
+  color: #b45309;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.public-dossier-head h1 {
+  margin: 16px 0 4px;
+  font-size: 26px;
+  line-height: 1.25;
+  color: #0f172a;
+}
+
+.public-dossier-title {
+  margin: 0;
+  font-size: 15px;
+  color: #475569;
+}
+
+.public-dossier-meta {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.public-dossier-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.public-dossier-role {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.public-dossier-bio {
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #334155;
+}
+
+.public-dossier-section {
+  margin-bottom: 22px;
+}
+
+.public-dossier-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.public-dossier-section p {
+  margin: 0;
+  font-size: 14px;
+  color: #334155;
+}
+
+.public-dossier-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.public-dossier-skill {
+  font-size: 13px;
+  padding: 5px 11px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.public-dossier-readiness strong {
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.public-dossier-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.public-dossier-progress > div {
+  height: 100%;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.public-dossier-progress-label {
+  margin-top: 6px !important;
+  font-size: 12px !important;
+  color: #64748b !important;
+}
+
+.public-dossier-foot {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+  margin-top: 8px;
+}
+
+.public-dossier-fingerprint {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  word-break: break-all;
+  color: #94a3b8;
+}
+
+.public-dossier-timestamp {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  .public-dossier-shell {
+    padding: 20px 12px;
+  }
+
+  .public-dossier-card {
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  .public-dossier-head h1 {
+    font-size: 21px;
+  }
+}

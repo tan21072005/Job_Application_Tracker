@@ -126,6 +126,75 @@ test('portfolio: GET /api/portfolio initializes default config and PUT updates i
   assert.equal(updated.displaySettings.anonymizeCandidateName, true);
 });
 
+test('portfolio: a candidate with no skills, roadmap or simulation gets an unverified dossier', async () => {
+  const tokenRes = await fetch(`${base}/api/portfolio/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: origin,
+      Cookie: userB.cookie
+    },
+    body: JSON.stringify({ expiryDays: 30 })
+  });
+  assert.equal(tokenRes.status, 201);
+  const tokenData = await tokenRes.json() as ShareTokenDTO;
+
+  const publicRes = await fetch(`${base}/api/public/dossier/${tokenData.token}`);
+  assert.equal(publicRes.status, 200);
+  const dossier = await publicRes.json() as PublicDossierViewDTO;
+
+  assert.equal(dossier.isVerified, false, 'an empty account must not claim verification');
+  assert.deepEqual(dossier.topSkills, [], 'no skill may be invented');
+  assert.equal(dossier.roadmapProgress, null, 'no roadmap progress may be invented');
+  assert.equal(dossier.simulationReadiness, null, 'no interview score may be invented');
+});
+
+test('portfolio: real skills and roadmap milestones reach the public dossier', async () => {
+  await pool.query(
+    `INSERT INTO candidate_profiles (user_id, full_name, email, skills)
+     VALUES ($1, $2, $3, $4::text[])
+     ON CONFLICT (user_id) DO UPDATE SET skills = EXCLUDED.skills`,
+    [userA.userId, 'Ứng viên A', 'candidate-a@example.com', ['Rust', 'Kubernetes']]
+  );
+  await pool.query(
+    `INSERT INTO career_roadmaps (id, user_id, title, target_role, duration_weeks, milestones)
+     VALUES ($1, $2, $3, $4, 4, $5::jsonb)`,
+    [
+      randomUUID(),
+      userA.userId,
+      'Lộ trình Rust',
+      'Rust Engineer',
+      JSON.stringify([
+        { status: 'completed' },
+        { status: 'completed' },
+        { status: 'pending' },
+        { status: 'pending' }
+      ])
+    ]
+  );
+
+  const tokenRes = await fetch(`${base}/api/portfolio/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: origin,
+      Cookie: userA.cookie
+    },
+    body: JSON.stringify({ expiryDays: 30 })
+  });
+  const tokenData = await tokenRes.json() as ShareTokenDTO;
+
+  const publicRes = await fetch(`${base}/api/public/dossier/${tokenData.token}`);
+  const dossier = await publicRes.json() as PublicDossierViewDTO;
+
+  assert.equal(dossier.isVerified, true, 'evidence on file means the dossier is verifiable');
+  assert.deepEqual(dossier.topSkills.map(s => s.name).sort(), ['Kubernetes', 'Rust']);
+  assert.ok(dossier.roadmapProgress, 'roadmap progress must come from the stored roadmap');
+  assert.equal(dossier.roadmapProgress?.progressPercent, 50);
+  assert.equal(dossier.roadmapProgress?.completedMilestones, 2);
+  assert.equal(dossier.roadmapProgress?.totalMilestones, 4);
+});
+
 test('portfolio: POST /api/portfolio/token generates token and GET /api/public/dossier/:token returns verified view', async () => {
   const tokenRes = await fetch(`${base}/api/portfolio/token`, {
     method: 'POST',
@@ -150,7 +219,7 @@ test('portfolio: POST /api/portfolio/token generates token and GET /api/public/d
   assert.equal(publicDossier.salaryExpectation, null);
   assert.ok(publicDossier.candidateName.startsWith('Kỹ sư'));
   assert.ok(publicDossier.verificationFingerprint.length === 64);
-  assert.equal(publicDossier.isVerified, true);
+  assert.equal(typeof publicDossier.isVerified, 'boolean');
 
   const portRes = await fetch(`${base}/api/portfolio`, {
     headers: { Origin: origin, Cookie: userA.cookie }
