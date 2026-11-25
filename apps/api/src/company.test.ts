@@ -56,21 +56,7 @@ test('company: GET /api/companies/:name requires authentication', async () => {
   assert.equal(res.status, 401);
 });
 
-test('company: GET /api/companies/:name returns preset company dossier', async () => {
-  const user = await registerUser();
-  const res = await fetch(`${base}/api/companies/FPT%20Software`, {
-    headers: { Cookie: user.cookie, Origin: origin }
-  });
-  assert.equal(res.status, 200);
-  const data = await res.json() as CompanyProfileDTO;
-  assert.equal(data.name, 'FPT Software');
-  assert.ok(data.salaryBenchmarks.length >= 3);
-  assert.ok(data.interviewQuestions.length >= 2);
-  assert.ok(data.cultureScores.overall >= 3.0);
-  assert.ok(data.techStack.includes('Java'));
-});
-
-test('company: GET /api/companies/:name synthesizes unknown company dossier', async () => {
+test('company: an unknown company returns an honest empty dossier, not invented scores', async () => {
   const user = await registerUser();
   const compName = `TestCompany_${randomUUID().slice(0, 6)}`;
   const res = await fetch(`${base}/api/companies/${encodeURIComponent(compName)}`, {
@@ -78,9 +64,35 @@ test('company: GET /api/companies/:name synthesizes unknown company dossier', as
   });
   assert.equal(res.status, 200);
   const data = await res.json() as CompanyProfileDTO;
+
   assert.equal(data.name, compName);
-  assert.ok(data.salaryBenchmarks.length >= 3);
-  assert.ok(data.cultureScores.overall >= 3.0);
+  assert.equal(data.cultureScores, null, 'no reviews must mean no score');
+  assert.deepEqual(data.salaryBenchmarks, []);
+  assert.deepEqual(data.interviewQuestions, []);
+  assert.equal(data.industry, '');
+  assert.equal(data.size, '');
+  assert.deepEqual(data.provenance, {});
+  assert.equal(data.places, null);
+  assert.equal(data.enrichment.canEnrich, true);
+  assert.ok(data.enrichment.missing.includes('industry'));
+});
+
+test('company: a company name is not stored, so nothing invented survives the next read', async () => {
+  const user = await registerUser();
+  const compName = `Ghost_${randomUUID().slice(0, 6)}`;
+
+  await fetch(`${base}/api/companies/${encodeURIComponent(compName)}`, {
+    headers: { Cookie: user.cookie, Origin: origin }
+  });
+
+  const stored = await pool.query('SELECT count(*)::int AS n FROM company_profiles WHERE lower(name)=lower($1)', [compName]);
+  assert.equal(stored.rows[0].n, 0, 'reading a company must not create a fabricated row');
+
+  const again = await fetch(`${base}/api/companies/${encodeURIComponent(compName)}`, {
+    headers: { Cookie: user.cookie, Origin: origin }
+  });
+  const data = await again.json() as CompanyProfileDTO;
+  assert.equal(data.cultureScores, null);
 });
 
 test('company: POST /api/companies/:name/reviews rejects invalid review with 422', async () => {
@@ -142,8 +154,9 @@ test('company: POST /api/companies/:name/reviews saves review and re-computes cu
     headers: { Cookie: user.cookie, Origin: origin }
   });
   const updatedProfile = await updatedProfileRes.json() as CompanyProfileDTO;
-  assert.equal(updatedProfile.cultureScores.totalReviews, 1);
-  assert.equal(updatedProfile.cultureScores.overall, 5.0);
+  assert.ok(updatedProfile.cultureScores, 'one review must produce a score');
+  assert.equal(updatedProfile.cultureScores!.totalReviews, 1);
+  assert.equal(updatedProfile.cultureScores!.overall, 5.0);
   assert.equal(updatedProfile.recentReviews.length, 1);
 });
 

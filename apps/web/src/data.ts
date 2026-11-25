@@ -85,7 +85,6 @@ import {
   type CompanyInterviewQuestionDTO,
   calculateCompanyAggregates,
   validateCompanyReviewInput,
-  synthesizeCompanyIntelligence,
   type FollowUpLogDTO,
   type FollowUpCadenceStatusDTO,
   type FollowUpAttentionSummaryDTO,
@@ -1822,12 +1821,59 @@ export const companyRepository = {
       const map = loadDemoCompanies();
       const existing = map[cleanName.toLowerCase()];
       if (existing) return existing;
-      const synthesized = synthesizeCompanyIntelligence(cleanName);
-      map[cleanName.toLowerCase()] = synthesized;
+      const blank: CompanyProfileDTO = {
+        name: cleanName,
+        industry: '', size: '', headquarters: '', website: '', description: '',
+        techStack: [],
+        cultureScores: null,
+        salaryBenchmarks: [],
+        interviewQuestions: [],
+        recentReviews: [],
+        keyPros: [],
+        keyRedFlags: [],
+        provenance: {},
+        places: null,
+        enrichment: { canEnrich: false, running: false, attempts: 0, lastAttemptAt: null, lastError: null, missing: [] },
+        updatedAt: new Date().toISOString()
+      };
+      map[cleanName.toLowerCase()] = blank;
       saveDemoCompanies(map);
-      return synthesized;
+      return blank;
     }
     return request<CompanyProfileDTO>(`/companies/${encodeURIComponent(cleanName)}`);
+  },
+
+  async enrich(name: string, website?: string): Promise<CompanyProfileDTO> {
+    const cleanName = (name || '').trim();
+    if (demoMode) {
+      return this.get(cleanName);
+    }
+    const body = website ? JSON.stringify({ website }) : JSON.stringify({});
+    const result = await request<{ profile: CompanyProfileDTO }>(
+      `/companies/${encodeURIComponent(cleanName)}/enrich`,
+      { method: 'POST', body }
+    );
+    return result.profile;
+  },
+
+  async addSalary(
+    name: string,
+    input: { role: string; level: string; amount: number; currency?: string; isAnonymous?: boolean }
+  ): Promise<void> {
+    const cleanName = (name || '').trim();
+    if (demoMode) return;
+    await request(`/companies/${encodeURIComponent(cleanName)}/salaries`, {
+      method: 'POST',
+      body: JSON.stringify(input)
+    });
+  },
+
+  async listSalaryContributions(name: string): Promise<Array<{
+    level: string; count: number; min: number; median: number; max: number;
+  }>> {
+    const cleanName = (name || '').trim();
+    if (demoMode) return [];
+    return request(`/companies/${encodeURIComponent(cleanName)}/salaries/contributions`);
   },
 
   async addReview(name: string, input: unknown): Promise<CompanyReviewDTO> {
@@ -1842,7 +1888,7 @@ export const companyRepository = {
       const map = loadDemoCompanies();
       let profile = map[cleanName.toLowerCase()];
       if (!profile) {
-        profile = synthesizeCompanyIntelligence(cleanName);
+        profile = await this.get(cleanName);
       }
       const newReview: CompanyReviewDTO = {
         id: `rev-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,

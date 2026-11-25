@@ -22,23 +22,26 @@ describe('Company Repository (demoMode)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('retrieves synthesized profile for arbitrary company with full metrics', async () => {
+  it('returns an honest empty profile for a company with no data', async () => {
     const profile = await companyRepository.get('Viettel Digital');
     expect(profile.name).toBe('Viettel Digital');
-    expect(profile.cultureScores.overall).toBeGreaterThanOrEqual(1);
-    expect(profile.cultureScores.overall).toBeLessThanOrEqual(5);
-    expect(profile.salaryBenchmarks.length).toBeGreaterThan(0);
-    expect(profile.interviewQuestions.length).toBeGreaterThan(0);
-    expect(profile.keyPros.length).toBeGreaterThan(0);
-    expect(profile.keyRedFlags.length).toBeGreaterThan(0);
+    expect(profile.cultureScores).toBeNull();
+    expect(profile.salaryBenchmarks).toEqual([]);
+    expect(profile.interviewQuestions).toEqual([]);
+    expect(profile.keyPros).toEqual([]);
+    expect(profile.keyRedFlags).toEqual([]);
+    expect(profile.industry).toBe('');
+    expect(profile.size).toBe('');
+    expect(profile.provenance).toEqual({});
+    expect(profile.places).toBeNull();
   });
 
-  it('retrieves preset profile for known tech company like VNG', async () => {
+  it('does not ship a hand-written dossier for a well-known company either', async () => {
     const profile = await companyRepository.get('VNG Corporation');
     expect(profile.name).toBe('VNG Corporation');
-    expect(profile.industry).toContain('Fintech');
-    expect(profile.techStack).toContain('React');
-    expect(profile.recentReviews.length).toBeGreaterThan(0);
+    expect(profile.industry).toBe('');
+    expect(profile.techStack).toEqual([]);
+    expect(profile.cultureScores).toBeNull();
   });
 
   it('validates and rejects review with invalid rating or missing fields', async () => {
@@ -80,19 +83,13 @@ describe('Company Repository (demoMode)', () => {
 
     const updated = await companyRepository.get('NAB Innovation');
     expect(updated.recentReviews.length).toBe(initialReviewCount + 1);
-    expect(updated.cultureScores.totalReviews).toBe(initialReviewCount + 1);
+    expect(updated.cultureScores?.totalReviews).toBe(initialReviewCount + 1);
     expect(updated.recentReviews[0].pros).toBe('Chế độ đãi ngộ xuất sắc, văn phòng hiện đại');
   });
 
-  it('retrieves salary benchmarks across multiple job levels', async () => {
+  it('returns no salary benchmarks when nobody has contributed any', async () => {
     const salaries = await companyRepository.getSalaries('VNG Corporation');
-    expect(salaries.length).toBeGreaterThanOrEqual(4);
-    const junior = salaries.find(s => s.level === 'Junior');
-    const senior = salaries.find(s => s.level === 'Senior');
-    expect(junior).toBeDefined();
-    expect(senior).toBeDefined();
-    if (junior && senior) {
-      expect(senior.max).toBeGreaterThan(junior.min);
-    }
+    expect(Array.isArray(salaries)).toBe(true);
+    expect(salaries).toEqual([]);
   });
 });

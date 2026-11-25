@@ -146,67 +146,82 @@ export function CompanyIntelligenceModal({
                       )}
                     </div>
                   </div>
-                  <div className="company-overall-rating-card">
-                    <div className="rating-num-big company-overall-rating">{profile.cultureScores.overall.toFixed(1)}</div>
-                    <div className="rating-stars-wrap">
-                      {'★'.repeat(Math.round(profile.cultureScores.overall))}
-                      {'☆'.repeat(5 - Math.round(profile.cultureScores.overall))}
+                  {profile.cultureScores ? (
+                    <div className="company-overall-rating-card">
+                      <div className="rating-num-big company-overall-rating">{profile.cultureScores.overall.toFixed(1)}</div>
+                      <div className="rating-stars-wrap">
+                        {String.fromCharCode(9733).repeat(Math.round(profile.cultureScores.overall))}
+                        {String.fromCharCode(9734).repeat(5 - Math.round(profile.cultureScores.overall))}
+                      </div>
+                      <span className="rating-reviews-count">{profile.cultureScores.totalReviews} đánh giá</span>
                     </div>
-                    <span className="rating-reviews-count">{profile.cultureScores.totalReviews} đánh giá</span>
-                  </div>
+                  ) : (
+                    <div className="company-overall-rating-card company-overall-rating-empty">
+                      <div className="rating-reviews-count">Chưa có đánh giá</div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="culture-metrics-bar-grid">
-                  <div className="metric-bar-item">
-                    <div className="metric-header">
-                      <span>Cân bằng WLB</span>
-                      <strong className="score-worklife">{profile.cultureScores.workLife.toFixed(1)}/5</strong>
+                {profile.cultureScores ? (
+                  <div className="culture-metrics-bar-grid">
+                    <div className="metric-bar-item">
+                      <div className="metric-header">
+                        <span>Cân bằng WLB</span>
+                        <strong className="score-worklife">{profile.cultureScores.workLife.toFixed(1)}/5</strong>
+                      </div>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ width: `${(profile.cultureScores.workLife / 5) * 100}%` }} />
+                      </div>
                     </div>
-                    <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${(profile.cultureScores.workLife / 5) * 100}%` }} />
-                    </div>
-                  </div>
 
-                  <div className="metric-bar-item">
-                    <div className="metric-header">
-                      <span>Thu nhập & Phúc lợi</span>
-                      <strong className="score-compensation">{profile.cultureScores.compensation.toFixed(1)}/5</strong>
+                    <div className="metric-bar-item">
+                      <div className="metric-header">
+                        <span>Thu nhập & Phúc lợi</span>
+                        <strong className="score-compensation">{profile.cultureScores.compensation.toFixed(1)}/5</strong>
+                      </div>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ width: `${(profile.cultureScores.compensation / 5) * 100}%` }} />
+                      </div>
                     </div>
-                    <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${(profile.cultureScores.compensation / 5) * 100}%` }} />
-                    </div>
-                  </div>
 
-                  <div className="metric-bar-item">
-                    <div className="metric-header">
-                      <span>Cơ hội phát triển</span>
-                      <strong className="score-growth">{profile.cultureScores.careerGrowth.toFixed(1)}/5</strong>
+                    <div className="metric-bar-item">
+                      <div className="metric-header">
+                        <span>Cơ hội phát triển</span>
+                        <strong className="score-growth">{profile.cultureScores.careerGrowth.toFixed(1)}/5</strong>
+                      </div>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ width: `${(profile.cultureScores.careerGrowth / 5) * 100}%` }} />
+                      </div>
                     </div>
-                    <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${(profile.cultureScores.careerGrowth / 5) * 100}%` }} />
-                    </div>
-                  </div>
 
-                  <div className="metric-bar-item">
-                    <div className="metric-header">
-                      <span>Lãnh đạo & Quản lý</span>
-                      <strong className="score-management">{profile.cultureScores.management.toFixed(1)}/5</strong>
+                    <div className="metric-bar-item">
+                      <div className="metric-header">
+                        <span>Lãnh đạo & Quản lý</span>
+                        <strong className="score-management">{profile.cultureScores.management.toFixed(1)}/5</strong>
+                      </div>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ width: `${(profile.cultureScores.management / 5) * 100}%` }} />
+                      </div>
                     </div>
-                    <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${(profile.cultureScores.management / 5) * 100}%` }} />
-                    </div>
-                  </div>
 
-                  <div className="metric-bar-item highlight">
-                    <div className="metric-header">
-                      <span>Khuyên bạn bè ứng tuyển</span>
-                      <strong className="score-recommend">{profile.cultureScores.recommendRate}%</strong>
-                    </div>
-                    <div className="bar-track">
-                      <div className="bar-fill recommend-fill" style={{ width: `${profile.cultureScores.recommendRate}%` }} />
+                    <div className="metric-bar-item metric-bar-wide">
+                      <div className="metric-header">
+                        <span>Khuyên bạn bè ứng tuyển</span>
+                        <strong className="score-recommend">{profile.cultureScores.recommendRate}%</strong>
+                      </div>
+                      <div className="bar-track">
+                        <div className="bar-fill bar-fill-green" style={{ width: `${profile.cultureScores.recommendRate}%` }} />
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="company-empty-block">
+                    <p>Chưa có đánh giá nào từ người dùng JobTrack. Bạn là người đầu tiên?</p>
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowReviewForm(true)}>
+                      Viết đánh giá
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="tab-navigation">

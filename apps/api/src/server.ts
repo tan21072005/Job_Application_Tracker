@@ -79,6 +79,7 @@ import { DatasetService } from './services/dataset-service.ts';
 import { AnalyticsService } from './services/analytics-service.ts';
 import { ResumeService } from './services/resume-service.ts';
 import { CompanyService } from './services/company-service.ts';
+import { CompanyEnrichmentService } from './services/company-enrichment-service.ts';
 import { FollowUpService } from './services/follow-up-service.ts';
 import { ContactService } from './services/contact-service.ts';
 import { PipelineService } from './services/pipeline-service.ts';
@@ -160,6 +161,7 @@ export const datasetService = new DatasetService(pool);
 export const analyticsService = new AnalyticsService(pool);
 export const resumeService = new ResumeService(pool);
 export const companyService = new CompanyService(pool);
+export const companyEnrichmentService = new CompanyEnrichmentService(pool);
 export const followUpService = new FollowUpService(pool);
 export const contactService = new ContactService(pool);
 export const pipelineService = new PipelineService(pool);
@@ -2901,6 +2903,65 @@ app.get('/api/companies/:name/salaries', auth, async (req, res, next) => {
   try {
     const salaries = await companyService.getSalaryBenchmarks(String(req.params.name));
     res.json(salaries);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/companies/:name/salaries', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
+    const result = await companyService.addSalaryContribution(userId, String(req.params.name), {
+      role: String(body.role ?? ''),
+      level: String(body.level ?? ''),
+      amount: Number(body.amount),
+      currency: body.currency === 'USD' ? 'USD' : 'VND',
+      isAnonymous: body.isAnonymous !== false
+    });
+
+    if (result.duplicate) {
+      throw new Problem(409, 'Bạn đã gửi mức lương cho vị trí và cấp bậc này.', 'duplicate');
+    }
+
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/companies/:name/salaries/contributions', auth, async (req, res, next) => {
+  try {
+    const rows = await companyService.listSalaryContributions(String(req.params.name));
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/companies/:name/enrich', auth, async (req, res, next) => {
+  try {
+    const userId = (req as SessionRequest).userId;
+    const name = String(req.params.name);
+    const profile = await companyService.getCompany(name);
+    const website = (req.body && typeof req.body.website === 'string') ? req.body.website : profile.website;
+
+    const extraction = await companyEnrichmentService.extractFromWebsite(website);
+    const persisted = extraction.source
+      ? await companyEnrichmentService.persistGrounded(name, extraction)
+      : { written: [], skipped: [] };
+
+    const refreshed = await companyService.getCompany(name);
+
+    res.status(extraction.error ? 207 : 200).json({
+      userId,
+      error: extraction.error,
+      fetchedUrl: extraction.fetchedUrl,
+      written: persisted.written,
+      skipped: persisted.skipped,
+      rejected: extraction.rejected,
+      profile: refreshed
+    });
   } catch (error) {
     next(error);
   }

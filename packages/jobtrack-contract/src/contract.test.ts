@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
   isValidCalendarDate,
@@ -70,7 +71,6 @@ import {
   tailorResumeForJob,
   calculateCompanyAggregates,
   validateCompanyReviewInput,
-  synthesizeCompanyIntelligence,
   calculateFollowUpCadence,
   generateFollowUpEmail,
   validateFollowUpLogInput,
@@ -1086,19 +1086,36 @@ test('contract: validateCompanyReviewInput enforces required fields, rating boun
   assert.ok(invalid.errors?.cons);
 });
 
-test('contract: synthesizeCompanyIntelligence returns rich presets for known companies and algorithms for custom ones', () => {
-  const fpt = synthesizeCompanyIntelligence('FPT Software');
-  assert.equal(fpt.name, 'FPT Software');
-  assert.ok(fpt.salaryBenchmarks.length >= 3);
-  assert.ok(fpt.interviewQuestions.length >= 2);
-  assert.ok(fpt.keyPros.length >= 2);
-  assert.ok(fpt.techStack.includes('Java'));
+test('contract: company aggregates are null rather than invented when a company has no reviews', () => {
+  const empty = calculateCompanyAggregates([]);
+  assert.equal(empty, null);
 
-  const custom = synthesizeCompanyIntelligence('Fintech Startup X');
-  assert.equal(custom.name, 'Fintech Startup X');
-  assert.ok(custom.salaryBenchmarks.length >= 3);
-  assert.ok(custom.interviewQuestions.length >= 1);
-  assert.ok(custom.cultureScores.overall >= 3.5);
+  const one = calculateCompanyAggregates([
+    {
+      id: 'r1',
+      companyName: 'Acme',
+      role: 'Engineer',
+      rating: 4,
+      workLifeBalance: 4,
+      compensationRating: 4,
+      careerGrowth: 4,
+      managementRating: 4,
+      recommend: true,
+      pros: 'ok',
+      cons: 'none',
+      createdAt: new Date().toISOString()
+    }
+  ]);
+  assert.ok(one);
+  assert.equal(one.totalReviews, 1);
+  assert.equal(one.overall, 4);
+});
+
+test('contract: company intelligence is no longer synthesized from the company name', () => {
+  const companyModule = readFileSync(new URL('./company.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(companyModule, /synthesizeCompanyIntelligence/);
+  assert.doesNotMatch(companyModule, /PRESET_COMPANIES/);
+  assert.doesNotMatch(companyModule, /totalReviews:\s*24/);
 });
 
 test('contract: calculateFollowUpCadence calculates schedule, due, and overdue urgency accurately', () => {
