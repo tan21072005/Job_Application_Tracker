@@ -160,14 +160,53 @@ test('company: POST /api/companies/:name/reviews saves review and re-computes cu
   assert.equal(updatedProfile.recentReviews.length, 1);
 });
 
-test('company: GET /api/companies/:name/salaries returns salary benchmarks array', async () => {
+test('company: GET /api/companies/:name/salaries is empty when nobody has contributed', async () => {
   const user = await registerUser();
-  const res = await fetch(`${base}/api/companies/VNG%20Corporation/salaries`, {
+  const emptyCompany = `NoSalaryCo_${randomUUID().slice(0, 6)}`;
+  const res = await fetch(`${base}/api/companies/${encodeURIComponent(emptyCompany)}/salaries`, {
     headers: { Cookie: user.cookie, Origin: origin }
   });
   assert.equal(res.status, 200);
   const benchmarks = await res.json() as CompanySalaryBenchmarkDTO[];
   assert.ok(Array.isArray(benchmarks));
-  assert.ok(benchmarks.length >= 3);
-  assert.ok(benchmarks.some(b => b.level === 'Senior'));
+  assert.equal(benchmarks.length, 0);
+});
+
+test('company: a salary contribution is stored once and then aggregated', async () => {
+  const user = await registerUser();
+  const company = `SalaryCo_${randomUUID().slice(0, 6)}`;
+
+  const first = await fetch(`${base}/api/companies/${encodeURIComponent(company)}/salaries`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: user.cookie, Origin: origin },
+    body: JSON.stringify({ role: 'Backend Engineer', level: 'Mid', amount: 25000000 })
+  });
+  assert.equal(first.status, 201);
+
+  const duplicate = await fetch(`${base}/api/companies/${encodeURIComponent(company)}/salaries`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: user.cookie, Origin: origin },
+    body: JSON.stringify({ role: 'Backend Engineer', level: 'Mid', amount: 30000000 })
+  });
+  assert.equal(duplicate.status, 409);
+
+  const rows = await fetch(`${base}/api/companies/${encodeURIComponent(company)}/salaries/contributions`, {
+    headers: { Cookie: user.cookie, Origin: origin }
+  });
+  assert.equal(rows.status, 200);
+  const list = await rows.json() as Array<{ level: string; count: number; median: number }>;
+  assert.equal(list.length, 1);
+  assert.equal(list[0].level, 'Mid');
+  assert.equal(list[0].count, 1);
+  assert.equal(list[0].median, 25000000);
+});
+
+test('company: a salary contribution rejects a non-positive amount', async () => {
+  const user = await registerUser();
+  const res = await fetch(`${base}/api/companies/AnyCo_${randomUUID().slice(0, 4)}/salaries`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: user.cookie, Origin: origin },
+    body: JSON.stringify({ role: 'QA', level: 'Junior', amount: -5 })
+  });
+  assert.equal(res.status, 422);
 });

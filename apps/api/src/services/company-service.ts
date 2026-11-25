@@ -354,11 +354,20 @@ export class CompanyService {
       fail(422, 'Mức lương chưa hợp lệ.', 'invalid_request', { amount: 'Phải là số nguyên dương (VND).' });
     }
 
+    const existing = await this.pool.query<{ id: string }>(
+      `SELECT id FROM company_salary_submissions
+       WHERE user_id = $1 AND lower(company_name) = lower($2) AND lower(role) = lower($3) AND level = $4`,
+      [userId, cleanName, role, input.level]
+    );
+    if (existing.rowCount) {
+      return { id: existing.rows[0].id, duplicate: true };
+    }
+
     const id = randomUUID();
     const inserted = await this.pool.query(
       `INSERT INTO company_salary_submissions (id, company_name, user_id, role, level, amount, currency, is_anonymous)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT (user_id, company_name, role, level) DO NOTHING
+       ON CONFLICT DO NOTHING
        RETURNING id`,
       [id, cleanName, userId, role, input.level, amount, input.currency === 'USD' ? 'USD' : 'VND', input.isAnonymous !== false]
     );
