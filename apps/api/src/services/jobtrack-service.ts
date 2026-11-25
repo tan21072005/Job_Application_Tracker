@@ -218,7 +218,7 @@ export class JobTrackService {
   ): Promise<{ id: string; status: string } | null> {
     if (!input.normalizedUrl && !(input.sourceNormalized && input.jobCodeNormalized)) return null;
     const r = await client.query(
-      `SELECT id,status FROM applications WHERE user_id=$1 AND id<>$2 AND ((normalized_url IS NOT NULL AND normalized_url=$3) OR (source_normalized IS NOT NULL AND job_code_normalized IS NOT NULL AND source_normalized=$4 AND job_code_normalized=$5)) ORDER BY CASE WHEN status IN ('Rejected','Withdrawn') THEN 1 ELSE 0 END,created_at DESC LIMIT 1`,
+      `SELECT id,status FROM applications WHERE user_id=$1 AND id<>$2 AND deleted_at IS NULL AND ((normalized_url IS NOT NULL AND normalized_url=$3) OR (source_normalized IS NOT NULL AND job_code_normalized IS NOT NULL AND source_normalized=$4 AND job_code_normalized=$5)) ORDER BY CASE WHEN status IN ('Rejected','Withdrawn') THEN 1 ELSE 0 END,created_at DESC LIMIT 1`,
       [
         userId,
         exclude || '00000000-0000-4000-8000-000000000000',

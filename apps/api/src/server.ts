@@ -343,6 +343,18 @@ async function auth(req: Request, _res: Response, next: NextFunction) {
   }
 }
 
+const TRUSTED_EXTENSION_IDS = (process.env.EXTENSION_ORIGIN_IDS || 'ilpifmgmkmlnopmkdkglknjjnadllife,pkodhdgbbdiiakoedediedkfhffailpf')
+  .split(',')
+  .map(entry => entry.trim())
+  .filter(Boolean);
+
+function isTrustedExtensionOrigin(originValue: string | undefined): boolean {
+  if (typeof originValue !== 'string') return false;
+  const match = /^chrome-extension:\/\/([a-p]{32})$/.exec(originValue);
+  if (!match) return false;
+  return TRUSTED_EXTENSION_IDS.includes(match[1]);
+}
+
 export function requireScope(scope: string) {
   return (req: Request, _res: Response, next: NextFunction) => {
     const scopes = (req as any).scopes || [];
@@ -360,7 +372,7 @@ app.use('/api', (req, res, next) => {
   const requestOrigin = req.get('origin');
   const authorization = req.get('Authorization') || '';
   const requestedHeaders = (req.get('Access-Control-Request-Headers') || '').toLowerCase();
-  const extensionOrigin = typeof requestOrigin === 'string' && requestOrigin.startsWith('chrome-extension://');
+  const extensionOrigin = isTrustedExtensionOrigin(requestOrigin);
   const bearerIntent = authorization.startsWith('Bearer ') || requestedHeaders.includes('authorization');
 
   if (extensionOrigin || (requestOrigin && bearerIntent)) {
@@ -451,15 +463,20 @@ app.get('/api/ready', async (_req, res) => {
 export function getClientIp(req: Request): string {
   const remoteAddr = req.socket.remoteAddress || '';
   const isLocalEdge = remoteAddr === '127.0.0.1' || remoteAddr === '::1' || remoteAddr === '::ffff:127.0.0.1';
-  if (isLocalEdge) {
-    const forwarded = req.get('X-Forwarded-For');
-    if (forwarded) {
-      const ips = forwarded.split(',').map(s => s.trim());
-      if (ips[0] && /^[\w.:-]+$/.test(ips[0])) {
-        return ips[0];
-      }
+  if (!isLocalEdge) return remoteAddr || '127.0.0.1';
+
+  const realIp = req.get('X-Real-IP');
+  if (realIp && /^[\w.:-]+$/.test(realIp.trim())) return realIp.trim();
+
+  const forwarded = req.get('X-Forwarded-For');
+  if (forwarded) {
+    const hops = forwarded.split(',').map(value => value.trim()).filter(Boolean);
+    const nearestFromProxy = hops[hops.length - 1];
+    if (nearestFromProxy && /^[\w.:-]+$/.test(nearestFromProxy)) {
+      return nearestFromProxy;
     }
   }
+
   return remoteAddr || '127.0.0.1';
 }
 
@@ -818,7 +835,7 @@ app.post('/api/auth/reset-password', authLimit, async (req, res, next) => {
   }
 });
 
-app.post('/api/auth/change-password', authLimit, auth, async (req, res, next) => {
+app.post('/api/auth/change-password', authLimit, auth, requireScope('full_control'), async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
     const b = bodyObject(req.body);
@@ -872,7 +889,7 @@ app.post('/api/auth/change-password', authLimit, auth, async (req, res, next) =>
   }
 });
 
-app.delete('/api/auth/sessions', auth, async (req, res, next) => {
+app.delete('/api/auth/sessions', auth, requireScope('full_control'), async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
     const currentSid = await currentSessionId(req);
@@ -887,7 +904,7 @@ app.delete('/api/auth/sessions', auth, async (req, res, next) => {
   }
 });
 
-app.delete('/api/auth/account', authLimit, auth, async (req, res, next) => {
+app.delete('/api/auth/account', authLimit, auth, requireScope('full_control'), async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
     const b = bodyObject(req.body);
@@ -941,7 +958,7 @@ app.get('/api/auth/reminders', auth, async (req, res, next) => {
   }
 });
 
-app.get('/api/auth/export', authLimit, auth, async (req, res, next) => {
+app.get('/api/auth/export', authLimit, auth, requireScope('full_control'), async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
     const format = String(req.query.format || 'json').toLowerCase();
@@ -2525,7 +2542,7 @@ app.post('/api/culture/questions', auth, async (req, res, next) => {
 
 
 
-app.get('/api/ai/grants', auth, async (req, res, next) => {
+app.get('/api/ai/grants', auth, requireScope('full_control'), async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
     const grants = (
@@ -2540,7 +2557,7 @@ app.get('/api/ai/grants', auth, async (req, res, next) => {
   }
 });
 
-app.post('/api/ai/grants', auth, async (req, res, next) => {
+app.post('/api/ai/grants', auth, requireScope('full_control'), async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
     const b = bodyObject(req.body);
@@ -2565,7 +2582,7 @@ app.post('/api/ai/grants', auth, async (req, res, next) => {
   }
 });
 
-app.delete('/api/ai/grants/:id', auth, async (req, res, next) => {
+app.delete('/api/ai/grants/:id', auth, requireScope('full_control'), async (req, res, next) => {
   try {
     const userId = (req as SessionRequest).userId;
     const id = String(req.params.id);
@@ -2760,6 +2777,9 @@ app.post('/api/payment/payos-webhook', handleWebhookRequest);
 
 app.post('/api/pro/test/simulate-webhook', auth, async (req, res, next) => {
   try {
+    if (process.env.PAYMENT_MODE !== 'test') {
+      throw new Problem(404, 'Không tìm thấy đường dẫn.', 'not_found');
+    }
     const val = validateSimulateWebhookInput(req.body);
     if (!val.ok) {
       throw new Problem(422, val.message, 'invalid_request', val.errors);

@@ -196,9 +196,10 @@ export default function Applications({
     const nextIndex = event.key === 'ArrowRight' ? currentIndex + 1 : currentIndex - 1;
     const target = KANBAN_LANES[nextIndex];
     if (!target) return;
-    if (target.targetStatus === app.status) return;
+    if (laneKeyOf(app.status) === target.key) return;
 
-    void handleDropOnLane(app.id, target).then(() => {
+    void handleDropOnLane(app.id, target).then(moved => {
+      if (!moved) return;
       setLiveAnnouncement(`Đã chuyển ${app.position} tại ${app.company} sang cột ${target.title}`);
       window.setTimeout(() => {
         const card = document.querySelector<HTMLElement>(`[data-card-id="${app.id}"]`);
@@ -207,23 +208,26 @@ export default function Applications({
     });
   }
 
-  async function handleDropOnLane(appId: string, lane: KanbanLane) {
+  async function handleDropOnLane(appId: string, lane: KanbanLane): Promise<boolean> {
     const targetApp = apps.find(a => a.id === appId);
-    if (!targetApp) return;
-    if (targetApp.status === lane.targetStatus) return;
+    if (!targetApp) return false;
+    if (laneKeyOf(targetApp.status) === lane.key) return false;
 
     let targetStatus = lane.targetStatus;
     if (lane.key === 'closed') {
       targetStatus = 'Rejected';
     }
+    if (targetApp.status === targetStatus) return false;
 
     setBusy(true);
     try {
       await repository.bulkUpdateStatus([appId], targetStatus);
       notify?.(`Đã chuyển "${targetApp.position}" sang "${lane.title}".`);
       await onRefresh?.();
+      return true;
     } catch (err) {
       notify?.((err as Error).message || 'Lỗi khi cập nhật trạng thái.', true);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -257,6 +261,18 @@ export default function Applications({
       return state === 'due' || state === 'overdue';
     });
   }, [baseVisible, filters.onlyAttention, attentionByApp]);
+
+  useEffect(() => {
+    setSelectedIds(previous => {
+      if (previous.size === 0) return previous;
+      const visibleIds = new Set(visible.map(app => app.id));
+      const kept = new Set<string>();
+      for (const id of previous) {
+        if (visibleIds.has(id)) kept.add(id);
+      }
+      return kept.size === previous.size ? previous : kept;
+    });
+  }, [visible]);
 
   const set = (key: keyof Filters, value: unknown) => onFilters({ ...filters, [key]: value });
 

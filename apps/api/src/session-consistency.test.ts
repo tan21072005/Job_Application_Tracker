@@ -213,21 +213,37 @@ test('T04: distributed atomic rate limiter shares quota across instances and enf
   }
 });
 
-test('T04: proxy IP policy trusts forwarding only from loopback edge', () => {
-  // Case 1: Remote socket is 127.0.0.1 (local edge proxy) with X-Forwarded-For
+test('T04: proxy IP policy reads the hop the proxy appended, never the client-supplied one', () => {
   const mockReqEdge = {
     socket: { remoteAddress: '127.0.0.1' },
     get: (header: string) => (header.toLowerCase() === 'x-forwarded-for' ? '203.0.113.195, 127.0.0.1' : undefined)
   } as unknown as import('express').Request;
 
-  assert.equal(getClientIp(mockReqEdge), '203.0.113.195');
+  assert.equal(getClientIp(mockReqEdge), '127.0.0.1');
 
-  // Case 2: Remote socket is non-loopback (e.g. untrusted direct connection from internet)
+  const mockReqSpoofed = {
+    socket: { remoteAddress: '127.0.0.1' },
+    get: (header: string) => (header.toLowerCase() === 'x-forwarded-for' ? '1.1.1.1, 2.2.2.2, 10.0.0.7' : undefined)
+  } as unknown as import('express').Request;
+
+  assert.equal(getClientIp(mockReqSpoofed), '10.0.0.7', 'a spoofed leading hop must not become the rate-limit key');
+
+  const mockReqWithRealIp = {
+    socket: { remoteAddress: '127.0.0.1' },
+    get: (header: string) => {
+      const key = header.toLowerCase();
+      if (key === 'x-real-ip') return '198.51.100.9';
+      if (key === 'x-forwarded-for') return '1.1.1.1';
+      return undefined;
+    }
+  } as unknown as import('express').Request;
+
+  assert.equal(getClientIp(mockReqWithRealIp), '198.51.100.9');
+
   const mockReqUntrusted = {
     socket: { remoteAddress: '198.51.100.22' },
     get: (header: string) => (header.toLowerCase() === 'x-forwarded-for' ? '1.2.3.4' : undefined)
   } as unknown as import('express').Request;
 
-  // Spoofed X-Forwarded-For is ignored; socket remoteAddress is used
   assert.equal(getClientIp(mockReqUntrusted), '198.51.100.22');
 });
