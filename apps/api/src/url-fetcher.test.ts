@@ -150,6 +150,28 @@ test('URL Fetcher: a page that is not a job posting is refused, not invented', (
   assert.equal(refusedNews.position, '');
 });
 
+test('URL Fetcher: a search results page is not a job posting even when it talks about hiring', () => {
+  const listingHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head><title>Tìm kiếm việc làm tốt - Tuyển dụng nhanh</title></head>
+      <body>
+        <h1>Việc làm React</h1>
+        <p>Tuyển dụng nhanh, việc làm mới nhất, nộp hồ sơ ngay.</p>
+        <p>Làm việc từ xa, lương 20 triệu.</p>
+      </body>
+    </html>
+  `;
+
+  const refused = extractJobDetails(listingHtml, 'https://vieclam24h.vn/tim-kiem-viec-lam-nhanh?q=react');
+  assert.equal(refused.isJobPosting, false, 'a search page must not be imported as one posting');
+  assert.equal(refused.company, '');
+  assert.equal(refused.position, '');
+
+  const refusedQuery = extractJobDetails(listingHtml, 'https://example.com/jobs?keyword=react');
+  assert.equal(refusedQuery.isJobPosting, false, 'a query string marks a listing page');
+});
+
 test('URL Fetcher: clean readability strips nav, scripts and styles', () => {
   const dirty = '<header><nav>Menu</nav></header><main><h1>Senior Go Engineer</h1><p>Yêu cầu 3 năm kinh nghiệm</p></main><footer>Footer links</footer>';
   const clean = extractCleanArticleText(dirty);

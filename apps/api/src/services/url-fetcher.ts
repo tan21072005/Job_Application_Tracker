@@ -306,6 +306,17 @@ export function sanitizeAgainstPromptInjection(text: string): string {
 // ---------------------------------------------------------------------------
 // 6. Giai đoạn 2: Hybrid Structured Extraction (Task 2.2)
 // ---------------------------------------------------------------------------
+const LISTING_URL_PATTERNS = [
+  /\/tim-viec-lam/i, /\/tim-kiem/i, /\/search/i, /\/jobs\/?$/i, /\/viec-lam/i,
+  /\/tuyen-dung\/?$/i, /\/careers\/?$/i, /[?&]q=/i, /[?&]keyword/i, /[?&]query/i
+];
+
+const GENERIC_PAGE_TITLES = [
+  'tìm kiếm việc làm', 'tim kiem viec lam', 'việc làm', 'viec lam',
+  'tuyển dụng', 'tuyen dung', 'trang chủ', 'trang chu', 'home', 'search results',
+  'kết quả tìm kiếm', 'ket qua tim kiem'
+];
+
 const JOB_SIGNALS = [
   'tuyển dụng', 'tuyen dung', 'việc làm', 'viec lam', 'ứng tuyển', 'ung tuyen',
   'mô tả công việc', 'mo ta cong viec', 'yêu cầu công việc', 'yeu cau cong viec',
@@ -442,10 +453,21 @@ export function extractJobDetails(html: string, sourceUrl: string): UrlImportExt
     (hasWorkModeText ? 1 : 0) +
     (hasSplitTitle ? 1 : 0);
 
+  const looksLikeListingUrl = LISTING_URL_PATTERNS.some(pattern => pattern.test(sourceUrl));
+  if (looksLikeListingUrl) detectionNotes.push('Đường dẫn trông giống trang danh sách hoặc tìm kiếm.');
+
+  const normalizedPosition = position.trim().toLowerCase();
+  const positionIsGeneric = normalizedPosition.length === 0
+    || GENERIC_PAGE_TITLES.some(title => normalizedPosition === title || normalizedPosition.startsWith(`${title} `));
+
+  if (positionIsGeneric && !jsonLdJobPosting) detectionNotes.push('Tiêu đề trang chỉ là nhãn chung, không phải tên vị trí.');
+
   const isJobPosting = jsonLdJobPosting
-    || (jobSignalCount >= 2 && nonJobSignalCount === 0)
-    || (jobSignalCount >= 1 && structuredPostingSignalCount >= 1 && nonJobSignalCount === 0)
-    || (nonJobSignalCount === 0 && structuredPostingSignalCount >= 3);
+    || (!looksLikeListingUrl && !positionIsGeneric && (
+      (jobSignalCount >= 2 && nonJobSignalCount === 0)
+      || (jobSignalCount >= 1 && structuredPostingSignalCount >= 1 && nonJobSignalCount === 0)
+      || (nonJobSignalCount === 0 && structuredPostingSignalCount >= 3)
+    ));
 
   if (!isJobPosting) {
     detectionNotes.push('Trang này không giống một tin tuyển dụng.');
