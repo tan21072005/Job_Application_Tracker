@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const checkPaymentStatusBtn = document.getElementById('checkPaymentStatusBtn');
 
   // State
-  let serverConfig = { serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app', apiToken: '' };
+  let serverConfig = { serverUrl: 'https://ballow.io.vn', apiToken: '' };
   let extractedPageData = null;
   let detectedSource = null;
   let detectedAppliedAt = null;
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1. Tải cấu hình từ storage.local (không hardcode token)
   try {
     const stored = await chrome.storage.local.get({
-      serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app',
+      serverUrl: 'https://ballow.io.vn',
       apiToken: ''
     });
     serverConfig = stored;

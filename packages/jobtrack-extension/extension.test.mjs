@@ -283,3 +283,30 @@ test('Extension: quick save forwards the structured JobPosting fields', () => {
   assert.match(block, /occupationalCategory/, 'industry falls back to occupationalCategory');
   assert.doesNotMatch(block, /slice\(0, 1000\)/, 'no truncation in the structured reader');
 });
+
+test('Extension: no file still points at a retired deployment host', () => {
+  const files = ['content.js', 'popup.js', 'options.js', 'options.html', 'manifest.json'];
+  const retired = [
+    'job-application-tracker-ai-pro24.vercel.app',
+    'job-application-tracker-ecru-kappa.vercel.app'
+  ];
+
+  for (const file of files) {
+    const text = readFileSync(join(__dirname, file), 'utf8');
+    for (const host of retired) {
+      assert.equal(
+        text.includes(host),
+        false,
+        `${file} still mentions ${host}; the extension must talk to ballow.io.vn`
+      );
+    }
+  }
+});
+
+test('Extension: the default server URL is the live custom domain', () => {
+  const content = readFileSync(join(__dirname, 'content.js'), 'utf8');
+  const popup = readFileSync(join(__dirname, 'popup.js'), 'utf8');
+
+  assert.match(content, /serverUrl: 'https:\/\/ballow\.io\.vn'/);
+  assert.match(popup, /serverUrl: 'https:\/\/ballow\.io\.vn'/);
+});

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PageWeave — Web Data Assistant & JobTrack Pro",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "1-Click lưu tin tuyển dụng từ TopCV, ITviec, LinkedIn về JobTrack Cloud và trợ lý bóc tách dữ liệu thông minh.",
   "permissions": [
     "activeTab",
@@ -11,8 +11,7 @@
     "cookies"
   ],
   "host_permissions": [
-    "https://job-application-tracker-ai-pro24.vercel.app/*",
-    "https://job-application-tracker-ecru-kappa.vercel.app/*",
+    "https://ballow.io.vn/*",
     "https://*.onrender.com/*",
     "http://127.0.0.1:*/*",
     "https://*/*",
@@ -41,8 +40,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ]

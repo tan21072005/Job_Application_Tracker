@@ -639,7 +639,7 @@ function detectApplicationFormAndShowBadge() {
     try {
       // Đọc an toàn từ chrome.storage.local, không nhúng token cứng
       const config = await chrome.storage.local.get({
-        serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app',
+        serverUrl: 'https://ballow.io.vn',
         apiToken: ''
       });
 
@@ -732,7 +732,7 @@ function detectJobPostingAndShowQuickSaveBadge() {
       }
 
       const config = await chrome.storage.local.get({
-        serverUrl: 'https://job-application-tracker-ai-pro24.vercel.app',
+        serverUrl: 'https://ballow.io.vn',
         apiToken: ''
       });
 
