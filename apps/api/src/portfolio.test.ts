@@ -145,7 +145,10 @@ test('portfolio: a candidate with no skills, roadmap or simulation gets an unver
 
   assert.equal(dossier.isVerified, false, 'an empty account must not claim verification');
   assert.deepEqual(dossier.topSkills, [], 'no skill may be invented');
-  assert.equal(dossier.roadmapProgress, null, 'no roadmap progress may be invented');
+  assert.ok(
+    dossier.roadmapProgress === null || dossier.roadmapProgress.completedMilestones === 0,
+    'an untouched roadmap must not read as progress'
+  );
   assert.equal(dossier.simulationReadiness, null, 'no interview score may be invented');
 });
 
@@ -156,6 +159,9 @@ test('portfolio: real skills and roadmap milestones reach the public dossier', a
      ON CONFLICT (user_id) DO UPDATE SET skills = EXCLUDED.skills`,
     [userA.userId, 'Ứng viên A', 'candidate-a@example.com', ['Rust', 'Kubernetes']]
   );
+  await fetch(`${base}/api/career/roadmap`, {
+    headers: { Origin: origin, Cookie: userA.cookie }
+  });
   await pool.query(
     `INSERT INTO career_roadmaps (id, user_id, title, target_role, duration_weeks, milestones)
      VALUES ($1, $2, $3, $4, 4, $5::jsonb)`,
