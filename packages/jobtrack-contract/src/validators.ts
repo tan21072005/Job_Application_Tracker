@@ -58,6 +58,10 @@ export interface ValidatedApplicationData {
   salary: string | null;
   notes: string | null;
   jobDescription: string | null;
+  structuredCompany: string | null;
+  structuredIndustry: string | null;
+  structuredLocation: string | null;
+  structuredWebsite: string | null;
   nextAction: string | null;
   deadline: string | null;
   status: ApplicationStatus;
@@ -77,6 +81,10 @@ export interface ValidatedInterviewData {
 
 const APP_ALLOWED_FIELDS = new Set([
   'jobDescription',
+  'structuredCompany',
+  'structuredIndustry',
+  'structuredLocation',
+  'structuredWebsite',
   'company', 'position', 'url', 'source', 'jobCode', 'location',
   'workMode', 'appliedAt', 'salary', 'notes', 'nextAction', 'deadline',
   'status', 'confirmReapply'
@@ -276,6 +284,27 @@ export function validateApplicationInput(
     }
   } else if (!isPatch || 'jobDescription' in b) {
     data.jobDescription = null;
+  }
+
+  type StructuredField = 'structuredCompany' | 'structuredIndustry' | 'structuredLocation' | 'structuredWebsite';
+  const structuredLimits: Record<StructuredField, number> = {
+    structuredCompany: 250,
+    structuredIndustry: 200,
+    structuredLocation: 250,
+    structuredWebsite: 500
+  };
+  for (const field of Object.keys(structuredLimits) as StructuredField[]) {
+    const maxLength = structuredLimits[field];
+    if (field in b && b[field] !== undefined && b[field] !== null && b[field] !== '') {
+      const val = b[field];
+      if (typeof val !== 'string' || val.length > maxLength) {
+        errors[field] = `Giá trị không hợp lệ (tối đa ${maxLength} ký tự).`;
+      } else {
+        data[field] = val.trim();
+      }
+    } else if (!isPatch || field in b) {
+      data[field] = null;
+    }
   }
 
   // Next Action

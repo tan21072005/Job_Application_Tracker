@@ -1162,6 +1162,19 @@ app.post('/api/applications', auth, async (req, res, next) => {
       sessionId: (req as SessionRequest).sessionId
     });
 
+    if (input.structuredIndustry || input.structuredLocation || input.structuredWebsite) {
+      await companyEnrichmentService
+        .persistStructured({
+          companyName: input.structuredCompany || input.company,
+          industry: input.structuredIndustry,
+          location: input.structuredLocation,
+          website: input.structuredWebsite
+        })
+        .catch(error => {
+          console.error('[company] structured persist failed:', (error as Error).message);
+        });
+    }
+
     if (result.replay) {
       res.set('Idempotency-Replayed', 'true');
     }

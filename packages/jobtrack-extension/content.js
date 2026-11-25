@@ -351,17 +351,83 @@ function extractCurrentPageJob() {
     workMode = 'Hybrid';
   }
 
+  const structured = collectStructuredJobPosting();
+
   return {
     url,
-    company: company || '',
-    position: position || '',
-    location: location || '',
+    company: company || structured.company || '',
+    position: position || structured.position || '',
+    location: location || structured.location || '',
     salary: salary || '',
     workMode,
     notes: notes ? notes.slice(0, NOTES_MAX_LENGTH) : '',
     source: detectJobBoardSource(url),
-    appliedAt: todayInVietnam()
+    appliedAt: todayInVietnam(),
+    jsonLd: structured
   };
+}
+
+function collectStructuredJobPosting() {
+  const empty = {
+    company: '',
+    position: '',
+    industry: '',
+    employmentType: '',
+    location: '',
+    website: '',
+    logoUrl: '',
+    datePosted: ''
+  };
+
+  const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+  for (const script of scripts) {
+    let parsed;
+    try {
+      parsed = JSON.parse(script.textContent || '');
+    } catch {
+      continue;
+    }
+
+    const items = Array.isArray(parsed) ? parsed : (parsed && parsed['@graph'] ? parsed['@graph'] : [parsed]);
+    for (const item of items) {
+      if (!item) continue;
+      const type = item['@type'];
+      const isPosting = type === 'JobPosting' || (Array.isArray(type) ? type.includes('JobPosting') : String(type || '').includes('JobPosting'));
+      if (!isPosting) continue;
+
+      const org = item.hiringOrganization || {};
+      const address = item.jobLocation?.address;
+      const addressText = typeof address === 'string'
+        ? address
+        : [address?.addressLocality, address?.addressRegion, address?.addressCountry]
+            .filter(Boolean)
+            .filter((value, index, list) => list.indexOf(value) === index)
+            .join(', ');
+
+      const industry = typeof item.industry === 'string'
+        ? item.industry
+        : Array.isArray(item.industry)
+          ? item.industry.filter(value => typeof value === 'string').join(', ')
+          : (typeof item.occupationalCategory === 'string' ? item.occupationalCategory : '');
+
+      const employmentType = Array.isArray(item.employmentType)
+        ? item.employmentType.filter(value => typeof value === 'string').join(', ')
+        : (typeof item.employmentType === 'string' ? item.employmentType : '');
+
+      return {
+        company: typeof org.name === 'string' ? org.name : '',
+        position: typeof item.title === 'string' ? item.title : '',
+        industry: industry || '',
+        employmentType: employmentType || '',
+        location: addressText || '',
+        website: typeof org.sameAs === 'string' ? org.sameAs : (typeof org.url === 'string' ? org.url : ''),
+        logoUrl: typeof org.logo === 'string' ? org.logo : (org.logo?.url || ''),
+        datePosted: typeof item.datePosted === 'string' ? item.datePosted : ''
+      };
+    }
+  }
+
+  return empty;
 }
 
 function detectJobBoardSource(rawUrl) {
@@ -688,7 +754,11 @@ function detectJobPostingAndShowQuickSaveBadge() {
         notes: '',
         jobDescription: job.notes || null,
         source: job.source || null,
-        appliedAt: job.appliedAt || null
+        appliedAt: job.appliedAt || null,
+        structuredCompany: job.jsonLd && job.jsonLd.company ? job.jsonLd.company : null,
+        structuredIndustry: job.jsonLd && job.jsonLd.industry ? job.jsonLd.industry : null,
+        structuredLocation: job.jsonLd && job.jsonLd.location ? job.jsonLd.location : null,
+        structuredWebsite: job.jsonLd && job.jsonLd.website ? job.jsonLd.website : null
       };
 
       const res = await fetch(`${config.serverUrl}/api/applications`, {

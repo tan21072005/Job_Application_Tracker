@@ -227,4 +227,54 @@ export class CompanyEnrichmentService {
 
     return { written, qid: found.qid, confidence: found.confidence };
   }
+
+  async persistStructured(input: {
+    companyName: string;
+    industry: string | null;
+    location: string | null;
+    website: string | null;
+  }): Promise<{ written: ExtractedField[] }> {
+    const name = (input.companyName || '').trim();
+    if (!name) return { written: [] };
+
+    await this.pool.query(
+      `INSERT INTO company_profiles (name, industry, size, headquarters, website, description)
+       VALUES ($1, '', '', '', '', '')
+       ON CONFLICT (name) DO NOTHING`,
+      [name]
+    );
+
+    const now = new Date().toISOString();
+    const written: ExtractedField[] = [];
+    const entries: Array<{ field: ExtractedField; value: string | null }> = [
+      { field: 'industry', value: input.industry },
+      { field: 'headquarters', value: input.location },
+      { field: 'website', value: input.website }
+    ];
+
+    for (const entry of entries) {
+      if (!entry.value) continue;
+      const provenance: FieldProvenance = {
+        source: 'jsonld',
+        confidence: 0.95,
+        evidence: 'JobPosting JSON-LD on the saved posting',
+        verifiedAt: now
+      };
+      const updated = await this.pool.query(
+        `UPDATE company_profiles
+         SET ${entry.field} = CASE
+               WHEN ${entry.field} IS NULL OR ${entry.field}::text IN ('', '""') THEN $2
+               ELSE ${entry.field}
+             END,
+             provenance = provenance || $3::jsonb,
+             enriched_at = CURRENT_TIMESTAMP
+         WHERE lower(name) = lower($1)
+         RETURNING (${entry.field}::text = $2::text) AS took_value`,
+        [name, entry.value, JSON.stringify({ [entry.field]: provenance })]
+      );
+      if (updated.rowCount && updated.rows[0].took_value) written.push(entry.field);
+    }
+
+    return { written };
+  }
 }

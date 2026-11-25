@@ -264,3 +264,22 @@ test('Extension: the popup save path sends the same fields as quick save', () =>
   assert.match(popup, /detectedSource = jobPosting\.source/, 'board comes from the content script');
   assert.match(popup, /detectedAppliedAt = jobPosting\.appliedAt/, 'date comes from the content script');
 });
+
+test('Extension: quick save forwards the structured JobPosting fields', () => {
+  const content = readFileSync(join(__dirname, 'content.js'), 'utf8');
+
+  assert.match(content, /function collectStructuredJobPosting/, 'must read the JobPosting block');
+  assert.match(content, /structuredCompany: job\.jsonLd/, 'payload must carry the organisation');
+  assert.match(content, /structuredIndustry: job\.jsonLd/, 'payload must carry the industry');
+  assert.match(content, /structuredLocation: job\.jsonLd/, 'payload must carry the location');
+  assert.match(content, /structuredWebsite: job\.jsonLd/, 'payload must carry the website');
+
+  const block = content.slice(
+    content.indexOf('function collectStructuredJobPosting'),
+    content.indexOf('// Kết hợp toàn bộ dữ liệu trang')
+  );
+  assert.match(block, /type === 'JobPosting'/, 'must match the JobPosting type');
+  assert.match(block, /@graph/, 'must unwrap a graph wrapper');
+  assert.match(block, /occupationalCategory/, 'industry falls back to occupationalCategory');
+  assert.doesNotMatch(block, /slice\(0, 1000\)/, 'no truncation in the structured reader');
+});
