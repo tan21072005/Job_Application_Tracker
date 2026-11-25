@@ -74,6 +74,38 @@ test.after(async () => {
   await serverPool.end();
 });
 
+test('login answers 401, not 500, for an account created without a password', async () => {
+  const email = `oauth_${randomUUID()}@example.com`;
+  const created = await call('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ email, password })
+  });
+  assert.equal(created.status, 201);
+  const id = (created.body as { id: string }).id;
+  testUsers.push(id);
+
+  await pool.query('UPDATE users SET password_hash = NULL WHERE id=$1', [id]);
+
+  const attempt = await login(email, password);
+  assert.equal(attempt.status, 401);
+  assert.equal((attempt.body as { code?: string }).code, 'invalid_credentials');
+  assert.equal(attempt.cookie, '');
+});
+
+test('login answers 401 for a wrong password on a password account', async () => {
+  const user = await register();
+  const attempt = await login(user.email, 'SaiMatKhauHoanToan999!');
+  assert.equal(attempt.status, 401);
+  assert.equal((attempt.body as { code?: string }).code, 'invalid_credentials');
+});
+
+test('login answers 200 and sets a session for the correct password', async () => {
+  const user = await register();
+  const attempt = await login(user.email, password);
+  assert.equal(attempt.status, 200);
+  assert.ok(attempt.cookie.includes('jobtrack_session'));
+});
+
 test('forgot-password returns 202 for unknown email without leaking existence', async () => {
   const result = await call('/api/auth/forgot-password', {
     method: 'POST',

@@ -616,7 +616,11 @@ app.post('/api/auth/login', authLimit, pairLimit, async (req, res, next) => {
     }
     const result = await pool.query('SELECT id,email,password_hash FROM users WHERE email_normalized=$1', [email]);
     const user = result.rows[0];
-    if (!user || !(await argon2.verify(user.password_hash, password))) {
+    const storedHash = typeof user?.password_hash === 'string' ? user.password_hash : '';
+    if (!user || storedHash.length === 0) {
+      fail(401, 'Email hoặc mật khẩu chưa đúng.', 'invalid_credentials');
+    }
+    if (!(await argon2.verify(storedHash, password))) {
       fail(401, 'Email hoặc mật khẩu chưa đúng.', 'invalid_credentials');
     }
     await clearPairAttempts(getClientIp(req), email);
