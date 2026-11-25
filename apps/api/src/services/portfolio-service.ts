@@ -82,11 +82,11 @@ export class PortfolioService {
         newId,
         userId,
         defaultSlug,
-        'Kỹ Sư Phần Mềm Chuyên Nghiệp',
-        'Đam mê xây dựng hệ thống phần mềm mở rộng cao, giải quyết các bài toán kỹ thuật phức tạp.',
-        'Việt Nam',
-        '40.000.000 - 60.000.000 VNĐ',
-        JSON.stringify(['Senior Software Engineer', 'Fullstack Developer']),
+        '',
+        '',
+        null,
+        null,
+        JSON.stringify([]),
         JSON.stringify(DEFAULT_DISPLAY_SETTINGS),
         now
       ]

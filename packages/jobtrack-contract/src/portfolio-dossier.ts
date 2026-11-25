@@ -133,7 +133,10 @@ export function synthesizePublicDossier(
   const activeInterviewsCount = settings.showInterviews ? interviewsCount : null;
   const salaryExpectation = settings.showSalaryExpectation ? (config.salaryExpectation || null) : null;
 
-  const hasEvidence = topSkills.length > 0 || roadmapProgress !== null || simulationReadiness !== null;
+  const hasEvidence =
+    topSkills.length > 0 ||
+    (roadmapProgress !== null && roadmapProgress.completedMilestones > 0) ||
+    simulationReadiness !== null;
 
   const fingerprint = generateVerificationFingerprint({
     slug: config.slug,
