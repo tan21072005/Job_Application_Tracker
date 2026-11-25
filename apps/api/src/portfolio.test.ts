@@ -146,7 +146,7 @@ test('portfolio: a candidate with no skills, roadmap or simulation gets an unver
   assert.equal(dossier.isVerified, false, 'an empty account must not claim verification');
   assert.deepEqual(dossier.topSkills, [], 'no skill may be invented');
   assert.ok(
-    dossier.roadmapProgress === null || dossier.roadmapProgress.completedMilestones === 0,
+    !dossier.roadmapProgress || dossier.roadmapProgress.completedMilestones === 0,
     'an untouched roadmap must not read as progress'
   );
   assert.equal(dossier.simulationReadiness, null, 'no interview score may be invented');
