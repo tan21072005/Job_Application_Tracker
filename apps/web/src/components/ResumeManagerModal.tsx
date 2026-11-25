@@ -44,54 +44,7 @@ export function ResumeManagerModal({
   async function loadResumes() {
     setLoading(true);
     try {
-      let list = await resumeRepository.list();
-      if (list.length === 0) {
-        try {
-          const seeded = await resumeRepository.create({
-            name: 'CV Tiêu chuẩn (Master Resume)',
-            targetRole: 'Senior Fullstack Engineer',
-            summary: 'Kỹ sư phần mềm Fullstack với hơn 5 năm kinh nghiệm thiết kế hệ thống phân tán, web scalable và tối ưu hóa trải nghiệm người dùng.',
-            experiences: [
-              {
-                id: 'exp-1',
-                company: 'Tech Solutions Corp',
-                role: 'Senior Backend Engineer',
-                period: '2023 - Hiện tại',
-                bulletPoints: [
-                  'Thiết kế và phát triển kiến trúc Microservices phục vụ hơn 200,000 người dùng hàng ngày.',
-                  'Tối ưu hóa thời gian phản hồi API từ 450ms xuống 85ms bằng Redis caching và indexing PostgreSQL.',
-                  'Dẫn dắt chuyển đổi pipeline CI/CD sang Docker và GitHub Actions, giảm 50% thời gian triển khai.'
-                ],
-                technologies: ['TypeScript', 'Node.js', 'React', 'PostgreSQL', 'Docker']
-              },
-              {
-                id: 'exp-2',
-                company: 'Global Software Solutions',
-                role: 'Fullstack Developer',
-                period: '2021 - 2023',
-                bulletPoints: [
-                  'Xây dựng các module frontend responsive với React và Redux Toolkit.',
-                  'Tích hợp cổng thanh toán trực tuyến và hệ thống xác thực bảo mật OAuth 2.0 / JWT.'
-                ],
-                technologies: ['JavaScript', 'React', 'Node.js', 'MySQL', 'AWS']
-              }
-            ],
-            skillGroups: [
-              {
-                category: 'Ngôn ngữ lập trình',
-                skills: ['TypeScript', 'JavaScript', 'SQL', 'Go', 'HTML5', 'CSS3']
-              },
-              {
-                category: 'Framework & Công cụ',
-                skills: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Redis', 'Docker', 'Git', 'CI/CD']
-              }
-            ],
-            isMaster: true
-          });
-          list = [seeded];
-        } catch {
-        }
-      }
+      const list = await resumeRepository.list();
       setResumes(list);
     } catch (err: any) {
       setError(err?.message || 'Không thể tải danh sách phiên bản CV.');

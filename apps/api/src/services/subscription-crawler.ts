@@ -231,40 +231,7 @@ export class SubscriptionCrawlerService {
       fail(400, 'Bộ lọc đăng ký đang bị tạm dừng.', 'subscription_inactive');
     }
 
-    const defaultFeed: CrawledJobItem[] = [
-      {
-        company: 'VNG Corporation',
-        position: `${sub.keywords[0] || 'Software'} Engineer`,
-        salary: sub.minSalary ? `${sub.minSalary.toLocaleString('vi-VN')} VND+` : '30.000.000 - 50.000.000 VND',
-        location: sub.location || 'TP. Hồ Chí Minh',
-        workMode: 'Hybrid',
-        url: `https://vng.com.vn/careers/job-${Date.now()}-1`,
-        description: `Tuyển dụng ${sub.keywords.join(', ')} phục vụ các nền tảng quy mô lớn.`,
-        skills: sub.keywords
-      },
-      {
-        company: 'FPT Software',
-        position: `Senior ${sub.keywords[0] || 'Fullstack'} Specialist`,
-        salary: 'Thỏa thuận',
-        location: sub.location || 'Hà Nội',
-        workMode: 'Onsite',
-        url: `https://fpt-software.com/job-${Date.now()}-2`,
-        description: `Tìm kiếm chuyên gia ${sub.keywords.join(', ')} tham gia dự án toàn cầu.`,
-        skills: sub.keywords
-      },
-      {
-        company: 'MoMo',
-        position: `${sub.keywords[0] || 'Backend'} Developer`,
-        salary: '35.000.000 VND',
-        location: 'TP. Hồ Chí Minh',
-        workMode: 'Hybrid',
-        url: `https://momo.vn/careers/job-${Date.now()}-3`,
-        description: `Phát triển hệ thống thanh toán và giải pháp số với ${sub.keywords.join(', ')}.`,
-        skills: sub.keywords
-      }
-    ];
-
-    const itemsToProcess = feedItems && feedItems.length > 0 ? feedItems : defaultFeed;
+    const itemsToProcess = Array.isArray(feedItems) ? feedItems.filter(item => item && item.company && item.position && item.url) : [];
 
     let matched = 0;
     let saved = 0;
@@ -305,7 +272,7 @@ export class SubscriptionCrawlerService {
           item.location?.trim() || null,
           item.salary?.trim() || null,
           workMode,
-          normUrl,
+          item.url.trim(),
           normUrl,
           note
         ]

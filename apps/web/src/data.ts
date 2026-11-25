@@ -743,7 +743,9 @@ export const repository = {
         salary: '35 - 50 triệu',
         notes: 'Vị trí phát triển hệ thống backend phân tán và AI integration.',
         deadline: null,
-        confidence: { company: 0.9, position: 0.85 }
+        confidence: { company: 0.9, position: 0.85 },
+        isJobPosting: true,
+        detectionNotes: ['Dữ liệu mẫu.']
       };
     }
     return request<UrlImportExtractResult>('/ai/import-url', {

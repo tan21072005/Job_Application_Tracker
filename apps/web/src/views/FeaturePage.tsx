@@ -49,7 +49,7 @@ export default function FeaturePage({
   onBack: () => void;
   onRefresh: () => void;
 }) {
-  const companyName = apps[0]?.company || 'FPT Software';
+  const companyName = apps[0]?.company || '';
 
   return (
     <div className="feature-page" data-feature={featureKey}>
@@ -57,7 +57,7 @@ export default function FeaturePage({
       {featureKey === 'contacts' && <NetworkingContactsModal isOpen onClose={onBack} applications={apps} notify={notify} />}
       {featureKey === 'email' && <EmailIngestModal isOpen onClose={onBack} onSuccess={onRefresh} notify={notify} />}
       {featureKey === 'decision' && <DecisionMatrixModal isOpen onClose={onBack} applications={apps} onRefreshApps={onRefresh} notify={notify} />}
-      {featureKey === 'company' && <CompanyIntelligenceModal isOpen companyName={companyName} onClose={onBack} />}
+      {featureKey === 'company' && <CompanyIntelligenceModal isOpen companyName={companyName} onClose={onBack} availableCompanies={Array.from(new Set(apps.map(a => a.company).filter(Boolean)))} />}
       {featureKey === 'resume' && <ResumeManagerModal isOpen onClose={onBack} />}
       {featureKey === 'resumeOptimizer' && (
         <ResumeOptimizerModal

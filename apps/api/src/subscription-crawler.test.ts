@@ -128,13 +128,14 @@ test('Crawler: subscription lifecycle and crawl run with deduplication', async (
 
     // 5. Verify saved applications in DB
     const savedApps = (await pool.query(
-      `SELECT company, position, status, url, work_mode FROM applications WHERE user_id = $1 ORDER BY company ASC`,
+      `SELECT company, position, status, url, normalized_url, work_mode FROM applications WHERE user_id = $1 ORDER BY company ASC`,
       [userId]
     )).rows;
     assert.equal(savedApps.length, 2);
     assert.equal(savedApps[0].company, 'Axon Vietnam');
     assert.equal(savedApps[0].status, 'Saved');
-    assert.equal(savedApps[0].url, 'https://axon.com/jobs/ts-1'); // URL normalized (utm stripped)
+    assert.equal(savedApps[0].url, 'https://axon.com/jobs/ts-1?utm_source=linkedin');
+    assert.equal(savedApps[0].normalized_url, 'https://axon.com/jobs/ts-1');
     assert.equal(savedApps[0].work_mode, 'Hybrid');
 
     // 6. Run crawl second time with same and new items -> Deduplication verification

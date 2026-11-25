@@ -306,6 +306,18 @@ export function sanitizeAgainstPromptInjection(text: string): string {
 // ---------------------------------------------------------------------------
 // 6. Giai đoạn 2: Hybrid Structured Extraction (Task 2.2)
 // ---------------------------------------------------------------------------
+const JOB_SIGNALS = [
+  'tuyển dụng', 'tuyen dung', 'việc làm', 'viec lam', 'ứng tuyển', 'ung tuyen',
+  'mô tả công việc', 'mo ta cong viec', 'yêu cầu công việc', 'yeu cau cong viec',
+  'quyền lợi', 'quyen loi', 'hạn nộp', 'han nop', 'job description', 'apply now',
+  'we are hiring', 'responsibilities', 'requirements', 'qualifications'
+];
+
+const NON_JOB_SIGNALS = [
+  'wikipedia', 'bách khoa toàn thư', 'bach khoa toan thu', 'tin tức', 'tin tuc',
+  'báo điện tử', 'bao dien tu', 'bài viết', 'bai viet', 'đăng nhập để bình luận'
+];
+
 export function extractJobDetails(html: string, sourceUrl: string): UrlImportExtractResult {
   let company = '';
   let position = '';
@@ -313,6 +325,7 @@ export function extractJobDetails(html: string, sourceUrl: string): UrlImportExt
   let workMode: WorkMode | null = null;
   let salary: string | null = null;
   let deadline: string | null = null;
+  let jsonLdJobPosting = false;
 
   // 1. Schema.org JobPosting JSON-LD
   const jsonLdMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
@@ -323,6 +336,7 @@ export function extractJobDetails(html: string, sourceUrl: string): UrlImportExt
       const items = Array.isArray(parsed) ? parsed : [parsed];
       for (const item of items) {
         if (item && (item['@type'] === 'JobPosting' || item['@type']?.includes?.('JobPosting'))) {
+          jsonLdJobPosting = true;
           if (item.title && !position) position = String(item.title).trim();
           if (item.hiringOrganization?.name && !company) company = String(item.hiringOrganization.name).trim();
 
@@ -401,7 +415,56 @@ export function extractJobDetails(html: string, sourceUrl: string): UrlImportExt
     }
   }
 
-  // Fallbacks if missing
+  const cleanText = extractCleanArticleText(html);
+  const sanitizedText = sanitizeAgainstPromptInjection(cleanText);
+  const excerpt = sanitizedText.slice(0, 500);
+  const haystack = `${rawTitle}\n${cleanText}`.toLowerCase();
+
+  const jobSignalCount = JOB_SIGNALS.filter(signal => haystack.includes(signal)).length;
+  const nonJobSignalCount = NON_JOB_SIGNALS.filter(signal => haystack.includes(signal)).length;
+  const hasSalaryText = Boolean(salary);
+  const hasApplicationText = /nộp hồ sơ|nop ho so|gửi cv|gui cv|hạn chót|deadline|apply/i.test(haystack);
+  const hasSplitTitle = rawTitle.split(/\s*[-|–—:]\s*/).filter(part => part.trim()).length >= 2;
+  const hasWorkModeText = workMode !== null;
+
+  const detectionNotes: string[] = [];
+  if (jsonLdJobPosting) detectionNotes.push('Trang có JSON-LD JobPosting.');
+  if (jobSignalCount > 0) detectionNotes.push(`Tìm thấy ${jobSignalCount} cụm từ tuyển dụng.`);
+  if (nonJobSignalCount > 0) detectionNotes.push(`Tìm thấy ${nonJobSignalCount} dấu hiệu không phải tin tuyển dụng.`);
+  if (hasSalaryText) detectionNotes.push('Tìm thấy thông tin lương.');
+  if (hasApplicationText) detectionNotes.push('Tìm thấy hướng dẫn nộp hồ sơ.');
+  if (hasSplitTitle) detectionNotes.push('Tiêu đề có dạng "Vị trí - Công ty".');
+  if (hasWorkModeText) detectionNotes.push('Tìm thấy hình thức làm việc.');
+
+  const structuredPostingSignalCount =
+    (hasSalaryText ? 1 : 0) +
+    (hasApplicationText ? 1 : 0) +
+    (hasWorkModeText ? 1 : 0) +
+    (hasSplitTitle ? 1 : 0);
+
+  const isJobPosting = jsonLdJobPosting
+    || (jobSignalCount >= 2 && nonJobSignalCount === 0)
+    || (jobSignalCount >= 1 && structuredPostingSignalCount >= 1 && nonJobSignalCount === 0)
+    || (nonJobSignalCount === 0 && structuredPostingSignalCount >= 3);
+
+  if (!isJobPosting) {
+    detectionNotes.push('Trang này không giống một tin tuyển dụng.');
+    return {
+      company: '',
+      position: '',
+      url: sourceUrl,
+      location: null,
+      workMode: null,
+      salary: null,
+      notes: null,
+      deadline: null,
+      confidence: { company: 0, position: 0 },
+      rawTextExcerpt: excerpt,
+      isJobPosting: false,
+      detectionNotes
+    };
+  }
+
   if (!position) position = 'Vị trí tuyển dụng';
   if (!company) {
     try {
@@ -411,9 +474,26 @@ export function extractJobDetails(html: string, sourceUrl: string): UrlImportExt
     }
   }
 
-  const cleanText = extractCleanArticleText(html);
-  const sanitizedText = sanitizeAgainstPromptInjection(cleanText);
-  const excerpt = sanitizedText.slice(0, 500);
+  let companyConfidence = company ? 0.5 : 0;
+  let positionConfidence = position !== 'Vị trí tuyển dụng' ? 0.9 : 0.3;
+
+  if (jsonLdJobPosting) {
+    if (company) companyConfidence = 0.95;
+    if (position !== 'Vị trí tuyển dụng') positionConfidence = 0.95;
+    detectionNotes.push('Độ tin cậy nâng lên nhờ JSON-LD JobPosting.');
+  } else {
+    const looksLikeHostname = (() => {
+      try {
+        return company === new URL(sourceUrl).hostname.replace(/^www\./, '');
+      } catch {
+        return true;
+      }
+    })();
+    if (looksLikeHostname) {
+      companyConfidence = 0.3;
+      detectionNotes.push('Tên công ty chỉ suy ra từ tên miền, cần kiểm tra lại.');
+    }
+  }
 
   return {
     company: company.slice(0, 250),
@@ -425,9 +505,11 @@ export function extractJobDetails(html: string, sourceUrl: string): UrlImportExt
     notes: excerpt ? `Mô tả công việc (Trích xuất từ link):\n${excerpt}...` : null,
     deadline,
     confidence: {
-      company: company && company !== new URL(sourceUrl).hostname ? 0.9 : 0.5,
-      position: position && position !== 'Vị trí tuyển dụng' ? 0.9 : 0.5
+      company: companyConfidence,
+      position: positionConfidence
     },
-    rawTextExcerpt: excerpt
+    rawTextExcerpt: excerpt,
+    isJobPosting: true,
+    detectionNotes
   };
 }

@@ -11,7 +11,8 @@ import {
   MapPin,
   DollarSign,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Info
 } from 'lucide-react';
 import { subscriptionRepository } from '../data';
 import type { JobSubscriptionDTO, CrawlRunResultDTO } from '@jobtrack/contract';
@@ -167,7 +168,20 @@ export function SubscriptionsModal({ isOpen, onClose, onScanCompleted, embedded 
           </div>
         )}
 
-        {scanResult && (
+        {scanResult && scanResult.found === 0 && (
+          <div className="notice" role="status">
+            <Info size={16} />
+            <div>
+              <strong>Rada chưa có nguồn tin nào để quét.</strong>
+              <p>
+                JobTrack chưa kết nối tới trang tuyển dụng nào cho bộ lọc &quot;{scanResult.subscriptionTitle}&quot;.
+                Không có tin nào được thêm. Dùng tiện ích Chrome để lưu tin từ TopCV, VietnamWorks hoặc ITviec.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {scanResult && scanResult.found > 0 && (
           <div className="notice notice-success" role="status">
             <CheckCircle2 size={16} />
             <div>

@@ -126,9 +126,9 @@ test('roadmap: GET /api/career/skill-gap returns baseline gap analysis for user 
   assert.equal(res.status, 200);
   const data = await res.json() as SkillGapAnalysisDTO;
   assert.equal(data.totalApplicationsAnalyzed, 0);
-  assert.equal(data.coverageScore, 100);
+  assert.equal(data.coverageScore, 0);
   assert.equal(Array.isArray(data.recommendedFocusSkills), true);
-  assert.equal(data.recommendedFocusSkills.length > 0, true);
+  assert.equal(data.recommendedFocusSkills.length, 0);
 });
 
 test('roadmap: GET /api/career/skill-gap extracts skills from applications and computes coverage', async () => {

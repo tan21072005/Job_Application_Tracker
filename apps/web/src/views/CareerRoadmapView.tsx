@@ -235,10 +235,14 @@ export function CareerRoadmapView({ apps, notify }: Props) {
                       </div>
                     </div>
                   ))
+                ) : (gapAnalysis?.totalApplicationsAnalyzed ?? 0) === 0 ? (
+                  <div className="empty-gap-notice">
+                    <span>Chưa có hồ sơ nào để phân tích. Thêm hồ sơ ứng tuyển để xem kỹ năng nào đang được yêu cầu.</span>
+                  </div>
                 ) : (
                   <div className="empty-gap-notice">
                     <CheckCircle2 size={20} className="text-emerald-500" />
-                    <span>Hồ sơ của bạn đã đáp ứng đầy đủ các yêu cầu kỹ thuật hiện tại!</span>
+                    <span>Hồ sơ của bạn đã đáp ứng đầy đủ các yêu cầu kỹ thuật trong {gapAnalysis?.totalApplicationsAnalyzed} hồ sơ đang có.</span>
                   </div>
                 )}
               </div>

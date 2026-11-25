@@ -10,14 +10,18 @@ interface CompanyIntelligenceModalProps {
   companyName: string;
   onClose: () => void;
   onSelectCompany?: (name: string) => void;
+  availableCompanies?: string[];
 }
 
 export function CompanyIntelligenceModal({
   isOpen,
   companyName,
   onClose,
-  onSelectCompany
+  onSelectCompany,
+  availableCompanies = []
 }: CompanyIntelligenceModalProps) {
+  const [query, setQuery] = useState<string>(companyName);
+  const [activeCompany, setActiveCompany] = useState<string>(companyName);
   const [profile, setProfile] = useState<CompanyProfileDTO | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,14 +52,29 @@ export function CompanyIntelligenceModal({
   const [salaryRows, setSalaryRows] = useState<Array<{ level: string; count: number; min: number; median: number; max: number }>>([]);
 
   useEffect(() => {
-    if (isOpen && companyName) {
-      loadProfile(companyName);
-      setActiveTab('salaries');
-      setShowReviewForm(false);
-      setReviewSuccess(null);
-      setError(null);
+    if (!isOpen) return;
+    setQuery(companyName);
+    setActiveCompany(companyName);
+    setActiveTab('salaries');
+    setShowReviewForm(false);
+    setReviewSuccess(null);
+    setError(null);
+    if (companyName) {
+      void loadProfile(companyName);
+    } else {
+      setProfile(null);
     }
   }, [isOpen, companyName]);
+
+  function handleSearch(event: React.FormEvent) {
+    event.preventDefault();
+    const next = query.trim();
+    if (!next) return;
+    setActiveCompany(next);
+    setError(null);
+    if (onSelectCompany) onSelectCompany(next);
+    void loadProfile(next);
+  }
 
   async function loadProfile(name: string) {
     setLoading(true);
@@ -176,10 +195,32 @@ export function CompanyIntelligenceModal({
           {error && <div className="alert alert-error">{error}</div>}
           {reviewSuccess && <div className="alert alert-success">{reviewSuccess}</div>}
 
+          <form className="company-search-row" onSubmit={handleSearch}>
+            <label htmlFor="company-search-input" className="sr-only">Tên công ty</label>
+            <input
+              id="company-search-input"
+              type="text"
+              list="company-search-options"
+              placeholder="Nhập tên công ty để tra cứu"
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+            />
+            <datalist id="company-search-options">
+              {availableCompanies.map(name => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+            <button type="submit" className="btn btn-primary" disabled={loading || !query.trim()}>
+              {loading ? 'Đang tra…' : 'Tra cứu'}
+            </button>
+          </form>
+
           {loading ? (
-            <div className="loading-state">Đang tải hồ sơ doanh nghiệp & đối soát dữ liệu thị trường...</div>
+            <div className="loading-state">Đang tải hồ sơ doanh nghiệp &amp; đối soát dữ liệu thị trường...</div>
+          ) : !activeCompany ? (
+            <div className="empty-state">Nhập tên một công ty để xem hồ sơ.</div>
           ) : !profile ? (
-            <div className="empty-state">Không tìm thấy thông tin cho công ty "{companyName}".</div>
+            <div className="empty-state">Không tìm thấy thông tin cho công ty "{activeCompany}".</div>
           ) : (
             <div className="company-dossier-content">
               <div className="company-hero-card">

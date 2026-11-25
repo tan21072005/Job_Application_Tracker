@@ -294,14 +294,14 @@ export function extractSkillsFromApplications(
 
   const coverageScore = totalDemandSkills > 0
     ? Math.round((matchedDemandCount / totalDemandSkills) * 100)
-    : 100;
+    : 0;
 
   const topInDemandSkills = allDemands.slice(0, 5);
   const recommendedFocusSkills = missingSkills
     .slice(0, 4)
     .map(m => m.skill);
 
-  if (recommendedFocusSkills.length === 0 && missingSkills.length === 0) {
+  if (recommendedFocusSkills.length === 0 && missingSkills.length === 0 && totalDemandSkills > 0) {
     const defaults = ['System Design', 'Kubernetes', 'Docker', 'PostgreSQL'];
     for (const def of defaults) {
       if (!matchedSkills.includes(def) && recommendedFocusSkills.length < 3) {

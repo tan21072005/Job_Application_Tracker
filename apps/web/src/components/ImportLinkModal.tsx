@@ -40,6 +40,15 @@ export default function ImportLinkModal({ apps, onClose, onSaved, onOpenExisting
     setError('');
     try {
       const result = await repository.importUrl(trimmed);
+      if (!result.isJobPosting) {
+        setExtracted(null);
+        const reasons = result.detectionNotes.length > 0 ? result.detectionNotes.join(' ') : '';
+        setError(
+          `Trang này không phải tin tuyển dụng. ${reasons}`.trim() +
+          ' Hãy dán liên kết tới đúng bài đăng tuyển dụng.'
+        );
+        return;
+      }
       setExtracted(result);
       let initialWorkMode: WorkMode = 'On-site';
       if (result.workMode === 'Hybrid') initialWorkMode = 'Hybrid';

@@ -165,6 +165,8 @@ export interface UrlImportExtractResult {
     position: number;
   };
   rawTextExcerpt?: string;
+  isJobPosting: boolean;
+  detectionNotes: string[];
 }
 
 // ==========================================

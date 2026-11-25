@@ -92,8 +92,9 @@ test('URL Fetcher: structured extraction with JSON-LD JobPosting', () => {
   assert.equal(details.workMode, 'Remote');
   assert.equal(details.salary, '150000 - 220000 GBP');
   assert.equal(details.deadline, '2026-11-30T23:59:59.000Z');
-  assert.equal(details.confidence.company, 0.9);
-  assert.equal(details.confidence.position, 0.9);
+  assert.equal(details.confidence.company, 0.95, 'JSON-LD JobPosting is the strongest signal');
+  assert.equal(details.confidence.position, 0.95);
+  assert.equal(details.isJobPosting, true);
 });
 
 test('URL Fetcher: heuristic fallback extraction from OpenGraph and HTML meta', () => {
@@ -115,6 +116,38 @@ test('URL Fetcher: heuristic fallback extraction from OpenGraph and HTML meta', 
   assert.equal(details.company, 'VNG Corporation');
   assert.equal(details.workMode, 'Hybrid');
   assert.ok(details.salary?.includes('40 triệu - 60 triệu'));
+  assert.equal(details.isJobPosting, true);
+});
+
+test('URL Fetcher: a page that is not a job posting is refused, not invented', () => {
+  const encyclopedia = `
+    <!DOCTYPE html>
+    <html>
+      <head><title>Việt Nam – Wikipedia tiếng Việt</title></head>
+      <body>
+        <h1>Việt Nam</h1>
+        <p>Việt Nam là một quốc gia nằm ở cực Đông của bán đảo Đông Dương. Bách khoa toàn thư mở.</p>
+      </body>
+    </html>
+  `;
+  const refused = extractJobDetails(encyclopedia, 'https://vi.wikipedia.org/wiki/Việt_Nam');
+  assert.equal(refused.isJobPosting, false);
+  assert.equal(refused.company, '');
+  assert.equal(refused.position, '');
+  assert.equal(refused.confidence.company, 0);
+  assert.equal(refused.confidence.position, 0);
+
+  const news = `
+    <!DOCTYPE html>
+    <html>
+      <head><title>Báo điện tử - Tin tức mới nhất</title></head>
+      <body><h1>Tin tức</h1><p>Bài viết mới nhất trong ngày.</p></body>
+    </html>
+  `;
+  const refusedNews = extractJobDetails(news, 'https://vnexpress.net/');
+  assert.equal(refusedNews.isJobPosting, false);
+  assert.equal(refusedNews.company, '');
+  assert.equal(refusedNews.position, '');
 });
 
 test('URL Fetcher: clean readability strips nav, scripts and styles', () => {

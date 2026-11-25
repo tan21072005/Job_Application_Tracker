@@ -83,10 +83,32 @@ test('Subscriptions API: creates, lists, toggles, runs crawl, and deletes subscr
   assert.equal(subs.length, 1);
   assert.equal(subs[0].id, createdSub.id);
 
-  const runRes = await fetch(`${base}/api/subscriptions/${createdSub.id}/run`, {
+  const emptyRunRes = await fetch(`${base}/api/subscriptions/${createdSub.id}/run`, {
     method: 'POST',
     headers: { Origin: origin, Cookie: user.cookie, 'Content-Type': 'application/json' },
     body: JSON.stringify({})
+  });
+  assert.equal(emptyRunRes.status, 200);
+  const emptyRun = await emptyRunRes.json() as CrawlRunResultDTO;
+  assert.equal(emptyRun.found, 0, 'a scan with no source must report zero, not invented postings');
+  assert.equal(emptyRun.saved, 0);
+
+  const runRes = await fetch(`${base}/api/subscriptions/${createdSub.id}/run`, {
+    method: 'POST',
+    headers: { Origin: origin, Cookie: user.cookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      feedItems: [
+        {
+          company: 'Axon Labs',
+          position: 'Senior TypeScript Engineer',
+          url: `https://axon.example.com/jobs/ts-${randomUUID()}`,
+          location: 'Hà Nội',
+          salary: '40.000.000 - 60.000.000 VND',
+          description: 'Tuyển dụng TypeScript cho nền tảng dữ liệu.',
+          skills: ['TypeScript']
+        }
+      ]
+    })
   });
   assert.equal(runRes.status, 200);
   const crawlRun = await runRes.json() as CrawlRunResultDTO;
