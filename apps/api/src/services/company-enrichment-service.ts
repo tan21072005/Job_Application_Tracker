@@ -7,6 +7,7 @@ import {
   verifyExtractionAgainstSource,
   type ExtractedField
 } from './company-extraction.ts';
+import { lookupCompany } from './company-wikidata.ts';
 
 export type EnrichmentSource = 'user' | 'jsonld' | 'llm_grounded' | 'wikidata' | 'places' | 'manual';
 
@@ -24,6 +25,7 @@ export interface EnrichmentResult {
   rejected: Array<{ field: ExtractedField; quote: string; reason: string }>;
   source: EnrichmentSource | null;
   fetchedUrl: string | null;
+  wikidataQid: string | null;
   error: string | null;
 }
 
@@ -77,11 +79,11 @@ export class CompanyEnrichmentService {
   async extractFromWebsite(website: string | null): Promise<EnrichmentResult> {
     const base = normaliseWebsite(website);
     if (!base) {
-      return { accepted: {}, rejected: [], source: null, fetchedUrl: null, error: 'invalid_website' };
+      return { accepted: {}, rejected: [], source: null, fetchedUrl: null, wikidataQid: null, error: 'invalid_website' };
     }
 
     if (!isLlmConfigured()) {
-      return { accepted: {}, rejected: [], source: null, fetchedUrl: null, error: 'llm_not_configured' };
+      return { accepted: {}, rejected: [], source: null, fetchedUrl: null, wikidataQid: null, error: 'llm_not_configured' };
     }
 
     let fetchedUrl: string | null = null;
@@ -98,7 +100,7 @@ export class CompanyEnrichmentService {
     }
 
     if (!fetchedUrl || !sourceText) {
-      return { accepted: {}, rejected: [], source: null, fetchedUrl: null, error: 'website_unreachable' };
+      return { accepted: {}, rejected: [], source: null, fetchedUrl: null, wikidataQid: null, error: 'website_unreachable' };
     }
 
     const completion = await completeWithLlm(
@@ -111,12 +113,12 @@ export class CompanyEnrichmentService {
 
     const rawText = 'text' in completion ? completion.text : '';
     if (!rawText) {
-      return { accepted: {}, rejected: [], source: null, fetchedUrl, error: 'llm_failed' };
+      return { accepted: {}, rejected: [], source: null, fetchedUrl, wikidataQid: null, error: 'llm_failed' };
     }
 
     const parsed = parseGroundedExtraction(rawText);
     if (!parsed) {
-      return { accepted: {}, rejected: [], source: null, fetchedUrl, error: 'llm_unparseable' };
+      return { accepted: {}, rejected: [], source: null, fetchedUrl, wikidataQid: null, error: 'llm_unparseable' };
     }
 
     const verified = verifyExtractionAgainstSource(parsed, sourceText);
@@ -125,6 +127,7 @@ export class CompanyEnrichmentService {
       rejected: verified.rejected,
       source: 'llm_grounded',
       fetchedUrl,
+      wikidataQid: null,
       error: null
     };
   }
@@ -143,7 +146,8 @@ export class CompanyEnrichmentService {
       size: 'size',
       headquarters: 'headquarters',
       description: 'description',
-      techStack: 'tech_stack'
+      techStack: 'tech_stack',
+      website: 'website'
     };
 
     for (const field of Object.keys(result.accepted) as ExtractedField[]) {
@@ -180,5 +184,47 @@ export class CompanyEnrichmentService {
     }
 
     return { written, skipped };
+  }
+
+  async enrichFromWikidata(
+    companyName: string,
+    knownWebsite: string | null
+  ): Promise<{ written: ExtractedField[]; qid: string | null; confidence: number }> {
+    const found = await lookupCompany(companyName, knownWebsite).catch(() => null);
+    if (!found) return { written: [], qid: null, confidence: 0 };
+
+    const now = new Date().toISOString();
+    const written: ExtractedField[] = [];
+    const entries: Array<{ field: ExtractedField; value: string | null }> = [
+      { field: 'industry', value: found.industry },
+      { field: 'headquarters', value: found.headquarters },
+      { field: 'website', value: found.website }
+    ];
+
+    for (const entry of entries) {
+      if (!entry.value) continue;
+      const provenance: FieldProvenance = {
+        source: 'wikidata',
+        confidence: found.confidence,
+        evidence: `Wikidata ${found.qid}`,
+        verifiedAt: now
+      };
+      const updated = await this.pool.query(
+        `UPDATE company_profiles
+         SET ${entry.field} = CASE
+               WHEN ${entry.field} IS NULL OR ${entry.field}::text IN ('', '""') THEN $2
+               ELSE ${entry.field}
+             END,
+             provenance = provenance || $3::jsonb,
+             enriched_at = CURRENT_TIMESTAMP,
+             wikidata_id = $4
+         WHERE lower(name) = lower($1)
+         RETURNING (${entry.field}::text = $2::text) AS took_value`,
+        [companyName, entry.value, JSON.stringify({ [entry.field]: provenance }), found.qid]
+      );
+      if (updated.rowCount && updated.rows[0].took_value) written.push(entry.field);
+    }
+
+    return { written, qid: found.qid, confidence: found.confidence };
   }
 }

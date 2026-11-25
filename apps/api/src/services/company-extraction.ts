@@ -1,4 +1,4 @@
-export type ExtractedField = 'industry' | 'size' | 'headquarters' | 'description' | 'techStack';
+export type ExtractedField = 'industry' | 'size' | 'headquarters' | 'description' | 'techStack' | 'website';
 
 export interface GroundedFieldValue {
   value: string;
@@ -17,7 +17,8 @@ const MAX_VALUE_LENGTH: Record<ExtractedField, number> = {
   size: 80,
   headquarters: 160,
   description: 800,
-  techStack: 400
+  techStack: 400,
+  website: 300
 };
 
 function collapse(value: string): string {

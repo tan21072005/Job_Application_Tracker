@@ -2946,20 +2946,43 @@ app.post('/api/companies/:name/enrich', auth, async (req, res, next) => {
     const profile = await companyService.getCompany(name);
     const website = (req.body && typeof req.body.website === 'string') ? req.body.website : profile.website;
 
+    const steps: Array<{ step: string; ok: boolean; written: string[]; note?: string }> = [];
+    const written: string[] = [];
+
     const extraction = await companyEnrichmentService.extractFromWebsite(website);
-    const persisted = extraction.source
-      ? await companyEnrichmentService.persistGrounded(name, extraction)
-      : { written: [], skipped: [] };
+    if (extraction.source) {
+      const persisted = await companyEnrichmentService.persistGrounded(name, extraction);
+      written.push(...persisted.written);
+      steps.push({
+        step: 'llm_grounded',
+        ok: true,
+        written: persisted.written,
+        note: extraction.fetchedUrl || undefined
+      });
+    } else {
+      steps.push({ step: 'llm_grounded', ok: false, written: [], note: extraction.error || 'no_source' });
+    }
+
+    const wikidata = await companyEnrichmentService.enrichFromWikidata(name, website || null);
+    written.push(...wikidata.written);
+    steps.push({
+      step: 'wikidata',
+      ok: wikidata.qid !== null,
+      written: wikidata.written,
+      note: wikidata.qid || 'no_confident_match'
+    });
 
     const refreshed = await companyService.getCompany(name);
+    const allFailed = steps.every(entry => !entry.ok);
 
-    res.status(extraction.error ? 207 : 200).json({
+    res.status(allFailed ? 207 : 200).json({
       userId,
-      error: extraction.error,
+      error: allFailed ? (extraction.error || 'no_source_found') : null,
       fetchedUrl: extraction.fetchedUrl,
-      written: persisted.written,
-      skipped: persisted.skipped,
+      written,
+      skipped: [],
       rejected: extraction.rejected,
+      steps,
       profile: refreshed
     });
   } catch (error) {

@@ -37,6 +37,16 @@ export function CompanyIntelligenceModal({
   const [submittingReview, setSubmittingReview] = useState<boolean>(false);
   const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
 
+  const [enriching, setEnriching] = useState<boolean>(false);
+  const [enrichNote, setEnrichNote] = useState<string | null>(null);
+
+  const [showSalaryForm, setShowSalaryForm] = useState<boolean>(false);
+  const [salaryRole, setSalaryRole] = useState<string>('');
+  const [salaryLevel, setSalaryLevel] = useState<string>('Mid');
+  const [salaryAmount, setSalaryAmount] = useState<string>('');
+  const [submittingSalary, setSubmittingSalary] = useState<boolean>(false);
+  const [salaryRows, setSalaryRows] = useState<Array<{ level: string; count: number; min: number; median: number; max: number }>>([]);
+
   useEffect(() => {
     if (isOpen && companyName) {
       loadProfile(companyName);
@@ -57,6 +67,56 @@ export function CompanyIntelligenceModal({
       setError(err?.message || 'Không thể tải hồ sơ thông tin công ty.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleEnrich() {
+    if (!profile || enriching) return;
+    setEnriching(true);
+    setEnrichNote(null);
+    setError(null);
+    try {
+      const updated = await companyRepository.enrich(profile.name, profile.website || undefined);
+      setProfile(updated);
+      setEnrichNote(
+        updated.provenance && Object.keys(updated.provenance).length > 0
+          ? 'Đã cập nhật từ nguồn công khai. Mỗi trường có ghi rõ nguồn.'
+          : 'Không tìm thấy thông tin đáng tin cậy cho công ty này.'
+      );
+    } catch (err: any) {
+      setError(err?.message || 'Không tìm được thông tin công ty.');
+    } finally {
+      setEnriching(false);
+    }
+  }
+
+  async function handleSalarySubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!profile || submittingSalary) return;
+    const amount = Number(salaryAmount.replace(/[^0-9]/g, ''));
+    if (!salaryRole.trim() || !Number.isFinite(amount) || amount <= 0) {
+      setError('Cần nhập vị trí và mức lương hợp lệ.');
+      return;
+    }
+    setSubmittingSalary(true);
+    setError(null);
+    try {
+      await companyRepository.addSalary(profile.name, {
+        role: salaryRole.trim(),
+        level: salaryLevel,
+        amount,
+        currency: 'VND'
+      });
+      const rows = await companyRepository.listSalaryContributions(profile.name).catch(() => []);
+      setSalaryRows(rows);
+      setShowSalaryForm(false);
+      setSalaryRole('');
+      setSalaryAmount('');
+      setReviewSuccess('Đã gửi mức lương. Cảm ơn bạn — dữ liệu này giúp người sau.');
+    } catch (err: any) {
+      setError(err?.message || 'Không gửi được mức lương.');
+    } finally {
+      setSubmittingSalary(false);
     }
   }
 
@@ -136,15 +196,51 @@ export function CompanyIntelligenceModal({
                   <div className="company-info-block">
                     <h1 className="company-profile-name">{profile.name}</h1>
                     <div className="company-tags-row">
-                      <span className="badge badge-secondary">{profile.industry}</span>
-                      <span className="company-meta-item">👥 {profile.size}</span>
-                      <span className="company-meta-item">📍 {profile.headquarters}</span>
+                      {profile.industry ? (
+                        <span className="badge badge-secondary">{profile.industry}</span>
+                      ) : (
+                        <span className="badge badge-secondary badge-muted">Chưa có ngành</span>
+                      )}
+                      {profile.size && <span className="company-meta-item">👥 {profile.size}</span>}
+                      {profile.headquarters && <span className="company-meta-item">📍 {profile.headquarters}</span>}
                       {profile.website && (
                         <a href={profile.website} target="_blank" rel="noopener noreferrer" className="company-website-link">
                           🌐 {profile.website.replace(/^https?:\/\//, '')}
                         </a>
                       )}
                     </div>
+
+                    {profile.provenance && Object.keys(profile.provenance).length > 0 && (
+                      <div className="company-provenance-list">
+                        {Object.entries(profile.provenance).map(([field, entry]) => (
+                          entry && (
+                            <span key={field} className="company-provenance-tag" title={entry.evidence || undefined}>
+                              {field === 'industry' ? 'Ngành' : field === 'size' ? 'Quy mô' : field === 'headquarters' ? 'Trụ sở' : field === 'website' ? 'Website' : field}
+                              {' · '}
+                              {entry.source === 'wikidata' ? 'Wikidata' : entry.source === 'llm_grounded' ? 'Trang web công ty' : entry.source === 'jsonld' ? 'Tin tuyển dụng' : entry.source}
+                            </span>
+                          )
+                        ))}
+                      </div>
+                    )}
+
+                    {profile.enrichment?.canEnrich && (
+                      <div className="company-enrich-row">
+                        <button
+                          type="button"
+                          className="btn btn-secondary company-enrich-btn"
+                          onClick={() => void handleEnrich()}
+                          disabled={enriching}
+                        >
+                          {enriching ? 'Đang tìm…' : 'Tìm thông tin công ty'}
+                        </button>
+                        <span className="muted-text">
+                          Đọc website công ty và Wikidata. Không có nguồn thì để trống.
+                        </span>
+                      </div>
+                    )}
+
+                    {enrichNote && <p className="company-enrich-note">{enrichNote}</p>}
                   </div>
                   {profile.cultureScores ? (
                     <div className="company-overall-rating-card">
@@ -251,9 +347,94 @@ export function CompanyIntelligenceModal({
               {activeTab === 'salaries' && (
                 <div className="tab-pane salaries-pane">
                   <div className="salaries-header-row">
-                    <h3 className="section-title">Khảo sát & Phổ lương Tham chiếu theo Cấp bậc</h3>
-                    <span className="muted-text">Dữ liệu tổng hợp từ cộng đồng & khảo sát thị trường</span>
+                    <h3 className="section-title">Mức lương do người dùng đóng góp</h3>
+                    <span className="muted-text">Chỉ hiện khi có người thật gửi. Chưa có thì để trống.</span>
                   </div>
+
+                  <div className="salary-contribute-row">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowSalaryForm(value => !value)}
+                    >
+                      {showSalaryForm ? 'Đóng form' : 'Đóng góp mức lương của bạn'}
+                    </button>
+                  </div>
+
+                  {showSalaryForm && (
+                    <form className="salary-form" onSubmit={handleSalarySubmit}>
+                      <div className="salary-form-grid">
+                        <label className="field">
+                          <span>Vị trí</span>
+                          <input
+                            type="text"
+                            value={salaryRole}
+                            onChange={e => setSalaryRole(e.target.value)}
+                            placeholder="VD: Backend Engineer"
+                            required
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Cấp bậc</span>
+                          <select value={salaryLevel} onChange={e => setSalaryLevel(e.target.value)}>
+                            <option value="Junior">Junior</option>
+                            <option value="Mid">Mid</option>
+                            <option value="Senior">Senior</option>
+                            <option value="Lead">Lead</option>
+                            <option value="Principal">Principal</option>
+                          </select>
+                        </label>
+                        <label className="field">
+                          <span>Lương tháng (VND)</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={salaryAmount}
+                            onChange={e => setSalaryAmount(e.target.value)}
+                            placeholder="VD: 25000000"
+                            required
+                          />
+                        </label>
+                      </div>
+                      <p className="muted-text">Gửi ẩn danh. Mỗi người một lần cho mỗi vị trí và cấp bậc.</p>
+                      <button type="submit" className="btn btn-primary" disabled={submittingSalary}>
+                        {submittingSalary ? 'Đang gửi…' : 'Gửi mức lương'}
+                      </button>
+                    </form>
+                  )}
+
+                  {salaryRows.length > 0 && (
+                    <div className="salaries-table-wrap">
+                      <table className="salaries-table">
+                        <thead>
+                          <tr>
+                            <th>Cấp bậc</th>
+                            <th>Thấp nhất</th>
+                            <th>Trung vị</th>
+                            <th>Cao nhất</th>
+                            <th>Số người gửi</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {salaryRows.map(row => (
+                            <tr key={row.level} className="salary-row">
+                              <td className="font-semibold">{row.level}</td>
+                              <td>{row.min.toLocaleString('vi-VN')}đ</td>
+                              <td>{row.median.toLocaleString('vi-VN')}đ</td>
+                              <td>{row.max.toLocaleString('vi-VN')}đ</td>
+                              <td>{row.count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {salaryRows.length === 0 && !showSalaryForm && (
+                    <div className="company-empty-block">
+                      <p>Chưa có ai đóng góp mức lương cho công ty này.</p>
+                    </div>
+                  )}
 
                   <div className="salaries-table-wrap">
                     <table className="salaries-table">
