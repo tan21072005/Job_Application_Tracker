@@ -1793,175 +1793,33 @@ test('contract: validateAnalyzeCultureInput validates company and preference wei
   assert.equal(invalidWeights.ok, false);
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+test('contract: a Vietnamese skill written in the CV is not reported missing', () => {
+  const resume = 'Thực hiện kê khai thuế GTGT và quyết toán thuế năm. Công nợ phải trả đối chiếu hàng tháng. Bảng lương tính cho 200 nhân sự.';
+  const jd = 'Tuyển kế toán. Yêu cầu thành thạo kê khai thuế, công nợ phải trả, bảng lương.';
+
+  const diag = diagnoseAtsKeywordGaps(resume, jd);
+  const byKeyword = new Map(diag.keywordGaps.map(gap => [gap.keyword, gap]));
+
+  const tax = byKeyword.get('Tax Declaration');
+  assert.ok(tax, 'Tax Declaration must be detected in the posting');
+  assert.equal(tax.matched, true, 'the CV says "kê khai thuế", so it must count as present');
+  assert.ok(tax.frequencyInResume > 0);
+
+  const payable = byKeyword.get('Accounts Payable');
+  assert.ok(payable);
+  assert.equal(payable.matched, true, 'the CV says "công nợ phải trả"');
+
+  const payroll = byKeyword.get('Payroll');
+  assert.ok(payroll);
+  assert.equal(payroll.matched, true, 'the CV says "bảng lương"');
+});
+
+test('contract: a skill absent from the CV is still reported missing', () => {
+  const resume = 'Lập trình viên backend với Node.js và PostgreSQL.';
+  const jd = 'Yêu cầu thành thạo kê khai thuế và báo cáo tài chính.';
+
+  const diag = diagnoseAtsKeywordGaps(resume, jd);
+  const tax = diag.keywordGaps.find(gap => gap.keyword === 'Tax Declaration');
+  assert.ok(tax);
+  assert.equal(tax.matched, false);
+});

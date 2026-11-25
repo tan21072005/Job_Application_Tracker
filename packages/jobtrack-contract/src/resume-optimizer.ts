@@ -305,7 +305,9 @@ export function diagnoseAtsKeywordGaps(
     let freqInResume = 0;
     for (const term of searchTerms) {
       const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+      const head = /^[a-z0-9]/i.test(term) ? '(?<![\\w.])' : '';
+      const tail = /[a-z0-9]$/i.test(term) ? '(?![\\w])' : '';
+      const regex = new RegExp(`${head}${escaped}${tail}`, 'gi');
       const matches = resumeTextLower.match(regex);
       if (matches && matches.length > 0) {
         matched = true;
