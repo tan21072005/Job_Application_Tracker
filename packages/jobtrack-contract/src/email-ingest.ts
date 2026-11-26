@@ -219,9 +219,13 @@ export function extractPosition(text: string, subject = ''): string {
     }
   }
 
-  const roleMatch = combined.match(/(?:vị trí|chức danh|role|position)[:\s]+([A-Za-z0-9\s/.-]{3,40})/i);
+  const roleMatch = combined.match(/(?:vị trí|chức danh|role|position)[:\s]+([^\n]{3,60})/i);
   if (roleMatch && roleMatch[1]) {
-    const candidate = roleMatch[1].trim().split(/[\n,.]/)[0];
+    const candidate = roleMatch[1]
+      .split(/[\n,.]/)[0]
+      .replace(/\s+(?:tại|at|của|for|thuộc)\s+.*$/i, '')
+      .replace(/\s+[A-Za-z]$/, '')
+      .trim();
     if (candidate.length > 2 && candidate.length < 40) {
       return candidate;
     }

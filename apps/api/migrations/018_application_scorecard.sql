@@ -1,0 +1,1 @@
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS scorecard JSONB NOT NULL DEFAULT '{}'::jsonb;

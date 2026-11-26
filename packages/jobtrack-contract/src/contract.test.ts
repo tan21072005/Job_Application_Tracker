@@ -1852,3 +1852,24 @@ test('contract: an interview time from an email stays in Vietnam time, not UTC',
   assert.equal(extractInterviewDateTime('31/02/2026 lúc 10:00'), null, 'February 31 must not parse');
   assert.equal(extractInterviewDateTime('không có giờ nào ở đây'), null);
 });
+
+test('contract: a role followed by a Vietnamese word keeps no stray letter', () => {
+  const parsed = parseEmailContent(
+    'Cảm ơn bạn đã ứng tuyển vị trí Backend Engineer tại Abctech. Chúng tôi đã nhận được hồ sơ.',
+    'Xác nhận hồ sơ'
+  );
+  assert.equal(parsed.position, 'Backend Engineer', 'the latin-only class used to leave a trailing t');
+  assert.equal(parsed.company, 'Abctech');
+
+  const withFor = parseEmailContent(
+    'Chúng tôi muốn trao đổi về vị trí Data Engineer for our data platform.',
+    'Recruiter outreach'
+  );
+  assert.equal(withFor.position, 'Data Engineer');
+
+  const plain = parseEmailContent(
+    'Mời bạn ứng tuyển vị trí QA Engineer.',
+    'Tuyển dụng'
+  );
+  assert.equal(plain.position, 'QA Engineer');
+});
