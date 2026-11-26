@@ -1873,3 +1873,92 @@ test('contract: a role followed by a Vietnamese word keeps no stray letter', () 
   );
   assert.equal(plain.position, 'QA Engineer');
 });
+
+test('contract: a Vietnamese status column written with extra words is still read', () => {
+  const columns = [
+    'Trạng thái ứng tuyển',
+    'Tình trạng hồ sơ',
+    'Trạng thái hồ sơ',
+    'Tình trạng ứng tuyển',
+    'Trạng thái CV',
+    'Current status',
+    'Application status'
+  ];
+
+  for (const column of columns) {
+    const parsed = parseApplicationsFromCsv(`Công ty,Vị trí,${column}\nVNG,Backend,Phỏng vấn\n`);
+    assert.equal(
+      parsed.rows[0]?.status,
+      'Interview',
+      `column "${column}" must be recognised as the status column`
+    );
+  }
+});
+
+test('contract: a Vietnamese status value with extra words maps to the right stage', () => {
+  const cases: Array<[string, string]> = [
+    ['Đang phỏng vấn', 'Interview'],
+    ['Đang PV', 'Interview'],
+    ['Mời phỏng vấn', 'Interview'],
+    ['PV vòng 1', 'Interview'],
+    ['Đã apply', 'Applied'],
+    ['Đã nộp hồ sơ', 'Applied'],
+    ['Đang sàng lọc', 'Screening'],
+    ['Đã nhận offer', 'Offer'],
+    ['Bị từ chối', 'Rejected'],
+    ['Không phù hợp', 'Rejected'],
+    ['Đã rút hồ sơ', 'Withdrawn']
+  ];
+
+  for (const [value, expected] of cases) {
+    const parsed = parseApplicationsFromCsv(`Công ty,Vị trí,Trạng thái\nVNG,Backend,${value}\n`);
+    assert.equal(
+      parsed.rows[0]?.status,
+      expected,
+      `value "${value}" must map to ${expected}, not fall back to Saved`
+    );
+  }
+});
+
+test('contract: an unrecognised status is reported instead of silently becoming Saved', () => {
+  const parsed = parseApplicationsFromCsv(`Công ty,Vị trí,Trạng thái\nVNG,Backend,Đang chờ kết quả\n`);
+  const row = parsed.rows[0];
+
+  assert.ok(row, 'the row must still parse');
+  assert.equal(row.status, 'Saved', 'the fallback value is unchanged');
+  assert.ok(
+    row.errors.some(message => message.toLowerCase().includes('trạng thái')),
+    `an unknown status must produce a visible warning, got: ${JSON.stringify(row.errors)}`
+  );
+});
+
+test('contract: the csv exporter round-trips every status it can write', () => {
+  const statuses = ['Saved', 'Applied', 'Screening', 'Interview', 'Offer', 'Rejected', 'Withdrawn'] as const;
+
+  for (const status of statuses) {
+    const csv = formatApplicationsAsCsv([
+      {
+        id: '00000000-0000-4000-8000-000000000001',
+        company: 'VNG',
+        position: 'Backend',
+        url: null,
+        source: null,
+        jobCode: null,
+        status,
+        appliedAt: null,
+        salary: null,
+        location: null,
+        workMode: null,
+        nextAction: null,
+        deadline: null,
+        notes: null,
+        interviews: [],
+        createdAt: '2026-11-01T00:00:00Z',
+        updatedAt: null
+      }
+    ]);
+
+    const parsed = parseApplicationsFromCsv(csv);
+    assert.equal(parsed.rows[0]?.status, status, `exporting ${status} then importing it must give ${status} back`);
+  }
+});

@@ -141,11 +141,17 @@ const STATUS_MAP: Record<string, ApplicationStatus> = {
   'da ung tuyen': 'Applied',
   'ứng tuyển': 'Applied',
   'applied': 'Applied',
+  'apply': 'Applied',
+  'đã apply': 'Applied',
+  'đã gửi': 'Applied',
+  'submitted': 'Applied',
 
   'sàng lọc': 'Screening',
   'sang loc': 'Screening',
   'hồ sơ': 'Screening',
   'screening': 'Screening',
+  'đang xem xét': 'Screening',
+  'reviewing': 'Screening',
 
   'phỏng vấn': 'Interview',
   'phong van': 'Interview',
@@ -290,10 +296,72 @@ export function parseCsvRawRecords(csvText: string): {
   return { records, delimiter, hasBom };
 }
 
+const FILLER_WORDS = ['ứng tuyển', 'ung tuyen', 'hồ sơ', 'ho so', 'cv', 'hiện tại', 'hien tai', 'current', 'application'];
+
+function stripDiacritics(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+}
+
+function foldHeader(raw: string): string {
+  const base = stripDiacritics(raw.trim().toLowerCase())
+    .replace(/[_/]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return base;
+}
+
+function findHeader(folded: string): keyof CsvImportItemInput | null {
+  const direct = HEADER_MAP[folded];
+  if (direct) return direct;
+
+  for (const filler of FILLER_WORDS) {
+    const foldedFiller = stripDiacritics(filler);
+    if (folded === foldedFiller) continue;
+    const trimmed = folded
+      .replace(new RegExp(`(^|\\s)${foldedFiller}(\\s|$)`, 'g'), ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (trimmed && HEADER_MAP[trimmed]) return HEADER_MAP[trimmed];
+  }
+
+  return HEADER_MAP[folded] ?? null;
+}
+
+function foldStatus(raw: string): string {
+  return stripDiacritics(raw.trim().toLowerCase())
+    .replace(/[_/]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const FOLDED_STATUS_ENTRIES: Array<[string, ApplicationStatus]> = Object.entries(STATUS_MAP)
+  .map(([key, status]) => [foldStatus(key), status] as [string, ApplicationStatus])
+  .sort((a, b) => b[0].length - a[0].length);
+
 export function normalizeStatus(raw: string): ApplicationStatus {
   if (!raw || !raw.trim()) return 'Saved';
-  const clean = raw.trim().toLowerCase();
-  return STATUS_MAP[clean] || 'Saved';
+
+  const clean = foldStatus(raw);
+
+  for (const [key, status] of FOLDED_STATUS_ENTRIES) {
+    if (clean === key) return status;
+  }
+
+  for (const [key, status] of FOLDED_STATUS_ENTRIES) {
+    if (clean.includes(key)) return status;
+  }
+
+  return 'Saved';
+}
+
+export function isRecognizedStatus(raw: string): boolean {
+  if (!raw || !raw.trim()) return true;
+  const clean = foldStatus(raw);
+  return FOLDED_STATUS_ENTRIES.some(([key]) => clean === key || clean.includes(key));
 }
 
 export function normalizeWorkMode(raw: string): WorkMode | null {
@@ -363,10 +431,7 @@ export function parseApplicationsFromCsv(
   }
 
   const rawHeaders = records[0].map(h => h.trim());
-  const columnMapping: Array<keyof CsvImportItemInput | null> = rawHeaders.map(h => {
-    const lower = h.toLowerCase();
-    return HEADER_MAP[lower] || null;
-  });
+  const columnMapping: Array<keyof CsvImportItemInput | null> = rawHeaders.map(h => findHeader(foldHeader(h)));
 
   const companyIndex = columnMapping.indexOf('company');
   const positionIndex = columnMapping.indexOf('position');
@@ -427,7 +492,11 @@ export function parseApplicationsFromCsv(
       rowErrors.push('Vị trí ứng tuyển vượt quá 250 ký tự.');
     }
 
-    const status = normalizeStatus(item.status || '');
+    const rawStatus = item.status || '';
+    const status = normalizeStatus(rawStatus);
+    if (!isRecognizedStatus(rawStatus)) {
+      rowErrors.push(`Trạng thái không nhận diện được: "${rawStatus.trim()}". Đã đặt về "Đã lưu".`);
+    }
     const workMode = normalizeWorkMode(item.workMode || '');
 
     let appliedAt: string | null = null;
