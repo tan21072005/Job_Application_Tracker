@@ -368,6 +368,7 @@ export interface InterviewAgendaItemDTO extends InterviewWireDTO {
   company: string;
   position: string;
   applicationStatus: ApplicationStatus;
+  applicationVersion: number;
 }
 
 export interface BulkStatusUpdateDTO {

@@ -246,7 +246,14 @@ export function evaluateDecisionMatrix(
     };
   });
 
-  evaluated.sort((a, b) => b.compositeScore - a.compositeScore);
+  const stillOpen = (status: string) => status !== 'Rejected' && status !== 'Withdrawn';
+
+  evaluated.sort((a, b) => {
+    const aClosed = stillOpen(a.status) ? 0 : 1;
+    const bClosed = stillOpen(b.status) ? 0 : 1;
+    if (aClosed !== bClosed) return aClosed - bClosed;
+    return b.compositeScore - a.compositeScore;
+  });
 
   evaluated.forEach((item, index) => {
     item.rank = index + 1;
@@ -272,9 +279,11 @@ export function evaluateDecisionMatrix(
     };
   });
 
+  const bestOpen = evaluated.find(item => stillOpen(item.status));
+
   return {
     totalCompared: evaluated.length,
-    topPickId: evaluated.length > 0 ? evaluated[0].id : null,
+    topPickId: bestOpen ? bestOpen.id : null,
     opportunities: evaluated,
     categoryWinners,
     appliedWeights: weights,

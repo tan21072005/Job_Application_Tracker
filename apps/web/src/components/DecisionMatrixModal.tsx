@@ -120,6 +120,10 @@ export function DecisionMatrixModal({
           safe[k] = target.scorecard[k];
         }
       }
+      const storedNotes = (target.scorecard as Record<string, unknown>)._notes;
+      setEditingNotes(typeof storedNotes === 'string' ? storedNotes : '');
+    } else {
+      setEditingNotes('');
     }
     setEditingScores(safe);
   }, [editingAppId, applications]);

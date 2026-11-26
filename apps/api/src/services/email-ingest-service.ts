@@ -4,8 +4,27 @@ import {
   type EmailIngestProposalDTO,
   type EmailIngestApplyResultDTO,
   parseEmailContent,
-  generateIngestionProposal
+  generateIngestionProposal,
+  TERMINAL_STATUSES
 } from '@jobtrack/contract';
+
+const STATUS_RANK: Record<string, number> = {
+  Saved: 0,
+  Applied: 1,
+  Screening: 2,
+  Interview: 3,
+  Offer: 4,
+  Rejected: 5,
+  Withdrawn: 5
+};
+
+function shouldAdvanceStatus(current: string, next: string): boolean {
+  if (TERMINAL_STATUSES.has(current as never) && !TERMINAL_STATUSES.has(next as never)) return false;
+  if (current === next) return false;
+  const currentRank = STATUS_RANK[current] ?? 0;
+  const nextRank = STATUS_RANK[next] ?? 0;
+  return nextRank > currentRank;
+}
 import { fail } from './jobtrack-service.ts';
 
 export class EmailIngestService {
@@ -45,11 +64,46 @@ export class EmailIngestService {
       await client.query('BEGIN');
 
       if (proposal.actionType === 'create_application') {
-        const appId = randomUUID();
         const appData = proposal.proposedApplication;
         if (!appData) {
           fail(422, 'Thiếu thông tin hồ sơ ứng tuyển đề xuất.', 'invalid_request');
         }
+
+        const existing = await client.query<{ id: string; version: number; status: string }>(
+          `SELECT id, version, status FROM applications
+           WHERE user_id = $1 AND deleted_at IS NULL
+             AND lower(trim(company)) = lower(trim($2))
+             AND lower(trim(position)) = lower(trim($3))
+           LIMIT 1
+           FOR UPDATE`,
+          [userId, appData.company, appData.position]
+        );
+
+        if (existing.rowCount && existing.rows[0]) {
+          const row = existing.rows[0];
+          const nextStatus = shouldAdvanceStatus(row.status, appData.status) ? appData.status : row.status;
+          await client.query(
+            `UPDATE applications
+             SET status = $1,
+                 next_action = COALESCE($2, next_action),
+                 version = version + 1,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $3 AND user_id = $4`,
+            [nextStatus, appData.nextAction || null, row.id, userId]
+          );
+          await client.query('COMMIT');
+          return {
+            success: true,
+            actionTaken: 'update_status',
+            applicationId: row.id,
+            interviewId: null,
+            message: nextStatus === appData.status
+              ? `Hồ sơ tại ${appData.company} đã tồn tại, không tạo trùng.`
+              : `Hồ sơ tại ${appData.company} đã tồn tại, cập nhật trạng thái thành "${nextStatus}".`
+          };
+        }
+
+        const appId = randomUUID();
 
         await client.query(
           `INSERT INTO applications (
@@ -107,8 +161,8 @@ export class EmailIngestService {
         fail(422, 'Không xác định được hồ sơ ứng tuyển mục tiêu để cập nhật.', 'invalid_request');
       }
 
-      const existingApp = await client.query<{ id: string; version: number }>(
-        `SELECT id, version FROM applications WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL FOR UPDATE`,
+      const existingApp = await client.query<{ id: string; version: number; status: string }>(
+        `SELECT id, version, status FROM applications WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL FOR UPDATE`,
         [targetAppId, userId]
       );
 
@@ -117,7 +171,10 @@ export class EmailIngestService {
       }
 
       const appData = proposal.proposedApplication;
-      const targetStatus = appData?.status || 'Interview';
+      const currentStatus = existingApp.rows[0].status;
+      const requestedStatus = appData?.status || 'Interview';
+      const targetStatus = shouldAdvanceStatus(currentStatus, requestedStatus) ? requestedStatus : currentStatus;
+      const statusAdvanced = targetStatus !== currentStatus;
 
       await client.query(
         `UPDATE applications
@@ -159,7 +216,9 @@ export class EmailIngestService {
         actionTaken: proposal.actionType,
         applicationId: targetAppId,
         interviewId,
-        message: `Đã cập nhật trạng thái hồ sơ thành "${targetStatus}".`
+        message: statusAdvanced
+          ? `Đã cập nhật trạng thái hồ sơ thành "${targetStatus}".`
+          : `Hồ sơ đang ở "${currentStatus}", email này không làm lùi trạng thái.`
       };
     } catch (err) {
       await client.query('ROLLBACK');

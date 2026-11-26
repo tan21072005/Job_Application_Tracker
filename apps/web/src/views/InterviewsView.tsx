@@ -103,7 +103,11 @@ export default function InterviewsView({ apps, onOpen, notify }: Props) {
     if (!mockTarget) return;
     const existing = mockTarget.preparation || '';
     const updatedPrep = existing.trim() ? `${existing}\n\n${prepText}` : prepText;
-    await interviewsRepository.updateInterview(mockTarget.id, { preparation: updatedPrep });
+    await interviewsRepository.updateInterview(
+      mockTarget.id,
+      { preparation: updatedPrep },
+      `"app:${mockTarget.applicationId}:v${mockTarget.applicationVersion}"`
+    );
     notify('Đã thêm nội dung vào phần chuẩn bị của vòng phỏng vấn.');
     void loadAgenda();
   }

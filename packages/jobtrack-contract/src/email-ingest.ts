@@ -250,6 +250,31 @@ export function extractRecruiter(text: string, sender = ''): { name?: string; em
   return { name, email, phone };
 }
 
+const DEFAULT_INTERVIEW_OFFSET = '+07:00';
+
+function localInterviewInstant(
+  year: string,
+  month: string,
+  day: string,
+  hours: string,
+  minutes: string
+): string | null {
+  const y = Number(year);
+  const mo = Number(month);
+  const d = Number(day);
+  const h = Number(hours);
+  const mi = Number(minutes);
+
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
+  if (!Number.isFinite(h) || !Number.isFinite(mi)) return null;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59) return null;
+
+  const probe = new Date(Date.UTC(y, mo - 1, d));
+  if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== mo - 1 || probe.getUTCDate() !== d) return null;
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:00${DEFAULT_INTERVIEW_OFFSET}`;
+}
+
 export function extractInterviewDateTime(text: string): string | null {
   const match1 = text.match(/(\d{1,2})[h:](\d{2})?\s*(?:ngày|on)?\s*(\d{1,2})[/-](\d{1,2})[/-](\d{4})/i);
   if (match1) {
@@ -258,7 +283,8 @@ export function extractInterviewDateTime(text: string): string | null {
     const day = match1[3].padStart(2, '0');
     const month = match1[4].padStart(2, '0');
     const year = match1[5];
-    return `${year}-${month}-${day}T${hours}:${minutes}:00Z`;
+    const value = localInterviewInstant(year, month, day, hours, minutes);
+    if (value) return value;
   }
 
   const match2 = text.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})\s*(?:vào lúc|lúc|at)?\s*(\d{1,2})[h:](\d{2})?/i);
@@ -268,7 +294,8 @@ export function extractInterviewDateTime(text: string): string | null {
     const day = match2[3].padStart(2, '0');
     const hours = match2[4].padStart(2, '0');
     const minutes = (match2[5] || '00').padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}:00Z`;
+    const value = localInterviewInstant(year, month, day, hours, minutes);
+    if (value) return value;
   }
 
   return null;

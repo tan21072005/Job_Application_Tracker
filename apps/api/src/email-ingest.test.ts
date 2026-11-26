@@ -80,6 +80,34 @@ async function createApplication(userCookie: string, company: string, position: 
   return data.id;
 }
 
+async function promoteTo(appId: string, cookie: string, status: string): Promise<string> {
+  const current = await fetch(`${base}/api/applications/${appId}`, {
+    headers: { Cookie: cookie, Origin: origin }
+  });
+  assert.equal(current.status, 200);
+  const etag = current.headers.get('etag');
+  if (!etag) throw new Error('application response carried no ETag');
+
+  const patched = await fetch(`${base}/api/applications/${appId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: cookie,
+      Origin: origin,
+      'If-Match': etag,
+      'Idempotency-Key': randomUUID()
+    },
+    body: JSON.stringify({ status })
+  });
+  assert.equal(patched.status, 200, `expected to set ${status}, got ${patched.status}`);
+
+  const after = await fetch(`${base}/api/applications/${appId}`, {
+    headers: { Cookie: cookie, Origin: origin }
+  });
+  const data = await after.json() as { status: string };
+  return data.status;
+}
+
 test('email-ingest: POST /api/ingest/email/parse requires authentication', async () => {
   const res = await fetch(`${base}/api/ingest/email/parse`, {
     method: 'POST',
@@ -227,6 +255,117 @@ test('email-ingest: POST /api/ingest/email/apply creates application and intervi
   const appData = await getApp.json() as { company: string; status: string; interviews: unknown[] };
   assert.equal(appData.company, 'Shopee');
   assert.equal(appData.interviews.length, 1);
+});
+
+test('email-ingest: applying the same proposal twice does not create a duplicate application', async () => {
+  const parseRes = await fetch(`${base}/api/ingest/email/parse`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: userA.cookie,
+      Origin: origin
+    },
+    body: JSON.stringify({
+      emailContent: 'Cảm ơn bạn đã ứng tuyển vị trí Backend Engineer tại Abctech. Chúng tôi đã nhận được hồ sơ.',
+      subject: 'Xác nhận hồ sơ Abctech'
+    })
+  });
+  const proposal = await parseRes.json() as EmailIngestProposalDTO;
+
+  const first = await fetch(`${base}/api/ingest/email/apply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: userA.cookie, Origin: origin },
+    body: JSON.stringify(proposal)
+  });
+  assert.equal(first.status, 201);
+  const firstResult = await first.json() as EmailIngestApplyResultDTO;
+
+  const second = await fetch(`${base}/api/ingest/email/apply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: userA.cookie, Origin: origin },
+    body: JSON.stringify(proposal)
+  });
+  assert.equal(second.status, 201, 'a repeated apply must not fail, it must reuse the record');
+  const secondResult = await second.json() as EmailIngestApplyResultDTO;
+
+  assert.equal(secondResult.applicationId, firstResult.applicationId, 'the second apply must hit the same row');
+
+  const listRes = await fetch(`${base}/api/applications`, {
+    headers: { Cookie: userA.cookie, Origin: origin }
+  });
+  const apps = await listRes.json() as Array<{ company: string; position: string }>;
+  const samePair = apps.filter(
+    a => a.company === proposal.proposedApplication?.company && a.position === proposal.proposedApplication?.position
+  );
+  assert.equal(samePair.length, 1, 'exactly one application may exist for the same company and position');
+});
+
+test('email-ingest: an acknowledgement never moves an Offer back to Applied', async () => {
+  const appId = await createApplication(userA.cookie, 'Tiki Corporation', 'Senior Flutter Developer');
+  const promoted = await promoteTo(appId, userA.cookie, 'Offer');
+  assert.equal(promoted, 'Offer');
+
+  const ackProposal: EmailIngestProposalDTO = {
+    actionType: 'update_status',
+    confidenceScore: 85,
+    matchedApplicationId: appId,
+    matchedCompany: 'Tiki Corporation',
+    matchedPosition: 'Senior Flutter Developer',
+    summary: 'Đã nhận hồ sơ',
+    proposedApplication: {
+      company: 'Tiki Corporation',
+      position: 'Senior Flutter Developer',
+      status: 'Applied'
+    },
+    changesSummary: ['Acknowledgement']
+  };
+
+  const applyRes = await fetch(`${base}/api/ingest/email/apply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: userA.cookie, Origin: origin },
+    body: JSON.stringify(ackProposal)
+  });
+  assert.equal(applyRes.status, 201);
+
+  const getApp = await fetch(`${base}/api/applications/${appId}`, {
+    headers: { Cookie: userA.cookie, Origin: origin }
+  });
+  const appData = await getApp.json() as { status: string };
+  assert.equal(appData.status, 'Offer', 'a confirmation email must not demote an offer');
+});
+
+test('email-ingest: an invitation never revives a Rejected application', async () => {
+  const appId = await createApplication(userA.cookie, 'Viettel Solutions', 'Data Engineer');
+  const rejected = await promoteTo(appId, userA.cookie, 'Rejected');
+  assert.equal(rejected, 'Rejected');
+
+  const inviteProposal: EmailIngestProposalDTO = {
+    actionType: 'update_status',
+    confidenceScore: 88,
+    matchedApplicationId: appId,
+    matchedCompany: 'Viettel Solutions',
+    matchedPosition: 'Data Engineer',
+    summary: 'Mời phỏng vấn',
+    proposedApplication: {
+      company: 'Viettel Solutions',
+      position: 'Data Engineer',
+      status: 'Interview'
+    },
+    changesSummary: ['Interview invitation']
+  };
+
+  const applyRes = await fetch(`${base}/api/ingest/email/apply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: userA.cookie, Origin: origin },
+    body: JSON.stringify(inviteProposal)
+  });
+  assert.equal(applyRes.status, 201);
+
+  const getApp = await fetch(`${base}/api/applications/${appId}`, {
+    headers: { Cookie: userA.cookie, Origin: origin }
+  });
+  const appData = await getApp.json() as { status: string };
+  assert.equal(appData.status, 'Rejected', 'a rejected application must stay rejected');
 });
 
 test('email-ingest: multi-tenant isolation prevents User B from mutating User A application via apply', async () => {

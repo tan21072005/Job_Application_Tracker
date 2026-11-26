@@ -317,3 +317,74 @@ test('T06: precondition control (428/412), idempotency replay, ownership isolati
   const checkDb = await pool.query('SELECT * FROM interviews WHERE id=$1', [round2Id]);
   assert.equal(checkDb.rowCount, 0);
 });
+
+test('interviews: the agenda exposes the version a client needs to patch a round', async () => {
+  const user = await registerUser('agenda-version');
+
+  const appRes = await call('/applications', 'POST', {
+    company: 'Agenda Version Co',
+    position: 'Backend Engineer'
+  }, user.cookie, { 'Idempotency-Key': crypto.randomUUID() });
+  assert.equal(appRes.status, 201);
+  const appId = appRes.value.id as string;
+  const appVersion = appRes.value.version as number;
+
+  const roundRes = await call(`/applications/${appId}/interviews`, 'POST', {
+    title: 'Vòng 1',
+    at: '2026-12-10T09:00:00+07:00',
+    timezone: 'Asia/Ho_Chi_Minh',
+    format: 'Online'
+  }, user.cookie, {
+    'If-Match': `"app:${appId}:v${appVersion}"`,
+    'Idempotency-Key': crypto.randomUUID()
+  });
+  assert.ok(roundRes.status === 201 || roundRes.status === 200, `round create: ${roundRes.status}`);
+
+  const agendaRes = await call('/interviews', 'GET', undefined, user.cookie);
+  assert.equal(agendaRes.status, 200);
+  const items = agendaRes.value as Array<{
+    id: string;
+    applicationId: string;
+    applicationVersion?: number;
+  }>;
+
+  const mine = items.filter(item => item.applicationId === appId);
+  assert.equal(mine.length, 1);
+  assert.equal(typeof mine[0].applicationVersion, 'number', 'the agenda must carry the parent version');
+  assert.ok((mine[0].applicationVersion ?? 0) >= 1);
+
+  const patched = await call(`/interviews/${mine[0].id}`, 'PATCH', { status: 'Completed' }, user.cookie, {
+    'If-Match': `"app:${appId}:v${mine[0].applicationVersion}"`
+  });
+  assert.equal(patched.status, 200, 'the version from the agenda must satisfy If-Match');
+});
+
+test('interviews: a PATCH without If-Match is refused, so the agenda value is not optional', async () => {
+  const user = await registerUser('agenda-nomatch');
+
+  const appRes = await call('/applications', 'POST', {
+    company: 'No Match Co',
+    position: 'Backend Engineer'
+  }, user.cookie, { 'Idempotency-Key': crypto.randomUUID() });
+  assert.equal(appRes.status, 201);
+  const appId = appRes.value.id as string;
+  const appVersion = appRes.value.version as number;
+
+  await call(`/applications/${appId}/interviews`, 'POST', {
+    title: 'Vòng 1',
+    at: '2026-12-11T09:00:00+07:00',
+    timezone: 'Asia/Ho_Chi_Minh',
+    format: 'Online'
+  }, user.cookie, {
+    'If-Match': `"app:${appId}:v${appVersion}"`,
+    'Idempotency-Key': crypto.randomUUID()
+  });
+
+  const agendaRes = await call('/interviews', 'GET', undefined, user.cookie);
+  const items = agendaRes.value as Array<{ id: string; applicationId: string }>;
+  const mine = items.filter(item => item.applicationId === appId);
+  assert.equal(mine.length, 1);
+
+  const noMatch = await call(`/interviews/${mine[0].id}`, 'PATCH', { status: 'Completed' }, user.cookie);
+  assert.equal(noMatch.status, 428, 'a missing If-Match must be refused');
+});

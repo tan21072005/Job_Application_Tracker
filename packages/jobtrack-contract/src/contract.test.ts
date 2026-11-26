@@ -1823,3 +1823,32 @@ test('contract: a skill absent from the CV is still reported missing', () => {
   assert.ok(tax);
   assert.equal(tax.matched, false);
 });
+
+test('contract: an interview time from an email stays in Vietnam time, not UTC', () => {
+  const dmy = extractInterviewDateTime('Thời gian: 14:00 ngày 28/11/2026');
+  assert.ok(dmy, 'the time must be found');
+  assert.ok(dmy!.endsWith('+07:00'), `expected a +07:00 offset, got ${dmy}`);
+
+  const localHours = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date(dmy!));
+  assert.equal(localHours, '14:00', 'the written hour must stay the written hour in Vietnam');
+
+  const fromFullDate = extractInterviewDateTime('Mời bạn vào 2026-12-05 lúc 09:30');
+  assert.ok(fromFullDate, 'the second format must parse');
+  assert.ok(fromFullDate!.endsWith('+07:00'));
+  const fullDateHours = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date(fromFullDate!));
+  assert.equal(fullDateHours, '09:30');
+
+  assert.equal(extractInterviewDateTime('32/13/2026 lúc 14:00'), null, 'an impossible date must not parse');
+  assert.equal(extractInterviewDateTime('31/02/2026 lúc 10:00'), null, 'February 31 must not parse');
+  assert.equal(extractInterviewDateTime('không có giờ nào ở đây'), null);
+});

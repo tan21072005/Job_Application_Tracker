@@ -1262,7 +1262,8 @@ export const interviewsRepository = {
           status: interview.status,
           company: app.company,
           position: app.position,
-          applicationStatus: app.status
+          applicationStatus: app.status,
+          applicationVersion: app.version ?? 1
         }))
       );
       items.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
@@ -1285,12 +1286,13 @@ export const interviewsRepository = {
     }
     await request<InterviewWireDTO>(`/interviews/${encodeURIComponent(item.id)}`, {
       method: 'PATCH',
+      headers: { 'If-Match': `"app:${item.applicationId}:v${item.applicationVersion}"` },
       body: JSON.stringify({ status: nextStatus })
     });
     return { ...item, status: nextStatus };
   },
 
-  async updateInterview(id: string, patch: Partial<{ title: string; at: string; timezone: string; format: InterviewFormat; location?: string; preparation?: string; notes?: string; status: string }>): Promise<InterviewWireDTO> {
+  async updateInterview(id: string, patch: Partial<{ title: string; at: string; timezone: string; format: InterviewFormat; location?: string; preparation?: string; notes?: string; status: string }>, ifMatch?: string): Promise<InterviewWireDTO> {
     if (demoMode) {
       const apps = load();
       let targetRound: InterviewWireDTO | null = null;
@@ -1308,6 +1310,7 @@ export const interviewsRepository = {
     }
     return request<InterviewWireDTO>(`/interviews/${encodeURIComponent(id)}`, {
       method: 'PATCH',
+      headers: ifMatch ? { 'If-Match': ifMatch } : undefined,
       body: JSON.stringify(patch)
     });
   },

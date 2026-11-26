@@ -313,3 +313,143 @@ test('decision: multi-tenant isolation prevents cross-user scorecard access or m
   assert.equal(userBMatrix.totalCompared, 0);
   assert.equal(userBMatrix.opportunities.length, 0);
 });
+
+test('decision: the application list carries the scorecard, so the matrix can show saved scores', async () => {
+  const appId = await createApplication(userA.cookie, 'Scorecard List Co', 'Backend Engineer');
+
+  const saveRes = await fetch(`${base}/api/applications/${appId}/scorecard`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Cookie: userA.cookie, Origin: origin },
+    body: JSON.stringify({
+      scores: {
+        compensation: 10,
+        work_life_balance: 10,
+        career_growth: 10,
+        company_culture: 10,
+        commute_flexibility: 10,
+        leadership_team: 10,
+        tech_stack: 10
+      },
+      notes: 'Ghi chú phải còn nguyên'
+    })
+  });
+  assert.equal(saveRes.status, 200);
+
+  const listRes = await fetch(`${base}/api/applications`, {
+    headers: { Cookie: userA.cookie, Origin: origin }
+  });
+  assert.equal(listRes.status, 200);
+  const apps = await listRes.json() as Array<{ id: string; scorecard?: Record<string, number> }>;
+
+  const mine = apps.find(a => a.id === appId);
+  assert.ok(mine, 'the application must be in the list');
+  assert.ok(mine!.scorecard, 'the list must carry the scorecard it used to drop');
+  assert.equal(mine!.scorecard!.compensation, 10);
+  assert.equal((mine!.scorecard as Record<string, unknown>)._notes, 'Ghi chú phải còn nguyên');
+});
+
+test('decision: saving scores without notes keeps the notes already on file', async () => {
+  const appId = await createApplication(userA.cookie, 'Notes Keep Co', 'Data Engineer');
+
+  await fetch(`${base}/api/applications/${appId}/scorecard`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Cookie: userA.cookie, Origin: origin },
+    body: JSON.stringify({
+      scores: {
+        compensation: 7,
+        work_life_balance: 7,
+        career_growth: 7,
+        company_culture: 7,
+        commute_flexibility: 7,
+        leadership_team: 7,
+        tech_stack: 7
+      },
+      notes: 'Ghi chú ban đầu'
+    })
+  });
+
+  await fetch(`${base}/api/applications/${appId}/scorecard`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Cookie: userA.cookie, Origin: origin },
+    body: JSON.stringify({
+      scores: {
+        compensation: 3,
+        work_life_balance: 3,
+        career_growth: 3,
+        company_culture: 3,
+        commute_flexibility: 3,
+        leadership_team: 3,
+        tech_stack: 3
+      }
+    })
+  });
+
+  const getRes = await fetch(`${base}/api/applications/${appId}/scorecard`, {
+    headers: { Cookie: userA.cookie, Origin: origin }
+  });
+  const data = await getRes.json() as { scorecard: Record<string, number>; notes?: string };
+  assert.equal(data.scorecard.compensation, 3, 'scores must be replaced');
+  assert.equal(data.notes, 'Ghi chú ban đầu', 'notes must survive a scores-only update');
+});
+
+test('decision: a rejected opportunity is never presented as the best choice', async () => {
+  const openId = await createApplication(userA.cookie, 'Best Open Co', 'Engineer');
+  const closedId = await createApplication(userA.cookie, 'Closed Co', 'Engineer');
+
+  const high = {
+    compensation: 9,
+    work_life_balance: 9,
+    career_growth: 9,
+    company_culture: 9,
+    commute_flexibility: 9,
+    leadership_team: 9,
+    tech_stack: 9
+  };
+  const low = {
+    compensation: 3,
+    work_life_balance: 3,
+    career_growth: 3,
+    company_culture: 3,
+    commute_flexibility: 3,
+    leadership_team: 3,
+    tech_stack: 3
+  };
+
+  await fetch(`${base}/api/applications/${openId}/scorecard`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Cookie: userA.cookie, Origin: origin },
+    body: JSON.stringify({ scores: low })
+  });
+  await fetch(`${base}/api/applications/${closedId}/scorecard`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Cookie: userA.cookie, Origin: origin },
+    body: JSON.stringify({ scores: high })
+  });
+
+  const rejectRes = await fetch(`${base}/api/applications/${closedId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: userA.cookie,
+      Origin: origin,
+      'If-Match': `"app:${closedId}:v1"`,
+      'Idempotency-Key': crypto.randomUUID()
+    },
+    body: JSON.stringify({ status: 'Rejected' })
+  });
+  assert.equal(rejectRes.status, 200);
+
+  const matrixRes = await fetch(`${base}/api/decision-matrix?ids=${openId},${closedId}`, {
+    headers: { Cookie: userA.cookie, Origin: origin }
+  });
+  assert.equal(matrixRes.status, 200);
+  const matrix = await matrixRes.json() as {
+    topPickId: string | null;
+    totalCompared: number;
+    opportunities: Array<{ id: string; status: string }>;
+  };
+
+  assert.notEqual(matrix.topPickId, closedId, 'a rejected application cannot be the top pick');
+  assert.equal(matrix.topPickId, openId, 'the open opportunity must win');
+  assert.equal(matrix.totalCompared, 2, 'both are still compared and shown');
+});

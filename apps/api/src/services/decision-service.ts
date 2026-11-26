@@ -86,10 +86,15 @@ export class DecisionService {
     }
 
     const app = checkRes.rows[0];
-    const scorecardData = {
-      ...input.scores,
-      ...(input.notes ? { _notes: input.notes } : {})
-    };
+    const existingNotes = await this.pool.query<{ notes: string | null }>(
+      `SELECT scorecard->>'_notes' AS notes FROM applications WHERE id = $1 AND user_id = $2`,
+      [applicationId, userId]
+    );
+    const priorNotes = existingNotes.rows[0]?.notes ?? null;
+    const keptNotes = input.notes !== undefined ? input.notes : priorNotes;
+
+    const scorecardData: Record<string, unknown> = { ...input.scores };
+    if (keptNotes) scorecardData._notes = keptNotes;
 
     const updateRes = await this.pool.query(
       `UPDATE applications
@@ -105,7 +110,7 @@ export class DecisionService {
       company: row.company,
       position: row.position,
       scorecard: input.scores,
-      notes: input.notes
+      notes: keptNotes ?? undefined
     };
   }
 

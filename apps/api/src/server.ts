@@ -1411,7 +1411,8 @@ app.get('/api/interviews', auth, async (req, res, next) => {
         ...interview,
         company: app.company,
         position: app.position,
-        applicationStatus: app.status
+        applicationStatus: app.status,
+        applicationVersion: app.version
       }))
     );
     items.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
